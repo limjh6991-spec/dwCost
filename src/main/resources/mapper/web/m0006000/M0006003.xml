@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.dowinsys.mes.web.m0006000.mapper.M0006003Mapper">
+<mapper namespace="com.dowinsys.cost.web.m0006000.mapper.M0006003Mapper">
 
 	<select id="getVendorMstList" resultType="CamelMap">
 		SELECT 거래처코드

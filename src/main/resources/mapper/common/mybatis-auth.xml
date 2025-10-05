@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.dowinsys.mes.common.auth.mapper.AuthMapper">
-	<select id="selectCheckUser" parameterType="com.dowinsys.mes.common.auth.LoginReq" resultType="com.dowinsys.mes.common.auth.UserInfo">
+<mapper namespace="com.dowinsys.cost.common.auth.mapper.AuthMapper">
+	<select id="selectCheckUser" parameterType="com.dowinsys.cost.common.auth.LoginReq" resultType="com.dowinsys.cost.common.auth.UserInfo">
 	select 
 		USER_ID
 		,user_name
@@ -21,7 +21,7 @@
 	where user_id = #{userId}
 	and password = #{password}
 	</select>
-	<select id="selectAuthMenuTabList" parameterType="com.dowinsys.mes.common.auth.LoginReq" resultType="com.dowinsys.mes.common.auth.SysResource">
+	<select id="selectAuthMenuTabList" parameterType="com.dowinsys.cost.common.auth.LoginReq" resultType="com.dowinsys.cost.common.auth.SysResource">
 	with auth_sys_resc as (
 		select UPPER_SYS_RESOURCE_ID,SYS_RESOURCE_ID
 		from doi_cm_role_sys_resource a
@@ -72,7 +72,7 @@
 	order by full_seq
 	</select>
 	
-	<select id="selectProdCtgByUser" parameterType="com.dowinsys.mes.common.auth.LoginReq" resultType="CamelMap">
+	<select id="selectProdCtgByUser" parameterType="com.dowinsys.cost.common.auth.LoginReq" resultType="CamelMap">
 	SELECT 
 		a.prod_category
 		,a.process_id
@@ -97,7 +97,7 @@
 	ORDER BY case when prod_category = 'UTG' then 1 when prod_category = 'ITG' then 2 else 99 end
 	</select>
 	
-	<select id="selectHasWorkStatusYn" parameterType="com.dowinsys.mes.common.auth.LoginReq" resultType="String">
+	<select id="selectHasWorkStatusYn" parameterType="com.dowinsys.cost.common.auth.LoginReq" resultType="String">
 	select case when count(role_id) > 0 then 'Y' else 'N' end has_ws_role 
 	from doi_cm_user_ROLE a
 	inner join dw_common_code b on (a.ROLE_ID = b.code and b.maj_code = 94 and b.use_yn = 1)
@@ -116,7 +116,7 @@
 	where user_id = #{userId}
 	</update>
 	
-	<select id="selectUserRoleList" parameterType="com.dowinsys.mes.common.auth.LoginReq" resultType="String">
+	<select id="selectUserRoleList" parameterType="com.dowinsys.cost.common.auth.LoginReq" resultType="String">
 	select 
 		a.ROLE_ID
 	from doi_cm_user_ROLE a 

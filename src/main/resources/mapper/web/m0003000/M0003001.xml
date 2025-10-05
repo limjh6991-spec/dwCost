@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.dowinsys.mes.web.m0003000.mapper.M0003001Mapper">
+<mapper namespace="com.dowinsys.cost.web.m0003000.mapper.M0003001Mapper">
 	<select id="selectBack1ProdStat" parameterType="Map" resultType="CamelMap">
 	select 	/*Back#1 - 제품현황*/	
 		a.거래처코드

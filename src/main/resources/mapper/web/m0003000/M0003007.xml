@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.dowinsys.mes.web.m0003000.mapper.M0003007Mapper">
+<mapper namespace="com.dowinsys.cost.web.m0003000.mapper.M0003007Mapper">
 	<select id="getModels" resultType="CamelMap">
 		select code_name 제품유형,code 코드 
 		from dw_common_code 

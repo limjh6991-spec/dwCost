@@ -2,9 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!-- 프로세스 플래닝 > 생산공정 관리 -->
-<mapper namespace="com.dowinsys.mes.web.m0002000.mapper.M0002003Mapper">
+<mapper namespace="com.dowinsys.cost.web.m0002000.mapper.M0002003Mapper">
 
-	<select id="selectProdProcList" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="selectProdProcList" resultType="com.dowinsys.cost.common.CamelMap">
 	SELECT
 		a.line,
 		a.prod_code,
@@ -77,7 +77,7 @@
 	  and process_id = #{processId}
 	</delete>		
 	
-	<select id="selectProcessList" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="selectProcessList" resultType="com.dowinsys.cost.common.CamelMap">
 	SELECT
 		line,
 		process_id,
@@ -88,7 +88,7 @@
 	FROM dw_process_mast
 	</select>
 	
-	<select id="selectProcess" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="selectProcess" resultType="com.dowinsys.cost.common.CamelMap">
 	select line + '-' + process_id  + '-' + 'v' + cast(version as varchar) as process,
 			description
 	from dw_process_mast
@@ -154,7 +154,7 @@
 	  AND process_id = #{processId}
 	</delete>	
 
-	<select id="selectProcessPlanList" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="selectProcessPlanList" resultType="com.dowinsys.cost.common.CamelMap">
 	WITH SplitNextProcess AS (
 	    SELECT 
 	        p.line,
@@ -332,7 +332,7 @@
 	  AND 공정코드 = #{공정코드}
 	</delete>		
 	
-	<select id="selectStepList" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="selectStepList" resultType="com.dowinsys.cost.common.CamelMap">
 	SELECT
 		a.line,
 		a.공정코드,

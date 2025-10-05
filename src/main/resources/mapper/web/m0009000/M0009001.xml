@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.dowinsys.mes.web.m0009000.mapper.M0009001Mapper">
+<mapper namespace="com.dowinsys.cost.web.m0009000.mapper.M0009001Mapper">
 
 	<select id="selectEquipListInSteps" resultType="CamelMap">
 		SELECT distinct 
@@ -29,7 +29,7 @@
 		order by a.공정코드, a.설비약명
 	</select>	
 
-	<select id="selectModelList" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="selectModelList" resultType="com.dowinsys.cost.common.CamelMap">
 		select line, model, inch, glass_thick, spec
 		from 
 		( 
@@ -46,7 +46,7 @@
 		order by a.line, a.model
 	</select>
 
-	<select id="selectEquipProdBaseList" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="selectEquipProdBaseList" resultType="com.dowinsys.cost.common.CamelMap">
 		SELECT
 			line,
 			step_code,
@@ -75,7 +75,7 @@
 		order by a.apply_date desc, a.step_code, a.equip_name, a.model		
 	</select>
 	
-	<select id="checkApplyDate" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="checkApplyDate" resultType="com.dowinsys.cost.common.CamelMap">
 		select b.line, b.step_code, b.equip_no, b.equip_name, b.model, b.apply_date
 		from 
 		(
@@ -105,7 +105,7 @@
 	</select>	
 	
 			
-<!--	<select id="checkApplyDateForUpdate" resultType="com.dowinsys.mes.common.CamelMap">
+<!--	<select id="checkApplyDateForUpdate" resultType="com.dowinsys.cost.common.CamelMap">
 		select a.line, a.step_code, a.equip_no, a.version, a.equip_name,a.apply_date
 		from dw_equip_prod_base a 
 		where a.line = #{line}
@@ -186,7 +186,7 @@
 			AND model = #{model}
 	</delete>
 	
-	<select id="selectSubCategoryList" resultType="com.dowinsys.mes.common.CamelMap">	
+	<select id="selectSubCategoryList" resultType="com.dowinsys.cost.common.CamelMap">	
 		select a.code as off_category_code,
 			   a.code_name as off_category_name,
 			   b.code as sub_category_code,
@@ -202,7 +202,7 @@
 		  and a.use_yn = '1'
 	</select>
 	
-	<select id="selectEquipOffCodeList" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="selectEquipOffCodeList" resultType="com.dowinsys.cost.common.CamelMap">
 		SELECT
 			a.off_category_code as display_off_category_code,
 			a.off_category_code,
@@ -236,7 +236,7 @@
 		ORDER BY a.item_order
 	</select>
 	
-	<select id="checkExistsOffCode" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="checkExistsOffCode" resultType="com.dowinsys.cost.common.CamelMap">
 		select COALESCE(STRING_AGG(a.off_code, '/'), 'NoData') AS off_code
 		from dw_equip_off_code a
 		where ( upper(a.off_code) ) in
@@ -245,7 +245,7 @@
 		</foreach>
 	</select>	
 	
-	<select id="checkUsedOffCode" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="checkUsedOffCode" resultType="com.dowinsys.cost.common.CamelMap">
 		select COALESCE(STRING_AGG(a.off_code, '/'), 'NoData') AS off_code
 		from dw_equip_off_log a
 		where ( upper(a.off_code) ) in

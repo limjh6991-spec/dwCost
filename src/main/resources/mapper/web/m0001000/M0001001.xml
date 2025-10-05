@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.dowinsys.mes.web.m0001000.mapper.M0001001Mapper">
+<mapper namespace="com.dowinsys.cost.web.m0001000.mapper.M0001001Mapper">
 
 	<select id="dupGlassId" resultType="int">
 		SELECT count(1)
@@ -407,7 +407,7 @@
 		 WHERE out_no = #{outNo}
 	</update>
 	
-	<select id="selectEquipListPop" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="selectEquipListPop" resultType="com.dowinsys.cost.common.CamelMap">
 		SELECT 'DFB1' AS line
 		   	 , '999' AS 설비번호
 		   	 , '수동' AS 설비명

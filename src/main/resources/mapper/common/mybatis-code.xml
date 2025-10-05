@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.dowinsys.mes.common.code.mapper.CodeMapper">
+<mapper namespace="com.dowinsys.cost.common.code.mapper.CodeMapper">
 	<select id="selectComCode1" resultType="CamelMap">	
 	SELECT 
 		code value, code_name text 

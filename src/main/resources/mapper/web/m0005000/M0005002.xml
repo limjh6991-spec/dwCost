@@ -2,6 +2,6 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.dowinsys.mes.web.m0005000.mapper.M0005002Mapper">
+<mapper namespace="com.dowinsys.cost.web.m0005000.mapper.M0005002Mapper">
 
 </mapper>

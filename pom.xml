@@ -8,7 +8,7 @@
 		<version>3.4.0</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.dowinsys.mes</groupId>
+	<groupId>com.dowinsys.cost</groupId>
 	<artifactId>dwisCOST</artifactId>
 	<version>${revision}</version>
 	<name>dwisCOST</name>
@@ -157,7 +157,7 @@
 	            <groupId>org.springframework.boot</groupId>
 	            <artifactId>spring-boot-maven-plugin</artifactId>
 	            <configuration>
-	                <mainClass>com.dowinsys.mes.DwisMesApplication</mainClass>
+	                <mainClass>com.dowinsys.cost.DwisMesApplication</mainClass>
 	            </configuration>
 	        </plugin>
 		</plugins>

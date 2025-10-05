@@ -2,9 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.dowinsys.mes.web.m0009000.mapper.M0009002Mapper">
+<mapper namespace="com.dowinsys.cost.web.m0009000.mapper.M0009002Mapper">
 	
-	<select id="selectEquipOffLogList" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="selectEquipOffLogList" resultType="com.dowinsys.cost.common.CamelMap">
 		SELECT
 			a.line,
 			a.step_code,
@@ -63,7 +63,7 @@
 		order by a.off_start_time desc, a.equip_name
 	</select>
 	
-	<select id="selectEquipOffProdBaseList" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="selectEquipOffProdBaseList" resultType="com.dowinsys.cost.common.CamelMap">
 		select b.line, b.step_code, b.equip_no, b.equip_name,
 			  b.apply_date,
 			  b.step_name,			  
@@ -90,7 +90,7 @@
 		on ( b.use_category = c.code )
 	</select>
 	
-	<select id="checkEndOffDate" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="checkEndOffDate" resultType="com.dowinsys.cost.common.CamelMap">
 		SELECT  a.equip_name, 
 				c.off_name,
 				a.off_start_time,
@@ -105,7 +105,7 @@
 		 AND a.finish_yn ='N'
 	</select>	
 	
-	<select id="checkDupOffDate" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="checkDupOffDate" resultType="com.dowinsys.cost.common.CamelMap">
 		SELECT  a.equip_name, 
 				c.off_name,
 				a.off_start_time,
@@ -125,7 +125,7 @@
 		     )
 	</select>
 	
-	<select id="checkDupOffDateForUpdate" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="checkDupOffDateForUpdate" resultType="com.dowinsys.cost.common.CamelMap">
 		SELECT  a.equip_name, 
 				c.off_name,
 				a.off_start_time,

@@ -2,8 +2,8 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.dowinsys.mes.web.m0002000.mapper.M0002001Mapper">
-	<select id="selectLineList" resultType="com.dowinsys.mes.common.CamelMap">
+<mapper namespace="com.dowinsys.cost.web.m0002000.mapper.M0002001Mapper">
+	<select id="selectLineList" resultType="com.dowinsys.cost.common.CamelMap">
 	SELECT
 		line,
 		line_decs,
@@ -49,7 +49,7 @@
 	WHERE line = #{line}
 	</delete>	
 	
-	<select id="selectAreaList" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="selectAreaList" resultType="com.dowinsys.cost.common.CamelMap">
 	SELECT
 		LINE,
 		AREA,
@@ -126,7 +126,7 @@
 	  AND 공정구분 = #{공정구분}
 	</delete>		
 	
-	<select id="selectEquipList" resultType="com.dowinsys.mes.common.CamelMap">
+	<select id="selectEquipList" resultType="com.dowinsys.cost.common.CamelMap">
 	SELECT
 		a.line,
 		a.설비번호,

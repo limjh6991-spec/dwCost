@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.dowinsys.mes.web.m0007000.mapper.M0007004Mapper">
+<mapper namespace="com.dowinsys.cost.web.m0007000.mapper.M0007004Mapper">
     <select id="M0007004_Sch1" parameterType="Map" resultType="CamelMap">
         select 공장코드,종류,타입,모델,CST_NO,열,행,위치,카세트상태,카세트상태값,반입일자,반입시간,반입자,반출일,반출시간,반출부서,반출자,반출사유
         from d04_카세트마스터

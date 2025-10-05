@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.dowinsys.mes.common.file.mapper.FileMapper">
+<mapper namespace="com.dowinsys.cost.common.file.mapper.FileMapper">
 	<select id="findByGroupIdAndIsDeleted" resultType="CamelMap">	
 		select 
 			id, group_id, category_group_id, file_name, file_size, file_path, is_deleted, created_date, deleted_date, created_by, deleted_by,	updated_date, 'Uploaded' status
@@ -11,12 +11,12 @@
 		order by created_by
 	</select>
 	
-	<insert id="insertFile" parameterType="com.dowinsys.mes.common.file.vo.FileVo">	
+	<insert id="insertFile" parameterType="com.dowinsys.cost.common.file.vo.FileVo">	
 		insert into dw_attach(id, group_id, file_name, file_size, file_path, is_deleted, created_date, created_by, updated_date)
 		values(#{id}, #{groupId}, #{fileName}, #{fileSize},	#{filePath}, 0, sysdatetime(), #{createdBy}, sysdatetime())
 	</insert>
 	
-	<update id="removeFile" parameterType="com.dowinsys.mes.common.file.vo.FileVo">	
+	<update id="removeFile" parameterType="com.dowinsys.cost.common.file.vo.FileVo">	
 		update dw_attach
 		set is_deleted = 1,
 		 deleted_date = sysdatetime(),
@@ -25,7 +25,7 @@
 		where id = #{id}
 	</update>
 	
-	<select id="readFile" resultType="com.dowinsys.mes.common.file.vo.FileVo">	
+	<select id="readFile" resultType="com.dowinsys.cost.common.file.vo.FileVo">	
 		select 
 			id, group_id, category_group_id, file_name, file_size, file_path, is_deleted, created_date, deleted_date, created_by, deleted_by,	updated_date, 'Uploaded' status
 		from dw_attach
