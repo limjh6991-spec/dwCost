@@ -1311,7 +1311,7 @@
 		,case when nullif(b.작업시작,'') is null and nullif(b.작업종료,'') is null then '인계공정'
 			when nullif(b.작업종료,'') is null then '현공정'
 			else '완료공정' end status 
-	from DW_CM_SYS_RESOURCE a 
+	from DOI_CM_SYS_RESOURCE a 
 	left outer join d22_RUN제조VLR b on (b.공장코드 = '2' and b.run_no = #{runNo} and a.SYS_RESOURCE_ID = b.공정코드) 
 	where UPPER_SYS_RESOURCE_ID = #{upperSysResourceId}
 	and prod_category = #{prodCategory}

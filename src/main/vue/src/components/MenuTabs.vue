@@ -183,9 +183,9 @@ export default {
       this.menuList = _.cloneDeep(this.userAuthInfo.getSysResourceMap.childSysResc);
       const localTabs = this.$utils.getLocalStorageData(localStorage, 'localTabs'+this.userAuthInfo.token);
       //작업현황 권한 있는지(코드관리에서 관리함)
-      if(this.userAuthInfo.hasWorkStatusRoleYn === "Y"){
-        this.menuClick({menuId: "R", menuNm: '작업 현황', menuFullPath: '작업 현황', url: '/WorkStatus', noRemove: true });
-      }
+      //if(this.userAuthInfo.hasWorkStatusRoleYn === "Y"){ //25.10.05 yhkim
+      //  this.menuClick({menuId: "R", menuNm: '작업 현황', menuFullPath: '작업 현황', url: '/WorkStatus', noRemove: true });
+      //}
       if(!_.isEmpty(localTabs)){
         localTabs.forEach(tab => this.menuClick(tab));
       }

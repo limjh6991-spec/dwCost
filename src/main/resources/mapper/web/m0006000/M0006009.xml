@@ -19,7 +19,7 @@
 			,a.url
 			,a.del_yn
 			,a.sys_resource_id as org_sys_resource_id
-		from DW_CM_SYS_RESOURCE a 	
+		from DOI_CM_SYS_RESOURCE a 	
 		where a.upper_sys_resource_id = 'ROOT_MENU'
 		and a.prod_category = #{prodCategory} 	
 		and a.del_yn = 'N'
@@ -38,7 +38,7 @@
 			,a.url
 			,a.del_yn
 			,a.sys_resource_id as org_sys_resource_id
-		from DW_CM_SYS_RESOURCE a	
+		from DOI_CM_SYS_RESOURCE a	
 		inner join mt c on a.upper_sys_resource_id = c.sys_resource_id
 		where a.prod_category = #{prodCategory}
 		and a.del_yn = 'N' 		
@@ -57,7 +57,7 @@
 		,INIT_USER
 		,MODI_DT
 		,MODI_USER
-	from DW_CM_ROLE
+	from DOI_CM_ROLE
 	where del_yn = 'N'
 	order by role_name
     </select>
@@ -78,7 +78,7 @@
 		,MODI_DT
 		,MODI_USER
 		,DEL_YN
-	from dw_cm_user
+	from doi_cm_user
 	where DEL_YN = 'N'
 	order by dept_name,user_name
 	</select> 
@@ -87,8 +87,8 @@
 		select
 			b.UPPER_SYS_RESOURCE_ID
 			,b.SYS_RESOURCE_ID
-		from DW_CM_ROLE a
-		left outer join dw_cm_role_sys_resource b on (a.ROLE_ID = b.ROLE_ID)
+		from DOI_CM_ROLE a
+		left outer join doi_cm_role_sys_resource b on (a.ROLE_ID = b.ROLE_ID)
 		where a.role_id = #{roleId}
 		and a.del_yn = 'N'
 		and b.prod_category = #{prodCategory} 
@@ -106,7 +106,7 @@
 			,a.sys_resource_type_code_id			
 			,cast(a.seq as nvarchar(max)) as full_seq
 			,a.url
-		from DW_CM_SYS_RESOURCE a
+		from DOI_CM_SYS_RESOURCE a
 		where a.upper_sys_resource_id = 'ROOT_MENU'
 		and a.prod_category = #{prodCategory} 	
 		union all
@@ -122,7 +122,7 @@
 			,a.sys_resource_type_code_id				
 			,cast(c.full_seq + ' > ' + cast(a.seq as nvarchar(max)) as nvarchar(max)) as full_seq
 			,a.url
-		from DW_CM_SYS_RESOURCE a	
+		from DOI_CM_SYS_RESOURCE a	
 		inner join mt c on a.upper_sys_resource_id = c.sys_resource_id
 		where a.prod_category = #{prodCategory} 		
 	)
@@ -136,12 +136,12 @@
 	
 	<delete id="deleteRoleSysResc" parameterType="String">
 	delete
-	from dw_cm_role_sys_resource
+	from doi_cm_role_sys_resource
 	where role_id = #{roleId}
 	and PROD_CATEGORY = #{prodCategory}
 	</delete>
 	<insert id="insertRoleSysResc" parameterType="Map">
-	INSERT INTO dw_cm_role_sys_resource (
+	INSERT INTO doi_cm_role_sys_resource (
 		ROLE_ID
 		,PROD_CATEGORY
 		,UPPER_SYS_RESOURCE_ID
@@ -160,7 +160,7 @@
 	)
 	</insert>
 	<insert id="insertCmUser" parameterType="Map">
-	INSERT INTO dw_cm_user (
+	INSERT INTO doi_cm_user (
 		USER_ID
 		,user_name
 		,password
@@ -193,7 +193,7 @@
 	)
 	</insert>
 	<update id="updateCmUser" parameterType="Map">
-	UPDATE DW_CM_USER
+	UPDATE doi_cm_user
 	SET user_name=#{userName}
 		, password=#{password}
 		, dept_name=#{deptName}
@@ -207,13 +207,13 @@
 	WHERE USER_ID=#{userId}
 	</update>
 	<update id="deleteCmUser" parameterType="Map">
-	UPDATE DW_CM_USER
+	UPDATE doi_cm_user
 	SET DEL_YN = 'Y'
 	WHERE USER_ID=#{userId}  
 	</update>
 	
 	<insert id="insertCmSysResource" parameterType="Map">
-	INSERT INTO DW_CM_SYS_RESOURCE (
+	INSERT INTO DOI_CM_SYS_RESOURCE (
 		prod_category
 		, SYS_RESOURCE_ID
 		, SYS_RESOURCE_NAME
@@ -241,7 +241,7 @@
 	</insert>
 	
 	<update id="updateCmSysResource" parameterType="Map">
-	UPDATE DW_CM_SYS_RESOURCE SET 		
+	UPDATE DOI_CM_SYS_RESOURCE SET 		
 		SYS_RESOURCE_ID = #{sysResourceId}
 		,SYS_RESOURCE_NAME=#{sysResourceName}	
 		, SYS_RESOURCE_TYPE_CODE_ID=#{sysResourceTypeCodeId}
@@ -256,7 +256,7 @@
 	</update>
 	
 	<update id="deleteCmSysResource" parameterType="Map">
-	UPDATE DW_CM_SYS_RESOURCE SET 		
+	UPDATE DOI_CM_SYS_RESOURCE SET 		
 		DEL_YN = 'Y'
 		, MODI_DT=getdate()
 		, MODI_USER=#{dowInsysUserId}
@@ -273,13 +273,13 @@
 		,b.user_name 
 		,b.position_name 
 		,b.position_code 
-	from DW_CM_USER_ROLE a
-	left outer join DW_CM_USER b on (a.USER_ID = b.USER_ID)
+	from doi_cm_user_ROLE a
+	left outer join doi_cm_user b on (a.USER_ID = b.USER_ID)
 	where a.ROLE_ID = #{roleId}
 	</select>
 	
 	<insert id="insertUserRole" parameterType="Map">
-	INSERT INTO DW_CM_USER_ROLE (
+	INSERT INTO doi_cm_user_ROLE (
 		USER_ID,ROLE_ID,ROLE_NAME,INIT_DT,INIT_USER
 	) VALUES (
 		#{userId},#{roleId},#{roleName},getdate(),#{initUser}
@@ -287,13 +287,13 @@
 	</insert>
 	
 	<delete id="deleteUserRole" parameterType="Map">
-	DELETE FROM DW_CM_USER_ROLE
+	DELETE FROM doi_cm_user_ROLE
 	WHERE ROLE_ID = #{roleId}
 	AND USER_ID = #{userId}
 	</delete>
 	
 	<update id="deleteRole" parameterType="Map">
-	UPDATE DW_CM_ROLE
+	UPDATE DOI_CM_ROLE
 	SET 
 		DEL_YN = 'Y'
 		,MODI_USER = #{userId}
@@ -303,12 +303,12 @@
 	
 	<select id="checkRoleId" parameterType="Map" resultType="String">
 	select case when count(1) > 0 then #{roleId} + '는 사용 할 수 없는 Role Id 입니다.' else 'OK' end
-	from DW_CM_ROLE
+	from DOI_CM_ROLE
 	where role_id = #{roleId}
 	</select>
 	
 	<insert id="insertRole" parameterType="Map">
-	INSERT INTO DW_CM_ROLE (
+	INSERT INTO DOI_CM_ROLE (
 		ROLE_ID, ROLE_NAME, DESCRIPTION, INIT_DT, INIT_USER, MODI_DT, MODI_USER, DEL_YN
 	) VALUES (
 		#{roleId}, #{roleName}, #{description}, getdate(), #{userId}, NULL, NULL, 'N'
@@ -316,7 +316,7 @@
 	</insert>
 	
 	<update id="updateRole" parameterType="Map">
-	UPDATE DW_CM_ROLE
+	UPDATE DOI_CM_ROLE
 	SET 
 		ROLE_NAME = #{roleName}
 		,DESCRIPTION = #{description}

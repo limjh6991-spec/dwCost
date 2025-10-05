@@ -3,7 +3,7 @@
  */
 <template>
 	<auth-tabs>
-		<!-- Tab 0 사용자 관리  #tab-content-#{dw_cm_sys_resource.sys_resource_id} -->
+		<!-- Tab 0 사용자 관리  #tab-content-#{DOI_CM_SYS_RESOURCE.sys_resource_id} -->
 		<template #tab-content-TAB062000>
 			<TAB062000/>
 		</template>

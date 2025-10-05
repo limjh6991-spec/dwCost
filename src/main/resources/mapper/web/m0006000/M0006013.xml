@@ -42,9 +42,9 @@
 		on (a.line = b.line and a.process_id = b.process_id and a.공정코드 = b.공정코드)
 		left join dw_equipment_mast c
 		on (a.line = c.line and a.설비번호 = c.설비번호)
-		left join dw_cm_user d
+		left join doi_cm_user d
 		on (a.init_user = d.user_id)
-		left join dw_cm_user e
+		left join doi_cm_user e
 		on (a.modi_user = e.user_id)
 		where 1 = 1
 		order by b.공정순서, a.설비번호, a.model_code, a.shift
