@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import axios from '@/plugins/axios';
 import sampleRouter from './sampleRouter';
+import c0001000Router from './c0001000Router';
 import m0001000Router from './m0001000Router';
 import m0002000Router from './m0002000Router';
 import m0003000Router from './m0003000Router';
