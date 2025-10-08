@@ -46,6 +46,7 @@ const routes = [
       requiresAuth: false,
     }
   },
+  ...c0001000Router,
   ...m0001000Router,
   ...m0002000Router,
   ...m0003000Router,
