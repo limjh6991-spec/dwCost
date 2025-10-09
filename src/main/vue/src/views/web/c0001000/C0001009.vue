@@ -5,28 +5,28 @@
 	<auth-tabs>
 		<!-- Tab 0 사용자 관리  #tab-content-#{DOI_CM_SYS_RESOURCE.sys_resource_id} -->
 		<template #tab-content-TAB012000>
-			<TAB062000/>
+			<TAB012000/>
 		</template>
 		<!-- Tab 1 메뉴관리 -->
 		<template #tab-content-TAB013000>
-			<TAB063000/>	
+			<TAB013000/>	
 		</template>
 		<!-- Tab 2 사용자메뉴 권한관리 -->
 		<template #tab-content-TAB014000>
-			<TAB064000/>
+			<TAB014000/>
 		</template>
 	</auth-tabs>
 </template>
 
 <script>
-import TAB062000 from './tab/TAB012000.vue';
-import TAB063000 from './tab/TAB013000.vue';
-import TAB064000 from './tab/TAB014000.vue';
+import TAB012000 from './tab/TAB012000.vue';
+import TAB013000 from './tab/TAB013000.vue';
+import TAB014000 from './tab/TAB014000.vue';
 export default {
 	name:"DW_C0001009",	
     props: {},  
 	components:{
-		TAB062000,TAB063000,TAB064000
+		TAB012000,TAB013000,TAB014000
 	},
 	watch: {},
 	data () {

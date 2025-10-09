@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.m0006000.mapper.M0006002Mapper">
+	<select id="getGrid1Data" resultType="CamelMap">
+		select maj_code_name,maj_code
+		from doi_maj_code		
+		order by 
+			case 
+    			when isnumeric(maj_code) = 1 then cast(maj_code as int)
+    		else null
+  			end,
+  			maj_code
+	</select>
+	
+	<select id="getGrid2Data" resultType="CamelMap">
+		select maj_code,code,code as code_org,code_name,tray_cell,create_date,use_yn,sort_order,etc1,etc2
+		from doi_common_code
+		where maj_code = #{majCode}
+		order by sort_order,code
+	</select>
+	
+	<insert id="insertData1">
+		INSERT INTO doi_maj_code
+		(
+			maj_code_name,
+			maj_code
+		)
+		VALUES
+		(
+			#{majCodeName},
+		 	#{majCode}
+		);
+	</insert>
+	
+	<update id="updateData1">
+	   UPDATE doi_maj_code
+	   SET  maj_code_name=#{majCodeName}
+	   WHERE maj_code = #{majCode}
+	</update>
+	
+	<insert id="insertData2">
+		INSERT INTO doi_common_code
+		(
+			maj_code,
+			code,
+			code_name,
+			tray_cell,
+			create_date,
+			use_yn,
+			sort_order,
+			etc1,
+			etc2
+		)
+		VALUES
+		(
+			#{majCode},
+			#{code},
+			#{codeName},
+			#{trayCell},
+			#{createDate},
+			#{useYn}, 
+			#{sortOrder}, 
+			#{etc1}, 
+			#{etc2}
+		);
+	</insert>
+	
+	<update id="updateData2">
+	   UPDATE doi_common_code
+	   SET  code = #{code},
+	   		code_name=#{codeName},
+			tray_cell=#{trayCell}, 
+			create_date=#{createDate}, 
+			use_yn=#{useYn}, 
+			sort_order=#{sortOrder}, 
+			etc1=#{etc1}, 
+			etc2=#{etc2}
+		WHERE maj_code=#{majCode} 
+		AND code=#{codeOrg};
+	</update>
+</mapper>

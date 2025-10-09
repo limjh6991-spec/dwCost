@@ -13,6 +13,19 @@ import m0007000Router from './m0007000Router';
 import m0008000Router from './m0008000Router';
 import m0009000Router from './m0009000Router';
 
+// ⭐ 디버깅 코드 추가 (import 직후)
+console.log('=== Router Import Debug ===');
+console.log('c0001000Router type:', typeof c0001000Router);
+console.log('c0001000Router is array?', Array.isArray(c0001000Router));
+console.log('c0001000Router contents:', c0001000Router);
+console.log('c0001000Router length:', c0001000Router ? c0001000Router.length : 'NOT LOADED');
+// 다른 라우터도 확인
+console.log('m0001000Router loaded:', !!m0001000Router);
+
+console.log('🔍 Spread syntax 테스트:');
+const testSpread = [...c0001000Router];
+console.log('   Spread 결과:', testSpread);
+
 const routes = [
   {
     path: '/',
@@ -58,8 +71,23 @@ const routes = [
   ...m0008000Router,
   ...m0009000Router,
 ]
-
+console.log('🔍 routes 배열에서 c0001000Router 내용:');
+const foundRoutes = routes.filter(route => 
+  route.path && route.path.includes('c0001000') ||
+  route.meta && route.meta.upperSysResourceId === 'C0001000'
+);
+console.log('   찾은 c0001000 관련 라우트:', foundRoutes);
 const router = createRouter({
+  history: createWebHistory(),
+  routes
+})
+console.log('🔍 routes 배열에서 m0006000Router 내용:');
+const foundRoutes1 = routes.filter(route => 
+  route.path && route.path.includes('m0006000') ||
+  route.meta && route.meta.upperSysResourceId === 'M0006000'
+);
+console.log('   찾은 m0006000 관련 라우트:', foundRoutes1);
+const router1 = createRouter({
   history: createWebHistory(),
   routes
 })

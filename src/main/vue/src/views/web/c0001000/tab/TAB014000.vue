@@ -66,7 +66,7 @@ import {TreeView, LocalTreeDataProvider} from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import SearchUserPopup from "@web/popup/SearchUserPopup";
 
-const URI_PREFIX = '/api/c0006000/c0006009';
+const URI_PREFIX = '/api/c0001000/c0001009';
 let rmTreeProvider,rmTreeView;
 export default {
 	setup() {

@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.dowinsys.cost.web.c0001000.service.C0001009Service;
 
-@RestController("com.dowinsys.cost.web.c0006000.controller.C0006009Controller")
-@RequestMapping("/api/c0006000/c0006009")
+@RestController("com.dowinsys.cost.web.c0001000.controller.C0001009Controller")
+@RequestMapping("/api/c0001000/c0001009")
 public class C0001009Controller {
 
 	@Autowired

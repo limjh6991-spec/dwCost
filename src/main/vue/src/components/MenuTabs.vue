@@ -97,30 +97,30 @@
          <!--  마우스 오버 :메뉴 높이 계산 -->
     </div>
   </div>
-<div class="tab_wrap">
-  <div class="tab-container">
-    
-    <div class="tabs-wrapper" ref="tabsContainer">
-      <b-tabs v-model="activeTab" class="two_depth_tab">
-        <b-tab v-for="(element, index) in tabs" :key="index"
-          v-bind="props"
-          class="custom-tab"
-          @click.prevent="tabClick(element.url,element)"
-        >
-          <template #title>
-            <div small v-b-tooltip.hover :title="element.menuFullPath" class="path"></div>
-            <div class="menu">{{ element.menuNm }}</div>
-            <b-button @click.stop="removeTab(index)" class="btn_close" v-if="!element.noRemove"></b-button>
-          </template>
-        </b-tab>
-      </b-tabs>
-    </div>
-    <div class="btn-group" v-if="isTabsScrollable()">
-      <b-button @click="scrollLeft" class="btn-left bi bi-chevron-left"></b-button>
-      <b-button @click="scrollRight" class="btn-right bi bi-chevron-right"></b-button>
+  <div class="tab_wrap">
+    <div class="tab-container">
+      
+      <div class="tabs-wrapper" ref="tabsContainer">
+        <b-tabs v-model="activeTab" class="two_depth_tab">
+          <b-tab v-for="(element, index) in tabs" :key="index"
+            v-bind="props"
+            class="custom-tab"
+            @click.prevent="tabClick(element.url,element)"
+          >
+            <template #title>
+              <div small v-b-tooltip.hover :title="element.menuFullPath" class="path"></div>
+              <div class="menu">{{ element.menuNm }}</div>
+              <b-button @click.stop="removeTab(index)" class="btn_close" v-if="!element.noRemove"></b-button>
+            </template>
+          </b-tab>
+        </b-tabs>
+      </div>
+      <div class="btn-group" v-if="isTabsScrollable()">
+        <b-button @click="scrollLeft" class="btn-left bi bi-chevron-left"></b-button>
+        <b-button @click="scrollRight" class="btn-right bi bi-chevron-right"></b-button>
+      </div>
     </div>
   </div>
-</div>
 </template>
 
 <script>
@@ -358,14 +358,87 @@ export default {
     onProdCtgChange(evt){
 			this.userAuthInfo.changeProdCtg(evt.target.value);
 		},  
-    pushQueryRouter(url, callback = null){
-      let queryObj = this.$utils.parseQueryParams(url);
-      this.$router.push({ path: url,query:queryObj }).then(() => {
+    // pushQueryRouter(url, callback = null){
+    //   let queryObj = this.$utils.parseQueryParams(url); console.log('info',url); console.log('info',queryObj);
+    //   this.$router.push({ path: url,query:queryObj }).then(() => {
+    //     if(callback != null) callback();
+    //   }).catch(err => {
+    //     console.error('failed:', err);
+    //   });;
+    // },
+    pushQueryRouter(url, callback = null) {
+    try {
+      let queryObj = this.$utils.parseQueryParams(url); 
+      console.log('1. Original URL:', url); 
+      console.log('2. Parsed Query:', queryObj);
+      
+      // URL에서 경로와 쿼리 분리
+      const [cleanPath, queryString] = url.split('?');
+      console.log('3. Clean Path:', cleanPath); 
+      console.log('4. Query String:', queryString);
+      
+      // 라우터 인스턴스 확인
+      console.log('5. Router Instance:', this.$router);
+      console.log('6. Current Route:', this.$route);
+      
+      // 등록된 모든 라우트 확인
+      const allRoutes = this.$router.getRoutes();
+      console.log('7. Total Registered Routes:', allRoutes.length);
+      
+      // c0001009 관련 라우트 찾기
+      const c0001009Routes = allRoutes.filter(route => 
+        route.path.includes('c0001009') || 
+        route.name?.includes('c0001009') ||
+        route.meta?.sysResourceId === 'C0001009'
+      );
+      
+      console.log('8. Found c0001009 routes:', c0001009Routes);
+      
+      // 정확한 경로 매칭 확인
+      const routeExists = allRoutes.some(route => {
+        const pathMatch = route.path === cleanPath;
+        const nameMatch = route.name === cleanPath.replace('/', '');
+        console.log(`   Checking: ${route.path} (${route.name}) -> pathMatch: ${pathMatch}, nameMatch: ${nameMatch}`);
+        return pathMatch || nameMatch;
+      });
+      
+      console.log('9. Route exists:', routeExists);
+      
+      if (!routeExists) {
+        console.error(`10. ERROR: 경로 ${cleanPath}가 라우터에 등록되어 있지 않습니다.`);
+        
+        // 등록된 모든 경로 출력 (참고용)
+        console.log('All available paths:');
+        allRoutes.forEach(route => {
+          console.log(`   - ${route.path} (${route.name})`);
+        });
+        
+        if (callback) callback(new Error(`경로를 찾을 수 없음: ${cleanPath}`));
+        return;
+      }
+      
+      console.log('11. Attempting router push...');
+      
+      // 실제 네비게이션 시도
+      this.$router.push({ 
+        path: cleanPath,
+        query: queryObj 
+      }).then(() => {
+        console.log('12. ✅ Navigation successful');
         if(callback != null) callback();
       }).catch(err => {
-        console.error('failed:', err);
-      });;
-    },
+        console.error('13. ❌ Navigation failed:', err);
+        console.error('Error details:', {
+          message: err.message,
+          stack: err.stack,
+          name: err.name
+        });
+      });
+      
+    } catch (error) {
+      console.error('14. 💥 Outer catch block error:', error);
+    }
+  },
     scrollLeft() {
       const container = this.$refs.tabsContainer;
       if (container && container.scrollLeft !== undefined) {
