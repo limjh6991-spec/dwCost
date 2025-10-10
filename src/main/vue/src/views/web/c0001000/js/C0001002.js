@@ -44,8 +44,8 @@ const grid = {
 		{ name: 'SEL_CODE', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true },
 		{ name: 'SITE', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true },
 		{ name: 'DEPT', fieldName: 'dept', width: '150', header: { text: '부서코드' }, autoFilter: true,},
-		{ name: 'DEPT_NAME', fieldName: 'deptName', width: '70', header: { text: 'ㅂ부서명명' }, autoFilter: true },
-		{ name: 'EXPEN_AREA', fieldName: 'expenArea', width: '120', header: { text: '변경하면됨' }, autoFilter: true },	]	
+		{ name: 'DEPT_NAME', fieldName: 'deptName', width: '70', header: { text: '부서명' }, autoFilter: true },
+		{ name: 'EXPEN_AREA', fieldName: 'expenArea', width: '120', header: { text: '비용구분' }, autoFilter: true },	]	
 }
 
 module.exports = grid;
