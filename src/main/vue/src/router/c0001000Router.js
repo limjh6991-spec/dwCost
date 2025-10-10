@@ -1,17 +1,17 @@
 const c0001000Router = [
   {
-    path: '/m0006001',
-    name: '제품수주서 입력',
-    component: () => import('../views/web/m0006000/M0006001.vue'),
+    path: '/c0001001',
+    name: '원가 계정코드',
+    component: () => import('../views/web/c0001000/C0001001.vue'),
     meta: {
-      upperSysResourceId:'M0006000',
-      sysResourceId:"M0006001",
+      upperSysResourceId:'C0001000',
+      sysResourceId:"M0001001",
       requiresAuth: false,
     }
   },
   {
     path: '/c0001007',
-    name: '일반코드',
+    name: '원가 일반코드',
     component: () => import('../views/web/c0001000/C0001007.vue'),
     meta: {
       upperSysResourceId:'C0001000',

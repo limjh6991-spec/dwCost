@@ -56,8 +56,8 @@
 
 <script>
 import { RowState } from "realgrid";
-import grid1Field from "@web/c0001000/js/C0006007_1.js";
-import grid2Field from "@web/c0001000/js/C0006007_2.js";
+import grid1Field from "@web/c0001000/js/C0001007_1.js";
+import grid2Field from "@web/c0001000/js/C0001007_2.js";
 
 export default {
   name: "DW_C0001007",
@@ -105,15 +105,31 @@ export default {
     },
     async getGrid1Data() {
       this.gridView1.commit();
-
+try {
       let param = {
         menuId: "C0001007",
         queryId: "getGrid1Data",
         target: this.grid1Rows,
       };
-      let resp = await this.$axios.api.search(param);
+      // let resp = await this.$axios.api.search(param);
+      const response = await this.$axios.api.search(param);
       this.editMode=false;
       //console.log(resp);
+    // 응답 구조 확인
+    console.log('API 응답:', response);
+    
+    // 안전하게 데이터 접근
+    if (response && response.data) {
+      return response.data;
+    } else {
+      console.warn('응답 데이터가 없습니다:', response);
+      return []; // 또는 기본값 반환
+    }
+  } catch (error) {
+    console.error('데이터 조회 중 오류 발생:', error);
+    // 오류 처리
+    return []; // 오류 시 기본값 반환
+  }
     },
 
     async getGrid2Data(majCode) {
