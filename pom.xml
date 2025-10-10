@@ -157,7 +157,7 @@
 	            <groupId>org.springframework.boot</groupId>
 	            <artifactId>spring-boot-maven-plugin</artifactId>
 	            <configuration>
-	                <mainClass>com.dowinsys.cost.DwisMesApplication</mainClass>
+	                <mainClass>com.dowinsys.cost.DwisCostApplication</mainClass>
 	            </configuration>
 	        </plugin>
 		</plugins>
