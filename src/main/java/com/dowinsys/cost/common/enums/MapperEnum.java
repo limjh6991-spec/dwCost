@@ -3,6 +3,7 @@ package com.dowinsys.cost.common.enums;
 public enum MapperEnum {
 
 	C0001001("com.dowinsys.cost.web.c0001000.mapper.C0001001Mapper."), // 기준정보 > 계정코드
+	C0001002("com.dowinsys.cost.web.c0001000.mapper.C0001002Mapper."), // 기준정보 > 부서코드
 	C0001007("com.dowinsys.cost.web.c0001000.mapper.C0001007Mapper."), // 기준정보 > 원가 일반코드	
 	C0001009("com.dowinsys.cost.web.c0001000.mapper.C0001009Mapper."), // 기준정보 > 원가사용자-메뉴 권한 관리	
 	M0001001("com.dowinsys.cost.web.m0001000.mapper.M0001001Mapper."), // 자재관리 > 원자재
