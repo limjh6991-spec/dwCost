@@ -3,7 +3,7 @@ import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import axios from '@/plugins/axios';
 import sampleRouter from './sampleRouter';
 import c0001000Router from './c0001000Router';
-import m0001000Router from './m0001000Router';
+/*import m0001000Router from './m0001000Router';
 import m0002000Router from './m0002000Router';
 import m0003000Router from './m0003000Router';
 import m0004000Router from './m0004000Router';
@@ -11,7 +11,7 @@ import m0005000Router from './m0005000Router';
 import m0006000Router from './m0006000Router';
 import m0007000Router from './m0007000Router';
 import m0008000Router from './m0008000Router';
-import m0009000Router from './m0009000Router';
+import m0009000Router from './m0009000Router';*/
 
 // ⭐ 디버깅 코드 추가 (import 직후)
 console.log('=== Router Import Debug ===');
@@ -20,7 +20,7 @@ console.log('c0001000Router is array?', Array.isArray(c0001000Router));
 console.log('c0001000Router contents:', c0001000Router);
 console.log('c0001000Router length:', c0001000Router ? c0001000Router.length : 'NOT LOADED');
 // 다른 라우터도 확인
-console.log('m0001000Router loaded:', !!m0001000Router);
+//console.log('m0001000Router loaded:', !!m0001000Router);
 
 console.log('🔍 Spread syntax 테스트:');
 const testSpread = [...c0001000Router];
@@ -60,7 +60,7 @@ const routes = [
     }
   },
   ...c0001000Router,
-  ...m0001000Router,
+/*  ...m0001000Router,
   ...m0002000Router,
   ...m0003000Router,
   ...m0004000Router,
@@ -69,7 +69,7 @@ const routes = [
   ...sampleRouter, 
   ...m0007000Router,
   ...m0008000Router,
-  ...m0009000Router,
+  ...m0009000Router,*/
 ]
 console.log('🔍 routes 배열에서 c0001000Router 내용:');
 const foundRoutes = routes.filter(route => 

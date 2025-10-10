@@ -5,7 +5,7 @@
 <mapper namespace="com.dowinsys.cost.web.c0001000.mapper.C0001007Mapper">
 	<select id="getGrid1Data" resultType="CamelMap">
 		select maj_code_name,maj_code
-		from dw_maj_code		
+		from doi_maj_code		
 		order by 
 			case 
     			when isnumeric(maj_code) = 1 then cast(maj_code as int)
