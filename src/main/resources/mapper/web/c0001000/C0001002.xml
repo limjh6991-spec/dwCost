@@ -12,7 +12,7 @@
 			DEPT_NAME,
 			EXPEN_AREA
 		from
-			doi_dept;
+			doi_dept
 		order BY dept ;
 	</select>
 	
