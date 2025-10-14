@@ -46,14 +46,14 @@ mybatis:
 
 cors:
   allowed:
-    origin: http://localhost:4300,http://localhost:9090
+    origin: http://localhost:4300,http://localhost:8080
 
 file:
   upload:
     dir: C:/attach
 
 pdf:
-  base-uri: http://localhost:9090
+  base-uri: http://localhost:8080
 
 batch:
   scheduler:
@@ -61,6 +61,6 @@ batch:
   matScheduler:
     enabled: false
 
-server:
-  port: 4300
+#server:
+#  port: 4300
 
