@@ -15,12 +15,13 @@ import com.dowinsys.cost.common.batch.mapper.BatchSchedulerMapper;
 @Component
 public class BatchScheduler {
 	
+	
 	@Value("${batch.scheduler.enabled}")
     private boolean batchSchedulerEnabled;
 	
 	@Autowired
 	BatchSchedulerMapper batchSchedulerMapper;
-	
+	/*
 	@Scheduled(cron = "0 0,15,30,45 * * * *")
     public void wipCalcBatchJob() {
         System.out.println("재공/제고 집계 배치 작업 시작 실행: " + java.time.LocalDateTime.now());
@@ -81,5 +82,5 @@ public class BatchScheduler {
         long duration = (endTime - startTime) / 1_000_000_000; // 나노초 -> 초 변환
         
         System.out.println("생산일보 집계 배치 작업 완료 (" + duration + "초 소요)");
-    }
+    } */
 }

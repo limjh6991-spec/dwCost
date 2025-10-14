@@ -23,7 +23,7 @@ import com.dowinsys.cost.web.m0001000.service.M0001009Service;
 
 @Component
 public class BatchMatScheduler {
-	
+	/*
 	@Value("${batch.matScheduler.enabled}")
     private boolean batchMatSchedulerEnabled;
 	
@@ -124,5 +124,5 @@ public class BatchMatScheduler {
 			}
 		}
 		
-	}
+	} */
 }
