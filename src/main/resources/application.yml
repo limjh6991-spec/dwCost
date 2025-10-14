@@ -61,6 +61,6 @@ batch:
   matScheduler:
     enabled: false
 
-#server:
-#  port: 9090
+server:
+  port: 4300
 

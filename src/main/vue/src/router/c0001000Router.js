@@ -20,6 +20,16 @@ const c0001000Router = [
     }
   },
   {
+    path: '/c0001003',
+    name: '원가 자재코드',
+    component: () => import('../views/web/c0001000/C0001003.vue'),
+    meta: {
+      upperSysResourceId:'C0001000',
+      sysResourceId:"C0001003",
+      requiresAuth: false,
+    }
+  },
+  {
     path: '/c0001007',
     name: '원가 일반코드',
     component: () => import('../views/web/c0001000/C0001007.vue'),

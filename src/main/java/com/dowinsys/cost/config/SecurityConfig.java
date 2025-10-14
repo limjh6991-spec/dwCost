@@ -36,11 +36,12 @@ public class SecurityConfig{
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // WebMvcConfigurer 통합
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-            	.requestMatchers(HttpMethod.GET, "/login").permitAll() // GET 요청 허용
+            	.requestMatchers(HttpMethod.GET, "/", "/login", "/main", "/home/**", "/web/**", "/sample/**").permitAll() // Vue 라우팅 허용
             	.requestMatchers("/login").permitAll()
             	.requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/subscribe/**").permitAll()
+                .requestMatchers("/api/test/**").permitAll() // 테스트 엔드포인트 허용
                 .requestMatchers("/","/index.html","/assets/**","/fonts/**","/js/**", "/css/**", "/img/**", "/favicon.ico").permitAll() // 정적 리소스 허용                
                 .anyRequest().authenticated()
             )
