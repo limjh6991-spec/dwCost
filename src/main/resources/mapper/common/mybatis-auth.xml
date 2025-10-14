@@ -83,9 +83,9 @@
 	FROM DOI_PROD_IN_MENU a
 	left outer join doi_cm_user b on (b.USER_ID = #{userId})
 	--left outer join dw_process_mast c on (a.process_id = c.process_id)
-	where case when a.prod_category = 'UTG' then b.utg
-			when a.prod_category = 'ITG' then b.ITG end = 'Y'
-	ORDER BY case when prod_category = 'UTG' then 1 when prod_category = 'ITG' then 2 else 99 end
+	where case when a.prod_category = 'HQ' then b.utg
+			when a.prod_category = 'VN' then b.ITG end = 'Y'
+	ORDER BY case when prod_category = 'HQ' then 1 when prod_category = 'VN' then 2 else 99 end
 	</select>
 	
 	<select id="selectProdCtg"  resultType="CamelMap">

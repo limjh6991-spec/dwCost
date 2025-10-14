@@ -80,7 +80,7 @@
           <select class="form-select label-60 " id="floatingSelect" aria-label="Floating label select example" v-model="selectdProdCtg" @change="onProdCtgChange">
               <option v-for="(pc,index) in prodCtgList" :value="pc.prodCategory" :key="index">{{pc.prodCategory}}</option>
           </select>
-          <label for="floatingSelect" class="select">제품유형</label>
+          <label for="floatingSelect" class="select">사이트</label>
       </div>
 
       <div class="logid">{{userAuthInfo.userInfo.useName}}</div>
