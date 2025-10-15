@@ -78,9 +78,9 @@
       <div class="cur_time"><i class="bi bi-alarm"></i><span>{{curDateStr}}</span></div>
       <div class="form-floating">
           <select class="form-select label-60 " id="floatingSelect" aria-label="Floating label select example" v-model="selectdProdCtg" @change="onProdCtgChange">
-              <option v-for="(pc,index) in prodCtgList" :value="pc.prodCategory" :key="index">{{pc.prodCategory}}</option>
+              <option v-for="(pc,index) in prodCtgList" :value="pc.prodCategory" :key="index">{{pc.prodCategory==="HQ"? "청주" : "베트남"}}</option>
           </select>
-          <label for="floatingSelect" class="select">사이트</label>
+          <label for="floatingSelect" class="select">사이트:</label>
       </div>
 
       <div class="logid">{{userAuthInfo.userInfo.useName}}</div>
