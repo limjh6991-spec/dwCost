@@ -67,6 +67,9 @@ export default {
       siteMap: {
         본사: 'HQ', //DB map
         베트남: 'VN', //DB map
+        비나: 'VN', //DB map
+        HQ: 'HQ', //DB map
+        VN: 'VN', //DB map
       },
       isProcessing: false,
       duplicateKey: ['yyyy', 'selCode', 'site', 'acctClass', 'acct'],
@@ -95,11 +98,7 @@ export default {
         this.yearList.push({ value: i, text: i });
       }
       this.params.yyyy = { value: current.getFullYear(), text: current.getFullYear() };
-
-      //TODO:: set site
-      //there is no site information...how to get site information??
-      //this.params.site = this.userAuthInfo.userInfo.??????;
-      this.params.site = '본사';
+      this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? '비나' : '본사';
     },
     initializeGrid() {
       this.acctGrid = _.cloneDeep(gridField);
@@ -164,7 +163,7 @@ export default {
 
     addBtnClick() {
       this.gridView.commit();
-      this.gridDataProvider.addRow({ yyyy: this.params.yyyy.text, site: this.params.site});
+      this.gridDataProvider.addRow({ yyyy: this.params.yyyy.text, site: this.params.site });
       let itemIndex = this.gridView.getItemCount() - 1;
       this.gridView.setCurrent({ itemIndex: itemIndex });
     },
