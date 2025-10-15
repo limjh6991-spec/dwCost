@@ -7,8 +7,10 @@
 		select
 			YYYY,
 			SEL_CODE,
-			CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then '베트남' end as SITE,
-			CASE WHEN ACCT_CLASS='AA' Then '가공비'  WHEN ACCT_CLASS='BB' then '판매관리비' end as ACCT_CLASS,
+			SITE as SITE_ORG,
+			CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then '베트남' else site end as SITE,
+			ACCT_CLASS as ACCT_CLASS_ORG,
+			CASE WHEN ACCT_CLASS='AA' Then '가공비'  WHEN ACCT_CLASS='BB' then '판매관리비' else ACCT_CLASS end as ACCT_CLASS,
 			ACCT,
 			ACCT_NAME,
 			SUB_NAME,
@@ -16,8 +18,130 @@
 			EXPEN_SEL
 		FROM
 			doi_acct
+		where 1=1
+		<if test="yyyy != null and yyyy != ''">
+			and yyyy = #{yyyy}
+		</if>
+		<if test="site != null and site != ''">
+			and site = #{site}
+		</if>
 		order BY acct ;
 	</select>
+
+	<select id="checkduplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
+		DROP TABLE IF EXISTS #TempTable1;
+
+		CREATE TABLE #TempTable1 (
+			YYYY varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			ACCT_CLASS varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			ACCT varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			ACCT_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			SUB_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			ITEM_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			EXPEN_SEL varchar(6) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable1
+		(
+		YYYY
+		, SEL_CODE
+		, SITE
+		, ACCT_CLASS
+		, ACCT
+		, ACCT_NAME
+		, SUB_NAME
+		, ITEM_NAME
+		, EXPEN_SEL
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			)
+		</foreach>;
+
+		SELECT * FROM #TempTable1 a
+		WHERE EXISTS (
+			SELECT 1
+			FROM DOI_ACCT b
+			WHERE 1=1
+			AND b.YYYY = a.YYYY
+			AND b.SITE = a.SITE
+			AND b.ACCT = a.ACCT
+		);
+	</select>
+
+	<insert id="uploadExcel" parameterType="java.util.List">
+		CREATE TABLE #TempTable (
+			seq_no INT,
+			YYYY varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			ACCT_CLASS varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			ACCT varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			ACCT_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			SUB_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			ITEM_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			EXPEN_SEL varchar(6) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable
+		(
+		seq_no
+		, YYYY
+		, SEL_CODE
+		, SITE
+		, ACCT_CLASS
+		, ACCT
+		, ACCT_NAME
+		, SUB_NAME
+		, ITEM_NAME
+		, EXPEN_SEL
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field1}
+			, #{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			)
+		</foreach>;
+
+		INSERT INTO DOI_ACCT (YYYY,SEL_CODE,SITE,ACCT_CLASS,ACCT,ACCT_NAME,SUB_NAME,ITEM_NAME,EXPEN_SEL)
+		SELECT YYYY,SEL_CODE,SITE,ACCT_CLASS,ACCT,ACCT_NAME,SUB_NAME,ITEM_NAME,EXPEN_SEL
+		FROM (
+			SELECT *, MAX(seq_no) over (partition by YYYY, SITE, ACCT) max_seq_no FROM #TempTable
+		)A
+		WHERE 1=1
+		AND seq_no = max_seq_no
+		AND NOT EXISTS (
+			SELECT 1
+			FROM DOI_ACCT b
+			WHERE 1=1
+			AND b.YYYY = a.YYYY
+			AND b.SITE = a.SITE
+			AND b.ACCT = a.ACCT
+		);
+
+		DROP TABLE #TempTable;
+	</insert>
 	
 	<select id="selectTab2GridData" resultType="CamelMap">
 		SELECT  구분,
@@ -133,139 +257,30 @@
 	</select>
 	
 	<insert id="insertTab1Data">
-	INSERT INTO dw_모델기본정보
-	(
-		구분,
-		적재매수,
-		원장_두께,
-		원장구분,
-		UTG_Version,
-		MODEL,
-		SDC모델명,
-		고객사,
-		대각인치,
-		MODEL_NAME,
-		MODEL_CODE,
-		카세트_최대_적재수량,
-		UTG_가공_SIZE_장면,
-		UTG_가공_SIZE_단면,
-		UTG_가공_SIZE_두께,
-		UTG_출하_SIZE_장면,
-		UTG_출하_SIZE_단면,
-		UTG_출하_SIZE_두께,
-		AGB_적용여부,
-		AGB_Bending_Point,
-		AGB_R,
-		AGB_Beding_시간,
-		FILM_전면_자재사양,
-		FILM_전면_자재코드,
-		FILM_전면_PF_version,
-		FILM_전면_원단사,
-		FILM_전면_타발사,
-		FILM_배면_자재사양,
-		FILM_배면_자재코드,
-		FILM_배면_PF_version,
-		FILM_배면_원단사,
-		FILM_배면_타발사,
-		FILM_장변_SIZE_mm,
-		FILM_단변_SIZE_mm,
-		PFL_합지_장변_Align_mm,
-		PFL_합지_단변_Align_mm,
-		CURL_mm_방향,
-		CURL_mm_1차,
-		CURL_mm_2차,
-		CURL_mm_PFL_목시_검사_내부관리_기준,
-		CURL_mm_2차_측정시_제거필름,
-		변경점,
-		FILM_전면색_1,
-		FILM_전면색_2,
-		FILM_전면색_3,
-		FILM_전면색_4,
-		FILM_배면색_1,
-		FILM_배면색_2,
-		FILM_배면색_3,
-		FILM_배면색_4,
-		WP_Etch_Time1,
-		WP_Etch_Time2,
-		BTP_Etch_Time,
-		강화시간,
-		ATP_Etch_Time,
-		가공_치수_단면_내부관리_공차,
-		가공_치수_단면_공차,
-		가공_치수_장면_내부관리_공차,
-		가공_치수_장면_공차,
-		박리_카세트_행,
-		박리_카세트_열,
-		AGB_Bending_위치_편차,
-		AGB_Bending_R_편차,
-		AGB_Bending_시간_편차
-	)
-	VALUES(
-		#{구분},
-		#{적재매수},
-		#{원장두께},
-		#{원장구분},
-		#{utgVersion},
-		#{model},
-		#{sdc모델명},
-		#{고객사},
-		#{대각인치},
-		#{modelName},
-		#{modelCode},
-		#{카세트최대적재수량},
-		#{utg가공Size장면},
-		#{utg가공Size단면},
-		#{utg가공Size두께},
-		#{utg출하Size장면},
-		#{utg출하Size단면},
-		#{utg출하Size두께},
-		#{agb적용여부},
-		#{agbBendingPoint},
-		#{agbR},
-		#{agbBeding시간},
-		#{film전면자재사양},
-		#{film전면자재코드},
-		#{film전면PfVersion},
-		#{film전면원단사},
-		#{film전면타발사},
-		#{film배면자재사양},
-		#{film배면자재코드},
-		#{film배면PfVersion},
-		#{film배면원단사},
-		#{film배면타발사},
-		#{film장변SizeMm},
-		#{film단변SizeMm},
-		#{pfl합지장변AlignMm},
-		#{pfl합지단변AlignMm},
-		#{curlMm방향},
-		#{curlMm1차},
-		#{curlMm2차},
-		#{curlMmPfl목시검사내부관리기준},
-		#{curlMm2차측정시제거필름},
-		#{변경점},
-		#{film전면색1},
-		#{film전면색2},
-		#{film전면색3},
-		#{film전면색4},
-		#{film배면색1},
-		#{film배면색2},
-		#{film배면색3},
-		#{film배면색4},
-		#{wpEtchTime1},
-		#{wpEtchTime2},
-		#{btpEtchTime},
-		#{강화시간},
-		#{atpEtchTime},
-		#{가공치수단면내부관리공차},
-		#{가공치수단면공차},
-		#{가공치수장면내부관리공차},
-		#{가공치수장면공차},
-		#{박리카세트행},
-		#{박리카세트열},
-		#{agbBending위치편차},
-		#{agbBendingR편차},
-		#{agbBending시간편차}
-	);
+		INSERT INTO DOI_ACCT
+		(
+		YYYY
+		, SEL_CODE
+		, SITE
+		, ACCT_CLASS
+		, ACCT
+		, ACCT_NAME
+		, SUB_NAME
+		, ITEM_NAME
+		, EXPEN_SEL
+		)
+		VALUES
+		(
+		#{yyyy}
+		, #{selCode}
+		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='베트남' then 'VN' else left(#{site},2) end
+		, CASE WHEN #{acctClass}='가공비' Then 'AA'  WHEN #{acctClass}='판매관리비' then 'BB' else left(#{acctClass},2) end
+		, #{acct}
+		, #{acctName}
+		, #{subName}
+		, #{itemName}
+		, #{expenSel}
+		);
 	</insert>
 	
 	<insert id="insertTab2Data">
@@ -486,9 +501,15 @@
 		#{설비유형자동대수}
 	);
 	</insert>
+
 	<delete id="deleteTab1Data">
-		DELETE FROM dw_모델기본정보
-		WHERE MODEL=#{model} and 구분=#{구분};
+		DELETE FROM DOI_ACCT
+		WHERE 1=1
+		and yyyy = #{yyyy}
+		and sel_code = #{selCode}
+		and site = #{siteOrg}
+		and acct_class = #{acctClassOrg}
+		and acct = #{acct}
 	</delete>
 	
 	<delete id="deleteTab2Data">
@@ -505,71 +526,20 @@
 		AND 모니터링항목=#{모니터링항목}
 		;
 	</delete>
+
 	<update id="updateTab1Data">
-	   UPDATE dw_모델기본정보
-	   SET  적재매수 = #{적재매수},
-	   		원장_두께 = #{원장두께},
-	   		원장구분 = #{원장구분},
-	   		UTG_Version = #{utgVersion},
-	   		SDC모델명 = #{sdc모델명},
-	   		고객사 = #{고객사},
-	   		대각인치 = #{대각인치},
-	   		MODEL_NAME = #{modelName},
-	   		MODEL_CODE = #{modelCode},
-	   		카세트_최대_적재수량 = #{카세트최대적재수량},
-	   		UTG_가공_SIZE_장면 = #{utg가공Size장면},
-	   		UTG_가공_SIZE_단면 = #{utg가공Size단면},
-	   		UTG_가공_SIZE_두께 = #{utg가공Size두께},
-	   		UTG_출하_SIZE_장면 = #{utg출하Size장면},
-	   		UTG_출하_SIZE_단면 = #{utg출하Size단면},
-	   		UTG_출하_SIZE_두께 = #{utg출하Size두께},
-	   		AGB_적용여부 = #{agb적용여부},
-	   		AGB_Bending_Point = #{agbBendingPoint},
-	   		AGB_R = #{agbR},
-	   		AGB_Beding_시간 = #{agbBeding시간},
-	   		FILM_전면_자재사양 = #{film전면자재사양},
-	   		FILM_전면_자재코드 = #{film전면자재코드},
-	   		FILM_전면_PF_version = #{film전면PfVersion},
-	   		FILM_전면_원단사 = #{film전면원단사},
-	   		FILM_전면_타발사 = #{film전면타발사},
-	   		FILM_배면_자재사양 = #{film배면자재사양},
-	   		FILM_배면_자재코드 = #{film배면자재코드},
-	   		FILM_배면_PF_version = #{film배면PfVersion},
-	   		FILM_배면_원단사 = #{film배면원단사},
-	   		FILM_배면_타발사 = #{film배면타발사},
-	   		FILM_장변_SIZE_mm = #{film장변SizeMm},
-	   		FILM_단변_SIZE_mm = #{film단변SizeMm},
-	   		PFL_합지_장변_Align_mm = #{pfl합지장변AlignMm},
-	   		PFL_합지_단변_Align_mm = #{pfl합지단변AlignMm},
-	   		CURL_mm_방향 = #{curlMm방향},
-	   		CURL_mm_1차 = #{curlMm1차},
-	   		CURL_mm_2차 = #{curlMm2차},
-	   		CURL_mm_PFL_목시_검사_내부관리_기준 = #{curlMmPfl목시검사내부관리기준},
-	   		CURL_mm_2차_측정시_제거필름 = #{curlMm2차측정시제거필름},
-	   		변경점 = #{변경점},
-	   		FILM_전면색_1 = #{film전면색1},
-	   		FILM_전면색_2 = #{film전면색2},
-	   		FILM_전면색_3 = #{film전면색3},
-	   		FILM_전면색_4 = #{film전면색4},
-	   		FILM_배면색_1 = #{film배면색1},
-	   		FILM_배면색_2 = #{film배면색2},
-	   		FILM_배면색_3 = #{film배면색3},
-	   		FILM_배면색_4 = #{film배면색4},
-	   		WP_Etch_Time1=#{wpEtchTime1},
-			WP_Etch_Time2=#{wpEtchTime2},		
-			BTP_Etch_Time=#{btpEtchTime},
-			강화시간=#{강화시간},
-			ATP_Etch_Time=#{atpEtchTime},
-			가공_치수_단면_내부관리_공차=#{가공치수단면내부관리공차},
-			가공_치수_단면_공차=#{가공치수단면공차},
-			가공_치수_장면_내부관리_공차=#{가공치수장면내부관리공차},
-			가공_치수_장면_공차=#{가공치수장면공차},
-			박리_카세트_행=#{박리카세트행},
-			박리_카세트_열=#{박리카세트열},
-			AGB_Bending_위치_편차=#{agbBending위치편차},
-			AGB_Bending_R_편차=#{agbBendingR편차},
-			AGB_Bending_시간_편차=#{agbBending시간편차}
-		WHERE MODEL=#{model} and 구분=#{구분};
+		UPDATE DOI_ACCT
+		SET SEL_CODE = #{selCode}
+		,ACCT_CLASS = CASE WHEN #{acctClass} ='가공비' Then 'AA'  WHEN #{acctClass}='판매관리비' then 'BB' else left(#{acctClass},2) end
+		,ACCT_NAME = #{acctName}
+		,SUB_NAME = #{subName}
+		,ITEM_NAME = #{itemName}
+		,EXPEN_SEL = #{expenSel}
+		WHERE 1=1
+		and yyyy = #{yyyy}
+		and site = #{siteOrg}
+		and acct = #{acct}
+		;
 	</update>
 	
 	<update id="updateTab2Data">
