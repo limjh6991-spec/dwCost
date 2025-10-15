@@ -131,10 +131,10 @@ export const useUserAuthInfo = defineStore('userAuthInfo', {
     },
     async changeProdCtg(prodCtg){
       try {
-        if(this.selectedProdCtg === prodCtg){
-          console.log("동일한 prodCtg 선택됨.");
+        /*if(this.selectedProdCtg === prodCtg){
+          console.log("동일한 prodCtg 선택됨. - ",prodCtg);
           return;
-        }
+        }*/
 
         this.prodCtgList.forEach(el => {
           if(el['prodCategory'] === prodCtg){
