@@ -8,7 +8,7 @@
 			YYYY,
 			SEL_CODE,
 			SITE as SITE_ORG,
-			CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then '베트남' else site end as SITE,
+			CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then 'VINA' else site end as SITE,
 			ACCT_CLASS as ACCT_CLASS_ORG,
 			CASE WHEN ACCT_CLASS='AA' Then '가공비'  WHEN ACCT_CLASS='BB' then '판매관리비' else ACCT_CLASS end as ACCT_CLASS,
 			ACCT,

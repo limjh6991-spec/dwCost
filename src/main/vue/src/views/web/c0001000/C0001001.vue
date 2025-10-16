@@ -50,7 +50,6 @@ import gridField from '@web/c0001000/js/C0001001.js';
 export default {
   props: {},
   components: {},
-  watch: {},
   setup() {
     const userAuthInfo = useUserAuthInfo();
     return { userAuthInfo };
@@ -66,8 +65,7 @@ export default {
       yearList: [],
       siteMap: {
         본사: 'HQ', //DB map
-        베트남: 'VN', //DB map
-        비나: 'VN', //DB map
+        VINA: 'VN', //DB map
         HQ: 'HQ', //DB map
         VN: 'VN', //DB map
       },
@@ -75,6 +73,19 @@ export default {
       duplicateKey: ['yyyy', 'selCode', 'site', 'acctClass', 'acct'],
       isValidteCellAcctGrid: false,
     };
+  },
+  watch: {
+    userAuthInfo: {
+      handler(newVal) {
+        console.log('userAuthInfo 변경:', newVal);
+        if (newVal.curProdCtg) {  //selectedProdCtg
+          this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
+          console.log('사이트 업데이트:', this.params.site);
+        }
+      },
+      deep: true,
+      immediate: true
+    }
   },
   computed: {
     gridView() {
@@ -98,7 +109,7 @@ export default {
         this.yearList.push({ value: i, text: i });
       }
       this.params.yyyy = { value: current.getFullYear(), text: current.getFullYear() };
-      this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? '비나' : '본사';
+      this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
       this.acctGrid = _.cloneDeep(gridField);
@@ -242,6 +253,11 @@ export default {
 
       return error;
     },
+		onProdCtgChange(v){
+			this.userAuthInfo.changeProdCtg(v);
+      this.$toast('info','ccccccccccc');
+      this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? '비나' : '본사';
+		}
   },
 };
 </script>
