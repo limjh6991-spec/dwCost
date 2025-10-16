@@ -135,7 +135,8 @@ export const useUserAuthInfo = defineStore('userAuthInfo', {
           console.log("동일한 prodCtg 선택됨. - ",prodCtg);
           return;
         }*/
-
+		console.log("prodCtg ",prodCtg);
+		this.selectedProdCtg = prodCtg;
         this.prodCtgList.forEach(el => {
           if(el['prodCategory'] === prodCtg){
             this.line = el['line'];
@@ -145,9 +146,10 @@ export const useUserAuthInfo = defineStore('userAuthInfo', {
         let params = {};
         params['prodCategory'] = prodCtg;
         const response = await axios.post('/api/auth/change-prodctg',params);
-        let rslt = response.data;        
+        let rslt = response.data;      
         this.sysResource = rslt.sysResource;
         this.sysResourceList = rslt.sysResourceList;
+		console.log("userAuthInfo ",JSON.stringify(this.$state));
         localStorage.setItem('userAuthInfo', JSON.stringify(this.$state));  //로컬 스토리지에 다시저장
       } catch (error) {
         console.error(error);
