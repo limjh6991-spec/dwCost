@@ -9,6 +9,16 @@ const c0008000Router = [
       requiresAuth: true,
     },
   },
+  {
+    path: '/c0008003',
+    name: '생산수불(DOI_PROD)',
+    component: () => import('../views/web/c0008000/C0008003.vue'),
+    meta: {
+      upperSysResourceId: 'C0008000',
+      sysResourceId: 'C0008003',
+      requiresAuth: true,
+    },
+  },
 ];
 
 export default c0008000Router;

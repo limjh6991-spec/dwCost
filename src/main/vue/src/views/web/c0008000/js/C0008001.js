@@ -10,7 +10,6 @@ const grid = {
     display: { columnMovable: false, editItemMerging: true, fitStyle: 'fill', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
     edit: { editable: false },
     footer: { visible: true },
-    header: { height: 25 },
     paste: { enabled: false },
     rowIndicator: { visible: true },
 	sorting: { enabled: true },
