@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0008000.mapper.C0008000Mapper">
+    <select id="C0008001_Sch1" resultType="CamelMap">
+        select
+            a.YYYYMM,
+            a.SEL_CODE,
+            CASE WHEN a.SITE='HQ' then '본사' WHEN a.site='VN' then 'VINA' else a.site end SITE,
+            CASE WHEN ACCT_CLASS='AA' then '가공비' WHEN ACCT_CLASS='CC' then '판매관리비' WHEN ACCT_CLASS='BB' then '개발비' else ACCT_CLASS end as ACCT_CLASS,
+            --a.dept,
+            b.dept_name,
+            a.SUB_NAME,
+            a.ITEM_NAME,
+            sum(a.ACCT_AMT) ACCT_AMT,
+            a.EXPEN_SEL
+        from doi_acct_expen a
+        left join doi_dept b
+        on (b.yyyy=substring(a.yyyymm,1,4) and b.sel_code=a.sel_code and b.site=a.site and b.dept=a.dept)
+        where 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                and a.YYYYMM = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                and a.SITE = #{site}
+            </if>
+            <if test="costGubun != null and costGubun != ''">
+                and a.ACCT_CLASS = #{costGubun}
+            </if>
+            <if test="prodCost != null and prodCost != ''">
+                <choose>
+                    <when test="prodCost == '가공비'">
+                        AND a.ACCT_CLASS='AA' AND a.EXPEN_SEL NOT LIKE 'M%'
+                    </when>
+                    <when test="prodCost == '재료비'">
+                        AND a.ACCT_CLASS='AA' AND a.EXPEN_SEL LIKE 'M%'
+                    </when>
+                    <otherwise>
+                    </otherwise>
+                </choose>
+            </if>
+        group by
+        a.YYYYMM,
+        a.SEL_CODE,
+        CASE WHEN a.SITE='HQ' then '본사' WHEN a.site='VN' then 'VINA' else a.site end,
+        CASE WHEN ACCT_CLASS='AA' then '가공비' WHEN ACCT_CLASS='CC' then '판매관리비' WHEN ACCT_CLASS='BB' then '개발비' else ACCT_CLASS end,
+        --a.dept,
+        b.dept_name,
+        a.SUB_NAME,
+        a.ITEM_NAME,
+        a.EXPEN_SEL
+        order BY 1,2,3,4,5,6,7,8;
+    </select>
+</mapper>

@@ -72,7 +72,9 @@ public enum MapperEnum {
 	S0003003("com.dowinsys.cost.web.s0000000.mapper.S0003003Mapper."), // 제조 실적 입력 > Back#2 Cell QC > 작업 이력 조회
 
 	CMDIALOG("com.dowinsys.cost.common.dialog.mapper.DialogMapper."),  // CmDialog 팝업조회
-	COMCODE("com.dowinsys.cost.common.code.mapper.CodeMapper.")  	  // 공통 코드 조회
+	COMCODE("com.dowinsys.cost.common.code.mapper.CodeMapper."),  	  // 공통 코드 조회
+
+	C0008000("com.dowinsys.cost.web.c0008000.mapper.C0008000Mapper."), // 결산증빙 자료
 	;
     
     private final String mapperName;
