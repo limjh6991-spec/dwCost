@@ -83,4 +83,23 @@
         </if>
         order by 1,2,3,model, MODEL_N_TYPE;
     </select>
+
+    <select id="C0008003_Sch2" resultType="CamelMap">
+        select lotrun_no,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,material_loss
+        from DOI_PROD_LOTRUN
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        <if test="prodGubun != null and prodGubun != ''">
+            and 구분 = #{prodGubun}
+        </if>
+        <if test="modelNType != null and modelNType != ''">
+            and 도우코드 = #{modelNType}
+        </if>
+        order by lotrun_no;
+    </select>
 </mapper>

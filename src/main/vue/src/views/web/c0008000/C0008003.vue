@@ -40,6 +40,7 @@
         <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :rows="prodSubulGridRows" style="height: 100%" />
       </div>
     </div>
+    <CmDialog1 ref="cmDialog1C00008003" />
   </div>
 </template>
 
@@ -158,6 +159,32 @@ export default {
       };
 
       grid.exportGrid(options);
+    },
+    async onCellClickedProdSubulGrid(grid, clickData) {
+      if (clickData.cellType != 'data') return;
+
+      if (clickData.column == 'modelNType') {
+        let queryParams = {
+          yyyymm: grid.getValue(clickData.itemIndex, 'yyyymm'),
+          site: grid.getValue(clickData.itemIndex, 'site'),
+          prodGubun: grid.getValue(clickData.itemIndex, '구분'),
+          modelNType: grid.getValue(clickData.itemIndex, 'modelNType'),
+        };
+
+        const params = {
+          dialogTitle: 'RUN LIST',
+          popUpSize: 'xl', //sm,lg,xl
+          height: 500,
+          gridJs: 'RunList.js',
+          search: {
+            menuId: 'c0008000',
+            queryId: 'C0008003_Sch2',
+            queryParams: queryParams,
+          },
+          btnConfirm: false,
+        };
+        this.$refs.cmDialog1C00008003.openDialog(params);
+      }
     },
   },
 };
