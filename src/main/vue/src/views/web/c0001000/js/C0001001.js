@@ -28,7 +28,7 @@ const grid = {
     //sortMode: {},
     stateBar: { visible: true },
     //summaryMode: {},
-	    fixed: { colBarWidth: 1, colCount: 1 },
+    fixed: { colBarWidth: 1, colCount: 1 },
   },
   fields: [
     { fieldName: 'yyyy', dataType: ValueType.TEXT },

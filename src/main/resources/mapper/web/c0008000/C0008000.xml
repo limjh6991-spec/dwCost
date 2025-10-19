@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0008000.mapper.C0008000Mapper">
+    <select id="C0008001_Sch1" resultType="CamelMap">
+        select
+            a.YYYYMM,
+            a.SEL_CODE,
+            CASE WHEN a.SITE='HQ' then '본사' WHEN a.site='VN' then 'VINA' else a.site end SITE,
+            CASE WHEN ACCT_CLASS='AA' then '가공비' WHEN ACCT_CLASS='CC' then '판매관리비' WHEN ACCT_CLASS='BB' then '개발비' else ACCT_CLASS end as ACCT_CLASS,
+            --a.dept,
+            b.dept_name,
+            a.SUB_NAME,
+            a.ITEM_NAME,
+            sum(a.ACCT_AMT) ACCT_AMT,
+            a.EXPEN_SEL
+        from doi_acct_expen a
+        left join doi_dept b
+        on (b.yyyy=substring(a.yyyymm,1,4) and b.sel_code=a.sel_code and b.site=a.site and b.dept=a.dept)
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and a.YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and a.SITE = #{site}
+        </if>
+        <if test="costGubun != null and costGubun != ''">
+            and a.ACCT_CLASS = #{costGubun}
+        </if>
+        <if test="prodCost != null and prodCost != ''">
+            <choose>
+                <when test="prodCost == '가공비'">
+                    AND a.ACCT_CLASS='AA' AND a.EXPEN_SEL NOT LIKE 'M%'
+                </when>
+                <when test="prodCost == '재료비'">
+                    AND a.ACCT_CLASS='AA' AND a.EXPEN_SEL LIKE 'M%'
+                </when>
+                <otherwise>
+                </otherwise>
+            </choose>
+        </if>
+        group by
+        a.YYYYMM,
+        a.SEL_CODE,
+        CASE WHEN a.SITE='HQ' then '본사' WHEN a.site='VN' then 'VINA' else a.site end,
+        CASE WHEN ACCT_CLASS='AA' then '가공비' WHEN ACCT_CLASS='CC' then '판매관리비' WHEN ACCT_CLASS='BB' then '개발비' else ACCT_CLASS end,
+        --a.dept,
+        b.dept_name,
+        a.SUB_NAME,
+        a.ITEM_NAME,
+        a.EXPEN_SEL
+        order BY 1,2,3,4,5,6,7,8;
+    </select>
+
+    <select id="C0008003_Sch1" resultType="CamelMap">
+        select
+        YYYYMM,
+        SEL_CODE,
+        SITE,
+        구분,
+        MODEL,
+        MODEL_N_TYPE,
+        BOH_MONTH,
+        IN_MONTH,
+        BONUS_MONTH,
+        EOH_MONTH,
+        OUT_MONTH,
+        LOSS_MONTH,
+        NG_MONTH,
+        수율제외_MONTH,
+        REWORK진행_MONTH
+        from DOI_PROD_SUBUL
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        <if test="prodGubun != null and prodGubun != '' and prodGubun != '전체'">
+            and 구분 = #{prodGubun}
+        </if>
+        order by 1,2,3,model, MODEL_N_TYPE;
+    </select>
+
+    <select id="C0008003_Sch2" resultType="CamelMap">
+        select lotrun_no,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,material_loss
+        from DOI_PROD_LOTRUN
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        <if test="prodGubun != null and prodGubun != ''">
+            and 구분 = #{prodGubun}
+        </if>
+        <if test="modelNType != null and modelNType != ''">
+            and 도우코드 = #{modelNType}
+        </if>
+        order by lotrun_no;
+    </select>
+</mapper>

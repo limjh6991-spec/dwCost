@@ -60,7 +60,7 @@ export default {
       acctGridRows: [],
       params: {
         yyyy: null,
-        site: '본사',
+        site: 'HQ',
       },
       yearList: [],
       siteMap: {
@@ -77,15 +77,17 @@ export default {
   watch: {
     userAuthInfo: {
       handler(newVal) {
-        console.log('userAuthInfo 변경:', newVal);
-        if (newVal.curProdCtg) {  //selectedProdCtg
+        if (newVal.curProdCtg) {
           this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
-          console.log('사이트 업데이트:', this.params.site);
+          if (this.$refs.acctGrid != null) {
+            this.initialize();
+            this.searchClick();
+          }
         }
       },
       deep: true,
-      immediate: true
-    }
+      immediate: true,
+    },
   },
   computed: {
     gridView() {
@@ -253,11 +255,6 @@ export default {
 
       return error;
     },
-		onProdCtgChange(v){
-			this.userAuthInfo.changeProdCtg(v);
-      this.$toast('info','ccccccccccc');
-      this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? '비나' : '본사';
-		}
   },
 };
 </script>
