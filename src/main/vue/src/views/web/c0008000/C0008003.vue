@@ -175,7 +175,7 @@ export default {
           dialogTitle: 'RUN LIST',
           popUpSize: 'xl', //sm,lg,xl
           height: 500,
-          gridJs: 'RunList.js',
+          gridJs: 'C0008003RunList.js',
           search: {
             menuId: 'c0008000',
             queryId: 'C0008003_Sch2',

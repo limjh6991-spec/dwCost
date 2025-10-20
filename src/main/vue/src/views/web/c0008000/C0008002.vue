@@ -153,10 +153,10 @@ export default {
         };
 
         const params = {
-          dialogTitle: 'RUN LIST',
+          dialogTitle: '상세 EXPEN_SEL 리스트',
           popUpSize: 'xl', //sm,lg,xl
           height: 500,
-          gridJs: 'RunList.js',
+          gridJs: 'C0008002Detail.js',
           search: {
             menuId: 'c0008000',
             queryId: 'C0008002_Sch2',
