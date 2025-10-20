@@ -53,6 +53,44 @@
         order BY 1,2,3,4,5,6,7,8;
     </select>
 
+    <select id="C0008002_Sch1" resultType="CamelMap">
+        select
+        YYYYMM,
+        SEL_CODE,
+        CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' else site end SITE,
+        SUB_NAME,
+        ITEM_NAME,
+        SUM(ACCT_AMT) ACCT_AMT,
+        EXPEN_SEL
+        from DOI_ACCT_EXPEN
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        and acct_class = 'AA'
+        GROUP BY YYYYMM,SEL_CODE,SITE,SUB_NAME,ITEM_NAME,EXPEN_SEL
+        order by SUB_NAME,ITEM_NAME;
+    </select>
+
+    <select id="C0008002_Sch2" resultType="CamelMap">
+        select lotrun_no,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,material_loss
+        from DOI_PROD_LOTRUN
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        <if test="expenSel != null and expenSel != ''">
+            and 작업구분 = left(#{expenSel},1)
+        </if>
+        order by lotrun_no;
+    </select>
+
     <select id="C0008003_Sch1" resultType="CamelMap">
         select
         YYYYMM,

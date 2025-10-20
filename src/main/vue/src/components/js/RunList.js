@@ -7,7 +7,7 @@ const grid = {
   options: {
     checkBar: { visible: false },
     copy: { enabled: true, singleMode: true },
-    display: { columnMovable: false, editItemMerging: true, fitStyle: 'fill', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
+    display: { columnMovable: false, editItemMerging: true, fitStyle: 'even', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
     edit: { editable: false },
     footer: { visible: true },
     paste: { enabled: false },
@@ -15,7 +15,6 @@ const grid = {
     sorting: { enabled: true },
     stateBar: { visible: false },
     filtering: { enabled: true },
-    fixed: { colBarWidth: 1, colCount: 1 },
   },
 
   fields: [
@@ -32,7 +31,7 @@ const grid = {
   ],
 
   columns: [
-    { name: 'lotrunNo', fieldName: 'lotrunNo', width: '120', header: { text: 'LOTRUN_NO' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
+    { name: 'lotrunNo', fieldName: 'lotrunNo', width: '200', header: { text: 'LOTRUN_NO' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
     { name: 'bohMonth', fieldName: 'bohMonth', width: '80', header: { text: '기초재공' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'inMonth', fieldName: 'inMonth', width: '80', header: { text: '투입수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'bonusMonth', fieldName: 'bonusMonth', width: '80', header: { text: 'BONUS수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
