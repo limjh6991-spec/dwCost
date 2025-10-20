@@ -154,4 +154,52 @@
         </if>
         order by lotrun_no;
     </select>
+
+    <select id="C0008004_Sch1" resultType="CamelMap">
+        select
+        YYYYMM,
+        SEL_CODE,
+        SITE,
+        구분,
+        MODEL,
+        SUM(BOH) BOH,
+        SUM([IN]) INPUT_AMT
+        from doi_expen_matl
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        GROUP BY YYYYMM,SEL_CODE,SITE,구분,MODEL
+        order by YYYYMM,SEL_CODE,SITE,MODEL;
+    </select>
+
+    <select id="C0008004_Sch2" resultType="CamelMap">
+        select
+        YYYYMM,
+        SEL_CODE,
+        SITE,
+        구분,
+        MODEL,
+        BOH,
+        [IN] INPUT_AMT,
+        ACCT_NAME ,
+        SUB_NAME ,
+        ITEM_NAME
+        from doi_expen_matl
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        <if test="model != null and model != ''">
+            and MODEL = #{model}
+        </if>
+        order by 구분,EXPEN_SEL;
+    </select>
+
 </mapper>

@@ -29,6 +29,16 @@ const c0008000Router = [
       requiresAuth: true,
     },
   },
+  {
+    path: '/c0008004',
+    name: '제품별 투입 비용(DOI_PROD_EXPN)',
+    component: () => import('../views/web/c0008000/C0008004.vue'),
+    meta: {
+      upperSysResourceId: 'C0008000',
+      sysResourceId: 'C0008004',
+      requiresAuth: true,
+    },
+  },
 ];
 
 export default c0008000Router;
