@@ -53,13 +53,65 @@
         order BY 1,2,3,4,5,6,7,8;
     </select>
 
+    <select id="C0008002_Sch1" resultType="CamelMap">
+        select
+        YYYYMM,
+        SEL_CODE,
+        CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' else site end SITE,
+        SUB_NAME,
+        ITEM_NAME,
+        SUM(ACCT_AMT) ACCT_AMT,
+        EXPEN_SEL
+        from DOI_ACCT_EXPEN
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        and acct_class = 'AA'
+        GROUP BY YYYYMM,SEL_CODE,SITE,SUB_NAME,ITEM_NAME,EXPEN_SEL
+        order by SUB_NAME,ITEM_NAME;
+    </select>
+
+    <select id="C0008002_Sch2" resultType="CamelMap">
+        select
+        a.YYYYMM,
+        a.SEL_CODE,
+        CASE WHEN a.SITE='HQ' then '본사' WHEN a.SITE='VN' then 'VINA' else a.SITE end SITE,
+        CASE WHEN a.ACCT_CLASS='AA' then '가공비' WHEN a.ACCT_CLASS='CC' then '판매관리비' WHEN a.ACCT_CLASS='BB' then '개발비' else a.ACCT_CLASS end as ACCT_CLASS ,
+        b.DEPT_NAME,
+        SUB_NAME,
+        ITEM_NAME,
+        SUM(ACCT_AMT) ACCT_AMT,
+        EXPEN_SEL
+        from DOI_ACCT_EXPEN a inner join doi_dept b on(a.dept=b.dept)
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and a.YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and a.SITE = #{site}
+        </if>
+        <if test="expenSel != null and expenSel != ''">
+            and a.EXPEN_SEL = #{expenSel}
+        </if>
+        group by a.YYYYMM,
+        a.SEL_CODE,
+        CASE WHEN a.SITE='HQ' then '본사' WHEN a.site='VN' then 'VINA' else a.SITE end,
+        CASE WHEN a.ACCT_CLASS='AA' then '가공비' WHEN a.ACCT_CLASS='CC' then '판매관리비' WHEN a.ACCT_CLASS='BB' then '개발비' else a.ACCT_CLASS end,
+        b.DEPT_NAME,SUB_NAME,ITEM_NAME,EXPEN_SEL
+        order by SUB_NAME,ITEM_NAME;
+    </select>
+
     <select id="C0008003_Sch1" resultType="CamelMap">
         select
         YYYYMM,
         SEL_CODE,
-        SITE,
+        DW_SITE as SITE,
         구분,
-        MODEL,
+        도우모델 as MODEL,
         MODEL_N_TYPE,
         BOH_MONTH,
         IN_MONTH,
@@ -76,7 +128,7 @@
             and YYYYMM = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
-            and SITE = #{site}
+            and DW_SITE = #{site}
         </if>
         <if test="prodGubun != null and prodGubun != '' and prodGubun != '전체'">
             and 구분 = #{prodGubun}
@@ -85,8 +137,34 @@
     </select>
 
     <select id="C0008003_Sch2" resultType="CamelMap">
-        select lotrun_no,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,material_loss
+        select lotrun_no,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,material_loss
         from DOI_PROD_LOTRUN
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and DW_SITE = #{site}
+        </if>
+        <if test="prodGubun != null and prodGubun != ''">
+            and 구분 = #{prodGubun}
+        </if>
+        <if test="modelNType != null and modelNType != ''">
+            and MODEL_N_TYPE = #{modelNType}
+        </if>
+        order by lotrun_no;
+    </select>
+
+    <select id="C0008004_Sch1" resultType="CamelMap">
+        select
+        YYYYMM,
+        SEL_CODE,
+        SITE,
+        구분,
+        MODEL,
+        SUM(BOH) BOH,
+        SUM([IN]) INPUT_AMT
+        from doi_expen_matl
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}
@@ -94,12 +172,34 @@
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
-        <if test="prodGubun != null and prodGubun != ''">
-            and 구분 = #{prodGubun}
-        </if>
-        <if test="modelNType != null and modelNType != ''">
-            and 도우코드 = #{modelNType}
-        </if>
-        order by lotrun_no;
+        GROUP BY YYYYMM,SEL_CODE,SITE,구분,MODEL
+        order by YYYYMM,SEL_CODE,SITE,MODEL;
     </select>
+
+    <select id="C0008004_Sch2" resultType="CamelMap">
+        select
+        YYYYMM,
+        SEL_CODE,
+        SITE,
+        구분,
+        MODEL,
+        BOH,
+        [IN] INPUT_AMT,
+        ACCT_NAME ,
+        SUB_NAME ,
+        ITEM_NAME
+        from doi_expen_matl
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        <if test="model != null and model != ''">
+            and MODEL = #{model}
+        </if>
+        order by 구분,EXPEN_SEL;
+    </select>
+
 </mapper>

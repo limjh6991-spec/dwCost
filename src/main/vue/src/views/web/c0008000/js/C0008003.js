@@ -39,7 +39,7 @@ const grid = {
   columns: [
     { name: 'yyyymm', fieldName: 'yyyymm', width: '80', header: { text: 'YYYYMM' }, autoFilter: true, styleName: 'tl' },
     { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'tl' },
-    { name: 'site', fieldName: 'site', width: '80', header: { text: 'SITE' }, autoFilter: true, styleName: 'tl' },
+    { name: 'site', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true, styleName: 'tl' },
     { name: '구분', fieldName: '구분', width: '80', header: { text: '구분' }, autoFilter: true, styleName: 'tl' },
     { name: 'model', fieldName: 'model', width: '80', header: { text: 'MODEL' }, autoFilter: true, styleName: 'tl' },
     { name: 'modelNType', fieldName: 'modelNType', width: '80', header: { text: '작업구분' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
