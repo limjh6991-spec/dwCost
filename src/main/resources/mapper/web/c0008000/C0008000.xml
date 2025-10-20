@@ -109,9 +109,9 @@
         select
         YYYYMM,
         SEL_CODE,
-        SITE,
+        DW_SITE as SITE,
         구분,
-        MODEL,
+        도우모델 as MODEL,
         MODEL_N_TYPE,
         BOH_MONTH,
         IN_MONTH,
@@ -128,7 +128,7 @@
             and YYYYMM = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
-            and SITE = #{site}
+            and DW_SITE = #{site}
         </if>
         <if test="prodGubun != null and prodGubun != '' and prodGubun != '전체'">
             and 구분 = #{prodGubun}
@@ -144,13 +144,13 @@
             and YYYYMM = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
-            and SITE = #{site}
+            and DW_SITE = #{site}
         </if>
         <if test="prodGubun != null and prodGubun != ''">
             and 구분 = #{prodGubun}
         </if>
         <if test="modelNType != null and modelNType != ''">
-            and 도우코드 = #{modelNType}
+            and MODEL_N_TYPE = #{modelNType}
         </if>
         order by lotrun_no;
     </select>
