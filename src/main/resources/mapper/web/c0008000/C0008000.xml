@@ -233,4 +233,31 @@
         구분,MODEL,ACCT_NAME,SUB_NAME,ITEM_NAME
         order BY 1,2,3,4,5,6,7,8;
     </select>
+
+    <select id="C0008010_Sch1" resultType="CamelMap">
+        select
+        YYYYMM,
+        SEL_CODE,
+        CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end SITE,
+        구분,
+        MODEL,
+        BOH_AMT,
+        IN_AMT,
+        EOH_AMT,
+        OUT_AMT
+        from doi_stock_cost
+        where 1=1
+            and sel_code = 'ACTUAL'
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        <if test="gubun != null and gubun != '' and gubun != '전체'">
+            and 구분 = #{gubun}
+        </if>
+            and BOH_AMT+IN_AMT+EOH_AMT+OUT_AMT > 0
+        order BY 1,2,3,4,5;
+    </select>
 </mapper>

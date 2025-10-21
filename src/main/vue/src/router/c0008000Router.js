@@ -49,6 +49,16 @@ const c0008000Router = [
       requiresAuth: true,
     },
   },
+  {
+    path: '/c0008010',
+    name: '재품수불_금액(DOI_STCO)',
+    component: () => import('../views/web/c0008000/C0008010.vue'),
+    meta: {
+      upperSysResourceId: 'C0008000',
+      sysResourceId: 'C0008010',
+      requiresAuth: true,
+    },
+  },
 ];
 
 export default c0008000Router;
