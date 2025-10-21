@@ -202,6 +202,59 @@
         order by 구분,EXPEN_SEL;
     </select>
 
+    <select id="C0008005_Sch1" resultType="CamelMap">
+        select
+        YYYYMM,
+        SEL_CODE,
+        CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end SITE,
+        SUM(IN_QTY) IN_QTY,
+        SUM(IN_AMT) IN_AMT,
+        COST_GUBUN,
+        MAT_CLASS
+        from DOI_MATERIAL_RESC
+        where 1=1
+            and sel_code = 'ACTUAL'
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        group by YYYYMM,SEL_CODE,SITE,COST_GUBUN,MAT_CLASS
+        having sum(in_amt) > 0
+        order by COST_GUBUN,MAT_CLASS;
+    </select>
+
+    <select id="C0008005_Sch2" resultType="CamelMap">
+        select
+        YYYYMM,
+        SEL_CODE,
+        SITE,
+        MAT_CODE,
+        MST_DESC,
+        [SIZE],
+        IN_QTY,
+        UNIT_COST,
+        IN_AMT,
+        COST_GUBUN,
+        MAT_CLASS,
+        MODEL,
+        MODEL_N_TYPE
+        FROM DOI_MATERIAL_RESC
+        where 1=1
+        and sel_code = 'ACTUAL'
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        <if test="matClass != null and matClass != ''">
+            and mat_class = #{matClass}
+        </if>
+        order by 1,2,3,4;
+    </select>
+
     <select id="C0008008_Sch1" resultType="CamelMap">
         select
         YYYYMM,

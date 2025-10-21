@@ -40,6 +40,16 @@ const c0008000Router = [
     },
   },
   {
+    path: '/c0008005',
+    name: '자재별 투입실적(DOI_MAT_AMT)',
+    component: () => import('../views/web/c0008000/C0008005.vue'),
+    meta: {
+      upperSysResourceId: 'C0008000',
+      sysResourceId: 'C0008005',
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/c0008008',
     name: '제품별 재공평가(DOI_COST)',
     component: () => import('../views/web/c0008000/C0008008.vue'),
