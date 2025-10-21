@@ -39,6 +39,36 @@ const c0008000Router = [
       requiresAuth: true,
     },
   },
+  {
+    path: '/c0008005',
+    name: '자재별 투입실적(DOI_MAT_AMT)',
+    component: () => import('../views/web/c0008000/C0008005.vue'),
+    meta: {
+      upperSysResourceId: 'C0008000',
+      sysResourceId: 'C0008005',
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/c0008008',
+    name: '제품별 재공평가(DOI_COST)',
+    component: () => import('../views/web/c0008000/C0008008.vue'),
+    meta: {
+      upperSysResourceId: 'C0008000',
+      sysResourceId: 'C0008008',
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/c0008010',
+    name: '재품수불_금액(DOI_STCO)',
+    component: () => import('../views/web/c0008000/C0008010.vue'),
+    meta: {
+      upperSysResourceId: 'C0008000',
+      sysResourceId: 'C0008010',
+      requiresAuth: true,
+    },
+  },
 ];
 
 export default c0008000Router;

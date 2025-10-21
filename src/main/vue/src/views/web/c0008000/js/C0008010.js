@@ -1,5 +1,5 @@
 /*
- * 결산증빙 자료 > 제품별 투입 비용(DOI_PROD_EXPN)
+ * 결산증빙 자료 > 재품수불_금액(DOI_STCO)
  */
 const { ValueType } = require('realgrid');
 
@@ -24,8 +24,10 @@ const grid = {
     { fieldName: 'site', dataType: ValueType.TEXT },
     { fieldName: '구분', dataType: ValueType.TEXT },
     { fieldName: 'model', dataType: ValueType.TEXT },
-    { fieldName: 'boh', dataType: ValueType.NUMBER },
-    { fieldName: 'inputAmt', dataType: ValueType.NUMBER },
+    { fieldName: 'bohAmt', dataType: ValueType.NUMBER },
+    { fieldName: 'inAmt', dataType: ValueType.NUMBER },
+    { fieldName: 'eohAmt', dataType: ValueType.NUMBER },
+    { fieldName: 'outAmt', dataType: ValueType.NUMBER },
   ],
 
   columns: [
@@ -34,8 +36,10 @@ const grid = {
     { name: 'site', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true, styleName: 'tl' },
     { name: '구분', fieldName: '구분', width: '80', header: { text: '구분' }, autoFilter: true, styleName: 'tl' },
     { name: 'model', fieldName: 'model', width: '80', header: { text: 'MODEL' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
-    { name: 'boh', fieldName: 'boh', width: '80', header: { text: '기초금액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'inputAmt', fieldName: 'inputAmt', width: '80', header: { text: '투입금액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'bohAmt', fieldName: 'bohAmt', width: '80', header: { text: 'BOH_AMT' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'inAmt', fieldName: 'inAmt', width: '80', header: { text: 'IN_AMT' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'eohAmt', fieldName: 'eohAmt', width: '80', header: { text: 'EOH_AMT' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'outAmt', fieldName: 'outAmt', width: '80', header: { text: 'OUT_AMT' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };
 
