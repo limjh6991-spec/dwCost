@@ -106,22 +106,23 @@
     </select>
 
     <select id="C0008003_Sch1" resultType="CamelMap">
-        select
+       	select
         YYYYMM,
         SEL_CODE,
         DW_SITE as SITE,
         구분,
         도우모델 as MODEL,
         MODEL_N_TYPE,
-        BOH_MONTH,
-        IN_MONTH,
-        BONUS_MONTH,
-        EOH_MONTH,
-        OUT_MONTH,
-        LOSS_MONTH,
-        NG_MONTH,
-        수율제외_MONTH,
-        REWORK진행_MONTH
+        sum(BOH_MONTH) as BOH_MONTH,
+        sum(IN_MONTH) as IN_MONTH,
+        sum(BONUS_MONTH) as BONUS_MONTH,
+        sum(EOH_MONTH) as EOH_MONTH,
+        sum(OUT_MONTH) as OUT_MONTH,
+        sum(LOSS_MONTH) as LOSS_MONTH,
+        sum(NG_MONTH) as NG_MONTH,
+        sum(수율제외_MONTH) as 수율제외_MONTH,
+        sum(REWORK진행_MONTH) as REWORK진행_MONTH,
+        sum(material_loss) as material_loss
         from DOI_PROD_SUBUL
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
@@ -133,11 +134,13 @@
         <if test="prodGubun != null and prodGubun != '' and prodGubun != '전체'">
             and 구분 = #{prodGubun}
         </if>
+        group by YYYYMM,SEL_CODE,DW_SITE,구분,도우모델,MODEL_N_TYPE
         order by 1,2,3,model, MODEL_N_TYPE;
     </select>
 
     <select id="C0008003_Sch2" resultType="CamelMap">
-        select lotrun_no,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,material_loss
+        select lotrun_no,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,
+        수율제외_MONTH,REWORK진행_MONTH,material_loss
         from DOI_PROD_LOTRUN
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">

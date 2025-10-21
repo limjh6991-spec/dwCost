@@ -34,6 +34,7 @@ const grid = {
     { fieldName: 'ngMonth', dataType: ValueType.NUMBER },
     { fieldName: '수율제외Month', dataType: ValueType.NUMBER },
     { fieldName: 'rework진행Month', dataType: ValueType.NUMBER },
+    { fieldName: 'materialLoss', dataType: ValueType.NUMBER },
   ],
 
   columns: [
@@ -52,6 +53,7 @@ const grid = {
     { name: 'ngMonth', fieldName: 'ngMonth', width: '80', header: { text: 'NG수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: '수율제외Month', fieldName: '수율제외Month', width: '80', header: { text: '수율제외수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'rework진행Month', fieldName: 'rework진행Month', width: '80', header: { text: 'REWORK수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'materialLoss', fieldName: 'materialLoss', width: '80', header: { text: '원장불량수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };
 
