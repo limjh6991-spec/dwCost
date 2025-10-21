@@ -7,7 +7,7 @@ const grid = {
   options: {
     checkBar: { visible: false },
     copy: { enabled: true, singleMode: true },
-    display: { columnMovable: false, editItemMerging: true, fitStyle: 'fill', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
+    display: { columnMovable: false, editItemMerging: true, fitStyle: 'even', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
     edit: { editable: false },
     footer: { visible: true },
     paste: { enabled: false },
