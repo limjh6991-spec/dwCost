@@ -258,6 +258,66 @@
         order by 1,2,3,4;
     </select>
 
+    <select id="C0008006_Sch1" resultType="CamelMap">
+        select yyyymm,sel_code,site,mat_class,sum(배부금액) 배부금액
+        from doi_mat_cost
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        group by yyyymm,sel_code,site,mat_class
+        order by mat_class;
+    </select>
+
+    <select id="C0008006_Sch2" resultType="CamelMap">
+        select *
+        from doi_mat_cost
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        <if test="matClass != null and matClass != ''">
+            and mat_class = #{matClass}
+        </if>
+        order by 1,2,3,4,5,6;
+    </select>
+
+    <select id="C0008007_Sch1" resultType="CamelMap">
+        select yyyymm,sel_code,site,도우모델,sum(배부금액) 배부금액
+        from doi_mat_cost
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        group by yyyymm,sel_code,site,도우모델
+        order by 도우모델;
+    </select>
+
+    <select id="C0008007_Sch2" resultType="CamelMap">
+        select *
+        from doi_mat_cost
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        <if test="model != null and model != ''">
+            and 도우모델 = #{model}
+        </if>
+        order by 1,2,3,4,5,6,7;
+    </select>
+
     <select id="C0008008_Sch1" resultType="CamelMap">
         select
         YYYYMM,
