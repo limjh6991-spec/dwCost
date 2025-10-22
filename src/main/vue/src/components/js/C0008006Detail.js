@@ -1,5 +1,5 @@
 /*
- * 결산증빙 자료 > 원가항목별 재료비(DOI_MAT_EXPEN) > 팝업
+ * 결산증빙 자료 > 원가항목별 재료비(DOI_MAT_EXPEN)/제품별 투입 재료비(DOI_PROD_MAT) > 팝업
  */
 const { ValueType } = require('realgrid');
 

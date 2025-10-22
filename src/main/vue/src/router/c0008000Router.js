@@ -60,6 +60,16 @@ const c0008000Router = [
     },
   },
   {
+    path: '/c0008007',
+    name: '제품별 투입 재료비(DOI_PROD_MAT)',
+    component: () => import('../views/web/c0008000/C0008007.vue'),
+    meta: {
+      upperSysResourceId: 'C0008000',
+      sysResourceId: 'C0008007',
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/c0008008',
     name: '제품별 재공평가(DOI_COST)',
     component: () => import('../views/web/c0008000/C0008008.vue'),
