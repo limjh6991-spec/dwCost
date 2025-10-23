@@ -1,5 +1,5 @@
 /*
- * 결산증빙 자료 > 부서별 경비 집계표(DOI_ACCT_AMT)
+ * 결산증빙 자료 > 원가항목별 비용(DOI_EXPEN_AMT)
  */
 const { ValueType } = require('realgrid');
 
@@ -22,8 +22,6 @@ const grid = {
     { fieldName: 'yyyymm', dataType: ValueType.TEXT },
     { fieldName: 'selCode', dataType: ValueType.TEXT },
     { fieldName: 'site', dataType: ValueType.TEXT },
-    { fieldName: 'acctClass', dataType: ValueType.TEXT },
-    { fieldName: 'deptName', dataType: ValueType.TEXT },
     { fieldName: 'subName', dataType: ValueType.TEXT },
     { fieldName: 'itemName', dataType: ValueType.TEXT },
     { fieldName: 'acctAmt', dataType: ValueType.NUMBER },
@@ -34,8 +32,6 @@ const grid = {
     { name: 'yyyymm', fieldName: 'yyyymm', width: '80', header: { text: 'YYYYMM' }, autoFilter: true, styleName: 'tl' },
     { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'tl' },
     { name: 'site', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true, styleName: 'tl' },
-    { name: 'acctClass', fieldName: 'acctClass', width: '80', header: { text: '경비구분' }, autoFilter: true, styleName: 'tl' },
-    { name: 'deptName', fieldName: 'deptName', width: '80', header: { text: '부서명' }, autoFilter: true, styleName: 'tl' },
     { name: 'subName', fieldName: 'subName', width: '80', header: { text: '비목코드' }, autoFilter: true, styleName: 'tl' },
     { name: 'itemName', fieldName: 'itemName', width: '80', header: { text: '세목코드' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
     { name: 'acctAmt', fieldName: 'acctAmt', width: '80', header: { text: '금액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },

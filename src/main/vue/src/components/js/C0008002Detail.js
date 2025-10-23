@@ -1,5 +1,5 @@
 /*
- * 결산증빙 자료 > 부서별 경비 집계표(DOI_ACCT_AMT)
+ * 결산증빙 자료 > 원가항목별 비용(DOI_EXPEN_AMT) > 팝업
  */
 const { ValueType } = require('realgrid');
 
@@ -12,10 +12,9 @@ const grid = {
     footer: { visible: true },
     paste: { enabled: false },
     rowIndicator: { visible: true },
-	sorting: { enabled: true },
+    sorting: { enabled: true },
     stateBar: { visible: false },
     filtering: { enabled: true },
-    fixed: { colBarWidth: 1, colCount: 1 },
   },
 
   fields: [

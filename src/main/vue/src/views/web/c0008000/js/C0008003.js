@@ -7,7 +7,7 @@ const grid = {
   options: {
     checkBar: { visible: false },
     copy: { enabled: true, singleMode: true },
-    display: { columnMovable: false, editItemMerging: true, fitStyle: 'fill', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
+    display: { columnMovable: false, editItemMerging: true, fitStyle: 'even', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
     edit: { editable: false },
     footer: { visible: true },
     paste: { enabled: false },
@@ -34,12 +34,13 @@ const grid = {
     { fieldName: 'ngMonth', dataType: ValueType.NUMBER },
     { fieldName: '수율제외Month', dataType: ValueType.NUMBER },
     { fieldName: 'rework진행Month', dataType: ValueType.NUMBER },
+    { fieldName: 'materialLoss', dataType: ValueType.NUMBER },
   ],
 
   columns: [
     { name: 'yyyymm', fieldName: 'yyyymm', width: '80', header: { text: 'YYYYMM' }, autoFilter: true, styleName: 'tl' },
     { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'tl' },
-    { name: 'site', fieldName: 'site', width: '80', header: { text: 'SITE' }, autoFilter: true, styleName: 'tl' },
+    { name: 'site', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true, styleName: 'tl' },
     { name: '구분', fieldName: '구분', width: '80', header: { text: '구분' }, autoFilter: true, styleName: 'tl' },
     { name: 'model', fieldName: 'model', width: '80', header: { text: 'MODEL' }, autoFilter: true, styleName: 'tl' },
     { name: 'modelNType', fieldName: 'modelNType', width: '80', header: { text: '작업구분' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
@@ -52,6 +53,7 @@ const grid = {
     { name: 'ngMonth', fieldName: 'ngMonth', width: '80', header: { text: 'NG수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: '수율제외Month', fieldName: '수율제외Month', width: '80', header: { text: '수율제외수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'rework진행Month', fieldName: 'rework진행Month', width: '80', header: { text: 'REWORK수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'materialLoss', fieldName: 'materialLoss', width: '80', header: { text: '원장불량수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };
 

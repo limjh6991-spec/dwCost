@@ -1,4 +1,4 @@
-/** * 결산증빙 자료 > 생산수불(DOI_PROD) */
+/** * 결산증빙 자료 > 제품별 재공평가(DOI_COST) */
 <template>
   <div>
     <div class="search_box">
@@ -17,12 +17,12 @@
         </b-col>
         <b-col cols="2">
           <div class="form-floating">
-            <select class="form-select label-60" id="floatingSelect" v-model="params.prodGubun">
-              <option v-for="prodGubun in prodGubunList" :key="prodGubun.value" :value="prodGubun">
-                {{ prodGubun.text }}
+            <select class="form-select label-60" id="floatingSelect" v-model="params.acctName">
+              <option v-for="acctName in acctNameList" :key="acctName.value" :value="acctName">
+                {{ acctName.text }}
               </option>
             </select>
-            <label for="floatingSelect" class="select">생산구분</label>
+            <label for="floatingSelect" class="select">계정명</label>
           </div>
         </b-col>
       </b-row>
@@ -37,16 +37,15 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :rows="prodSubulGridRows" style="height: 100%" />
+        <RealGrid ref="costGrid" :uid="'costGrid'" :step="'1'" :rows="costGridRows" style="height: 100%" />
       </div>
     </div>
-    <CmDialog1 ref="cmDialog1C00008003" />
   </div>
 </template>
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
-import gridField from '@web/c0008000/js/C0008003.js';
+import gridField from '@web/c0008000/js/C0008008.js';
 
 export default {
   props: {},
@@ -57,17 +56,19 @@ export default {
   },
   data() {
     return {
-      prodSubulGrid: null,
-      prodSubulGridRows: [],
+      costGrid: null,
+      costGridRows: [],
       params: {
         yyyymm: null,
         site: 'HQ',
-        prodGubun: { value: '전체', text: '전체' },
+        acctName: { value: '전체', text: '전체' },
       },
-      prodGubunList: [
+      acctNameList: [
         { value: '전체', text: '전체' },
-        { value: '양산', text: '양산' },
-        { value: '개발', text: '개발' },
+        { value: '경비', text: '경비' },
+        { value: '감가비', text: '감가비' },
+        { value: '인건비', text: '인건비' },
+        { value: '재료비', text: '재료비' },
       ],
       siteMap: {
         본사: 'HQ', //DB map
@@ -83,7 +84,7 @@ export default {
       handler(newVal) {
         if (newVal.curProdCtg) {
           this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.prodSubulGrid != null) {
+          if (this.$refs.costGrid != null) {
             this.initialize();
             this.searchClick();
           }
@@ -95,10 +96,10 @@ export default {
   },
   computed: {
     gridView() {
-      return this.$refs.prodSubulGrid.getGridView();
+      return this.$refs.costGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.prodSubulGrid.getGridDataProvider();
+      return this.$refs.costGrid.getGridDataProvider();
     },
   },
   created() {
@@ -112,10 +113,10 @@ export default {
       var current = new Date();
       this.params.yyyymm = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
-      this.params.prodGubun = { value: '전체', text: '전체' };
+      this.params.acctName = { value: '전체', text: '전체' };
     },
     initializeGrid() {
-      this.prodSubulGrid = _.cloneDeep(gridField);
+      this.costGrid = _.cloneDeep(gridField);
     },
     async getDataList() {
       this.gridView.commit();
@@ -123,14 +124,14 @@ export default {
       let params = {
         yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
-        prodGubun: this.params.prodGubun != null ? this.params.prodGubun.value : null,
+        acctName: this.params.acctName != null ? this.params.acctName.value : null,
       };
 
       let param = {
         menuId: 'c0008000',
-        queryId: 'C0008003_Sch1',
+        queryId: 'C0008008_Sch1',
         queryParams: params,
-        target: this.prodSubulGridRows,
+        target: this.costGridRows,
       };
       let resp = await this.$axios.api.search(param);
     },
@@ -146,7 +147,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `생산수불${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `제품별재공평가${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
@@ -159,32 +160,6 @@ export default {
       };
 
       grid.exportGrid(options);
-    },
-    async onCellClickedProdSubulGrid(grid, clickData) {
-      if (clickData.cellType != 'data') return;
-
-      if (clickData.column == 'modelNType') {
-        let queryParams = {
-          yyyymm: grid.getValue(clickData.itemIndex, 'yyyymm'),
-          site: grid.getValue(clickData.itemIndex, 'site') != null ? this.siteMap[grid.getValue(clickData.itemIndex, 'site')] : null,
-          prodGubun: grid.getValue(clickData.itemIndex, '구분'),
-          modelNType: grid.getValue(clickData.itemIndex, 'modelNType'),
-        };
-
-        const params = {
-          dialogTitle: 'RUN LIST',
-          popUpSize: 'xl', //sm,lg,xl
-          height: 500,
-          gridJs: 'C0008003RunList.js',
-          search: {
-            menuId: 'c0008000',
-            queryId: 'C0008003_Sch2',
-            queryParams: queryParams,
-          },
-          btnConfirm: false,
-        };
-        this.$refs.cmDialog1C00008003.openDialog(params);
-      }
     },
   },
 };
