@@ -44,14 +44,14 @@ mybatis:
 
 cors:
   allowed:
-    origin: http://52.141.27.198:4200,http://52.141.27.198:8080
+    origin: http://52.141.27.198:4200,http://52.141.27.198:9090
 
 file:
   upload:
     dir: attach
 
 pdf:
-  base-uri: http://52.141.27.198:8080
+  base-uri: http://52.141.27.198:9090
 
 batch:
   scheduler:
