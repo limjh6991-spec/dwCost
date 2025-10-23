@@ -51,7 +51,7 @@ file:
     dir: attach
 
 pdf:
-  base-uri: http://172.16.185.7:8080
+  base-uri: http://172.16.185.7:9090
 
 batch:
   scheduler:

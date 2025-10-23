@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0003000.mapper.C0003000Mapper">
+    <select id="C0003007_Sch1" resultType="CamelMap">
+	DECLARE @RET_CODE INT;
+	EXEC @RET_CODE = Gen_EXPEN_MATL 
+		#{yyyymm},
+		#{site}
+    </select>
+    
+    <select id="C0003005_Sch1" resultType="CamelMap">
+	DECLARE @RET_CODE INT;
+	EXEC @RET_CODE = Gen_DOI_COST 
+		#{yyyymm},
+		#{site}
+    </select>
+</mapper>
