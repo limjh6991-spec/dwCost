@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007003Mapper">
+	<select id="selectTab1GridData" resultType="CamelMap">
+		select
+			YYYYMM,
+			SEL_CODE,
+			DW_SITE as SITE_ORG,
+			CASE WHEN DW_SITE='HQ' then '본사' WHEN DW_SITE='VN' then 'VINA' end as SITE,
+			구분 AS GUBUN,
+			구분_ord AS GUBUN_ORD,
+			도우코드 AS DW_CODE,
+			MODEL_N_TYPE,
+			도우모델 AS DW_MODEL,
+			작업구분 AS WORK_GUBUN,
+			org작업구분 AS ORG_WORK_GUBUN,
+			MODEL, 
+			INCH,
+			SITE AS OUT_SITE,
+			BOH_MONTH,
+			IN_MONTH,
+			BONUS_MONTH,
+			EOH_MONTH,
+			OUT_MONTH,
+			LOSS_MONTH,
+			NG_MONTH,
+			수율제외_MONTH AS EXCEPT_MONTH,
+			REWORK진행_MONTH AS REWORK_MONTH,
+			SHIPPING_PLAN_MONTH,
+			SHIPPING_ACTUAL_MONTH,
+			MATERIAL_LOSS
+		from
+			DOI_PROD_SUBUL
+		where 1=1
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
+		</if>
+		<if test="site != null and site != ''">
+			and DW_SITE = #{site}
+		</if>
+		order BY DW_MODEL;
+	</select>
+
+	<select id="checkduplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
+		DROP TABLE IF EXISTS #TempTable1;
+
+		CREATE TABLE #TempTable1 (
+			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			DW_SITE varchar(5) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			구분 varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			구분_ord varchar(1) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			도우코드 varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			MODEL_N_TYPE varchar(18) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			도우모델 varchar(8) COLLATE Korean_Wansung_CI_AS NULL,
+			작업구분 varchar(2) COLLATE Korean_Wansung_CI_AS NULL,
+			org작업구분 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			model varchar(30) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			Inch varchar(30) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			Site varchar(50) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			BOH_MONTH float NULL,
+			IN_MONTH int NULL,
+			BONUS_MONTH int NOT NULL,
+			EOH_MONTH float NULL,
+			OUT_MONTH int NULL,
+			LOSS_MONTH int NULL,
+			NG_MONTH int NULL,
+			수율제외_MONTH int NULL,
+			REWORK진행_MONTH int NULL,
+			SHIPPING_PLAN_MONTH int NOT NULL,
+			SHIPPING_ACTUAL_MONTH int NOT NULL,
+			material_loss int NOT NULL
+		);
+
+		INSERT INTO #TempTable1
+		(
+			YYYYMM,
+			SEL_CODE,
+			DW_SITE as SITE_ORG,
+			CASE WHEN DW_SITE='HQ' then '본사' WHEN DW_SITE='VN' then 'VINA' end as SITE,
+			구분 AS GUBUN,
+			구분_ord AS GUBUN_ORD,
+			도우코드 AS DW_CODE,
+			MODEL_N_TYPE,
+			도우모델 AS DW_MODEL,
+			작업구분 AS WORK_GUBUN,
+			org작업구분 AS ORG_WORK_GUBUN,
+			MODEL, 
+			INCH,
+			SITE AS OUT_SITE,
+			BOH_MONTH,
+			IN_MONTH,
+			BONUS_MONTH,
+			EOH_MONTH,
+			OUT_MONTH,
+			LOSS_MONTH,
+			NG_MONTH,
+			수율제외_MONTH AS EXCEPT_MONTH,
+			REWORK진행_MONTH AS REWORK_MONTH,
+			SHIPPING_PLAN_MONTH,
+			SHIPPING_ACTUAL_MONTH,
+			MATERIAL_LOSS
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			, #{item.field23}
+			, #{item.field24}
+			, #{item.field25}
+			, #{item.field26}
+			, #{item.field27}
+			)
+		</foreach>;
+
+		SELECT * FROM #TempTable1 a
+		WHERE EXISTS (
+			SELECT 1
+			FROM DOI_PROD_SUBUL b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SITE = a.SITE
+			AND b.DW_MODEL = a.DW_MODEL
+		);
+	</select>
+
+	<insert id="uploadExcel" parameterType="java.util.List">
+		CREATE TABLE #TempTable (
+			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			DW_SITE varchar(5) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			구분 varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			구분_ord varchar(1) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			도우코드 varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			MODEL_N_TYPE varchar(18) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			도우모델 varchar(8) COLLATE Korean_Wansung_CI_AS NULL,
+			작업구분 varchar(2) COLLATE Korean_Wansung_CI_AS NULL,
+			org작업구분 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			model varchar(30) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			Inch varchar(30) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			Site varchar(50) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			BOH_MONTH float NULL,
+			IN_MONTH int NULL,
+			BONUS_MONTH int NOT NULL,
+			EOH_MONTH float NULL,
+			OUT_MONTH int NULL,
+			LOSS_MONTH int NULL,
+			NG_MONTH int NULL,
+			수율제외_MONTH int NULL,
+			REWORK진행_MONTH int NULL,
+			SHIPPING_PLAN_MONTH int NOT NULL,
+			SHIPPING_ACTUAL_MONTH int NOT NULL,
+			material_loss int NOT NULL
+		);
+
+		INSERT INTO #TempTable
+		(
+			seq_no,
+			YYYYMM,
+			SEL_CODE,
+			CASE WHEN DW_SITE='HQ' then '본사' WHEN DW_SITE='VN' then 'VINA' end as SITE,
+			구분 AS GUBUN,
+			구분_ord AS GUBUN_ORD,
+			도우코드 AS DW_CODE,
+			MODEL_N_TYPE,
+			도우모델 AS DW_MODEL,
+			작업구분 AS WORK_GUBUN,
+			org작업구분 AS ORG_WORK_GUBUN,
+			MODEL, 
+			INCH,
+			SITE AS OUT_SITE,
+			BOH_MONTH,
+			IN_MONTH,
+			BONUS_MONTH,
+			EOH_MONTH,
+			OUT_MONTH,
+			LOSS_MONTH,
+			NG_MONTH,
+			수율제외_MONTH AS EXCEPT_MONTH,
+			REWORK진행_MONTH AS REWORK_MONTH,
+			SHIPPING_PLAN_MONTH,
+			SHIPPING_ACTUAL_MONTH,
+			MATERIAL_LOSS
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field1}
+			, #{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			, #{item.field23}
+			, #{item.field24}
+			, #{item.field25}
+			, #{item.field26}
+			, #{item.field27}
+			)
+		</foreach>;
+
+		INSERT INTO DOI_PROD_SUBUL (YYYYMM, SEL_CODE, site, GUBUN, GUBUN_ORD, DW_CODE, MODEL_N_TYPE, DW_MODEL, WORK_GUBUN, ORG_WORK_GUBUN, MODEL, INCH, OUT_SITE, BOH_MONTH, IN_MONTH, BONUS_MONTH, EOH_MONTH, OUT_MONTH, LOSS_MONTH, NG_MONTH, EXCEPT_MONTH, REWORK_MONTH, SHIPPING_PLAN_MONTH, SHIPPING_ACTUAL_MONTH, MATERIAL_LOSS)
+		SELECT YYYYMM, SEL_CODE, site, GUBUN, GUBUN_ORD, DW_CODE, MODEL_N_TYPE, DW_MODEL, WORK_GUBUN, ORG_WORK_GUBUN, MODEL, INCH, OUT_SITE, BOH_MONTH, IN_MONTH, BONUS_MONTH, EOH_MONTH, OUT_MONTH, LOSS_MONTH, NG_MONTH, EXCEPT_MONTH, REWORK_MONTH, SHIPPING_PLAN_MONTH, SHIPPING_ACTUAL_MONTH, MATERIAL_LOSS
+		FROM (
+			SELECT *, MAX(seq_no) over (partition by YYYYMM, SITE, MODEL) max_seq_no FROM #TempTable
+		) A
+		WHERE 1=1
+		AND seq_no = max_seq_no
+		AND NOT EXISTS (
+			SELECT 1
+			FROM DOI_PROD_SUBUL b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.site = a.site
+			AND b.DW_MODEL = a.DW_MODEL
+		);
+
+		DROP TABLE #TempTable;
+	</insert>
+	
+	<insert id="insertTab1Data">
+		INSERT INTO DOI_PROD_SUBUL
+		(
+			YYYYMM,
+			SEL_CODE,
+			DW_SITE as SITE_ORG,
+			구분 AS GUBUN,
+			구분_ord AS GUBUN_ORD,
+			도우코드 AS DW_CODE,
+			MODEL_N_TYPE,
+			도우모델 AS DW_MODEL,
+			작업구분 AS WORK_GUBUN,
+			org작업구분 AS ORG_WORK_GUBUN,
+			MODEL, 
+			INCH,
+			SITE AS OUT_SITE,
+			BOH_MONTH,
+			IN_MONTH,
+			BONUS_MONTH,
+			EOH_MONTH,
+			OUT_MONTH,
+			LOSS_MONTH,
+			NG_MONTH,
+			수율제외_MONTH AS EXCEPT_MONTH,
+			REWORK진행_MONTH AS REWORK_MONTH,
+			SHIPPING_PLAN_MONTH,
+			SHIPPING_ACTUAL_MONTH,
+			MATERIAL_LOSS
+		)
+		VALUES
+		(
+		#{yyyymm}
+		, #{selCode}
+		, CASE WHEN #{dwSite}='본사' Then 'HQ'  WHEN #{dwSite}='베트남' then 'VN' else left(#{dwSite},2) end
+		, #{gubun}
+		, #{gubunOrd}
+		, #{dwCode}
+		, #{modelNType}
+		, #{dwModel}
+		, #{workGubun}
+		, #{orgWorkGubun}
+		, #{model}
+		, #{inch}
+		, #{outSite}
+		, #{bohMonth}
+		, #{inMonth}
+		, #{bonusMonth}
+		, #{eohMonth}
+		, #{outMonth}
+		, #{lossMonth}
+		, #{ngMonth}
+		, #{exceptMonth}
+		, #{reworkMonth}
+		, #{shippingPlanMonth}
+		, #{shippingActualMonth}
+		, #{materialLoss}
+		);
+	</insert>
+
+	<delete id="deleteTab1Data">
+		DELETE FROM DOI_PROD_SUBUL
+		WHERE 1=1
+		and yyyymm = #{yyyymm}
+		and sel_code = #{selCode}
+		and site = #{siteOrg}
+		and dw_model = #{dwModel}
+	</delete>
+
+	<update id="updateTab1Data">
+		UPDATE DOI_PROD_SUBUL
+		SET SEL_CODE = #{selCode}
+		,구분 = #{gubun}
+		,구분_ord = #{gubunOrd}
+		,도우코드 = #{dwCode}
+		,MODEL_N_TYPE = #{modelNType}
+		,도우모델 = #{dwModel}
+		,작업구분 = #{workGubun}
+		,org작업구분 = #{orgWorkGubun}
+		,INCH = #{inch}
+		,OUT_SITE = #{outSite}
+		,BOH_MONTH = #{bohMonth}
+		,IN_MONTH = #{inMonth}
+		,BONUS_MONTH = #{bonusMonth}
+		,EOH_MONTH = #{eohMonth}
+		,OUT_MONTH = #{outMonth}
+		,LOSS_MONTH = #{lossMonth}
+		,NG_MONTH = #{ngMonth}
+		,수율제외_MONTH = #{exceptMonth}
+		,REWORK진행_MONTH = #{reworkMonth}
+		,SHIPPING_PLAN_MONTH = #{shippingPlanMonth}
+		,SHIPPING_ACTUAL_MONTH = #{shippingActualMonth}
+		,MATERIAL_LOSS = #{materialLoss}
+		WHERE 1=1
+		and yyyymm = #{yyyymm}
+		and site = #{siteOrg}
+		and model = #{model}
+		;
+	</update>
+</mapper>

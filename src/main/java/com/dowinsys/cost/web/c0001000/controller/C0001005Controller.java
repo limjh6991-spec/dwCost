@@ -1,9 +1,9 @@
 /**
-*	기준정보 > 부서코드
-*/
+ * 기준정보 > 제품기준정보
+ */
 package com.dowinsys.cost.web.c0001000.controller;
 
-import com.dowinsys.cost.web.c0001000.service.C0001002Service;
+import com.dowinsys.cost.web.c0001000.service.C0001005Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +16,13 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Map;
 import java.util.Objects;
 
-@RestController("com.dowinsys.cost.web.c0001000.controller.C0001002Controller")
-@RequestMapping("/api/c0001000/c0001002")
-public class C0001002Controller {
+
+@RestController("com.dowinsys.cost.web.c0001000.controller.C0001005Controller")
+@RequestMapping("/api/c0001000/C0001005")
+public class C0001005Controller {
 
     @Autowired
-    C0001002Service service;
+    C0001005Service service;
 
     @PostMapping("/upload")
     public ResponseEntity<String> uploadFile(

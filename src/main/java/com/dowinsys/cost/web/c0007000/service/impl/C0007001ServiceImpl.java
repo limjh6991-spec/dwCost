@@ -1,11 +1,12 @@
 /**
-*	기준정보 > 자재코드
-*/
-package com.dowinsys.cost.web.c0001000.service.impl;
+ * 타시스템 > 부서별,계정별 비용
+ */
+package com.dowinsys.cost.web.c0007000.service.impl;
 
 import com.dowinsys.cost.common.utils.ExcelUtils;
-import com.dowinsys.cost.web.c0001000.mapper.C0001003Mapper;
-import com.dowinsys.cost.web.c0001000.service.C0001003Service;
+import com.dowinsys.cost.web.c0007000.mapper.C0007001Mapper;
+import com.dowinsys.cost.web.c0007000.service.C0007001Service;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,11 +14,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Service("com.dowinsys.cost.web.c0001000.service.C0001003")
-public class C0001003ServiceImpl implements C0001003Service {
+@Service("com.dowinsys.cost.web.c0007000.service.C0007001")
+public class C0007001ServiceImpl implements C0007001Service {
 
     @Autowired
-    C0001003Mapper mapper;
+    C0007001Mapper mapper;
 
     @Override
     public Map<String, String> uploadExcel(MultipartFile file, String headers) throws Exception {
@@ -39,7 +40,7 @@ public class C0001003ServiceImpl implements C0001003Service {
                 } else {
                     item.put("field4", "HQ");
                 }
-
+                
                 return item;
             }).collect(Collectors.toList());
 
@@ -117,7 +118,7 @@ public class C0001003ServiceImpl implements C0001003Service {
                     } else {
                         errorMessage.append(" ");
                     }
-                    errorMessage.append("자재코드는 동일년도 동일사업장에 이미 존재하는 데이터로 업로드 대상이 아닙니다.");
+                    errorMessage.append("계정코드는 동일년도 동일사업장에 이미 존재하는 데이터로 업로드 대상이 아닙니다.");
                     if (!duplicateList.isEmpty() || !pkDuplicateList.isEmpty()) {
                         errorMessage.append("\n");
                     }

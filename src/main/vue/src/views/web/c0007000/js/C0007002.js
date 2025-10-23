@@ -1,5 +1,5 @@
 /*
- * 기본정보 > 부서 코드
+ * 타시스템 > 자재투입정보
  */
 const { ValueType } = require('realgrid');
 
@@ -31,21 +31,28 @@ const grid = {
     fixed: { colBarWidth: 1, colCount: 1 },
   },
   fields: [
-    { fieldName: 'yyyy', dataType: ValueType.TEXT },
+    { fieldName: 'yyyymm', dataType: ValueType.TEXT },
     { fieldName: 'selCode', dataType: ValueType.TEXT },
     { fieldName: 'siteOrg', dataType: ValueType.TEXT },
     { fieldName: 'site', dataType: ValueType.TEXT },
-    { fieldName: 'dept', dataType: ValueType.TEXT },
-    { fieldName: 'deptName', dataType: ValueType.TEXT },
-    { fieldName: 'expenArea', dataType: ValueType.TEXT },
+    { fieldName: 'matCode', dataType: ValueType.TEXT },
+    { fieldName: 'mstDesc', dataType: ValueType.TEXT },
+    { fieldName: 'size', dataType: ValueType.TEXT },
+    { fieldName: 'inQty', dataType: ValueType.TEXT },
+    { fieldName: 'unitCost', dataType: ValueType.TEXT },
+    { fieldName: 'inAmt', dataType: ValueType.TEXT },
+    { fieldName: 'costGubun', dataType: ValueType.TEXT },
+	{ fieldName: 'matClass', dataType: ValueType.TEXT },
+	{ fieldName: 'model', dataType: ValueType.TEXT },
+	{ fieldName: 'modelNType', dataType: ValueType.TEXT },
   ],
 
   columns: [
     {
-      name: 'YYYY',
-      fieldName: 'yyyy',
+      name: 'YYYYMM',
+      fieldName: 'yyyymm',
       width: '80',
-      header: { text: '년도' },
+      header: { text: 'YYYYMM' },
       autoFilter: true,
       editable: false,
       styleName: 'tl',
@@ -109,30 +116,27 @@ const grid = {
       },
     },
     {
-      name: 'DEPT',
-      fieldName: 'dept',
-      width: '150',
-      header: { text: '부서코드' },
+      name: 'MAT_CODE',
+      fieldName: 'matCode',
+      width: '90',
+      header: { text: 'MAT_CODE' },
       autoFilter: true,
-      editable: false,
-      styleName: 'tl',
+      editable: true,
+      styleName: 'edit tl',
       styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
+        return { editable: true, styleName: 'edit tl' };
       },
     },
-    { name: 'DEPT_NAME', fieldName: 'deptName', width: '120', header: { text: '부서명' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'EXPEN_AREA', fieldName: 'expenArea', width: '135', header: { text: '비용구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: 'MST_DESC', fieldName: 'mstDesc', width: '70', header: { text: 'MST_DESC' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: '[SIZE]', fieldName: 'size', width: '120', header: { text: 'SIZE' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: 'IN_QTY', fieldName: 'inQty', width: '135', header: { text: 'IN_QTY' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: 'UNIT_COST', fieldName: 'unitCost', width: '135', header: { text: 'UNIT_COST' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+	{ name: 'IN_AMT', fieldName: 'inAmt', width: '70', header: { text: 'IN_AMT' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+	{ name: 'COST_GUBUN', fieldName: 'costGubun', width: '120', header: { text: 'COST_GUBUN' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+	{ name: 'MAT_CLASS', fieldName: 'matClass', width: '120', header: { text: 'MAT_CLASS' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+	{ name: 'MODEL', fieldName: 'model', width: '120', header: { text: 'MODEL' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+	{ name: 'MODEL_N_TYPE', fieldName: 'modelNType', width: '120', header: { text: 'MODEL_N_TYPE' }, autoFilter: true, editable: true, styleName: 'edit tl' },
   ],
-}
+};
 
 module.exports = grid;

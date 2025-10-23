@@ -139,6 +139,7 @@ const api = {
       console.error('데이터를 가져오는 중 오류 발생:', error);
       //vue 에러페이지 출력 방지 주석
       // throw error;
+      return []; // 오류 시 빈 배열 반환하여 undefined.data 오류 방지
     }
 	},
 	async saveData(params) {

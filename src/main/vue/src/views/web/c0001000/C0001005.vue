@@ -1,4 +1,4 @@
-/** * 기준정보 > 원가자재코드 */
+/** * 기본정보 > 제품기준정보 */
 <template>
   <div>
     <div class="search_box">
@@ -27,44 +27,42 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
-          <b-button class="second" @click="uploadClick">업로드</b-button>
+          <!-- 조회 기능만 활성화, 다른 기능들은 주석처리 -->
+          <!-- <b-button class="second" @click="uploadClick">업로드</b-button> -->
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
-          <b-button class="sub" @click="addBtnClick">추가</b-button>
+          <!-- <b-button class="sub" @click="addBtnClick">추가</b-button>
           <b-button @click="delBtnClick">삭제</b-button>
-          <b-button class="main" @click="saveBtnClick">저장</b-button>
+          <b-button class="main" @click="saveBtnClick">저장</b-button> -->
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="materialGrid" :uid="'materialGrid'" :step="'1'" :rows="materialGridRows" style="height: 100%" />
+        <RealGrid ref="modelGrid" :uid="'modelGrid'" :step="'1'" :rows="modelGridRows" style="height: 100%" />
       </div>
     </div>
-    <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
+    <!-- 업로드 팝업 주석처리 - 조회 기능만 활성화 -->
+    <!-- <UploadPopup ref="uploadPopup1" @closePopup="closePopup" /> -->
   </div>
 </template>
 
 <script>
 import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
-import UploadPopup from '@components/UploadPopup.vue';
-import _ from 'lodash';
-import gridField from '@web/c0001000/js/C0001003.js';
+import gridField from '@web/c0001000/js/C0001005.js';
 
 export default {
   props: {},
-  components: {
-    UploadPopup,
-  },
+  components: {},
   setup() {
     const userAuthInfo = useUserAuthInfo();
     return { userAuthInfo };
   },
   data() {
     return {
-      materialGrid: null,
-      materialGridRows: [],
+      modelGrid: null,
+      modelGridRows: [],
       params: {
         yyyy: null,
-        site: '본사',
+        site: 'HQ',
       },
       yearList: [],
       siteMap: {
@@ -74,30 +72,31 @@ export default {
         VN: 'VN', //DB map
       },
       isProcessing: false,
-      duplicateKey: ['yyyy', 'selCode', 'site', 'matCode'],
-      isValidteCellMaterialGrid: false,
-      duplicateIndices: [],
+      duplicateKey: ['yyyy', 'selCode', 'site', 'model'],
+      isValidteCellmodelGrid: false,
     };
   },
   watch: {
     userAuthInfo: {
       handler(newVal) {
-        console.log('userAuthInfo 변경:', newVal);
-        if (newVal.curProdCtg) {  //selectedProdCtg
+        if (newVal.curProdCtg) {
           this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
-          console.log('사이트 업데이트:', this.params.site);
+          if (this.$refs.modelGrid != null) {
+            this.initialize();
+            this.searchClick();
+          }
         }
       },
       deep: true,
-      immediate: true
-    }
+      immediate: true,
+    },
   },
   computed: {
     gridView() {
-      return this.$refs.materialGrid.getGridView();
+      return this.$refs.modelGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.materialGrid.getGridDataProvider();
+      return this.$refs.modelGrid.getGridDataProvider();
     },
   },
   created() {
@@ -117,7 +116,7 @@ export default {
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
-      this.materialGrid = _.cloneDeep(gridField);
+      this.modelGrid = _.cloneDeep(gridField);
     },
     async getDataList() {
       this.gridView.commit();
@@ -128,62 +127,67 @@ export default {
       };
 
       let param = {
-        menuId: 'c0001003',
+        menuId: 'C0001005',
         queryId: 'selectTab1GridData',
         queryParams: params,
-        target: this.materialGridRows,
+        target: this.modelGridRows,
       };
-      let resp = await this.$axios.api.search(param);
+      
+      try {
+        let resp = await this.$axios.api.search(param);
+        console.log('조회 성공:', resp);
+      } catch (error) {
+        console.error('조회 중 오류 발생:', error);
+        this.$toast('error', '서버 연결에 실패했습니다. Spring Boot 서버가 실행 중인지 확인하세요.');
+      }
     },
 
     searchClick() {
       this.getDataList();
     },
-
-    uploadPopupBtnClick() {
-      this.uploadClick();
-    },
-
+    /* 업로드 기능 주석처리 - 조회 기능만 활성화
     uploadClick() {
       let excelGrid = _.cloneDeep(gridField);
       excelGrid.options.display.fitStyle = 'none'; // 엑셀다운로드시 none 아니면 width 0이 됨.
       this.$refs.uploadPopup1.openDialog({
         dialogTitle: '업로드 팝업',
-        uploadApi: '/api/c0001000/c0001003/upload',
-        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9'],
+        uploadApi: '/api/c0001000/C0001005/upload',
+        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10', 'field11', 'field12', 'field13', 'field14', 'field15'],
         excelGrid,
-        fileName: '자재정보_template',
+        fileName: '제품기준정보_template',
       });
     },
-
+    */
+    /* 업로드 팝업 관련 메서드 주석처리
     closePopup() {
       this.searchClick();
     },
-
+    */
     async excelBtnClick() {
       const grid = this.gridView;
 
       const now = new Date();
       const yyyymmdd = this.$utils.getTodayDate();
 
-      const hours = String(now.getHours()).padStart(2, "0");
-      const minutes = String(now.getMinutes()).padStart(2, "0");
-      const seconds = String(now.getSeconds()).padStart(2, "0");
-      const fileName = `자재정보${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const fileName = `제품기준정보${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
-        type: "excel",
-        target: "local",
+        type: 'excel',
+        target: 'local',
         fileName: fileName,
-        progressMessage: "엑셀 Export중입니다.",
+        progressMessage: '엑셀 Export중입니다.',
         done: function () {
-          alert("엑셀 내보내기가 완료되었습니다!");
+          alert('엑셀 내보내기가 완료되었습니다!');
         },
       };
 
       grid.exportGrid(options);
     },
 
+    /* CRUD 기능들 주석처리 - 조회 기능만 활성화
     addBtnClick() {
       this.gridView.commit();
       this.gridDataProvider.addRow({ yyyy: this.params.yyyy.text, site: this.params.site });
@@ -195,36 +199,17 @@ export default {
       this.gridView.commit();
       const checkedRows = this.gridView.getCheckedRows();
       if (checkedRows.length === 0) {
-        this.$toast("info", "삭제할 행을 선택하세요");
+        this.$toast('info', '삭제할 행을 선택하세요');
       } else {
-        // 삭제할 행의 정보를 수집
-        let deleteInfo = [];
+        let delItems = [];
         checkedRows.forEach((itemIndex) => {
-          const rowData = this.gridDataProvider.getJsonRow(itemIndex);
-          deleteInfo.push(`${rowData.matCode} (${rowData.matDesc})`);
-        });
-
-        const deleteMessage = `선택한 ${checkedRows.length}개의 자재를 삭제하시겠습니까?\n\n삭제 대상:\n${deleteInfo.join('\n')}`;
-        
-        this.$confirm('삭제 확인', deleteMessage, (confirm) => {
-          if (confirm) {
-            let delItems = [];
-            let deletedCount = 0;
-            
-            checkedRows.forEach((itemIndex) => {
-              if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
-                delItems.push(itemIndex);
-                deletedCount++;
-              } else {
-                this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
-                deletedCount++;
-              }
-            });
-            
-            this.gridDataProvider.removeRows(delItems);
-            this.$toast('success', `${deletedCount}개의 자재가 삭제 표시되었습니다. 저장 버튼을 클릭하여 완료하세요.`);
+          if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
+            delItems.push(itemIndex);
+          } else {
+            this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
           }
         });
+        this.gridDataProvider.removeRows(delItems);
       }
     },
 
@@ -234,68 +219,59 @@ export default {
     },
 
     async saveData() {
-      let saveData = this.$refs.materialGrid.getSaveData();
+      let saveData = this.$refs.modelGrid.getSaveData();
       if (saveData.count <= 0) {
         this.$toast('info', '변경된 내용이 없습니다.');
         return;
       }
       this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
 
-      this.isValidteCellMaterialGrid = true;
+      this.isValidteCellmodelGrid = true;
       let rslt = this.gridView.validateCells(null, false);
-      this.isValidteCellMaterialGrid = false;
+      this.isValidteCellmodelGrid = false;
 
       if (rslt === null) {
         this.$confirm('확인', '수정하신 내용을 저장 하시겠습니까?', async (confirm) => {
           if (confirm) {
             let param = {
-              menuId:'c0001003',
-              delete: [{queryId:'deleteTab1Data', data:saveData.delete}],
-              insert: [{queryId:'insertTab1Data', data:saveData.insert}],
-              update: [{queryId:'updateTab1Data', data:saveData.update}],
+              menuId: 'C0001005',
+              delete: [{ queryId: 'deleteTab1Data', data: saveData.delete }],
+              insert: [{ queryId: 'insertTab1Data', data: saveData.insert }],
+              update: [{ queryId: 'updateTab1Data', data: saveData.update }],
             };
 
             try {
               let resp = await this.$axios.api.saveData(param);
-              
-              // 저장된 작업 내용을 상세히 표시
-              let saveMessage = '저장 완료:\n';
-              if (saveData.insert.length > 0) saveMessage += `• 추가: ${saveData.insert.length}건\n`;
-              if (saveData.update.length > 0) saveMessage += `• 수정: ${saveData.update.length}건\n`;
-              if (saveData.delete.length > 0) saveMessage += `• 삭제: ${saveData.delete.length}건\n`;
-              
-              this.$toast('success', saveMessage.trim());
+              this.$toast('info', '저장완료');
               this.searchClick();
             } catch {
-              this.$toast('error', '저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+              this.$toast('info', '에러발생. 다시 작업해주세요.');
             }
           }
         });
-      } 
+      }
     },
-    onValidateColumnMaterialGrid(grid, column, inserting, value, itemIndex, dataRow) {
+    */
+    /* 편집 검증 기능 주석처리 - 조회 기능만 활성화
+    onValidateColumnmodelGrid(grid, column, inserting, value, itemIndex, dataRow) {
       let error = {};
-      if (!this.isValidteCellMaterialGrid) return error;
+      if (!this.isValidteCellmodelGrid) return error;
 
-      if (this.$utils.containsValue(['yyyy', 'selCode', 'site', 'matCode', 'matDesc', 'expenSel', 'size', 'matClass', 'gubun'], column.fieldName)) {
+      if (this.$utils.containsValue(['yyyy', 'selCode', 'site', 'model'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';
         }
       }
 
-      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyy', 'selCode', 'site', 'matCode'], column.fieldName)) {
+      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyy', 'selCode', 'site', 'model'], column.fieldName)) {
         error.level = 'warning';
         error.message = '중복 입력입니다.';
       }
 
       return error;
     },
-		onProdCtgChange(v){
-			this.userAuthInfo.changeProdCtg(v);
-      this.$toast('info','ccccccccccc');
-      this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? '비나' : '본사';
-		}
+    */
   },
 };
 </script>
