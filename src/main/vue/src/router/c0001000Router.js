@@ -29,6 +29,16 @@ const c0001000Router = [
       requiresAuth: false,
     }
   },
+    {
+    path: '/c0001005',
+    name: '원가 제품기준정보',
+    component: () => import('../views/web/c0001000/C0001005.vue'),
+    meta: {
+      upperSysResourceId:'C0001000',
+      sysResourceId:"C0001005",
+      requiresAuth: false,
+    }
+  },
   {
     path: '/c0001007',
     name: '원가 일반코드',

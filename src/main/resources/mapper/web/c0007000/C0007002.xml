@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007002Mapper">
+	<select id="selectTab1GridData" resultType="CamelMap">
+		select
+			YYYYMM,
+			SEL_CODE,
+			SITE,
+			MAT_CODE,
+			MST_DESC,
+			[SIZE],
+			IN_QTY,
+			UNIT_COST,
+			IN_AMT,
+			COST_GUBUN,
+			MAT_CLASS,
+			MODEL,
+			MODEL_N_TYPE
+		from
+			DOI_MATERIAL_RESC
+		where
+			1=1
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
+		</if>
+		<if test="site != null and site != ''">
+			and site = #{site}
+		</if>
+		order BY MAT_CODE;
+	</select>
+
+	<select id="checkduplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
+		DROP TABLE IF EXISTS #TempTable1;
+
+		CREATE TABLE #TempTable1 (
+			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+			SEL_CODE varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
+			MAT_CODE varchar(24) COLLATE Korean_Wansung_CI_AS NULL,
+			MST_DESC nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
+			[SIZE] varchar(40) COLLATE Korean_Wansung_CI_AS NULL,
+			IN_QTY real NULL,
+			UNIT_COST real NULL,
+			IN_AMT real NULL,
+			COST_GUBUN nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			MAT_CLASS nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			MODEL varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			MODEL_N_TYPE varchar(15) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable1
+		(
+		YYYYMM
+		, SEL_CODE
+		, SITE
+		, SITE_ORG
+		, MAT_CODE
+		, MST_DESC
+		, [SIZE]
+		, IN_QTY
+		, UNIT_COST
+		, IN_AMT
+		, COST_GUBUN
+		, MAT_CLASS
+		, MODEL
+		, MODEL_N_TYPE
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			)
+		</foreach>;
+
+		SELECT * FROM #TempTable1 a
+		WHERE EXISTS (
+			SELECT 1
+			FROM DOI_MATERIAL_RESC b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SITE = a.SITE
+			AND b.MAT_CODE = a.MAT_CODE
+			AND b.MODEL = a.MODEL
+		);
+	</select>
+
+	<insert id="uploadExcel" parameterType="java.util.List">
+		CREATE TABLE #TempTable (
+			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+			SEL_CODE varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
+			MAT_CODE varchar(24) COLLATE Korean_Wansung_CI_AS NULL,
+			MST_DESC nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
+			[SIZE] varchar(40) COLLATE Korean_Wansung_CI_AS NULL,
+			IN_QTY real NULL,
+			UNIT_COST real NULL,
+			IN_AMT real NULL,
+			COST_GUBUN nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			MAT_CLASS nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			MODEL varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			MODEL_N_TYPE varchar(15) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable
+		(
+		seq_no
+		, YYYYMM
+		, SEL_CODE
+		, SITE
+		, SITE_ORG
+		, MAT_CODE
+		, MST_DESC
+		, [SIZE]
+		, IN_QTY
+		, UNIT_COST
+		, IN_AMT
+		, COST_GUBUN
+		, MAT_CLASS
+		, MODEL
+		, MODEL_N_TYPE
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field1}
+			, #{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			)
+		</foreach>;
+
+		INSERT INTO DOI_MATERIAL_RESC (YYYYMM, SEL_CODE, SITE, MAT_CODE, MST_DESC, [SIZE], IN_QTY, UNIT_COST, IN_AMT, COST_GUBUN, MAT_CLASS, MODEL, MODEL_N_TYPE)
+		SELECT YYYYMM, SEL_CODE, SITE, MAT_CODE, MST_DESC, [SIZE], IN_QTY, UNIT_COST, IN_AMT, COST_GUBUN, MAT_CLASS, MODEL, MODEL_N_TYPE
+		FROM (
+			SELECT *, MAX(seq_no) over (partition by YYYYMM, SITE, MAT_CODE, MODEL) max_seq_no FROM #TempTable
+		) A
+		WHERE 1=1
+		AND seq_no = max_seq_no
+		AND NOT EXISTS (
+			SELECT 1
+			FROM DOI_MATERIAL_RESC b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SITE = a.SITE
+			AND b.MAT_CODE = a.MAT_CODE
+			AND b.MODEL = a.MODEL
+		);
+
+		DROP TABLE #TempTable;
+	</insert>
+	
+	<insert id="insertTab1Data">
+		INSERT INTO DOI_MATERIAL_RESC
+		(
+		YYYYMM
+		, SEL_CODE
+		, SITE
+		, SITE_ORG
+		, MAT_CODE
+		, MST_DESC
+		, [SIZE]
+		, IN_QTY
+		, UNIT_COST
+		, IN_AMT
+		, COST_GUBUN
+		, MAT_CLASS
+		, MODEL
+		, MODEL_N_TYPE
+		)
+		VALUES
+		(
+		#{yyyymm}
+		, #{selCode}
+		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='베트남' then 'VN' else left(#{site},2) end
+		, #{matCode}
+		, #{mstDesc}
+		, #{size}
+		, #{inQty}
+		, #{unitCost}
+		, #{inAmt}
+		, #{costGubun}
+		, #{matClass}
+		, #{model}
+		, #{modelNType}				
+		);
+	</insert>
+
+	<delete id="deleteTab1Data">
+		DELETE FROM DOI_MATERIAL_RESC
+		WHERE 1=1
+		and yyyymm = #{yyyymm}
+		and sel_code = #{selCode}
+		and site = #{siteOrg}
+		and matCode = #{matCode}
+		and model = #{model}
+	</delete>
+
+	<update id="updateTab1Data">
+		UPDATE DOI_MATERIAL_RESC
+		SET SEL_CODE = #{selCode}
+		,[SIZE] = #{size}
+		,IN_QTY = #{inQty}
+		,UNIT_COST = #{unitCost}
+		,IN_AMT = #{inAmt}
+		,COST_GUBUN = #{costGubun}
+		,MAT_CLASS = #{matClass}
+		,MODEL_N_TYPE = #{modelNType}
+		WHERE 1=1
+		and yyyymm = #{yyyymm}
+		and site = #{siteOrg}
+		and matCode = #{matCode}
+		and model = #{model}
+		;
+	</update>
+</mapper>

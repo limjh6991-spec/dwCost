@@ -1,5 +1,5 @@
 /*
- * 기본정보 > 부서 코드
+ * 기준정보 > 제품기본정보
  */
 const { ValueType } = require('realgrid');
 
@@ -35,9 +35,17 @@ const grid = {
     { fieldName: 'selCode', dataType: ValueType.TEXT },
     { fieldName: 'siteOrg', dataType: ValueType.TEXT },
     { fieldName: 'site', dataType: ValueType.TEXT },
-    { fieldName: 'dept', dataType: ValueType.TEXT },
-    { fieldName: 'deptName', dataType: ValueType.TEXT },
-    { fieldName: 'expenArea', dataType: ValueType.TEXT },
+    { fieldName: 'model', dataType: ValueType.TEXT },
+    { fieldName: 'spec', dataType: ValueType.TEXT },
+    { fieldName: 'inch', dataType: ValueType.TEXT },
+    { fieldName: 'glassThick', dataType: ValueType.TEXT },
+    { fieldName: 'sheet', dataType: ValueType.TEXT },
+    { fieldName: 'block', dataType: ValueType.TEXT },
+    { fieldName: 'cell', dataType: ValueType.TEXT },
+	{ fieldName: 'runSize', dataType: ValueType.TEXT },
+  { fieldName: 'x', dataType: ValueType.TEXT },
+  { fieldName: 'y', dataType: ValueType.TEXT },
+	{ fieldName: 'xy', dataType: ValueType.TEXT },
   ],
 
   columns: [
@@ -109,30 +117,28 @@ const grid = {
       },
     },
     {
-      name: 'DEPT',
-      fieldName: 'dept',
-      width: '150',
-      header: { text: '부서코드' },
+      name: 'MODEL',
+      fieldName: 'model',
+      width: '90',
+      header: { text: 'MODEL' },
       autoFilter: true,
-      editable: false,
-      styleName: 'tl',
+      editable: true,
+      styleName: 'edit tl',
       styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
+        return { editable: true, styleName: 'edit tl' };
       },
     },
-    { name: 'DEPT_NAME', fieldName: 'deptName', width: '120', header: { text: '부서명' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'EXPEN_AREA', fieldName: 'expenArea', width: '135', header: { text: '비용구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: 'SPEC', fieldName: 'spec', width: '70', header: { text: '규격' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: 'INCH', fieldName: 'inch', width: '120', header: { text: '인치' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: 'GLASS_THICK', fieldName: 'glassThick', width: '135', header: { text: '두께' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: 'SHEET', fieldName: 'sheet', width: '135', header: { text: 'SHEET' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+	{ name: 'BLOCK', fieldName: 'block', width: '70', header: { text: 'BLOCK' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+	{ name: 'CELL', fieldName: 'cell', width: '120', header: { text: 'CELL' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+	{ name: 'RUN_SIZE', fieldName: 'runSize', width: '135', header: { text: 'RUN_SIZE' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+  { name: 'X', fieldName: 'x', width: '135', header: { text: '가로' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+  { name: 'Y', fieldName: 'y', width: '135', header: { text: '세로' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+	{ name: 'XY', fieldName: 'xy', width: '135', header: { text: '면적' }, autoFilter: true, editable: true, styleName: 'edit tl' },
   ],
-}
+};
 
 module.exports = grid;

@@ -1,11 +1,11 @@
 /**
-*	기준정보 > 자재코드
-*/
+ * 기준정보 > 제품기준정보
+ */
 package com.dowinsys.cost.web.c0001000.service.impl;
 
 import com.dowinsys.cost.common.utils.ExcelUtils;
-import com.dowinsys.cost.web.c0001000.mapper.C0001003Mapper;
-import com.dowinsys.cost.web.c0001000.service.C0001003Service;
+import com.dowinsys.cost.web.c0001000.mapper.C0001005Mapper;
+import com.dowinsys.cost.web.c0001000.service.C0001005Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,11 +13,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Service("com.dowinsys.cost.web.c0001000.service.C0001003")
-public class C0001003ServiceImpl implements C0001003Service {
+@Service("com.dowinsys.cost.web.c0001000.service.C0001005")
+public class C0001005ServiceImpl implements C0001005Service {
 
     @Autowired
-    C0001003Mapper mapper;
+    C0001005Mapper mapper;
 
     @Override
     public Map<String, String> uploadExcel(MultipartFile file, String headers) throws Exception {
@@ -92,22 +92,22 @@ public class C0001003ServiceImpl implements C0001003Service {
 
             if (!duplicateOrgList.isEmpty() || !duplicateList.isEmpty() || !pkDuplicateList.isEmpty()) {
                 StringBuilder errorMessage = new StringBuilder();
-                List<String> acctList = new ArrayList<>();
+                List<String> modelList = new ArrayList<>();
                 for (Map<String, String> item : duplicateOrgList) {
-                    acctList.add(item.get("acct"));
+                    // duplicateOrgList comes from DOI_MODEL_MAST rows; use 'model' as identifier
+                    modelList.add(item.get("model"));
                 }
-                acctList = acctList.stream().distinct().toList();
-
+                modelList = modelList.stream().distinct().toList();
                 int index = 0;
-                for (String acct : acctList) {
+                for (String model : modelList) {
                     if (index == 0) {
-                        errorMessage.append(acct);
+                        errorMessage.append(model);
                     } else {
                         errorMessage.append(", ");
                         if (index % 8 == 0) {
                             errorMessage.append("\n");
                         }
-                        errorMessage.append(acct);
+                        errorMessage.append(model);
                     }
                     index++;
                 }
@@ -117,7 +117,7 @@ public class C0001003ServiceImpl implements C0001003Service {
                     } else {
                         errorMessage.append(" ");
                     }
-                    errorMessage.append("자재코드는 동일년도 동일사업장에 이미 존재하는 데이터로 업로드 대상이 아닙니다.");
+                    errorMessage.append("면적기준정보는 동일년도 동일사업장에 이미 존재하는 데이터로 업로드 대상이 아닙니다.");
                     if (!duplicateList.isEmpty() || !pkDuplicateList.isEmpty()) {
                         errorMessage.append("\n");
                     }

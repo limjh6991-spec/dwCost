@@ -1,5 +1,6 @@
 <template>
-  <div class="gnb" ref="gnb" :class="{ on: isHovered }">
+  <div>
+    <div class="gnb" ref="gnb" :class="{ on: isHovered }">
     <div class="logo">
       <h1>DOWOOINSYS</h1>
     </div>
@@ -96,10 +97,9 @@
        </div> -->
          <!--  마우스 오버 :메뉴 높이 계산 -->
     </div>
-  </div>
-  <div class="tab_wrap">
+    </div>
+    <div class="tab_wrap">
     <div class="tab-container">
-      
       <div class="tabs-wrapper" ref="tabsContainer">
         <b-tabs v-model="activeTab" class="two_depth_tab">
           <b-tab v-for="(element, index) in tabs" :key="index"
@@ -120,6 +120,7 @@
         <b-button @click="scrollRight" class="btn-right bi bi-chevron-right"></b-button>
       </div>
     </div>
+  </div>
   </div>
 </template>
 
