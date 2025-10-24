@@ -5,12 +5,10 @@
       <b-row class="search_area">
         <b-col cols="2">
           <div class="form-floating">
-            <select class="form-select label-60" id="floatingSelect" v-model="params.yyyy">
-              <option v-for="yyyy in yearList" :key="yyyy.value" :value="yyyy">
-                {{ yyyy.text }}
-              </option>
-            </select>
-            <label for="floatingSelect" class="select">년도</label>
+            <div class="form-floating me-1">
+              <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
+              <label for="floatingSelect" class="select">기준월</label>
+            </div>
           </div>
         </b-col>
         <b-col cols="2">
@@ -63,8 +61,8 @@ export default {
       materialGrid: null,
       materialGridRows: [],
       params: {
-        yyyy: null,
-        site: '본사',
+        yyyymm: null,
+        site: 'HQ',
       },
       yearList: [],
       siteMap: {
@@ -74,23 +72,33 @@ export default {
         VN: 'VN', //DB map
       },
       isProcessing: false,
-      duplicateKey: ['yyyy', 'selCode', 'site', 'matCode'],
+      duplicateKey: ['yyyymm', 'site', 'matCode'],
       isValidteCellMaterialGrid: false,
       duplicateIndices: [],
     };
   },
   watch: {
+    selectedMonth(newVal) {
+      this.updateYyyymm();
+    },
+    selectedYear(newVal) {
+      this.updateYyyymm();
+    },
     userAuthInfo: {
       handler(newVal) {
-        console.log('userAuthInfo 변경:', newVal);
-        if (newVal.curProdCtg) {  //selectedProdCtg
-          this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
-          console.log('사이트 업데이트:', this.params.site);
+        if (newVal) {
+          if (newVal.curProdCtg) {
+            this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
+            if (this.$refs.materialGrid != null) {
+              this.initialize();
+              this.searchClick();
+            }
+          }
         }
       },
       deep: true,
       immediate: true
-    }
+    },
   },
   computed: {
     gridView() {
@@ -101,19 +109,28 @@ export default {
     },
   },
   created() {
+    // 기준월을 오늘 날짜 기준으로 세팅 (항상 YYYY-MM 형태)
+    const now = new Date();
+    this.params.yyyymm = `${now.getFullYear()}-${("0" + (now.getMonth() + 1)).slice(-2)}`;
     this.initialize();
     this.initializeGrid();
   },
   mounted() {},
   beforeUnmount() {},
   methods: {
+    updateYyyymm() {
+      // 월/년 선택 시 기준월 업데이트 (YYYY-MM)
+      if (this.selectedYear && this.selectedMonth) {
+        this.params.yyyymm = `${this.selectedYear}-${this.selectedMonth.toString().padStart(2, '0')}`;
+      }
+    },
     initialize() {
       var current = new Date();
       this.yearList = [];
       for (let i = current.getFullYear() - 1; i < current.getFullYear() + 6; i++) {
         this.yearList.push({ value: i, text: i });
       }
-      this.params.yyyy = { value: current.getFullYear(), text: current.getFullYear() };
+      this.params.yyyymm = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
@@ -121,19 +138,29 @@ export default {
     },
     async getDataList() {
       this.gridView.commit();
-
+      // 기준월(YYYY-MM)을 DB 쿼리용(YYYYMM)으로 변환
+      let yyyymm = this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null;
       let params = {
-        yyyy: this.params.yyyy.text,
+        yyyymm: yyyymm,
         site: this.siteMap[this.params.site],
       };
-
       let param = {
         menuId: 'c0001003',
         queryId: 'selectTab1GridData',
         queryParams: params,
-        target: this.materialGridRows,
       };
       let resp = await this.$axios.api.search(param);
+      console.log('조회 결과:', resp);
+      // resp가 배열, resp.data, resp.rows 등 다양한 구조에 대응
+      if (Array.isArray(resp)) {
+        this.materialGridRows = resp;
+      } else if (Array.isArray(resp.data)) {
+        this.materialGridRows = resp.data;
+      } else if (Array.isArray(resp.rows)) {
+        this.materialGridRows = resp.rows;
+      } else {
+        this.materialGridRows = [];
+      }
     },
 
     searchClick() {
@@ -186,7 +213,7 @@ export default {
 
     addBtnClick() {
       this.gridView.commit();
-      this.gridDataProvider.addRow({ yyyy: this.params.yyyy.text, site: this.params.site });
+      this.gridDataProvider.addRow({ yyyymm: this.params.yyyymm, site: this.params.site });
       let itemIndex = this.gridView.getItemCount() - 1;
       this.gridView.setCurrent({ itemIndex: itemIndex });
     },
@@ -277,14 +304,14 @@ export default {
       let error = {};
       if (!this.isValidteCellMaterialGrid) return error;
 
-      if (this.$utils.containsValue(['yyyy', 'selCode', 'site', 'matCode', 'matDesc', 'expenSel', 'size', 'matClass', 'gubun'], column.fieldName)) {
+      if (this.$utils.containsValue(['yyyymm', 'site', 'matCode'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';
         }
       }
 
-      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyy', 'selCode', 'site', 'matCode'], column.fieldName)) {
+      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'site', 'matCode'], column.fieldName)) {
         error.level = 'warning';
         error.message = '중복 입력입니다.';
       }
