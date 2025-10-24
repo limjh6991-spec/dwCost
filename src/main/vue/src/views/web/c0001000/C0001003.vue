@@ -152,15 +152,58 @@ export default {
       let resp = await this.$axios.api.search(param);
       console.log('조회 결과:', resp);
       // resp가 배열, resp.data, resp.rows 등 다양한 구조에 대응
+      let rows = [];
       if (Array.isArray(resp)) {
-        this.materialGridRows = resp;
+        rows = resp;
       } else if (Array.isArray(resp.data)) {
-        this.materialGridRows = resp.data;
+        rows = resp.data;
       } else if (Array.isArray(resp.rows)) {
-        this.materialGridRows = resp.rows;
-      } else {
-        this.materialGridRows = [];
+        rows = resp.rows;
       }
+      // 한글 key를 영문 key로 변환
+      const keyMap = {
+        '자재명': 'matName',
+        '자재번호': 'matCode',
+        '자재자산분류': 'matInventoryClass',
+        '자재대분류': 'matLargeClass',
+        '자재중분류': 'matMidClass',
+        '자재소분류': 'matSmallClass',
+        '투입단위': 'inputUnit',
+        '소요량': 'reqQty',
+        '내부loss율': 'inLossRate',
+        '외부loss율': 'outLossRate',
+        '조립위치': 'assyLoc',
+        '특이사항': 'etc',
+        '최초작성일': 'firstRegDate',
+        '최초작성자': 'firstRegId',
+        '최종수정일': 'lastModDate',
+        '최종수정자': 'lastModId',
+        'site': 'site',
+        'siteOrg': 'siteOrg',
+        'yyyymm': 'yyyymm',
+        '공정': 'process',
+        '공정차수': 'processSeq',
+        '공정품명': 'processMatName',
+        '공정품번호': 'processMatCode',
+        '제품명': 'prodName',
+        '제품번호': 'prodCode',
+        '품목자산분류': 'prodInventoryClass',
+        '품목대분류': 'prodLargeClass',
+        '품목중분류': 'prodMidClass',
+        '품목소분류': 'prodSmallClass',
+      };
+      const mappedRows = rows.map(row => {
+        const newRow = {};
+        Object.keys(row).forEach(key => {
+          if (keyMap[key]) {
+            newRow[keyMap[key]] = row[key];
+          } else {
+            newRow[key] = row[key];
+          }
+        });
+        return newRow;
+      });
+      this.materialGridRows = mappedRows;
     },
 
     searchClick() {
