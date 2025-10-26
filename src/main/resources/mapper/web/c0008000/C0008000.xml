@@ -19,6 +19,7 @@
         left join doi_dept b
         on (b.yyyy=substring(a.yyyymm,1,4) and b.sel_code=a.sel_code and b.site=a.site and b.dept=a.dept)
         where 1=1
+          and a.EXPEN_SEL not like 'M%'
         <if test="yyyymm != null and yyyymm != ''">
             and a.YYYYMM = #{yyyymm}
         </if>
@@ -34,7 +35,7 @@
                     AND a.ACCT_CLASS='AA' AND a.EXPEN_SEL NOT LIKE 'M%'
                 </when>
                 <when test="prodCost == '재료비'">
-                    AND a.ACCT_CLASS='AA' AND a.EXPEN_SEL LIKE 'M%'
+                    AND a.ACCT_CLASS='AA' AND a.EXPEN_SEL LIKE 'X%'
                 </when>
                 <otherwise>
                 </otherwise>
@@ -50,9 +51,37 @@
         a.SUB_NAME,
         a.ITEM_NAME,
         a.EXPEN_SEL
+        <if test="costGubun == null or prodCost == '전체' or prodCost == '재료비'">
+		union all
+		select
+			YYYYMM,
+			SEL_CODE,
+			SITE,
+			'재료비',
+			'제조공통',
+			CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end,
+			MAT_CLASS,
+			sum(IN_AMT) 금액,
+			CASE WHEN MAT_CLASS='원자재' then 'MDAX' else ' MIAX' end
+		from
+			doi_material_resc
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+		group by
+			YYYYMM,
+			SEL_CODE,
+			SITE,
+			MAT_CLASS
+		HAVING
+			sum(IN_AMT) > 0
+        </if>
         order BY 1,2,3,4,5,6,7,8;
     </select>
-
     <select id="C0008002_Sch1" resultType="CamelMap">
         select
         YYYYMM,
