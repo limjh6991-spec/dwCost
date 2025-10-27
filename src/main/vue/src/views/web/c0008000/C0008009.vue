@@ -1,4 +1,4 @@
-/** * 결산증빙 자료 > 제품수불_금액(DOI_STCO) */
+/** * 결산증빙 자료 > 제품수불_수량(DOI_STOCK) */
 <template>
   <div>
     <div class="search_box">
@@ -15,16 +15,6 @@
             <label for="floating">사업장</label>
           </div>
         </b-col>
-        <b-col cols="2">
-          <div class="form-floating">
-            <select class="form-select label-60" id="floatingSelect" v-model="params.gubun">
-              <option v-for="gubun in gubunList" :key="gubun.value" :value="gubun">
-                {{ gubun.text }}
-              </option>
-            </select>
-            <label for="floatingSelect" class="select">구분</label>
-          </div>
-        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -37,7 +27,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="stockCostGrid" :uid="'stockCostGrid'" :step="'1'" :rows="stockCostGridRows" style="height: 100%" />
+        <RealGrid ref="stockGrid" :uid="'stockGrid'" :step="'1'" :rows="stockGridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -45,7 +35,7 @@
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
-import gridField from '@web/c0008000/js/C0008010.js';
+import gridField from '@web/c0008000/js/C0008009.js';
 
 export default {
   props: {},
@@ -56,18 +46,12 @@ export default {
   },
   data() {
     return {
-      stockCostGrid: null,
-      stockCostGridRows: [],
+      stockGrid: null,
+      stockGridRows: [],
       params: {
         yyyymm: null,
         site: 'HQ',
-        gubun: { value: '전체', text: '전체' },
       },
-      gubunList: [
-        { value: '전체', text: '전체' },
-        { value: '개발', text: '개발' },
-        { value: '양산', text: '양산' },
-      ],
       siteMap: {
         본사: 'HQ', //DB map
         VINA: 'VN', //DB map
@@ -82,7 +66,7 @@ export default {
       handler(newVal) {
         if (newVal.curProdCtg) {
           this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.stockCostGrid != null) {
+          if (this.$refs.stockGrid != null) {
             this.initialize();
             this.searchClick();
           }
@@ -94,10 +78,10 @@ export default {
   },
   computed: {
     gridView() {
-      return this.$refs.stockCostGrid.getGridView();
+      return this.$refs.stockGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.stockCostGrid.getGridDataProvider();
+      return this.$refs.stockGrid.getGridDataProvider();
     },
   },
   created() {
@@ -111,10 +95,9 @@ export default {
       var current = new Date();
       this.params.yyyymm = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
-      this.params.gubun = { value: '전체', text: '전체' };
     },
     initializeGrid() {
-      this.stockCostGrid = _.cloneDeep(gridField);
+      this.stockGrid = _.cloneDeep(gridField);
     },
     async getDataList() {
       this.gridView.commit();
@@ -122,14 +105,13 @@ export default {
       let params = {
         yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
-        gubun: this.params.gubun != null ? this.params.gubun.value : null,
       };
 
       let param = {
         menuId: 'c0008000',
-        queryId: 'C0008010_Sch1',
+        queryId: 'C0008009_Sch1',
         queryParams: params,
-        target: this.stockCostGridRows,
+        target: this.stockGridRows,
       };
       let resp = await this.$axios.api.search(param);
     },
@@ -145,7 +127,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `제품수불금액${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `제품수불수량${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',

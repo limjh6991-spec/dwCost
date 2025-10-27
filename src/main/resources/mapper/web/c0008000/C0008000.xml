@@ -379,6 +379,33 @@
         order BY 1,2,3,4,5,6,7,8;
     </select>
 
+    <select id="C0008009_Sch1" resultType="CamelMap">
+        select
+        YYYYMM,
+        SEL_CODE,
+        CASE WHEN SITE='HQ' then '본사' WHEN SITE ='VN' then 'VINA' else SITE end SITE,
+        MODEL,
+        STOCK,
+        SUM(BOH) BOH,
+        SUM([INPUT]) IN_QTY,
+        SUM([OUT]) OUT_QTY,
+        SUM(EOH) EOH
+        from doi_stock
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        GROUP BY YYYYMM,
+        SEL_CODE,
+        CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end,
+        MODEL,
+        STOCK
+        ORDER BY 1,2,3,4
+    </select>
+
     <select id="C0008010_Sch1" resultType="CamelMap">
         select
         YYYYMM,
