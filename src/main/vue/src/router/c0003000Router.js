@@ -1,4 +1,34 @@
 const c0003000Router = [
+{
+   path: '/c0003001',
+   name: '제료비집계',
+   component: () => import('../views/web/c0003000/C0003001.vue'),
+   meta: {
+     upperSysResourceId:'C0003000',
+     sysResourceId:"C0003001",
+     requiresAuth: true,
+   }
+ },
+{
+  path: '/c0003002',
+  name: '제료비배부',
+  component: () => import('../views/web/c0003000/C0003002.vue'),
+  meta: {
+    upperSysResourceId:'C0003000',
+    sysResourceId:"C0003002",
+    requiresAuth: true,
+  }
+},
+{
+  path: '/c0003003',
+  name: '경비/재료비 집계',
+  component: () => import('../views/web/c0003000/C0003003.vue'),
+  meta: {
+    upperSysResourceId:'C0003000',
+    sysResourceId:"C0003003",
+    requiresAuth: true,
+  }
+},
  {
     path: '/c0003005',
     name: 'FRONT',

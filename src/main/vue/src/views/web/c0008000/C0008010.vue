@@ -1,4 +1,4 @@
-/** * 결산증빙 자료 > 재품수불_금액(DOI_STCO) */
+/** * 결산증빙 자료 > 제품수불_금액(DOI_STCO) */
 <template>
   <div>
     <div class="search_box">
@@ -78,18 +78,16 @@ export default {
     };
   },
   watch: {
-    userAuthInfo: {
+    prodCtg: {
       handler(newVal) {
-        if (newVal.curProdCtg) {
-          this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
+        if (newVal) {
+          this.params.site = newVal === 'VN' ? 'VINA' : '본사';
           if (this.$refs.stockCostGrid != null) {
             this.initialize();
             this.searchClick();
           }
         }
       },
-      deep: true,
-      immediate: true,
     },
   },
   computed: {
@@ -98,6 +96,9 @@ export default {
     },
     gridDataProvider() {
       return this.$refs.stockCostGrid.getGridDataProvider();
+    },
+    prodCtg() {
+      return this.userAuthInfo.curProdCtg;
     },
   },
   created() {

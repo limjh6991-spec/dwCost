@@ -1,5 +1,5 @@
 /*
- * 결산증빙 자료 > 재품수불_금액(DOI_STCO)
+ * 결산증빙 자료 > 제품수불_금액(DOI_STCO)
  */
 const { ValueType } = require('realgrid');
 
