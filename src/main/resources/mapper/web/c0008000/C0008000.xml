@@ -188,15 +188,26 @@
     </select>
 
     <select id="C0008004_Sch1" resultType="CamelMap">
-        select
-        YYYYMM,
-        SEL_CODE,
-        SITE,
-        구분,
-        MODEL,
-        SUM(BOH) BOH,
-        SUM([IN]) INPUT_AMT
-        from doi_expen_matl
+    select
+		YYYYMM,
+		sel_code,
+		CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' end AS SITE,
+		구분,
+		model,
+		면적,
+		dist_rate,
+		SUB_NAME,
+		ITEM_NAME,
+		EXPEN_SEL,
+		EXPEN_SEL명,
+		adj_qty,
+		in_qty,
+		out_qty,
+		loss_qty,
+		unit_cost,
+		[in] as input_Amt
+	from
+		doi_expen_matl
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}
@@ -204,7 +215,6 @@
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
-        GROUP BY YYYYMM,SEL_CODE,SITE,구분,MODEL
         order by YYYYMM,SEL_CODE,SITE,MODEL;
     </select>
 
@@ -235,14 +245,18 @@
     </select>
 
     <select id="C0008005_Sch1" resultType="CamelMap">
-        select
+     select
         YYYYMM,
-        SEL_CODE,
-        CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end SITE,
-        SUM(IN_QTY) IN_QTY,
-        SUM(IN_AMT) IN_AMT,
-        COST_GUBUN,
-        MAT_CLASS
+		SEL_CODE,
+		CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' end AS SITE,
+		MAT_CLASS,
+		CASE WHEN MAT_CLASS='원자재' THEN 'MDAX' ELSE 'MIAX' end as expen_sel,
+		CASE WHEN MAT_CLASS='원자재' THEN '직접재료비' ELSE '간접재료비' end as expen_sel명,
+		MAT_CODE,
+		MAT_DESC,
+		SUM(IN_QTY) IN_QTY,
+		AVG(UNIT_COST) UNIT_COST,
+		SUM(IN_AMT) IN_AMT
         from DOI_MATERIAL_RESC
         where 1=1
             and sel_code = 'ACTUAL'
@@ -252,9 +266,15 @@
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
-        group by YYYYMM,SEL_CODE,SITE,COST_GUBUN,MAT_CLASS
+        group by	
+			YYYYMM,
+			SEL_CODE,
+			SITE,
+			MAT_CLASS,
+			MAT_CODE,
+			MAT_DESC
         having sum(in_amt) > 0
-        order by COST_GUBUN,MAT_CLASS;
+		order by 5,7;
     </select>
 
     <select id="C0008005_Sch2" resultType="CamelMap">
@@ -288,17 +308,52 @@
     </select>
 
     <select id="C0008006_Sch1" resultType="CamelMap">
-        select yyyymm,sel_code,site,mat_class,sum(배부금액) 배부금액
-        from doi_mat_cost
+      WITH BOM as (
+		SELECT * 
+		FROM (
+			select
+				b.yyyymm,
+				b.자재번호,
+				b.자재명,
+				b.자재대분류, 
+				row_number() over (partition by b.자재번호 order by (b.자재대분류)) rn1 
+			from	doi_bom_mast b
+			where 1=1
+				and yyyymm = #{yyyymm}
+				and site = #{site}
+				and nullif(자재번호, '') IS NOT NULL
+					
+			)a where rn1=1
+		)	
+		select
+		a.yyyymm,
+		a.sel_code,
+		CASE WHEN a.SITE='HQ' then '본사' WHEN a.site='VN' then 'VINA' end AS SITE,
+		a.도우모델,
+		a.자재번호,
+		b.자재명,
+		case when a.mat_class='원자재' then 'MDAX' else 'MIDX' end as expen_sel,
+		case when a.mat_class='원자재' then '직접재료비' else '간접재료비' end as expen_sel명,
+		a.mat_class,
+		--a.자재대분류,
+		a.in_amt,
+		a.환산량,
+		CASE WHEN 배부방식='BOM' THEN a.소요량 ELSE NULL END AS BOM사용량,
+		CASE WHEN 배부방식!='BOM' THEN a.소요량 ELSE NULL END AS 면적,
+		a.사용량,
+		a.배부적수,
+		a.배부금액,
+		a.배부방식
+	from
+		doi_mat_cost a	left join bom b on (a.자재번호 = b.자재번호)	
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
-            and YYYYMM = #{yyyymm}
+            and A.YYYYMM = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
-            and SITE = #{site}
+            and A.SITE = #{site}
         </if>
-        group by yyyymm,sel_code,site,mat_class
-        order by mat_class;
+     order by a.배부방식 desc,a.자재번호     
     </select>
 
     <select id="C0008006_Sch2" resultType="CamelMap">
@@ -354,6 +409,7 @@
         CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end SITE,
         구분,
         MODEL,
+        EXPEN_SEL,
         ACCT_NAME,
         SUB_NAME,
         ITEM_NAME,
@@ -371,11 +427,11 @@
             and SITE = #{site}
         </if>
         <if test="acctName != null and acctName != '' and acctName != '전체'">
-            and ACCT_NAME = #{acctName}
+            and SUB_NAME LIKE '%' + #{acctName}
         </if>
         GROUP BY YYYYMM,SEL_CODE,
         CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end,
-        구분,MODEL,ACCT_NAME,SUB_NAME,ITEM_NAME
+        구분,MODEL,EXPEN_SEL,ACCT_NAME,SUB_NAME,ITEM_NAME
         order BY 1,2,3,4,5,6,7,8;
     </select>
 
