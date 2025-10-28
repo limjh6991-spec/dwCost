@@ -75,18 +75,16 @@ export default {
     };
   },
   watch: {
-    userAuthInfo: {
+    prodCtg: {
       handler(newVal) {
-        if (newVal.curProdCtg) {
-          this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
+        if (newVal) {
+          this.params.site = newVal === 'VN' ? 'VINA' : '본사';
           if (this.$refs.acctGrid != null) {
             this.initialize();
             this.searchClick();
           }
         }
       },
-      deep: true,
-      immediate: true,
     },
   },
   computed: {
@@ -95,6 +93,9 @@ export default {
     },
     gridDataProvider() {
       return this.$refs.acctGrid.getGridDataProvider();
+    },
+    prodCtg() {
+      return this.userAuthInfo.curProdCtg;
     },
   },
   created() {
