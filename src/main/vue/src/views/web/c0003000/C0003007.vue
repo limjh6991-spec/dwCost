@@ -91,8 +91,8 @@ export default {
           //}
         }
       },
-      deep: true,
-      immediate: true,
+      // deep: true,
+      // immediate: true,
     },
   },
   computed: {
