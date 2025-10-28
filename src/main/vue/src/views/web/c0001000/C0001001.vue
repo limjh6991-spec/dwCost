@@ -75,18 +75,16 @@ export default {
     };
   },
   watch: {
-    userAuthInfo: {
+    prodCtg: {
       handler(newVal) {
-        if (newVal.curProdCtg) {
-          this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
+        if (newVal) {
+          this.params.site = newVal === 'VN' ? 'VINA' : '본사';
           if (this.$refs.acctGrid != null) {
             this.initialize();
             this.searchClick();
           }
         }
       },
-      deep: true,
-      immediate: true,
     },
   },
   computed: {
@@ -95,6 +93,9 @@ export default {
     },
     gridDataProvider() {
       return this.$refs.acctGrid.getGridDataProvider();
+    },
+    prodCtg() {
+      return this.userAuthInfo.curProdCtg;
     },
   },
   created() {
@@ -241,7 +242,7 @@ export default {
       let error = {};
       if (!this.isValidteCellAcctGrid) return error;
 
-      if (this.$utils.containsValue(['yyyy', 'selCode', 'site', 'acctClass', 'acct', 'acctName', 'subName', 'itemName', 'expenSel'], column.fieldName)) {
+      if (this.$utils.containsValue(['yyyy', 'selCode', 'site', 'acctClass', 'acctItnCode', 'acctIssued', 'acct', 'acctName', 'debitCredit', 'largeAcct', 'mngItemType', 'acctLev', 'upperAcct', 'upperAcctItnCode', 'smallClass', 'midClass', 'expenSel', 'expenSelName'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';
