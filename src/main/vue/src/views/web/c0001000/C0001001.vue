@@ -76,7 +76,10 @@ export default {
   },
   watch: {
     userAuthInfo: {
+    userAuthInfo: {
       handler(newVal) {
+        if (newVal.curProdCtg) {
+          this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
         if (newVal.curProdCtg) {
           this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
           if (this.$refs.acctGrid != null) {
@@ -131,6 +134,51 @@ export default {
         target: this.acctGridRows,
       };
       let resp = await this.$axios.api.search(param);
+      // resp가 배열, resp.data, resp.rows 등 다양한 구조에 대응
+      let rows = [];
+      if (Array.isArray(resp)) {
+        rows = resp;
+      } else if (Array.isArray(resp.data)) {
+        rows = resp.data;
+      } else if (Array.isArray(resp.rows)) {
+        rows = resp.rows;
+      }
+      // 컬럼명 매핑 추가 (DB → JS)
+      const keyMap = {
+        'YYYY': 'yyyy',
+        'SEL_CODE': 'selCode',
+        'SITE_ORG': 'siteOrg',
+        'SITE': 'site',
+        'ACCT_CLASS_ORG': 'acctClassOrg',
+        'ACCT_CLASS': 'acctClass',
+        '계정과목내부코드': 'acctItnCode',
+        '전표기표여부': 'acctIssued',
+        'ACCT': 'acct',
+        'ACCT_NAME': 'acctName',
+        '차대': 'debitCredit',
+        '계정대분류': 'largeAcct',
+        '관리항목유형': 'mngItemType',
+        'ACCT_LEV': 'acctLev',
+        '상위계정과목': 'upperAcct',
+        '상위계정과목내부코드': 'upperAcctItnCode',
+        '소분류': 'smallClass',
+        '중분류': 'midClass',
+        '대분류': 'largeClass',
+        'EXPEN_SEL': 'expenSel',
+        'EXPEN_SEL_NAME': 'expenSelName',
+      };
+      const mappedRows = rows.map(row => {
+        const newRow = {};
+        Object.keys(row).forEach(key => {
+          if (keyMap[key]) {
+            newRow[keyMap[key]] = row[key];
+          } else {
+            newRow[key] = row[key];
+          }
+        });
+        return newRow;
+      });
+      this.acctGridRows = mappedRows;
       // resp가 배열, resp.data, resp.rows 등 다양한 구조에 대응
       let rows = [];
       if (Array.isArray(resp)) {
