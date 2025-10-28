@@ -242,7 +242,7 @@ export default {
       let error = {};
       if (!this.isValidteCellAcctGrid) return error;
 
-      if (this.$utils.containsValue(['yyyy', 'selCode', 'site', 'acctClass', 'acct', 'acctName', 'subName', 'itemName', 'expenSel'], column.fieldName)) {
+      if (this.$utils.containsValue(['yyyy', 'selCode', 'site', 'acctClass', 'acctItnCode', 'acctIssued', 'acct', 'acctName', 'debitCredit', 'largeAcct', 'mngItemType', 'acctLev', 'upperAcct', 'upperAcctItnCode', 'smallClass', 'midClass', 'expenSel', 'expenSelName'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';

@@ -11,11 +11,21 @@
 			CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then 'VINA' else site end as SITE,
 			ACCT_CLASS as ACCT_CLASS_ORG,
 			CASE WHEN ACCT_CLASS='AA' Then '가공비'  WHEN ACCT_CLASS='BB' then '판매관리비' else ACCT_CLASS end as ACCT_CLASS,
+			계정과목내부코드,
+			전표기표여부,
 			ACCT,
 			ACCT_NAME,
-			SUB_NAME,
-			ITEM_NAME,
-			EXPEN_SEL
+			차대,
+			계정대분류,
+			관리항목유형,
+			계정과목Lev AS ACCT_LEV,
+			상위계정과목,
+			상위계정과목내부코드,
+			소분류,
+			중분류,
+			대분류,
+			EXPEN_SEL,
+			EXPEN_SEL명 AS EXPEN_SEL_NAME
 		FROM
 			doi_acct
 		where 1=1
@@ -36,11 +46,21 @@
 			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			ACCT_CLASS varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			계정과목내부코드 int NULL,
+			전표기표여부 int NULL,
 			ACCT varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			ACCT_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
-			SUB_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
-			ITEM_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
-			EXPEN_SEL varchar(6) COLLATE Korean_Wansung_CI_AS NULL
+			차대 nvarchar(2) COLLATE Korean_Wansung_CI_AS NULL,
+			계정대분류 nvarchar(4) COLLATE Korean_Wansung_CI_AS NULL,
+			관리항목유형 nvarchar(18) COLLATE Korean_Wansung_CI_AS NULL,
+			계정과목Lev int NULL,
+			상위계정과목 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
+			상위계정과목내부코드 int NULL,
+			소분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			중분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			대분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			EXPEN_SEL varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+			EXPEN_SEL명 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,	
 		);
 
 		INSERT INTO #TempTable1
@@ -49,11 +69,21 @@
 		, SEL_CODE
 		, SITE
 		, ACCT_CLASS
+		, 계정과목내부코드
+		, 전표기표여부
 		, ACCT
 		, ACCT_NAME
-		, SUB_NAME
-		, ITEM_NAME
+		, 차대
+		, 계정대분류
+		, 관리항목유형
+		, 계정과목Lev
+		, 상위계정과목
+		, 상위계정과목내부코드
+		, 소분류
+		, 중분류
+		, 대분류
 		, EXPEN_SEL
+		, EXPEN_SEL명
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
@@ -67,6 +97,16 @@
 			, #{item.field8}
 			, #{item.field9}
 			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
 			)
 		</foreach>;
 
@@ -88,11 +128,21 @@
 			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			ACCT_CLASS varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			계정과목내부코드 int NULL,
+			전표기표여부 int NULL,
 			ACCT varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			ACCT_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
-			SUB_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
-			ITEM_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
-			EXPEN_SEL varchar(6) COLLATE Korean_Wansung_CI_AS NULL
+			차대 nvarchar(2) COLLATE Korean_Wansung_CI_AS NULL,
+			계정대분류 nvarchar(4) COLLATE Korean_Wansung_CI_AS NULL,
+			관리항목유형 nvarchar(18) COLLATE Korean_Wansung_CI_AS NULL,
+			계정과목Lev int NULL,
+			상위계정과목 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
+			상위계정과목내부코드 int NULL,
+			소분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			중분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			대분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			EXPEN_SEL varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+			EXPEN_SEL명 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL
 		);
 
 		INSERT INTO #TempTable
@@ -102,11 +152,21 @@
 		, SEL_CODE
 		, SITE
 		, ACCT_CLASS
+		, 계정과목내부코드
+		, 전표기표여부
 		, ACCT
 		, ACCT_NAME
-		, SUB_NAME
-		, ITEM_NAME
+		, 차대
+		, 계정대분류
+		, 관리항목유형
+		, 계정과목Lev
+		, 상위계정과목
+		, 상위계정과목내부코드
+		, 소분류
+		, 중분류
+		, 대분류
 		, EXPEN_SEL
+		, EXPEN_SEL명
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
@@ -121,11 +181,21 @@
 			, #{item.field8}
 			, #{item.field9}
 			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
 			)
 		</foreach>;
 
-		INSERT INTO DOI_ACCT (YYYY,SEL_CODE,SITE,ACCT_CLASS,ACCT,ACCT_NAME,SUB_NAME,ITEM_NAME,EXPEN_SEL)
-		SELECT YYYY,SEL_CODE,SITE,ACCT_CLASS,ACCT,ACCT_NAME,SUB_NAME,ITEM_NAME,EXPEN_SEL
+		INSERT INTO DOI_ACCT (YYYY,SEL_CODE,SITE,ACCT_CLASS,계정과목내부코드,전표기표여부,ACCT,ACCT_NAME,차대,계정대분류,관리항목유형,계정과목Lev,상위계정과목,상위계정과목내부코드,소분류,중분류,대분류,EXPEN_SEL,EXPEN_SEL명)
+		SELECT YYYY,SEL_CODE,SITE,ACCT_CLASS,계정과목내부코드,전표기표여부,ACCT,ACCT_NAME,차대,계정대분류,관리항목유형,계정과목Lev,상위계정과목,상위계정과목내부코드,소분류,중분류대분류,EXPEN_SEL,EXPEN_SEL명
 		FROM (
 			SELECT *, MAX(seq_no) over (partition by YYYY, SITE, ACCT) max_seq_no FROM #TempTable
 		)A
@@ -263,11 +333,21 @@
 		, SEL_CODE
 		, SITE
 		, ACCT_CLASS
+		, 계정과목내부코드
+		, 전표기표여부
 		, ACCT
 		, ACCT_NAME
-		, SUB_NAME
-		, ITEM_NAME
+		, 차대
+		, 계정대분류
+		, 관리항목유형
+		, 계정과목Lev
+		, 상위계정과목
+		, 상위계정과목내부코드
+		, 소분류
+		, 중분류
+		, 대분류
 		, EXPEN_SEL
+		, EXPEN_SEL명
 		)
 		VALUES
 		(
@@ -275,11 +355,21 @@
 		, #{selCode}
 		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='베트남' then 'VN' else left(#{site},2) end
 		, CASE WHEN #{acctClass}='가공비' Then 'AA'  WHEN #{acctClass}='판매관리비' then 'BB' else left(#{acctClass},2) end
+		, #{acctItnCode}
+		, #{acctIssued}
 		, #{acct}
 		, #{acctName}
-		, #{subName}
-		, #{itemName}
+		, #{debitCredit}
+		, #{largeAcct}
+		, #{mngItemType}
+		, #{acctLev}
+		, #{upperAcct}
+		, #{upperAcctItnCode}
+		, #{smallClass}
+		, #{midClass}
+		, #{largeClass}
 		, #{expenSel}
+		, #{expenSelName}
 		);
 	</insert>
 	
@@ -531,10 +621,20 @@
 		UPDATE DOI_ACCT
 		SET SEL_CODE = #{selCode}
 		,ACCT_CLASS = CASE WHEN #{acctClass} ='가공비' Then 'AA'  WHEN #{acctClass}='판매관리비' then 'BB' else left(#{acctClass},2) end
+		,계정과목내부코드 = #{acctItnCode}
+		,전표기표여부 = #{acctIssued}
 		,ACCT_NAME = #{acctName}
-		,SUB_NAME = #{subName}
-		,ITEM_NAME = #{itemName}
+		,차대 = #{debitCredit}
+		,계정대분류 = #{largeAcct}
+		,관리항목유형 = #{mngItemType}
+		,계정과목Lev = #{acctLev}
+		,상위계정과목 = #{upperAcct}
+		,상위계정과목내부코드 = #{upperAcctItnCode}
+		,소분류 = #{smallClass}
+		,중분류 = #{midClass}
+		,대분류 = #{largeClass}
 		,EXPEN_SEL = #{expenSel}
+		,EXPEN_SEL명 = #{expenSelName}
 		WHERE 1=1
 		and yyyy = #{yyyy}
 		and site = #{siteOrg}
