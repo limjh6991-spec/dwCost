@@ -12,6 +12,7 @@ public enum MapperEnum {
 	C0007002("com.dowinsys.cost.web.c0007000.mapper.C0007002Mapper."), // 타시스템 > 자재투입정보
 	C0007003("com.dowinsys.cost.web.c0007000.mapper.C0007003Mapper."), // 타시스템 > 생산정보
 	C0007004("com.dowinsys.cost.web.c0007000.mapper.C0007004Mapper."), // 타시스템 > 제품정보
+	C0007005("com.dowinsys.cost.web.c0007000.mapper.C0007005Mapper."), // 타시스템 > 매출 정보
 	C0003000("com.dowinsys.cost.web.c0003000.mapper.C0003000Mapper."), // 결산증빙 자료
 	C0008000("com.dowinsys.cost.web.c0008000.mapper.C0008000Mapper."), // 결산증빙 자료			
 	M0001001("com.dowinsys.cost.web.m0001000.mapper.M0001001Mapper."), // 자재관리 > 원자재
