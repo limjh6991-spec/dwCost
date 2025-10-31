@@ -48,7 +48,7 @@
               <!-- Depth 3 -->
               <ul class="depth3" v-if="subMenu.childSysResc" 
                 :style="subMenu.childSysResc.length > 5 ? { overflowY: 'scroll', overflowX: 'hidden', marginRight: '10px',height:'160px' } : {}"
-              ><!--li가 5개이상일때 style="overflow-y: scroll;  overflow-x: hidden; margin-right: 10px;"" -->
+                ><!--li가 5개이상일때 style="overflow-y: scroll;  overflow-x: hidden; margin-right: 10px;"" -->
                 <li 
                   v-for="(childMenu, childIndex) in subMenu.childSysResc"
                   :key="childIndex"
@@ -386,6 +386,15 @@ export default {
       const allRoutes = this.$router.getRoutes();
       console.log('7. Total Registered Routes:', allRoutes.length);
       
+      // c0001004 관련 라우트 찾기
+      const c0001004Routes = allRoutes.filter(route => 
+        route.path.includes('c0001004') || 
+        route.name?.includes('c0001004') ||
+        route.meta?.sysResourceId === 'C0001004'
+      );
+      
+      console.log('8. Found c0001004 routes:', c0001004Routes);
+
       // c0001009 관련 라우트 찾기
       const c0001009Routes = allRoutes.filter(route => 
         route.path.includes('c0001009') || 
