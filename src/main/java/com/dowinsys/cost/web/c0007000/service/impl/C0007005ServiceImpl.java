@@ -21,7 +21,6 @@ public class C0007005ServiceImpl implements C0007005Service {
 
     @Override
     public Map<String, String> uploadExcel(MultipartFile file, String headers) throws Exception {
-        System.out.println("uploadExcel");
         List<String> headerList = Arrays.asList(headers.split(","));
         Map<String, String> ret = new HashMap<>();
 
@@ -44,6 +43,20 @@ public class C0007005ServiceImpl implements C0007005Service {
                 return item;
             }).collect(Collectors.toList());
 
+            //check excel pk duplicate
+            List<Map<String, String>> list2 = ExcelUtils.readExcel(file, headerList, 1, true, true);
+            List<Map<String, String>> list3 = new ArrayList<>();
+            for (Map<String, String> item : list2) {
+                Map<String, String> addItem = new HashMap<>();
+                addItem.put("field8", item.get("field8"));
+                list3.add(addItem);
+            }
+
+            List<Map<String, String>> finalList2 = list3;
+            List<Map<String, String>> pkDuplicateList = list3.stream().filter(i -> Collections.frequency(finalList2, i) > 1).toList();
+            pkDuplicateList = pkDuplicateList.stream().distinct().toList();
+
+            List<Map<String, String>> duplicateOrgList = new ArrayList<>();
             int loopCnt = list.size() / 20;
             int remain = list.size() % 20;
             int cnt = 0;
@@ -56,6 +69,9 @@ public class C0007005ServiceImpl implements C0007005Service {
                     cnt++;
                 }
 
+                List<Map<String, String>> retList = mapper.checkduplicateOrgList(splitList);
+                if (retList != null) duplicateOrgList.addAll(retList);
+
                 retCnt += mapper.uploadExcel(splitList);
             }
 
@@ -66,12 +82,75 @@ public class C0007005ServiceImpl implements C0007005Service {
                     cnt++;
                 }
 
+                List<Map<String, String>> retList = mapper.checkduplicateOrgList(splitList);
+                if (retList != null) duplicateOrgList.addAll(retList);
+
                 retCnt += mapper.uploadExcel(splitList);
             }
 
-            if (!duplicateList.isEmpty()) {
+            if (!duplicateOrgList.isEmpty() || !duplicateList.isEmpty() || !pkDuplicateList.isEmpty()) {
                 StringBuilder errorMessage = new StringBuilder();
-                errorMessage.append("중복데이터가 제거되었습니다.");
+                List<String> acctList = new ArrayList<>();
+                for (Map<String, String> item : duplicateOrgList) {
+                    acctList.add(item.get("거래명세서번호"));
+                }
+                acctList = acctList.stream().distinct().toList();
+
+                int index = 0;
+                for (String acct : acctList) {
+                    if (index == 0) {
+                        errorMessage.append(acct);
+                    } else {
+                        errorMessage.append(", ");
+                        if (index % 6 == 0) {
+                            errorMessage.append("\n");
+                        }
+                        errorMessage.append(acct);
+                    }
+                    index++;
+                }
+                if (!duplicateOrgList.isEmpty()) {
+                    if (index % 6 == 0) {
+                        errorMessage.append("\n");
+                    } else {
+                        errorMessage.append(" ");
+                    }
+                    errorMessage.append("거래명세서번호는 이미 존재하는 데이터로 업로드 대상이 아닙니다.");
+                    if (!duplicateList.isEmpty() || !pkDuplicateList.isEmpty()) {
+                        errorMessage.append("\n");
+                    }
+                }
+
+                List<String> acctList2 = new ArrayList<>();
+                for (Map<String, String> item : duplicateList) {
+                    acctList2.add(item.get("field8"));
+                }
+                for (Map<String, String> item : pkDuplicateList) {
+                    acctList2.add(item.get("field8"));
+                }
+                acctList2 = acctList2.stream().distinct().toList();
+
+                index = 0;
+                for (String cstNo : acctList2) {
+                    if (index == 0) {
+                        errorMessage.append(cstNo);
+                    } else {
+                        errorMessage.append(", ");
+                        if (index % 6 == 0) {
+                            errorMessage.append("\n");
+                        }
+                        errorMessage.append(cstNo);
+                    }
+                    index++;
+                }
+                if (!duplicateList.isEmpty() || !pkDuplicateList.isEmpty()) {
+                    if (index % 8 == 0) {
+                        errorMessage.append("\n");
+                    } else {
+                        errorMessage.append(" ");
+                    }
+                    errorMessage.append("중복데이터가 제거되었습니다.");
+                }
 
                 System.out.println(errorMessage);
                 ret.put("status", "error");
@@ -81,7 +160,6 @@ public class C0007005ServiceImpl implements C0007005Service {
             }
 
             return ret;
-
         } catch (Exception e) {
             throw e;
         }

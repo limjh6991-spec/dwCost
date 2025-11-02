@@ -28,7 +28,6 @@ public class C0007005Controller {
             @RequestParam("file") MultipartFile file,
             @RequestParam("headers") String headers
     ) {
-        System.out.println("upload");
         if (file.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File is empty");
         }

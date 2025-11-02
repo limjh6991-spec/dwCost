@@ -65,8 +65,7 @@ export default {
         HQ: 'HQ', //DB map
         VN: 'VN', //DB map
       },
-      isProcessing: false,
-      duplicateKey: ['yyyymm', 'selCode', 'site', 'acctClass', 'acct'],
+      duplicateKey: ['거래명세서번호'],
       isValidteCellSaleRescGrid: false,
     };
   },
@@ -280,6 +279,7 @@ export default {
               menuId: 'c0007005',
               delete: [{ queryId: 'C0007005_Del1', data: saveData.delete }],
               insert: [{ queryId: 'C0007005_Ins1', data: saveData.insert }],
+              update: [{ queryId: 'C0007005_Update1', data: saveData.update }],
             };
 
             try {
@@ -297,11 +297,16 @@ export default {
       let error = {};
       if (!this.isValidteCellSaleRescGrid) return error;
 
-      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site'], column.fieldName)) {
+      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', '거래명세서번호'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';
         }
+      }
+      
+      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['거래명세서번호'], column.fieldName)) {
+        error.level = 'warning';
+        error.message = '중복 입력입니다.';
       }
 
       if (this.$utils.containsValue(['선택', '출고처리', '부가세포함', '반품', '단가소급여부', '유상사급여부'], column.fieldName)) {

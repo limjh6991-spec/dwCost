@@ -15,8 +15,166 @@
 		order by 1,2,3,4,5,6,7,8,9;
 	</select>
 
+	<select id="checkduplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
+		DROP TABLE IF EXISTS #TempTable1;
+
+		CREATE TABLE #TempTable1 (
+		YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		선택 varchar(1) COLLATE Korean_Wansung_CI_AS NULL,
+		출고처리 varchar(1) COLLATE Korean_Wansung_CI_AS NULL,
+		사업단위 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		거래명세서번호 varchar(12) COLLATE Korean_Wansung_CI_AS NULL,
+		거래명세서일 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		Local구분 nvarchar(20) COLLATE Korean_Wansung_CI_AS NULL,
+		출고구분 nvarchar(8) COLLATE Korean_Wansung_CI_AS NULL,
+		부서 nvarchar(14) COLLATE Korean_Wansung_CI_AS NULL,
+		담당자 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		청구처 nvarchar(18) COLLATE Korean_Wansung_CI_AS NULL,
+		거래처 nvarchar(18) COLLATE Korean_Wansung_CI_AS NULL,
+		유통구조 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		거래처번호 nvarchar(11) COLLATE Korean_Wansung_CI_AS NULL,
+		중개인 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
+		납품장소 nvarchar(13) COLLATE Korean_Wansung_CI_AS NULL,
+		인도조건 nvarchar(14) COLLATE Korean_Wansung_CI_AS NULL,
+		판매후보관 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		위탁 varchar(16) COLLATE Korean_Wansung_CI_AS NULL,
+		납품거래처 nvarchar(17) COLLATE Korean_Wansung_CI_AS NULL,
+		납기일 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		품명 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		품번 varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+		규격 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		판매단위 varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
+		판매기준가 numeric(18,0) NULL,
+		수량 int NULL,
+		부가세포함 varchar(1) COLLATE Korean_Wansung_CI_AS NULL,
+		통화 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		환율 numeric(18,0) NULL,
+		판매단가 numeric(18,0) NULL,
+		판매금액 numeric(18,0) NULL,
+		부가세액 numeric(18,0) NULL,
+		판매금액계 numeric(18,0) NULL,
+		원화판매금액 numeric(18,0) NULL,
+		원화부가세액 numeric(18,0) NULL,
+		원화판매금액계 numeric(18,0) NULL,
+		창고 nvarchar(16) COLLATE Korean_Wansung_CI_AS NULL,
+		보관위치 nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		Lot_No nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+		세금계산서_진행상태 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		배송상태 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		품목특이사항 nvarchar(145) COLLATE Korean_Wansung_CI_AS NULL,
+		매출시점 nvarchar(17) COLLATE Korean_Wansung_CI_AS NULL,
+		진행조회 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		원천조회 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		원천관리번호 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		원천번호 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		PO_No nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		반품 varchar(1) COLLATE Korean_Wansung_CI_AS NULL,
+		매출수량 int NULL,
+		매출금액계 numeric(18,0) NULL,
+		미매출금액 numeric(18,0) NULL,
+		세금계산서금액계 numeric(18,0) NULL,
+		계산서미발행액 numeric(18,0) NULL,
+		계산서미발행수량 int NULL,
+		기타출고구분 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		품목자산분류 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
+		단가소급여부 varchar(1) COLLATE Korean_Wansung_CI_AS NULL,
+		[수량(단가소급)] int NULL,
+		유상사급여부 varchar(1) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable1
+		(
+		YYYYMM,SEL_CODE,SITE,선택,출고처리,사업단위,거래명세서번호,거래명세서일,Local구분,출고구분
+		,부서,담당자,청구처,거래처,유통구조,거래처번호,중개인,납품장소,인도조건,판매후보관
+		,위탁,납품거래처,납기일,품명,품번,규격,판매단위,판매기준가,수량,부가세포함
+		,통화,환율,판매단가,판매금액,부가세액,판매금액계,원화판매금액,원화부가세액,원화판매금액계,창고
+		,보관위치,Lot_No,세금계산서_진행상태,배송상태,품목특이사항,매출시점,진행조회,원천조회,원천관리번호,원천번호
+		,PO_No,반품,매출수량,매출금액계,미매출금액,세금계산서금액계,계산서미발행액,계산서미발행수량,기타출고구분,품목자산분류
+		,단가소급여부,[수량(단가소급)],유상사급여부
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			, #{item.field23}
+			, #{item.field24}
+			, #{item.field25}
+			, #{item.field26}
+			, #{item.field27}
+			, #{item.field28}
+			, #{item.field29}
+			, #{item.field30}
+			, #{item.field31}
+			, #{item.field32}
+			, #{item.field33}
+			, #{item.field34}
+			, #{item.field35}
+			, #{item.field36}
+			, #{item.field37}
+			, #{item.field38}
+			, #{item.field39}
+			, #{item.field40}
+			, #{item.field41}
+			, #{item.field42}
+			, #{item.field43}
+			, #{item.field44}
+			, #{item.field45}
+			, #{item.field46}
+			, #{item.field47}
+			, #{item.field48}
+			, #{item.field49}
+			, #{item.field50}
+			, #{item.field51}
+			, #{item.field52}
+			, #{item.field53}
+			, #{item.field54}
+			, #{item.field55}
+			, #{item.field56}
+			, #{item.field57}
+			, #{item.field58}
+			, #{item.field59}
+			, #{item.field60}
+			, #{item.field61}
+			, #{item.field62}
+			, #{item.field63}
+			, #{item.field64}
+			)
+		</foreach>;
+
+		SELECT * FROM #TempTable1 a
+		WHERE EXISTS (
+		SELECT 1
+		FROM doi_sale_resc b
+		WHERE 1=1
+		AND b.거래명세서번호 = a.거래명세서번호
+		);
+	</select>
+
 	<insert id="uploadExcel" parameterType="java.util.List">
 		CREATE TABLE #TempTable (
+		seq_no INT IDENTITY (1, 1) NOT NULL,
 		YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
 		SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
 		SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
@@ -161,8 +319,34 @@
 			)
 		</foreach>;
 
-		INSERT INTO doi_sale_resc
-		SELECT * FROM #TempTable;
+		INSERT INTO doi_sale_resc (
+		YYYYMM,SEL_CODE,SITE,선택,출고처리,사업단위,거래명세서번호,거래명세서일,Local구분,출고구분
+		,부서,담당자,청구처,거래처,유통구조,거래처번호,중개인,납품장소,인도조건,판매후보관
+		,위탁,납품거래처,납기일,품명,품번,규격,판매단위,판매기준가,수량,부가세포함
+		,통화,환율,판매단가,판매금액,부가세액,판매금액계,원화판매금액,원화부가세액,원화판매금액계,창고
+		,보관위치,Lot_No,세금계산서_진행상태,배송상태,품목특이사항,매출시점,진행조회,원천조회,원천관리번호,원천번호
+		,PO_No,반품,매출수량,매출금액계,미매출금액,세금계산서금액계,계산서미발행액,계산서미발행수량,기타출고구분,품목자산분류
+		,단가소급여부,[수량(단가소급)],유상사급여부
+		)
+		SELECT
+		YYYYMM,SEL_CODE,SITE,선택,출고처리,사업단위,거래명세서번호,거래명세서일,Local구분,출고구분
+		,부서,담당자,청구처,거래처,유통구조,거래처번호,중개인,납품장소,인도조건,판매후보관
+		,위탁,납품거래처,납기일,품명,품번,규격,판매단위,판매기준가,수량,부가세포함
+		,통화,환율,판매단가,판매금액,부가세액,판매금액계,원화판매금액,원화부가세액,원화판매금액계,창고
+		,보관위치,Lot_No,세금계산서_진행상태,배송상태,품목특이사항,매출시점,진행조회,원천조회,원천관리번호,원천번호
+		,PO_No,반품,매출수량,매출금액계,미매출금액,세금계산서금액계,계산서미발행액,계산서미발행수량,기타출고구분,품목자산분류
+		,단가소급여부,[수량(단가소급)],유상사급여부
+		FROM (
+			SELECT *, MAX(seq_no) over (partition by 거래명세서번호) max_seq_no FROM #TempTable
+		)A
+		WHERE 1=1
+		AND seq_no = max_seq_no
+		AND NOT EXISTS (
+			SELECT 1
+			FROM doi_sale_resc b
+			WHERE 1=1
+			AND b.거래명세서번호 = a.거래명세서번호
+		);
 
 		DROP TABLE #TempTable;
 	</insert>
@@ -170,18 +354,7 @@
 	<delete id="C0007005_Del1">
 		DELETE FROM doi_sale_resc
 		WHERE 1=1
-		and YYYYMM =#{yyyymm} and  SEL_CODE=#{selCode} and  SITE=#{site} and  선택=#{선택} and  출고처리=#{출고처리}
-		and  사업단위=#{사업단위} and  거래명세서번호=#{거래명세서번호} and  거래명세서일=#{거래명세서일} and  Local구분=#{local구분}
-		and  출고구분 =#{출고구분} and  부서=#{부서} and  담당자=#{담당자} and  청구처=#{청구처} and  거래처=#{거래처} and  유통구조=#{유통구조}
-		and  거래처번호=#{거래처번호} and  중개인=#{중개인} and  납품장소=#{납품장소} and  인도조건=#{인도조건} and  판매후보관 =#{판매후보관} and  위탁=#{위탁}
-		and  납품거래처=#{납품거래처} and  납기일=#{납기일} and  품명=#{품명} and  품번=#{품번} and  규격=#{규격} and  판매단위=#{판매단위}
-		and  판매기준가=#{판매기준가} and  수량=#{수량} and  부가세포함 =#{부가세포함} and  통화=#{통화} and  환율=#{환율} and  판매단가=#{판매단가}
-		and  판매금액=#{판매금액} and  부가세액=#{부가세액} and  판매금액계=#{판매금액계} and  원화판매금액=#{원화판매금액} and  원화부가세액=#{원화부가세액}
-		and  원화판매금액계=#{원화판매금액계} and  창고 =#{창고} and  보관위치=#{보관위치} and  Lot_No=#{lotNo} and  세금계산서_진행상태=#{세금계산서진행상태}
-		and  배송상태=#{배송상태} and  품목특이사항=#{품목특이사항} and  매출시점=#{매출시점} and  진행조회=#{진행조회} and  원천조회=#{원천조회}
-		and  원천관리번호=#{원천관리번호} and  원천번호 =#{원천번호} and  PO_No=#{poNo} and  반품=#{반품} and  매출수량=#{매출수량} and  매출금액계=#{매출금액계}
-		and  미매출금액=#{미매출금액} and  세금계산서금액계=#{세금계산서금액계} and  계산서미발행액=#{계산서미발행액} and  계산서미발행수량=#{계산서미발행수량}
-		and  기타출고구분=#{기타출고구분} and  품목자산분류 =#{품목자산분류}	and  단가소급여부=#{단가소급여부} and  [수량(단가소급)]=#{수량(단가소급)} and  유상사급여부=#{유상사급여부}
+		and 거래명세서번호=#{거래명세서번호}
 	</delete>
 
 	<insert id="C0007005_Ins1">
@@ -262,5 +435,25 @@
 		,#{유상사급여부}
 		);
 	</insert>
+
+	<update id="C0007005_Update1">
+		UPDATE doi_sale_resc
+		SET YYYYMM =#{yyyymm} ,SEL_CODE=#{selCode} ,SITE=#{site} ,선택=#{선택} ,출고처리=#{출고처리}
+		,사업단위=#{사업단위} ,거래명세서일=#{거래명세서일} ,Local구분=#{local구분}
+		,출고구분 =#{출고구분} ,부서=#{부서} ,담당자=#{담당자} ,청구처=#{청구처} ,거래처=#{거래처} ,유통구조=#{유통구조}
+		,거래처번호=#{거래처번호} ,중개인=#{중개인} ,납품장소=#{납품장소} ,인도조건=#{인도조건} ,판매후보관 =#{판매후보관} ,위탁=#{위탁}
+		,납품거래처=#{납품거래처} ,납기일=#{납기일} ,품명=#{품명} ,품번=#{품번} ,규격=#{규격} ,판매단위=#{판매단위}
+		,판매기준가=#{판매기준가} ,수량=#{수량} ,부가세포함 =#{부가세포함} ,통화=#{통화} ,환율=#{환율} ,판매단가=#{판매단가}
+		,판매금액=#{판매금액} ,부가세액=#{부가세액} ,판매금액계=#{판매금액계} ,원화판매금액=#{원화판매금액} ,원화부가세액=#{원화부가세액}
+		,원화판매금액계=#{원화판매금액계} ,창고 =#{창고} ,보관위치=#{보관위치} ,Lot_No=#{lotNo} ,세금계산서_진행상태=#{세금계산서진행상태}
+		,배송상태=#{배송상태} ,품목특이사항=#{품목특이사항} ,매출시점=#{매출시점} ,진행조회=#{진행조회} ,원천조회=#{원천조회}
+		,원천관리번호=#{원천관리번호} ,원천번호 =#{원천번호} ,PO_No=#{poNo} ,반품=#{반품} ,매출수량=#{매출수량} ,매출금액계=#{매출금액계}
+		,미매출금액=#{미매출금액} ,세금계산서금액계=#{세금계산서금액계} ,계산서미발행액=#{계산서미발행액} ,계산서미발행수량=#{계산서미발행수량}
+		,기타출고구분=#{기타출고구분} ,품목자산분류 =#{품목자산분류}	,단가소급여부=#{단가소급여부} ,[수량(단가소급)]=#{수량(단가소급)} ,유상사급여부=#{유상사급여부}
+		WHERE 1=1
+		and 거래명세서번호 = #{거래명세서번호}
+		;
+	</update>
+
 
 </mapper>

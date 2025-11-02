@@ -12,5 +12,7 @@ import java.util.Map;
 @Repository("com.dowinsys.cost.web.c0007000.mapper.C0007005Mapper")
 @Mapper
 public interface C0007005Mapper {
+    List<Map<String, String>> checkduplicateOrgList(List<Map<String, String>> list);
+
     int uploadExcel(List<Map<String, String>> list);
 }
