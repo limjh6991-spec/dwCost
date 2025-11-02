@@ -2,16 +2,18 @@ package com.dowinsys.cost.common.enums;
 
 public enum MapperEnum {
 
-	C0001001("com.dowinsys.cost.web.c0001000.mapper.C0001001Mapper."), // 기준정보 > 계정코드
-	C0001002("com.dowinsys.cost.web.c0001000.mapper.C0001002Mapper."), // 기준정보 > 부서코드
-	C0001003("com.dowinsys.cost.web.c0001000.mapper.C0001003Mapper."), // 기준정보 > 자재코드
-	C0001005("com.dowinsys.cost.web.c0001000.mapper.C0001005Mapper."), // 기준정보 > 제품기준정보
+	// C0001001("com.dowinsys.cost.web.c0001000.mapper.C0001001Mapper."), // 기준정보 > 계정코드
+	// C0001002("com.dowinsys.cost.web.c0001000.mapper.C0001002Mapper."), // 기준정보 > 부서코드
+	// C0001003("com.dowinsys.cost.web.c0001000.mapper.C0001003Mapper."), // 기준정보 > 자재코드
+	C0001004("com.dowinsys.cost.web.c0001000.mapper.C0001004Mapper."), // 기준정보 > 원가기준정보
+	// C0001005("com.dowinsys.cost.web.c0001000.mapper.C0001005Mapper."), // 기준정보 > 제품기준정보
 	C0001007("com.dowinsys.cost.web.c0001000.mapper.C0001007Mapper."), // 기준정보 > 원가 일반코드	
 	C0001009("com.dowinsys.cost.web.c0001000.mapper.C0001009Mapper."), // 기준정보 > 원가사용자-메뉴 권한 관리
 	C0007001("com.dowinsys.cost.web.c0007000.mapper.C0007001Mapper."), // 타시스템 > 부서별,계정별 비용
 	C0007002("com.dowinsys.cost.web.c0007000.mapper.C0007002Mapper."), // 타시스템 > 자재투입정보
 	C0007003("com.dowinsys.cost.web.c0007000.mapper.C0007003Mapper."), // 타시스템 > 생산정보
 	C0007004("com.dowinsys.cost.web.c0007000.mapper.C0007004Mapper."), // 타시스템 > 제품정보
+	C0007005("com.dowinsys.cost.web.c0007000.mapper.C0007005Mapper."), // 타시스템 > 매출 정보
 	C0003000("com.dowinsys.cost.web.c0003000.mapper.C0003000Mapper."), // 결산증빙 자료
 	C0008000("com.dowinsys.cost.web.c0008000.mapper.C0008000Mapper."), // 결산증빙 자료			
 	M0001001("com.dowinsys.cost.web.m0001000.mapper.M0001001Mapper."), // 자재관리 > 원자재

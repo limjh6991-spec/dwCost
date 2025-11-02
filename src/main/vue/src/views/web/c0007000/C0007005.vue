@@ -1,19 +1,15 @@
-/** * 기본정보 > 계정 코드 */
+/** * 타시스템 I/F&Upload > 매출 정보 */
 <template>
   <div>
     <div class="search_box">
       <b-row class="search_area">
-        <b-col cols="2">
-          <div class="form-floating">
-            <select class="form-select label-60" id="floatingSelect" v-model="params.yyyy">
-              <option v-for="yyyy in yearList" :key="yyyy.value" :value="yyyy">
-                {{ yyyy.text }}
-              </option>
-            </select>
-            <label for="floatingSelect" class="select">년도</label>
+        <b-col cols="1" class="period">
+          <div class="form-floating me-1">
+            <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
+            <label for="floatingSelect" class="select">기준월</label>
           </div>
         </b-col>
-        <b-col cols="2">
+        <b-col cols="2" class="ms-3">
           <div class="form-floating">
             <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" :disabled="true" />
             <label for="floating">사업장</label>
@@ -35,7 +31,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="acctGrid" :uid="'acctGrid'" :step="'1'" :rows="acctGridRows" style="height: 100%" />
+        <RealGrid ref="saleRescGrid" :uid="'saleRescGrid'" :step="'1'" :rows="saleRescGridRows" style="height: 100%" />
       </div>
     </div>
     <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
@@ -45,7 +41,7 @@
 <script>
 import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
-import gridField from '@web/c0001000/js/C0001001.js';
+import gridField from '@web/c0007000/js/C0007005.js';
 
 export default {
   props: {},
@@ -56,10 +52,10 @@ export default {
   },
   data() {
     return {
-      acctGrid: null,
-      acctGridRows: [],
+      saleRescGrid: null,
+      saleRescGridRows: [],
       params: {
-        yyyy: null,
+        yyyymm: null,
         site: 'HQ',
       },
       yearList: [],
@@ -69,32 +65,32 @@ export default {
         HQ: 'HQ', //DB map
         VN: 'VN', //DB map
       },
-      isProcessing: false,
-      duplicateKey: ['yyyy', 'selCode', 'site', 'acctClass', 'acct'],
-      isValidteCellAcctGrid: false,
+      duplicateKey: ['거래명세서번호'],
+      isValidteCellSaleRescGrid: false,
     };
   },
   watch: {
-    userAuthInfo: {
+    prodCtg: {
       handler(newVal) {
-        if (newVal.curProdCtg) {
-          this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.acctGrid != null) {
+        if (newVal) {
+          this.params.site = newVal === 'VN' ? 'VINA' : '본사';
+          if (this.$refs.saleRescGrid != null) {
             this.initialize();
             this.searchClick();
           }
         }
       },
-      deep: true,
-      immediate: true,
     },
   },
   computed: {
     gridView() {
-      return this.$refs.acctGrid.getGridView();
+      return this.$refs.saleRescGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.acctGrid.getGridDataProvider();
+      return this.$refs.saleRescGrid.getGridDataProvider();
+    },
+    prodCtg() {
+      return this.userAuthInfo.curProdCtg;
     },
   },
   created() {
@@ -106,33 +102,28 @@ export default {
   methods: {
     initialize() {
       var current = new Date();
-      this.yearList = [];
-      for (let i = current.getFullYear() - 1; i < current.getFullYear() + 6; i++) {
-        this.yearList.push({ value: i, text: i });
-      }
-      this.params.yyyy = { value: current.getFullYear(), text: current.getFullYear() };
+      this.params.yyyymm = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
-      this.acctGrid = _.cloneDeep(gridField);
+      this.saleRescGrid = _.cloneDeep(gridField);
     },
     async getDataList() {
       this.gridView.commit();
 
       let params = {
-        yyyy: this.params.yyyy.text,
-        site: this.siteMap[this.params.site],
+        yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+        site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
 
       let param = {
-        menuId: 'c0001001',
-        queryId: 'selectTab1GridData',
+        menuId: 'c0007005',
+        queryId: 'C0007005_Sch1',
         queryParams: params,
-        target: this.acctGridRows,
+        target: this.saleRescGridRows,
       };
       let resp = await this.$axios.api.search(param);
     },
-
     searchClick() {
       this.getDataList();
     },
@@ -141,10 +132,75 @@ export default {
       excelGrid.options.display.fitStyle = 'none'; // 엑셀다운로드시 none 아니면 width 0이 됨.
       this.$refs.uploadPopup1.openDialog({
         dialogTitle: '업로드 팝업',
-        uploadApi: '/api/c0001000/c0001001/upload',
-        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10'],
+        uploadApi: '/api/c0007000/c0007005/upload',
+        headers: [
+          'field1',
+          'field2',
+          'field3',
+          'field4',
+          'field5',
+          'field6',
+          'field7',
+          'field8',
+          'field9',
+          'field10',
+          'field11',
+          'field12',
+          'field13',
+          'field14',
+          'field15',
+          'field16',
+          'field17',
+          'field18',
+          'field19',
+          'field20',
+          'field21',
+          'field22',
+          'field23',
+          'field24',
+          'field25',
+          'field26',
+          'field27',
+          'field28',
+          'field29',
+          'field30',
+          'field31',
+          'field32',
+          'field33',
+          'field34',
+          'field35',
+          'field36',
+          'field37',
+          'field38',
+          'field39',
+          'field40',
+          'field41',
+          'field42',
+          'field43',
+          'field44',
+          'field45',
+          'field46',
+          'field47',
+          'field48',
+          'field49',
+          'field50',
+          'field51',
+          'field52',
+          'field53',
+          'field54',
+          'field55',
+          'field56',
+          'field57',
+          'field58',
+          'field59',
+          'field60',
+          'field61',
+          'field62',
+          'field63',
+          'field64',
+        ],
         excelGrid,
-        fileName: '원가계정정보_template',
+        fileName: '매출정보_template',
       });
     },
     closePopup() {
@@ -159,7 +215,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `원가계정정보${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `매출정보${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
@@ -176,7 +232,7 @@ export default {
 
     addBtnClick() {
       this.gridView.commit();
-      this.gridDataProvider.addRow({ yyyy: this.params.yyyy.text, site: this.params.site });
+      this.gridDataProvider.addRow({ yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, site: this.params.site != null ? this.siteMap[this.params.site] : null });
       let itemIndex = this.gridView.getItemCount() - 1;
       this.gridView.setCurrent({ itemIndex: itemIndex });
     },
@@ -205,25 +261,25 @@ export default {
     },
 
     async saveData() {
-      let saveData = this.$refs.acctGrid.getSaveData();
+      let saveData = this.$refs.saleRescGrid.getSaveData();
       if (saveData.count <= 0) {
         this.$toast('info', '변경된 내용이 없습니다.');
         return;
       }
       this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
 
-      this.isValidteCellAcctGrid = true;
+      this.isValidteCellSaleRescGrid = true;
       let rslt = this.gridView.validateCells(null, false);
-      this.isValidteCellAcctGrid = false;
+      this.isValidteCellSaleRescGrid = false;
 
       if (rslt === null) {
         this.$confirm('확인', '수정하신 내용을 저장 하시겠습니까?', async (confirm) => {
           if (confirm) {
             let param = {
-              menuId: 'c0001001',
-              delete: [{ queryId: 'deleteTab1Data', data: saveData.delete }],
-              insert: [{ queryId: 'insertTab1Data', data: saveData.insert }],
-              update: [{ queryId: 'updateTab1Data', data: saveData.update }],
+              menuId: 'c0007005',
+              delete: [{ queryId: 'C0007005_Del1', data: saveData.delete }],
+              insert: [{ queryId: 'C0007005_Ins1', data: saveData.insert }],
+              update: [{ queryId: 'C0007005_Update1', data: saveData.update }],
             };
 
             try {
@@ -237,23 +293,43 @@ export default {
         });
       }
     },
-    onValidateColumnAcctGrid(grid, column, inserting, value, itemIndex, dataRow) {
+    onValidateColumnSaleRescGrid(grid, column, inserting, value, itemIndex, dataRow) {
       let error = {};
-      if (!this.isValidteCellAcctGrid) return error;
+      if (!this.isValidteCellSaleRescGrid) return error;
 
-      if (this.$utils.containsValue(['yyyy', 'selCode', 'site', 'acctClass', 'acct', 'acctName', 'subName', 'itemName', 'expenSel'], column.fieldName)) {
+      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', '거래명세서번호'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';
         }
       }
-
-      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyy', 'selCode', 'site', 'acctClass', 'acct'], column.fieldName)) {
+      
+      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['거래명세서번호'], column.fieldName)) {
         error.level = 'warning';
         error.message = '중복 입력입니다.';
       }
 
+      if (this.$utils.containsValue(['선택', '출고처리', '부가세포함', '반품', '단가소급여부', '유상사급여부'], column.fieldName)) {
+        if (!_.isNil(value) && value.length >= 2) {
+          error.level = 'warning';
+          error.message = '한자리로 입력해주세요.';
+        }
+      }
+
       return error;
+    },
+
+    setCellStyleCallbackSaleRescGrid(grid, cell) {
+      let ret = {};
+      if (cell.item.rowState == 'created' || cell.item.itemState == 'appending' || cell.item.itemState == 'inserting') {
+        ret.editable = true;
+        if (isNaN(cell.value)) {
+          ret.styleName = 'edit tl';
+        } else {
+          ret.styleName = 'edit tr';
+        }
+      }
+      return ret;
     },
   },
 };

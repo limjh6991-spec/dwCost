@@ -1,48 +1,48 @@
-/**
-*	기준정보 > 부서코드
-*/
-package com.dowinsys.cost.web.c0001000.controller;
+// /**
+// *	기준정보 > 부서코드
+// */
+// package com.dowinsys.cost.web.c0001000.controller;
 
-import com.dowinsys.cost.web.c0001000.service.C0001002Service;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
+// import com.dowinsys.cost.web.c0001000.service.C0001002Service;
+// import org.springframework.beans.factory.annotation.Autowired;
+// import org.springframework.http.HttpStatus;
+// import org.springframework.http.ResponseEntity;
+// import org.springframework.web.bind.annotation.PostMapping;
+// import org.springframework.web.bind.annotation.RequestMapping;
+// import org.springframework.web.bind.annotation.RequestParam;
+// import org.springframework.web.bind.annotation.RestController;
+// import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Map;
-import java.util.Objects;
+// import java.util.Map;
+// import java.util.Objects;
 
-@RestController("com.dowinsys.cost.web.c0001000.controller.C0001002Controller")
-@RequestMapping("/api/c0001000/c0001002")
-public class C0001002Controller {
+// @RestController("com.dowinsys.cost.web.c0001000.controller.C0001002Controller")
+// @RequestMapping("/api/c0001000/c0001002")
+// public class C0001002Controller {
 
-    @Autowired
-    C0001002Service service;
+//     @Autowired
+//     C0001002Service service;
 
-    @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("headers") String headers
-    ) {
-        if (file.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File is empty");
-        }
-        try {
-            Map<String, String> ret = service.uploadExcel(file, headers);
-            if (Objects.equals(ret.get("status"), "success")) {
-                return ResponseEntity.ok("File uploaded successfully");
-            } else if (Objects.equals(ret.get("status"), "error") && !ret.get("errorMessage").isEmpty()) {
-                return ResponseEntity.ok(ret.get("errorMessage"));
-            } else {
-                return ResponseEntity.ok("File upload failed");
-            }
+//     @PostMapping("/upload")
+//     public ResponseEntity<String> uploadFile(
+//             @RequestParam("file") MultipartFile file,
+//             @RequestParam("headers") String headers
+//     ) {
+//         if (file.isEmpty()) {
+//             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File is empty");
+//         }
+//         try {
+//             Map<String, String> ret = service.uploadExcel(file, headers);
+//             if (Objects.equals(ret.get("status"), "success")) {
+//                 return ResponseEntity.ok("File uploaded successfully");
+//             } else if (Objects.equals(ret.get("status"), "error") && !ret.get("errorMessage").isEmpty()) {
+//                 return ResponseEntity.ok(ret.get("errorMessage"));
+//             } else {
+//                 return ResponseEntity.ok("File upload failed");
+//             }
 
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload failed");
-        }
-    }
-}
+//         } catch (Exception e) {
+//             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload failed");
+//         }
+//     }
+// }

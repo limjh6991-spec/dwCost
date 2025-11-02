@@ -76,7 +76,6 @@ export default {
         HQ: 'HQ', //DB map
         VN: 'VN', //DB map
       },
-      isProcessing: false,
     };
   },
   watch: {

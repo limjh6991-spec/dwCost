@@ -1,44 +1,54 @@
 const c0001000Router = [
-{
-  path: '/c0001001',
-  name: '원가 계정코드',
-  component: () => import('../views/web/c0001000/C0001001.vue'),
-  meta: {
-    upperSysResourceId:'C0001000',
-    sysResourceId:"C0001001",
-    requiresAuth: false,
-  }
-},
+// {
+//   path: '/c0001001',
+//   name: '원가 계정코드',
+//   component: () => import('../views/web/c0001000/C0001001.vue'),
+//   meta: {
+//     upperSysResourceId:'C0001000',
+//     sysResourceId:"C0001001",
+//     requiresAuth: false,
+//   }
+// },
+//   {
+//     path: '/c0001002',
+//     name: '원가 부서코드',
+//     component: () => import('../views/web/c0001000/C0001002.vue'),
+//     meta: {
+//       upperSysResourceId:'C0001000',
+//       sysResourceId:"C0001002",
+//       requiresAuth: false,
+//     }
+//   },
+//   {
+//     path: '/c0001003',
+//     name: '원가 자재코드',
+//     component: () => import('../views/web/c0001000/C0001003.vue'),
+//     meta: {
+//       upperSysResourceId:'C0001000',
+//       sysResourceId:"C0001003",
+//       requiresAuth: false,
+//     }
+//   },
+//     {
+//     path: '/c0001005',
+//     name: '원가 제품기준정보',
+//     component: () => import('../views/web/c0001000/C0001005.vue'),
+//     meta: {
+//       upperSysResourceId:'C0001000',
+//       sysResourceId:"C0001005",
+//       requiresAuth: false,
+//     }
+//   },
   {
-    path: '/c0001002',
-    name: '원가 부서코드',
-    component: () => import('../views/web/c0001000/C0001002.vue'),
+    path: '/c0001004',
+    name: '원가기준정보',
+    component: () => import('../views/web/c0001000/C0001004.vue'),
     meta: {
       upperSysResourceId:'C0001000',
-      sysResourceId:"C0001002",
+      sysResourceId:"C0001004",
       requiresAuth: false,
     }
-  },
-  {
-    path: '/c0001003',
-    name: '원가 자재코드',
-    component: () => import('../views/web/c0001000/C0001003.vue'),
-    meta: {
-      upperSysResourceId:'C0001000',
-      sysResourceId:"C0001003",
-      requiresAuth: false,
-    }
-  },
-    {
-    path: '/c0001005',
-    name: '원가 제품기준정보',
-    component: () => import('../views/web/c0001000/C0001005.vue'),
-    meta: {
-      upperSysResourceId:'C0001000',
-      sysResourceId:"C0001005",
-      requiresAuth: false,
-    }
-  },
+  },  
   {
     path: '/c0001007',
     name: '원가 일반코드',
