@@ -145,11 +145,11 @@ export default {
     },
     async onCellClickedMatExpenGrid(grid, clickData) {
       if (clickData.cellType != 'data') return;
-
+      
       if (clickData.column == 'matClass') {
         let queryParams = {
-          yyyymm: grid.getValue(clickData.itemIndex, 'yyyymm'),
-          site: grid.getValue(clickData.itemIndex, 'site') != null ? this.siteMap[grid.getValue(clickData.itemIndex, 'site')] : null,
+          yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+          site: this.params.site != null ? this.siteMap[this.params.site] : null,
           matClass: grid.getValue(clickData.itemIndex, 'matClass'),
         };
 
