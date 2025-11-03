@@ -4,14 +4,8 @@
     <div class="search_box">
       <b-row class="search_area">
         <b-col cols="2">
-          <div class="form-floating me-1">
-            <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
-            <label for="floatingSelect" class="select">기준월</label>
-          </div>
-        </b-col>
-        <b-col cols="2">
           <div class="form-floating">
-            <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" :disabled="true" />
+            <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="displaySite" :disabled="true" />
             <label for="floating">사업장</label>
           </div>
         </b-col>
@@ -23,25 +17,17 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
-          <!-- 조회 기능만 활성화, 다른 기능들은 주석처리 -->
-          <!-- <b-button class="second" @click="uploadClick">업로드</b-button> -->
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
-          <!-- <b-button class="sub" @click="addBtnClick">추가</b-button>
-          <b-button @click="delBtnClick">삭제</b-button>
-          <b-button class="main" @click="saveBtnClick">저장</b-button> -->
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="modelGrid" :uid="'modelGrid'" :step="'1'" :rows="modelGridRows" style="height: 100%" />
+        <RealGrid ref="materialGrid" :uid="'materialGrid'" :step="'1'" :rows="materialGridRows" style="height: 100%" />
       </div>
     </div>
-    <!-- 업로드 팝업 주석처리 - 조회 기능만 활성화 -->
-    <!-- <UploadPopup ref="uploadPopup1" @closePopup="closePopup" /> -->
   </div>
 </template>
 
 <script>
-import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import gridField from '@web/c0007000/js/C0007002.js';
 
@@ -54,123 +40,75 @@ export default {
   },
   data() {
     return {
-      modelGrid: null,
-      modelGridRows: [],
-  selectedYear: new Date().getFullYear(),
-  selectedMonth: ("0" + (new Date().getMonth() + 1)).slice(-2),
-  yearOptions: Array.from({length: 7}, (_, i) => new Date().getFullYear() - 3 + i),
-      showYyyymmPopup: false,
+      materialGrid: null,
+      materialGridRows: [],
       params: {
-        yyyymm: null,
         site: 'HQ',
       },
       siteMap: {
-        본사: 'HQ',
-        VINA: 'VN',
-        HQ: 'HQ',
-        VN: 'VN',
+        '본사': 'HQ',
+        'VINA': 'VN',
+        'HQ': 'HQ',
+        'VN': 'VN',
       },
-      isProcessing: false,
-      duplicateKey: ['yyyymm', 'selCode', 'site', 'matCode'],
-      isValidteCellmodelGrid: false,
+      selectedYear: new Date().getFullYear(),
     };
   },
   watch: {
-    selectedMonth(newVal) {
-      this.updateYyyymm();
-    },
-    selectedYear(newVal) {
-      this.updateYyyymm();
-    },
     userAuthInfo: {
       handler(newVal) {
-         if (newVal) {
-        if (newVal.curProdCtg) {
+        if (newVal && newVal.curProdCtg) {
           this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.modelGrid != null) {
-            this.initialize();
-            this.searchClick();
+          console.log('[C0007002] site 변경:', this.params.site);
+          if (this.$refs.materialGrid != null) {
+            this.getMaterialList();
           }
         }
-         }
       },
-      // deep: true,
-      // immediate: true,
-    },
+      deep: true,
+      immediate: true
+    }
   },
   computed: {
-     userAuthInfo() {
-       return useUserAuthInfo();
-     },
     gridView() {
-      return this.$refs.modelGrid.getGridView();
+      return this.$refs.materialGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.modelGrid.getGridDataProvider();
+      return this.$refs.materialGrid.getGridDataProvider();
     },
+    displaySite() {
+      return this.params.site; // '본사' 또는 'VINA' 표시
+    }
   },
   created() {
-    this.initialize();
     this.initializeGrid();
   },
-  mounted() {},
+  mounted() {
+    console.log('[mounted] C0007002 컴포넌트 마운트됨');
+    this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
+    console.log('[mounted] site 설정:', this.params.site);
+  },
   beforeUnmount() {},
   methods: {
-    selectMonth(month) {
-      this.selectedMonth = month;
-      this.updateYyyymm();
-      this.showYyyymmPopup = false;
-    },
-    toggleYyyymmPopup() {
-      this.showYyyymmPopup = !this.showYyyymmPopup;
-    },
-    selectMonthPopup(month) {
-      this.selectedMonth = month;
-      this.updateYyyymm();
-      this.showYyyymmPopup = false;
-      // 항상 'YYYY-MM' 형태로 세팅
-      this.params.yyyymm = `${this.selectedYear}-${month}`;
-    },
-    initialize() {
-      var current = new Date();
-      this.params.yyyymm = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
-      this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
-    },
-    prevYear() {
-      this.selectedYear--;
-      this.updateYyyymm();
-    },
-    nextYear() {
-      this.selectedYear++;
-      this.updateYyyymm();
-    },
-    updateYyyymm() {
-      // 항상 'YYYY-MM' 형태로 세팅
-      this.params.yyyymm = `${this.selectedYear}-${this.selectedMonth}`;
-    },
     initializeGrid() {
-      this.modelGrid = _.cloneDeep(gridField);
+      this.materialGrid = _.cloneDeep(gridField);
     },
-    async getDataList() {
+    async getMaterialList() {
       this.gridView.commit();
-      // 기준월(YYYY-MM)을 DB 쿼리용(YYYYMM)으로 변환
-      let yyyymm = this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null;
       let params = {
-        yyyymm: yyyymm,
-        site: this.siteMap[this.params.site],
+        site: this.siteMap[this.params.site], // '본사' → 'HQ', 'VINA' → 'VN' 변환
       };
-      console.log('조회 파라미터:', params); // 실제 전달 값 확인
+      console.log('조회 파라미터:', params);
       let param = {
         menuId: 'c0007002',
-        queryId: 'selectTab1GridData',
+        queryId: 'selectMaterialData',
         queryParams: params,
-        target: this.modelGridRows,
+        target: this.materialGridRows,
       };
       try {
         let resp = await this.$axios.api.search(param);
         console.log('조회 성공:', resp);
       } catch (error) {
-        // 상세 오류 메시지 출력
         if (error.response) {
           console.error('조회 중 오류 발생:', error.response.data);
           this.$toast('error', `서버 오류: ${error.response.data?.message || error.response.status}`);
@@ -182,32 +120,13 @@ export default {
     },
 
     searchClick() {
-      this.getDataList();
+      this.getMaterialList();
     },
-    /* 업로드 기능 주석처리 - 조회 기능만 활성화
-    uploadClick() {
-      let excelGrid = _.cloneDeep(gridField);
-      excelGrid.options.display.fitStyle = 'none'; // 엑셀다운로드시 none 아니면 width 0이 됨.
-      this.$refs.uploadPopup1.openDialog({
-        dialogTitle: '업로드 팝업',
-        uploadApi: '/api/c0007000/C0007001/upload',
-        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10', 'field11', 'field12', 'field13', 'field14', 'field15'],
-        excelGrid,
-        fileName: '부서별_계정별_비용_template',
-      });
-    },
-    */
-    /* 업로드 팝업 관련 메서드 주석처리
-    closePopup() {
-      this.searchClick();
-    },
-    */
+
     async excelBtnClick() {
       const grid = this.gridView;
-
       const now = new Date();
       const yyyymmdd = this.$utils.getTodayDate();
-
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
@@ -225,92 +144,6 @@ export default {
 
       grid.exportGrid(options);
     },
-
-    /* CRUD 기능들 주석처리 - 조회 기능만 활성화
-    addBtnClick() {
-      this.gridView.commit();
-      this.gridDataProvider.addRow({ yyyy: this.params.yyyy.text, site: this.params.site });
-      let itemIndex = this.gridView.getItemCount() - 1;
-      this.gridView.setCurrent({ itemIndex: itemIndex });
-    },
-
-    delBtnClick() {
-      this.gridView.commit();
-      const checkedRows = this.gridView.getCheckedRows();
-      if (checkedRows.length === 0) {
-        this.$toast('info', '삭제할 행을 선택하세요');
-      } else {
-        let delItems = [];
-        checkedRows.forEach((itemIndex) => {
-          if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
-            delItems.push(itemIndex);
-          } else {
-            this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
-          }
-        });
-        this.gridDataProvider.removeRows(delItems);
-      }
-    },
-
-    async saveBtnClick() {
-      this.gridView.commit();
-      await this.saveData();
-    },
-
-    async saveData() {
-      let saveData = this.$refs.modelGrid.getSaveData();
-      if (saveData.count <= 0) {
-        this.$toast('info', '변경된 내용이 없습니다.');
-        return;
-      }
-      this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
-
-      this.isValidteCellmodelGrid = true;
-      let rslt = this.gridView.validateCells(null, false);
-      this.isValidteCellmodelGrid = false;
-
-      if (rslt === null) {
-        this.$confirm('확인', '수정하신 내용을 저장 하시겠습니까?', async (confirm) => {
-          if (confirm) {
-            let param = {
-              menuId: 'C0007001',
-              delete: [{ queryId: 'deleteTab1Data', data: saveData.delete }],
-              insert: [{ queryId: 'insertTab1Data', data: saveData.insert }],
-              update: [{ queryId: 'updateTab1Data', data: saveData.update }],
-            };
-
-            try {
-              let resp = await this.$axios.api.saveData(param);
-              this.$toast('info', '저장완료');
-              this.searchClick();
-            } catch {
-              this.$toast('info', '에러발생. 다시 작업해주세요.');
-            }
-          }
-        });
-      }
-    },
-    */
-    /* 편집 검증 기능 주석처리 - 조회 기능만 활성화
-    onValidateColumnmodelGrid(grid, column, inserting, value, itemIndex, dataRow) {
-      let error = {};
-      if (!this.isValidteCellmodelGrid) return error;
-
-      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', 'dept', 'acct'], column.fieldName)) {
-        if (_.isNil(value)) {
-          error.level = 'error';
-          error.message = '필수 입력입니다.';
-        }
-      }
-
-      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'selCode', 'site', 'dept', 'acct'], column.fieldName)) {
-        error.level = 'warning';
-        error.message = '중복 입력입니다.';
-      }
-
-      return error;
-    },
-    */
   },
 };
 </script>
