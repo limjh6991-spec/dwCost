@@ -148,16 +148,18 @@ export default {
 
       if (clickData.column == '도우모델') {
         let queryParams = {
-          yyyymm: grid.getValue(clickData.itemIndex, 'yyyymm'),
-          site: grid.getValue(clickData.itemIndex, 'site') != null ? this.siteMap[grid.getValue(clickData.itemIndex, 'site')] : null,
+          // yyyymm: grid.getValue(clickData.itemIndex, 'yyyymm'),
+          // site: grid.getValue(clickData.itemIndex, 'site') != null ? this.siteMap[grid.getValue(clickData.itemIndex, 'site')] : null,
+          yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+          site: this.params.site != null ? this.siteMap[this.params.site] : null,
           model: grid.getValue(clickData.itemIndex, '도우모델'),
         };
 
         const params = {
-          dialogTitle: '모델별 재료비 금액',
+          dialogTitle: '모델 재료비 금액',
           popUpSize: 'xl', //sm,lg,xl
           height: 500,
-          gridJs: 'C0008006Detail.js', //C0008006Detail과 동일
+          gridJs: 'C0008007Detail.js', //C0008006Detail과 동일
           search: {
             menuId: 'c0008000',
             queryId: 'C0008007_Sch2',
