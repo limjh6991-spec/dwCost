@@ -613,4 +613,38 @@
             and BOH_AMT+IN_AMT+EOH_AMT+OUT_AMT > 0
         order BY 1,2,3,4,5;
     </select>
+
+    <select id="C0008011_Sch1" resultType="CamelMap">
+        select
+            거래명세서번호,
+            거래명세서일,
+            부서,
+            담당자,
+            거래처,
+            품명,
+            품번,
+            판매단위,
+            수량,
+            통화,
+            환율,
+            판매단가,
+            판매금액,
+            부가세액,
+            판매금액계,
+            원화판매금액,
+            원화부가세액,
+            원화판매금액계,
+            매출수량,
+            매출금액계,
+            세금계산서금액계
+        from doi_sale_resc
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        order by 거래명세서번호, 거래명세서일;
+    </select>
 </mapper>
