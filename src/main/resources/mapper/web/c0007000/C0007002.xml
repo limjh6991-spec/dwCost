@@ -7,9 +7,9 @@
 		select
 			YYYYMM,
 			SEL_CODE,
-			SITE,
+			CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' end AS SITE,
 			MAT_CODE,
-			MST_DESC,
+			MAT_DESC,
 			[SIZE],
 			IN_QTY,
 			UNIT_COST,

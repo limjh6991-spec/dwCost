@@ -92,7 +92,26 @@ const grid = {
     { name: '선택', fieldName: '선택', width: '80', header: { text: '선택' }, autoFilter: true, styleName: 'edit tl' },
     { name: '출고처리', fieldName: '출고처리', width: '120', header: { text: '출고처리' }, autoFilter: true, styleName: 'edit tl' },
     { name: '사업단위', fieldName: '사업단위', width: '120', header: { text: '사업단위' }, autoFilter: true, styleName: 'edit tl' },
-    { name: '거래명세서번호', fieldName: '거래명세서번호', width: '210', header: { text: '거래명세서번호' }, autoFilter: true, styleName: 'tl', editable: false },
+    {
+      name: '거래명세서번호',
+      fieldName: '거래명세서번호',
+      width: '210',
+      header: { text: '거래명세서번호' },
+      autoFilter: true,
+      styleName: 'tl',
+      editable: false,
+      styleCallback: function (grid, dataCell) {
+        var ret = {};
+        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
+          ret.editable = true;
+          ret.styleName = 'edit tl';
+        } else {
+          ret.editable = false;
+          ret.styleName = 'tl';
+        }
+        return ret;
+      },
+    },
     { name: '거래명세서일', fieldName: '거래명세서일', width: '180', header: { text: '거래명세서일' }, autoFilter: true, styleName: 'edit tl' },
     { name: 'local구분', fieldName: 'local구분', width: '110', header: { text: 'Local구분' }, autoFilter: true, styleName: 'edit tl' },
     { name: '출고구분', fieldName: '출고구분', width: '120', header: { text: '출고구분' }, autoFilter: true, styleName: 'edit tl' },

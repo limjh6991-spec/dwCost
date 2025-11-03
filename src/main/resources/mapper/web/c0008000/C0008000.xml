@@ -5,16 +5,15 @@
 <mapper namespace="com.dowinsys.cost.web.c0008000.mapper.C0008000Mapper">
     <select id="C0008001_Sch1" resultType="CamelMap">
         select
-            a.YYYYMM,
-            a.SEL_CODE,
-            CASE WHEN a.SITE='HQ' then '본사' WHEN a.site='VN' then 'VINA' else a.site end SITE,
             CASE WHEN ACCT_CLASS='AA' then '가공비' WHEN ACCT_CLASS='CC' then '판매관리비' WHEN ACCT_CLASS='BB' then '개발비' else ACCT_CLASS end as ACCT_CLASS,
-            --a.dept,
+            a.dept,
             b.dept_name,
+            a.acct,
+            a.EXPEN_SEL,
+            a.EXPEN_SEL명,
             a.SUB_NAME,
             a.ITEM_NAME,
-            sum(a.ACCT_AMT) ACCT_AMT,
-            a.EXPEN_SEL
+            sum(a.ACCT_AMT) ACCT_AMT
         from doi_acct_expen a
         left join doi_dept b
         on (b.yyyy=substring(a.yyyymm,1,4) and b.sel_code=a.sel_code and b.site=a.site and b.dept=a.dept)
@@ -42,27 +41,26 @@
             </choose>
         </if>
         group by
-        a.YYYYMM,
-        a.SEL_CODE,
-        CASE WHEN a.SITE='HQ' then '본사' WHEN a.site='VN' then 'VINA' else a.site end,
-        CASE WHEN ACCT_CLASS='AA' then '가공비' WHEN ACCT_CLASS='CC' then '판매관리비' WHEN ACCT_CLASS='BB' then '개발비' else ACCT_CLASS end,
-        --a.dept,
-        b.dept_name,
-        a.SUB_NAME,
-        a.ITEM_NAME,
-        a.EXPEN_SEL
+        	CASE WHEN ACCT_CLASS='AA' then '가공비' WHEN ACCT_CLASS='CC' then '판매관리비' WHEN ACCT_CLASS='BB' then '개발비' else ACCT_CLASS end ,
+	        a.dept,
+	        b.dept_name,
+	        a.acct,
+	        a.EXPEN_SEL,
+	        a.EXPEN_SEL명,
+	        a.SUB_NAME,
+	        a.ITEM_NAME
         <if test="costGubun == null or prodCost == '전체' or prodCost == '재료비'">
 		union all
 		select
-			YYYYMM,
-			SEL_CODE,
-			SITE,
 			'재료비',
+			'000',
 			'제조공통',
+			CASE WHEN MAT_CLASS='원자재' then '51001010' else '51002010' end,
+			CASE WHEN MAT_CLASS='원자재' then 'MDAX' else 'MIDX' end,
 			CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end,
-			MAT_CLASS,
-			sum(IN_AMT) 금액,
-			CASE WHEN MAT_CLASS='원자재' then 'MDAX' else ' MIAX' end
+            '재료비',
+            CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end,
+			sum(IN_AMT) 금액
 		from
 			doi_material_resc
         where 1=1
@@ -73,24 +71,20 @@
             and SITE = #{site}
         </if>
 		group by
-			YYYYMM,
-			SEL_CODE,
-			SITE,
 			MAT_CLASS
 		HAVING
 			sum(IN_AMT) > 0
         </if>
-        order BY 1,2,3,4,5,6,7,8;
+        order BY 1,2,3,4,5;
     </select>
     <select id="C0008002_Sch1" resultType="CamelMap">
         select
-        YYYYMM,
-        SEL_CODE,
-        CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' else site end SITE,
+        CASE WHEN ACCT_CLASS='AA' THEN '제조비용' WHEN ACCT_CLASS='BB' THEN '개발비' WHEN ACCT_CLASS='CC' THEN '판매관리비' END ACCT_CLASS,
+        EXPEN_SEL,
+        EXPEN_SEL명,
         SUB_NAME,
         ITEM_NAME,
-        SUM(ACCT_AMT) ACCT_AMT,
-        EXPEN_SEL
+        SUM(ACCT_AMT) ACCT_AMT
         from DOI_ACCT_EXPEN
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
@@ -99,41 +93,91 @@
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
-        and acct_class = 'AA'
-        GROUP BY YYYYMM,SEL_CODE,SITE,SUB_NAME,ITEM_NAME,EXPEN_SEL
-        order by SUB_NAME,ITEM_NAME;
+        and expen_sel not like 'M%'
+        GROUP BY YYYYMM,SEL_CODE,SITE,SUB_NAME,ITEM_NAME,EXPEN_SEL,EXPEN_SEL명,ACCT_CLASS
+        UNION ALL
+        select
+			'제조비용',
+			CASE WHEN MAT_CLASS='원자재' then 'MDAX' else 'MIAX' end,
+			CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end,
+            '재료비',
+            CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end,
+			sum(IN_AMT) 금액  --select *
+		from
+			doi_material_resc
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+		group by
+			CASE WHEN MAT_CLASS='원자재' then 'MDAX' else 'MIAX' end,
+			CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end,
+            CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end
+		HAVING
+			sum(IN_AMT) > 0
+        order by ACCT_CLASS,EXPEN_SEL,SUB_NAME,ITEM_NAME;
     </select>
 
     <select id="C0008002_Sch2" resultType="CamelMap">
-        select
-        a.YYYYMM,
-        a.SEL_CODE,
-        CASE WHEN a.SITE='HQ' then '본사' WHEN a.SITE='VN' then 'VINA' else a.SITE end SITE,
-        CASE WHEN a.ACCT_CLASS='AA' then '가공비' WHEN a.ACCT_CLASS='CC' then '판매관리비' WHEN a.ACCT_CLASS='BB' then '개발비' else a.ACCT_CLASS end as ACCT_CLASS ,
-        b.DEPT_NAME,
-        SUB_NAME,
-        ITEM_NAME,
-        SUM(ACCT_AMT) ACCT_AMT,
-        EXPEN_SEL
-        from DOI_ACCT_EXPEN a inner join doi_dept b on(a.dept=b.dept)
-        where 1=1
-        <if test="yyyymm != null and yyyymm != ''">
-            and a.YYYYMM = #{yyyymm}
-        </if>
-        <if test="site != null and site != ''">
-            and a.SITE = #{site}
-        </if>
-        <if test="expenSel != null and expenSel != ''">
-            and a.EXPEN_SEL = #{expenSel}
-        </if>
-        group by a.YYYYMM,
-        a.SEL_CODE,
-        CASE WHEN a.SITE='HQ' then '본사' WHEN a.site='VN' then 'VINA' else a.SITE end,
-        CASE WHEN a.ACCT_CLASS='AA' then '가공비' WHEN a.ACCT_CLASS='CC' then '판매관리비' WHEN a.ACCT_CLASS='BB' then '개발비' else a.ACCT_CLASS end,
-        b.DEPT_NAME,SUB_NAME,ITEM_NAME,EXPEN_SEL
-        order by SUB_NAME,ITEM_NAME;
-    </select>
-
+	    <if test="expenSel != 'MDAX' and expenSel != 'MIAX'"> 
+	        select
+	        CASE WHEN a.ACCT_CLASS='AA' then '가공비' WHEN a.ACCT_CLASS='CC' then '판매관리비' WHEN a.ACCT_CLASS='BB' then '개발비' else a.ACCT_CLASS end as ACCT_CLASS ,
+	        b.DEPT_NAME,
+	        EXPEN_SEL,
+	        EXPEN_SEL명,
+	        SUB_NAME,
+	        ITEM_NAME,
+	        SUM(ACCT_AMT) ACCT_AMT
+	        from DOI_ACCT_EXPEN a inner join doi_dept b on(a.dept=b.dept)
+	        where 1=1
+	        <if test="yyyymm != null and yyyymm != ''">
+	            and a.YYYYMM = #{yyyymm}
+	        </if>
+	        <if test="site != null and site != ''">
+	            and a.SITE = #{site}
+	        </if>
+	        <if test="expenSel != null and expenSel != ''">
+	            and a.EXPEN_SEL = #{expenSel}
+	  	    </if>
+	        group by a.YYYYMM,
+	        a.SEL_CODE,
+	        CASE WHEN a.SITE='HQ' then '본사' WHEN a.site='VN' then 'VINA' else a.SITE end,
+	        CASE WHEN a.ACCT_CLASS='AA' then '가공비' WHEN a.ACCT_CLASS='CC' then '판매관리비' WHEN a.ACCT_CLASS='BB' then '개발비' else a.ACCT_CLASS end,
+	        b.DEPT_NAME,SUB_NAME,ITEM_NAME,EXPEN_SEL,EXPEN_SEL명
+	        order by EXPEN_SEL;
+	    </if>
+	    <if test="expenSel == 'MDAX' or expenSel == 'MIAX'">
+	        select
+				'제조경비' ACCT_CLASS,
+				'제조공통' DEPT_NAME,
+				CASE WHEN MAT_CLASS='원자재' then 'MDAX' else 'MIAX' end EXPEN_SEL,
+				CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end EXPEN_SEL명,
+			    '재료비' SUB_NAME,
+			    CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end ITEM_NAME,
+				--sum(in_qty) in_qty,
+				sum(in_amt) acct_amt
+			from
+				DOI_MATERIAL_RESC a
+			where	1 = 1
+	        <if test="yyyymm != null and yyyymm != ''">
+	            and a.YYYYMM = #{yyyymm}
+	        </if>
+	        <if test="site != null and site != ''">
+	            and a.SITE = #{site}
+	        </if>
+	        <if test="expenSel != null and expenSel != ''">
+	            and CASE WHEN MAT_CLASS='원자재' then 'MDAX' else 'MIAX' end = #{expenSel}
+	  	    </if>
+			group by
+			CASE WHEN MAT_CLASS='원자재' then 'MDAX' else 'MIAX' end,
+				CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end,
+			    CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end
+	    </if >
+	</select>
+	
     <select id="C0008003_Sch1" resultType="CamelMap">
        	select
         YYYYMM,
@@ -188,48 +232,77 @@
     </select>
 
     <select id="C0008004_Sch1" resultType="CamelMap">
-    select
-		YYYYMM,
-		sel_code,
-		CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' end AS SITE,
-		구분,
-		model,
-		면적,
-		dist_rate,
-		SUB_NAME,
-		ITEM_NAME,
-		EXPEN_SEL,
-		EXPEN_SEL명,
-		adj_qty,
-		in_qty,
-		out_qty,
-		loss_qty,
-		unit_cost,
-		[in] as input_Amt
-	from
-		doi_expen_matl
-        where 1=1
-        <if test="yyyymm != null and yyyymm != ''">
-            and YYYYMM = #{yyyymm}
-        </if>
-        <if test="site != null and site != ''">
-            and SITE = #{site}
-        </if>
-        order by YYYYMM,SEL_CODE,SITE,MODEL;
+        with base_cost as (
+            select
+            model,
+            '가공비' c_cost,
+            avg(in_qty) in_qty,
+            avg(in_qty + OUT_QTY + loss_qty)/ 2 as 환산수량,
+            sum([in]) as 투입금액
+            from doi_cost
+            where 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                and YYYYMM = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                and SITE = #{site}
+            </if>
+            group by model
+            union all
+                select 도우모델 as model,
+                case when mat_class='원자재' then '직접재료비' else '간접재료비' end,
+                avg(in_qty) as in_qty,
+                avg(환산량) as 환산수량,
+                sum(배부금액) as 투입금액
+            from DOI_MAT_COST
+            where 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                and YYYYMM = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                and SITE = #{site}
+            </if>
+            group by 도우모델,
+            case when mat_class='원자재' then '직접재료비' else '간접재료비' end
+        ), in_cost as(
+        select
+            model,
+            avg(in_qty) as in_qty,
+            avg(환산수량) as chg_qty,
+            sum(투입금액) as tot_amt,
+            sum(case when c_cost='직접재료비' then 투입금액 else 0 end) d_matcost,
+            sum(case when c_cost='간접재료비' then 투입금액 else 0 end) i_matcost,
+            sum(case when c_cost='가공비' then 투입금액 else 0 end) fab_cost
+            from base_cost
+            group by model
+        )
+        select
+            model,
+            in_qty,
+            chg_qty,
+            tot_amt,
+            d_matcost,
+            i_matcost,
+            fab_cost,
+            coalesce(d_matcost / nullif(in_qty, 0), 0)+ coalesce(i_matcost / nullif(chg_qty, 0), 0)+ coalesce(fab_cost / nullif(chg_qty, 0), 0) as sum_unitcost,
+            coalesce(d_matcost / nullif(in_qty, 0), 0) dm_unitcost,
+            coalesce(i_matcost / nullif(chg_qty, 0), 0) di_unitcost,
+            coalesce(fab_cost / nullif(chg_qty, 0), 0) f_unitcost
+        from in_cost
+        order by model;
     </select>
 
     <select id="C0008004_Sch2" resultType="CamelMap">
         select
-        YYYYMM,
-        SEL_CODE,
-        SITE,
         구분,
         MODEL,
+        EXPEN_SEL,
+        EXPEN_SEL명,
+        in_qty,
+        adj_qty,
         BOH,
         [IN] INPUT_AMT,
-        ACCT_NAME ,
-        SUB_NAME ,
-        ITEM_NAME
+        SUB_NAME
         from doi_expen_matl
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
@@ -241,40 +314,71 @@
         <if test="model != null and model != ''">
             and MODEL = #{model}
         </if>
-        order by 구분,EXPEN_SEL;
-    </select>
-
-    <select id="C0008005_Sch1" resultType="CamelMap">
-     select
-        YYYYMM,
-		SEL_CODE,
-		CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' end AS SITE,
-		MAT_CLASS,
-		CASE WHEN MAT_CLASS='원자재' THEN 'MDAX' ELSE 'MIAX' end as expen_sel,
-		CASE WHEN MAT_CLASS='원자재' THEN '직접재료비' ELSE '간접재료비' end as expen_sel명,
-		MAT_CODE,
-		MAT_DESC,
-		SUM(IN_QTY) IN_QTY,
-		AVG(UNIT_COST) UNIT_COST,
-		SUM(IN_AMT) IN_AMT
-        from DOI_MATERIAL_RESC
+        union all
+        select '공통',도우모델,
+        case when mat_class='원자재' then 'MDAX' else 'MIDX' end as expen_sel,
+        case when mat_class='원자재' then '직접재료비' else '간접재료비' end as expen_sel명,
+        in_qty,
+        환산량,
+        0,
+        in_amt,
+        mat_class
+        from doi_mat_cost
         where 1=1
-            and sel_code = 'ACTUAL'
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
+        <if test="model != null and model != ''">
+            and 도우모델 = #{model}
+        </if>
+        order by 구분,EXPEN_SEL;
+    </select>
+
+    <select id="C0008005_Sch1" resultType="CamelMap">
+    with BOM as (
+		select 자재번호,투입단위,자재대분류,row_number() over (partition by 자재번호 order by 자재명) as rn
+		from doi_bom_mast
+		WHERE 1=1 
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+	)
+     select
+		--a.MAT_CLASS,
+		CASE WHEN a.MAT_CLASS='원자재' THEN 'MDAX' ELSE 'MIAX' end as expen_sel,
+		CASE WHEN a.MAT_CLASS='원자재' THEN '직접재료비' ELSE '간접재료비' end as expen_sel명,
+		a.MAT_CODE,
+		a.MAT_DESC,
+		max(b.자재대분류) mat_lclass,
+		max(b.투입단위) UNIT,
+		SUM(a.IN_QTY) IN_QTY,
+		AVG(a.UNIT_COST) UNIT_COST,
+		SUM(a.IN_AMT) IN_AMT
+        from DOI_MATERIAL_RESC a
+          left join BOM b on (a.mat_code = b.자재번호 and b.rn=1)
+        where 1=1
+            and a.sel_code = 'ACTUAL'
+        <if test="yyyymm != null and yyyymm != ''">
+            and a.YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and a.SITE = #{site}
+        </if>
         group by	
-			YYYYMM,
-			SEL_CODE,
-			SITE,
-			MAT_CLASS,
-			MAT_CODE,
-			MAT_DESC
+			a.YYYYMM,
+			a.SEL_CODE,
+			a.SITE,
+			a.MAT_CLASS,
+			a.MAT_CODE,
+			a.MAT_DESC
         having sum(in_amt) > 0
-		order by 5,7;
+		order by 4,1;
     </select>
 
     <select id="C0008005_Sch2" resultType="CamelMap">
@@ -338,10 +442,10 @@
 		--a.자재대분류,
 		a.in_amt,
 		a.환산량,
-		CASE WHEN 배부방식='BOM' THEN a.소요량 ELSE NULL END AS BOM사용량,
+		CASE WHEN 배부방식='BOM' THEN a.소요량 ELSE NULL END AS 소요량,
 		CASE WHEN 배부방식!='BOM' THEN a.소요량 ELSE NULL END AS 면적,
-		a.사용량,
-		a.배부적수,
+		a.사용량 as 배부적수, --소요량 * 환산량
+		a.배부율,
 		a.배부금액,
 		a.배부방식
 	from
@@ -373,8 +477,12 @@
     </select>
 
     <select id="C0008007_Sch1" resultType="CamelMap">
-        select yyyymm,sel_code,site,도우모델,sum(배부금액) 배부금액
-        from doi_mat_cost
+        select 도우모델,
+			case when a.mat_class='원자재' then 'MDAX' else 'MIDX' end as expen_sel,
+			case when a.mat_class='원자재' then '직접재료비' else '간접재료비' end as expen_sel명,
+			--a.mat_class,
+			sum(배부금액) 배부금액
+        from doi_mat_cost a
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}
@@ -382,13 +490,30 @@
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
-        group by yyyymm,sel_code,site,도우모델
-        order by 도우모델;
+        group by 도우모델,
+			case when a.mat_class='원자재' then 'MDAX' else 'MIDX' end,
+			case when a.mat_class='원자재' then '직접재료비' else '간접재료비' end
+        order by 1,2;
     </select>
 
     <select id="C0008007_Sch2" resultType="CamelMap">
-        select *
-        from doi_mat_cost
+        select
+			yyyymm,
+			sel_code,
+			site,
+			도우모델,
+			자재번호,
+			mat_class,
+			자재대분류,
+			in_amt,
+			환산량,
+			소요량,
+			배부율,
+			배부금액,
+			사용량,
+			CASE WHEN 배부방식='공통' THEN '면적' ELSE 배부방식 END 배부방식
+		from
+			doi_mat_cost
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}

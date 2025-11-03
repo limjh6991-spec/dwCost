@@ -128,7 +128,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `원가항목별비용${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `제품별투입비용${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
@@ -147,13 +147,13 @@ export default {
 
       if (clickData.column == 'model') {
         let queryParams = {
-          yyyymm: grid.getValue(clickData.itemIndex, 'yyyymm'),
-          site: grid.getValue(clickData.itemIndex, 'site') != null ? this.siteMap[grid.getValue(clickData.itemIndex, 'site')] : null,
+          yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+          site: this.params.site != null ? this.siteMap[this.params.site] : null,
           model: grid.getValue(clickData.itemIndex, 'model'),
         };
 
         const params = {
-          dialogTitle: '상세 계정별 금액',
+          dialogTitle: '모델 투입비용',
           popUpSize: 'xl', //sm,lg,xl
           height: 500,
           gridJs: 'C0008004Detail.js',
