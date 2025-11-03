@@ -69,7 +69,7 @@ export default {
         VN: 'VN',
       },
       isProcessing: false,
-      duplicateKey: ['yyyymm', 'selCode', 'site', 'dept', 'acct'],
+      duplicateKey: ['yyyymm', 'selCode', 'site', '코스트센터', '계정코드'],
       isValidteCellmodelGrid: false,
     };
   },

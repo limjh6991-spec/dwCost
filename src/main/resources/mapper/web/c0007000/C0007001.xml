@@ -9,15 +9,16 @@
 			SEL_CODE,
 			SITE as SITE_ORG,
 			CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' end as SITE,
-			CASE WHEN ACCT_CLASS='AA' then '가공비' WHEN ACCT_CLASS='CC' then '판매관리비'  WHEN ACCT_CLASS='BB' then '개발비' end as ACCT_CLASS,
-			DEPT,
-			ACCT,
-			SUB_NAME,
-			ITEM_NAME,
-			ACCT_AMT,
-			EXPEN_SEL
+			코스트센터,
+			코스트센터분류,
+			코스트센터유형,
+			계정코드,
+			계정과목,
+			비용구분,
+			차변금액,
+			대변금액
 		from
-			doi_acct_expen
+			DOI_DEPT_COST
 		where 1=1
 		<if test="yyyymm != null and yyyymm != ''">
 			and yyyymm = #{yyyymm}
@@ -25,7 +26,7 @@
 		<if test="site != null and site != ''">
 			and site = #{site}
 		</if>
-		order BY DEPT;
+		order BY 코스트센터;
 	</select>
 
 	<select id="checkduplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
@@ -35,13 +36,14 @@
 			YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
-			ACCT_CLASS varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
-			DEPT varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			ACCT varchar(50) COLLATE Korean_Wansung_CI_AS NULL,
-			SUB_NAME varchar(50) COLLATE Korean_Wansung_CI_AS NULL,
-			ITEM_NAME varchar(50) COLLATE Korean_Wansung_CI_AS NULL,
-			ACCT_AMT real NULL,
-			EXPEN_SEL varchar(6) COLLATE Korean_Wansung_CI_AS NULL
+			코스트센터 nvarchar(15) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			코스트센터분류 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
+			코스트센터유형 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
+			계정코드 varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			계정과목 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			비용구분 nvarchar(8) COLLATE Korean_Wansung_CI_AS NULL,
+			차변금액 int NULL,
+			대변금액 int NULL
 		);
 
 		INSERT INTO #TempTable1
@@ -49,13 +51,14 @@
 		YYYYMM
 		, SEL_CODE
 		, SITE
-		, ACCT_CLASS
-		, DEPT
-		, ACCT
-		, SUB_NAME
-		, ITEM_NAME
-		, ACCT_AMT
-		, EXPEN_SEL
+		, 코스트센터
+		, 코스트센터분류
+		, 코스트센터유형
+		, 계정코드
+		, 계정과목
+		, 비용구분
+		, 차변금액
+		, 대변금액
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
@@ -70,17 +73,19 @@
 			, #{item.field9}
 			, #{item.field10}
 			, #{item.field11}
+			, #{item.field12}
 			)
 		</foreach>;
 
 		SELECT * FROM #TempTable1 a
 		WHERE EXISTS (
 			SELECT 1
-			FROM DOI_ACCT_EXPEN b
+			FROM DOI_DEPT_COST b
 			WHERE 1=1
 			AND b.YYYYMM = a.YYYYMM
 			AND b.SITE = a.SITE
-			AND b.MODEL = a.MODEL
+			AND b.코스트센터 = a.코스트센터
+			AND b.계정코드 = a.계정코드
 		);
 	</select>
 
@@ -89,13 +94,14 @@
 			YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
-			ACCT_CLASS varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
-			DEPT varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			ACCT varchar(50) COLLATE Korean_Wansung_CI_AS NULL,
-			SUB_NAME varchar(50) COLLATE Korean_Wansung_CI_AS NULL,
-			ITEM_NAME varchar(50) COLLATE Korean_Wansung_CI_AS NULL,
-			ACCT_AMT real NULL,
-			EXPEN_SEL varchar(6) COLLATE Korean_Wansung_CI_AS NULL
+			코스트센터 nvarchar(15) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			코스트센터분류 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
+			코스트센터유형 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
+			계정코드 varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			계정과목 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			비용구분 nvarchar(8) COLLATE Korean_Wansung_CI_AS NULL,
+			차변금액 int NULL,
+			대변금액 int NULL
 		);
 
 		INSERT INTO #TempTable
@@ -104,13 +110,14 @@
 		, YYYYMM
 		, SEL_CODE
 		, SITE
-		, ACCT_CLASS
-		, DEPT
-		, ACCT
-		, SUB_NAME
-		, ITEM_NAME
-		, ACCT_AMT
-		, EXPEN_SEL
+		, 코스트센터
+		, 코스트센터분류
+		, 코스트센터유형
+		, 계정코드
+		, 계정과목
+		, 비용구분
+		, 차변금액
+		, 대변금액
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
@@ -126,13 +133,14 @@
 			, #{item.field9}
 			, #{item.field10}
 			, #{item.field11}
+			, #{item.field12}
 			)
 		</foreach>;
 
-		INSERT INTO DOI_ACCT_EXPEN (YYYYMM, SEL_CODE, SITE, ACCT_CLASS, DEPT, ACCT, SUB_NAME, ITEM_NAME, ACCT_AMT, EXPEN_SEL)
-		SELECT YYYYMM, SEL_CODE, SITE, ACCT_CLASS, DEPT, ACCT, SUB_NAME, ITEM_NAME, ACCT_AMT, EXPEN_SEL
+		INSERT INTO DOI_DEPT_COST (YYYYMM, SEL_CODE, SITE, 코스트센터분류, 코스트센터유형, 계정코드, 계정과목, 비용구분, 차변금액, 대변금액)
+		SELECT YYYYMM, SEL_CODE, SITE, 코스트센터분류, 코스트센터유형, 계정코드, 계정과목, 비용구분, 차변금액, 대변금액
 		FROM (
-			SELECT *, MAX(seq_no) over (partition by YYYYMM, SITE, ACCT_CLASS, DEPT, ACCT) max_seq_no FROM #TempTable
+			SELECT *, MAX(seq_no) over (partition by YYYYMM, SITE, 코스트센터, 계정코드) max_seq_no FROM #TempTable
 		) A
 		WHERE 1=1
 		AND seq_no = max_seq_no
@@ -142,66 +150,68 @@
 			WHERE 1=1
 			AND b.YYYYMM = a.YYYYMM
 			AND b.SITE = a.SITE
-			AND b.DEPT = a.DEPT
-			AND b.ACCT = a.ACCT
+			AND b.코스트센터 = a.코스트센터
+			AND b.계정코드 = a.계정코드
 		);
 
 		DROP TABLE #TempTable;
 	</insert>
 	
 	<insert id="insertTab1Data">
-		INSERT INTO DOI_ACCT_EXPEN
+		INSERT INTO DOI_DEPT_COST
 		(
 		YYYYMM
 		, SEL_CODE
 		, SITE
-		, ACCT_CLASS
-		, DEPT
-		, ACCT
-		, SUB_NAME
-		, ITEM_NAME
-		, ACCT_AMT
-		, EXPEN_SEL
+		, 코스트센터
+		, 코스트센터분류
+		, 코스트센터유형
+		, 계정코드
+		, 계정과목
+		, 비용구분
+		, 차변금액
+		, 대변금액
 		)
 		VALUES
 		(
 		#{yyyymm}
 		, #{selCode}
 		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='베트남' then 'VN' else left(#{site},2) end
-		, #{acctClass}
-		, #{dept}
-		, #{acct}
-		, #{subName}
-		, #{itemName}
-		, #{acctAmt}
-		, #{expenSel}
+		, #{코스트센터}
+		, #{코스트센터분류}
+		, #{코스트센터유형}
+		, #{계정코드}
+		, #{계정과목}
+		, #{비용구분}
+		, #{차변금액}
+		, #{대변금액}
 		);
 	</insert>
 
 	<delete id="deleteTab1Data">
-		DELETE FROM DOI_ACCT_EXPEN
+		DELETE FROM DOI_DEPT_COST
 		WHERE 1=1
 		and yyyymm = #{yyyymm}
 		and sel_code = #{selCode}
 		and site = #{siteOrg}
-		and acctClass = #{acctClass}
-		and dept = #{dept}
-		and acct = #{acct}
+		and 코스트센터 = #{코스트센터}
+		and 계정코드 = #{계정코드}
 	</delete>
 
 	<update id="updateTab1Data">
-		UPDATE DOI_ACCT_EXPEN
+		UPDATE DOI_DEPT_COST
 		SET SEL_CODE = #{selCode}
-		,SUB_NAME = #{subName}
-		,ITEM_NAME = #{itemName}
-		,ACCT_AMT = #{acctAmt}
-		,EXPEN_SEL = #{expenSel}
+		, 코스트센터분류 = #{코스트센터분류}
+		, 코스트센터유형 = #{코스트센터유형}
+		, 계정과목 = #{계정과목}
+		, 비용구분 = #{비용구분}
+		, 차변금액 = #{차변금액}
+		, 대변금액 = #{대변금액}
 		WHERE 1=1
 		and yyyymm = #{yyyymm}
 		and site = #{siteOrg}
-		and acctClass = #{acctClass}
-		and dept = #{dept}
-		and acct = #{acct}
+		and 코스트센터 = #{코스트센터}
+		and 계정코드 = #{계정코드}
 		;
 	</update>
 </mapper>
