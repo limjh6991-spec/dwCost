@@ -232,48 +232,77 @@
     </select>
 
     <select id="C0008004_Sch1" resultType="CamelMap">
-    select
-		YYYYMM,
-		sel_code,
-		CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' end AS SITE,
-		구분,
-		model,
-		면적,
-		dist_rate,
-		SUB_NAME,
-		ITEM_NAME,
-		EXPEN_SEL,
-		EXPEN_SEL명,
-		adj_qty,
-		in_qty,
-		out_qty,
-		loss_qty,
-		unit_cost,
-		[in] as input_Amt
-	from
-		doi_expen_matl
-        where 1=1
-        <if test="yyyymm != null and yyyymm != ''">
-            and YYYYMM = #{yyyymm}
-        </if>
-        <if test="site != null and site != ''">
-            and SITE = #{site}
-        </if>
-        order by YYYYMM,SEL_CODE,SITE,MODEL;
+        with base_cost as (
+            select
+            model,
+            '가공비' c_cost,
+            avg(in_qty) in_qty,
+            avg(in_qty + OUT_QTY + loss_qty)/ 2 as 환산수량,
+            sum([in]) as 투입금액
+            from doi_cost
+            where 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                and YYYYMM = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                and SITE = #{site}
+            </if>
+            group by model
+            union all
+                select 도우모델 as model,
+                case when mat_class='원자재' then '직접재료비' else '간접재료비' end,
+                avg(in_qty) as in_qty,
+                avg(환산량) as 환산수량,
+                sum(배부금액) as 투입금액
+            from DOI_MAT_COST
+            where 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                and YYYYMM = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                and SITE = #{site}
+            </if>
+            group by 도우모델,
+            case when mat_class='원자재' then '직접재료비' else '간접재료비' end
+        ), in_cost as(
+        select
+            model,
+            avg(in_qty) as in_qty,
+            avg(환산수량) as chg_qty,
+            sum(투입금액) as tot_amt,
+            sum(case when c_cost='직접재료비' then 투입금액 else 0 end) d_matcost,
+            sum(case when c_cost='간접재료비' then 투입금액 else 0 end) i_matcost,
+            sum(case when c_cost='가공비' then 투입금액 else 0 end) fab_cost
+            from base_cost
+            group by model
+        )
+        select
+            model,
+            in_qty,
+            chg_qty,
+            tot_amt,
+            d_matcost,
+            i_matcost,
+            fab_cost,
+            coalesce(d_matcost / nullif(in_qty, 0), 0)+ coalesce(i_matcost / nullif(chg_qty, 0), 0)+ coalesce(fab_cost / nullif(chg_qty, 0), 0) as sum_unitcost,
+            coalesce(d_matcost / nullif(in_qty, 0), 0) dm_unitcost,
+            coalesce(i_matcost / nullif(chg_qty, 0), 0) di_unitcost,
+            coalesce(fab_cost / nullif(chg_qty, 0), 0) f_unitcost
+        from in_cost
+        order by model;
     </select>
 
     <select id="C0008004_Sch2" resultType="CamelMap">
         select
-        YYYYMM,
-        SEL_CODE,
-        SITE,
         구분,
         MODEL,
+        EXPEN_SEL,
+        EXPEN_SEL명,
+        in_qty,
+        adj_qty,
         BOH,
         [IN] INPUT_AMT,
-        ACCT_NAME ,
-        SUB_NAME ,
-        ITEM_NAME
+        SUB_NAME
         from doi_expen_matl
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
@@ -284,6 +313,26 @@
         </if>
         <if test="model != null and model != ''">
             and MODEL = #{model}
+        </if>
+        union all
+        select '공통',도우모델,
+        case when mat_class='원자재' then 'MDAX' else 'MIDX' end as expen_sel,
+        case when mat_class='원자재' then '직접재료비' else '간접재료비' end as expen_sel명,
+        in_qty,
+        환산량,
+        0,
+        in_amt,
+        mat_class
+        from doi_mat_cost
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        <if test="model != null and model != ''">
+            and 도우모델 = #{model}
         </if>
         order by 구분,EXPEN_SEL;
     </select>
