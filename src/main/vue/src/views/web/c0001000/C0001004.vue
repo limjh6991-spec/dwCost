@@ -1,19 +1,19 @@
-<!-- 기준정보 > 사용자-메뉴 권한 관리 (C0001004) -->
+<!-- 기준정보 > 원가기준정보 (C0001004) -->
 <template>
 	<auth-tabs>
-		<!-- Tab 0 계정과목 관리 -->
+		<!-- Tab 0 계정코드 -->
 		<template #tab-content-TAB010001>
 			<TAB010001 :yearList="yearList" />
 		</template>
-		<!-- Tab 1 부서 관리 -->
+		<!-- Tab 1 부서코드 -->
 		<template #tab-content-TAB010002>
 			<TAB010002 :yearList="yearList" />
 		</template>
-		<!-- Tab 2 BOM 관리 -->
+		<!-- Tab 2 자재코드 -->
 		<template #tab-content-TAB010003>
 			<TAB010003 :yearList="yearList" />
 		</template>
-		<!-- Tab 3 모델 관리 -->
+		<!-- Tab 3 면적기준정보 -->
 		<template #tab-content-TAB010005>
 			<TAB010005 :yearList="yearList" />
 		</template>

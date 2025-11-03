@@ -64,7 +64,6 @@
 		(
 		YYYYMM
 		, SEL_CODE
-		, SITE_ORG
 		, SITE
 		, MODEL
 		, MODEL_TYPE
@@ -145,7 +144,6 @@
 		seq_no
 		,YYYYMM
 		, SEL_CODE
-		, SITE_ORG
 		, SITE
 		, MODEL
 		, MODEL_TYPE
@@ -213,7 +211,6 @@
 		(
 		YYYYMM
 		, SEL_CODE
-		, SITE_ORG
 		, SITE
 		, MODEL
 		, MODEL_TYPE

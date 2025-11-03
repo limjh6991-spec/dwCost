@@ -7,7 +7,8 @@
 		select
 			YYYYMM,
 			SEL_CODE,
-			CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' end AS SITE,
+			SITE AS SITE_ORG,
+			CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' end as SITE,
 			MAT_CODE,
 			MAT_DESC,
 			[SIZE],
@@ -39,7 +40,7 @@
 			SEL_CODE varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
 			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
 			MAT_CODE varchar(24) COLLATE Korean_Wansung_CI_AS NULL,
-			MST_DESC nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
+			MAT_DESC nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
 			[SIZE] varchar(40) COLLATE Korean_Wansung_CI_AS NULL,
 			IN_QTY real NULL,
 			UNIT_COST real NULL,
@@ -55,9 +56,8 @@
 		YYYYMM
 		, SEL_CODE
 		, SITE
-		, SITE_ORG
 		, MAT_CODE
-		, MST_DESC
+		, MAT_DESC
 		, [SIZE]
 		, IN_QTY
 		, UNIT_COST
@@ -83,7 +83,6 @@
 			, #{item.field12}
 			, #{item.field13}
 			, #{item.field14}
-			, #{item.field15}
 			)
 		</foreach>;
 
@@ -105,7 +104,7 @@
 			SEL_CODE varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
 			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
 			MAT_CODE varchar(24) COLLATE Korean_Wansung_CI_AS NULL,
-			MST_DESC nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
+			MAT_DESC nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
 			[SIZE] varchar(40) COLLATE Korean_Wansung_CI_AS NULL,
 			IN_QTY real NULL,
 			UNIT_COST real NULL,
@@ -122,9 +121,8 @@
 		, YYYYMM
 		, SEL_CODE
 		, SITE
-		, SITE_ORG
 		, MAT_CODE
-		, MST_DESC
+		, MAT_DESC
 		, [SIZE]
 		, IN_QTY
 		, UNIT_COST
@@ -151,12 +149,11 @@
 			, #{item.field12}
 			, #{item.field13}
 			, #{item.field14}
-			, #{item.field15}
 			)
 		</foreach>;
 
-		INSERT INTO DOI_MATERIAL_RESC (YYYYMM, SEL_CODE, SITE, MAT_CODE, MST_DESC, [SIZE], IN_QTY, UNIT_COST, IN_AMT, COST_GUBUN, MAT_CLASS, MODEL, MODEL_N_TYPE)
-		SELECT YYYYMM, SEL_CODE, SITE, MAT_CODE, MST_DESC, [SIZE], IN_QTY, UNIT_COST, IN_AMT, COST_GUBUN, MAT_CLASS, MODEL, MODEL_N_TYPE
+		INSERT INTO DOI_MATERIAL_RESC (YYYYMM, SEL_CODE, SITE, MAT_CODE, MAT_DESC, [SIZE], IN_QTY, UNIT_COST, IN_AMT, COST_GUBUN, MAT_CLASS, MODEL, MODEL_N_TYPE)
+		SELECT YYYYMM, SEL_CODE, SITE, MAT_CODE, MAT_DESC, [SIZE], IN_QTY, UNIT_COST, IN_AMT, COST_GUBUN, MAT_CLASS, MODEL, MODEL_N_TYPE
 		FROM (
 			SELECT *, MAX(seq_no) over (partition by YYYYMM, SITE, MAT_CODE, MODEL) max_seq_no FROM #TempTable
 		) A
@@ -181,9 +178,8 @@
 		YYYYMM
 		, SEL_CODE
 		, SITE
-		, SITE_ORG
 		, MAT_CODE
-		, MST_DESC
+		, MAT_DESC
 		, [SIZE]
 		, IN_QTY
 		, UNIT_COST
@@ -199,7 +195,7 @@
 		, #{selCode}
 		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='베트남' then 'VN' else left(#{site},2) end
 		, #{matCode}
-		, #{mstDesc}
+		, #{matDesc}
 		, #{size}
 		, #{inQty}
 		, #{unitCost}
@@ -217,7 +213,7 @@
 		and yyyymm = #{yyyymm}
 		and sel_code = #{selCode}
 		and site = #{siteOrg}
-		and matCode = #{matCode}
+		and mat_code = #{matCode}
 		and model = #{model}
 	</delete>
 
@@ -234,7 +230,7 @@
 		WHERE 1=1
 		and yyyymm = #{yyyymm}
 		and site = #{siteOrg}
-		and matCode = #{matCode}
+		and mat_code = #{matCode}
 		and model = #{model}
 		;
 	</update>

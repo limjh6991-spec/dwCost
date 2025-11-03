@@ -78,7 +78,6 @@
 		(
 			YYYYMM,
 			SEL_CODE,
-			DW_SITE as SITE_ORG,
 			CASE WHEN DW_SITE='HQ' then '본사' WHEN DW_SITE='VN' then 'VINA' end as SITE,
 			구분 AS GUBUN,
 			구분_ord AS GUBUN_ORD,
@@ -131,7 +130,6 @@
 			, #{item.field24}
 			, #{item.field25}
 			, #{item.field26}
-			, #{item.field27}
 			)
 		</foreach>;
 
@@ -233,7 +231,6 @@
 			, #{item.field24}
 			, #{item.field25}
 			, #{item.field26}
-			, #{item.field27}
 			)
 		</foreach>;
 
@@ -261,7 +258,6 @@
 		(
 			YYYYMM,
 			SEL_CODE,
-			DW_SITE as SITE_ORG,
 			구분 AS GUBUN,
 			구분_ord AS GUBUN_ORD,
 			도우코드 AS DW_CODE,

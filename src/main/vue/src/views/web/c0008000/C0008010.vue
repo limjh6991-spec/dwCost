@@ -104,7 +104,11 @@ export default {
     this.initialize();
     this.initializeGrid();
   },
-  mounted() {},
+  mounted() {
+    this.$nextTick(() => {
+      this.setupColumnGroups();
+    });
+  },
   beforeUnmount() {},
   methods: {
     initialize() {
@@ -115,6 +119,48 @@ export default {
     },
     initializeGrid() {
       this.stockCostGrid = _.cloneDeep(gridField);
+    },
+    setupColumnGroups() {
+      if (this.gridView) {
+        try {
+          // 컬럼 레이아웃 설정 - 모든 컬럼 포함
+          const layout = [
+            // "yyyymm",
+            // "selCode", 
+            // "site",
+            "구분",
+            "model",
+            {
+              name: "BOH",
+              direction: "horizontal", 
+              items: ["bohQty", "bohAmt"],
+              header: { text: "BOH" }
+            },
+            {
+              name: "IN",
+              direction: "horizontal",
+              items: ["inQty", "inAmt"], 
+              header: { text: "IN" }
+            },
+            {
+              name: "EOH", 
+              direction: "horizontal",
+              items: ["eohQty", "eohAmt"],
+              header: { text: "EOH" }
+            },
+            {
+              name: "OUT",
+              direction: "horizontal", 
+              items: ["outQty", "outAmt"],
+              header: { text: "OUT" }
+            }
+          ];
+          
+          this.gridView.setColumnLayout(layout);
+        } catch (error) {
+          // 컬럼 그룹 설정 실패 시 기본 레이아웃 유지
+        }
+      }
     },
     async getDataList() {
       this.gridView.commit();
@@ -134,7 +180,11 @@ export default {
       let resp = await this.$axios.api.search(param);
     },
     searchClick() {
-      this.getDataList();
+      this.getDataList().then(() => {
+        this.$nextTick(() => {
+          this.setupColumnGroups();
+        });
+      });
     },
     async excelBtnClick() {
       const grid = this.gridView;

@@ -28,7 +28,7 @@ const grid = {
     //sortMode: {},
     stateBar: { visible: true },
     //summaryMode: {},
-    fixed: { colBarWidth: 1, colCount: 1 },
+    fixed: { colBarWidth: 0, colCount: 0 },
   },
   fields: [
     { fieldName: 'yyyymm', dataType: ValueType.TEXT },
@@ -127,7 +127,7 @@ const grid = {
         return { editable: true, styleName: 'edit tl' };
       },
     },
-    { name: 'MAT_DESC', fieldName: 'matDesc', width: '70', header: { text: '자재명' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: 'MAT_DESC', fieldName: 'matDesc', width: '70', header: { text: 'MAT_DESC' }, autoFilter: true, editable: true, styleName: 'edit tl' },
     { name: '[SIZE]', fieldName: 'size', width: '120', header: { text: 'SIZE' }, autoFilter: true, editable: true, styleName: 'edit tl' },
     { name: 'IN_QTY', fieldName: 'inQty', width: '135', header: { text: 'IN_QTY' }, autoFilter: true, editable: true, styleName: 'edit tl' },
     { name: 'UNIT_COST', fieldName: 'unitCost', width: '135', header: { text: 'UNIT_COST' }, autoFilter: true, editable: true, styleName: 'edit tl' },
