@@ -318,19 +318,6 @@ export default {
 
       return error;
     },
-
-    setCellStyleCallbackSaleRescGrid(grid, cell) {
-      let ret = {};
-      if (cell.item.rowState == 'created' || cell.item.itemState == 'appending' || cell.item.itemState == 'inserting') {
-        ret.editable = true;
-        if (isNaN(cell.value)) {
-          ret.styleName = 'edit tl';
-        } else {
-          ret.styleName = 'edit tr';
-        }
-      }
-      return ret;
-    },
   },
 };
 </script>
