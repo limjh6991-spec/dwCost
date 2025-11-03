@@ -387,7 +387,7 @@
         SEL_CODE,
         SITE,
         MAT_CODE,
-        MST_DESC,
+        MAT_DESC,
         [SIZE],
         IN_QTY,
         UNIT_COST,
@@ -594,9 +594,13 @@
         CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end SITE,
         구분,
         MODEL,
+        BOH AS BOH_QTY,
         BOH_AMT,
+        INPUT AS IN_QTY,
         IN_AMT,
+        EOH AS EOH_QTY,
         EOH_AMT,
+        [OUT] AS OUT_QTY,
         OUT_AMT
         from doi_stock_cost
         where 1=1

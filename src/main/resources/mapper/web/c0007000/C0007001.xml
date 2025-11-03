@@ -49,7 +49,6 @@
 		YYYYMM
 		, SEL_CODE
 		, SITE
-		, SITE_ORG
 		, ACCT_CLASS
 		, DEPT
 		, ACCT
@@ -70,6 +69,7 @@
 			, #{item.field8}
 			, #{item.field9}
 			, #{item.field10}
+			, #{item.field11}
 			)
 		</foreach>;
 
@@ -125,6 +125,7 @@
 			, #{item.field8}
 			, #{item.field9}
 			, #{item.field10}
+			, #{item.field11}
 			)
 		</foreach>;
 

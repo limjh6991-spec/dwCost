@@ -38,7 +38,7 @@ const grid = {
     { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'tl' },
     { name: 'site', fieldName: 'site', width: '80', header: { text: 'SITE' }, autoFilter: true, styleName: 'tl' },
     { name: 'matCode', fieldName: 'matCode', width: '80', header: { text: 'MAT_CODE' }, autoFilter: true, styleName: 'tl' },
-    { name: 'mstDesc', fieldName: 'mstDesc', width: '80', header: { text: 'MST_DESC' }, autoFilter: true, styleName: 'tl' },
+    { name: 'matDesc', fieldName: 'matDesc', width: '80', header: { text: 'MAT_DESC' }, autoFilter: true, styleName: 'tl' },
     { name: 'size', fieldName: 'size', width: '80', header: { text: 'SIZE' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
     { name: 'inQty', fieldName: 'inQty', width: '80', header: { text: 'IN_QTY' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'unitCost', fieldName: 'unitCost', width: '90', header: { text: 'UNIT_COST' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
