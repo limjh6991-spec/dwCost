@@ -4,7 +4,18 @@
 용도: 생산수불/재고수불 정합성 검증
 """
 
-import pyodbc
+try:
+    import pymssql
+    USE_PYMSSQL = True
+except ImportError:
+    try:
+        import pyodbc
+        USE_PYMSSQL = False
+    except ImportError:
+        print("❌ pymssql 또는 pyodbc가 필요합니다.")
+        print("설치: pip3 install pymssql --break-system-packages")
+        exit(1)
+
 import pandas as pd
 from datetime import datetime
 import sys
@@ -26,17 +37,31 @@ SITE = 'HQ'
 def connect_db():
     """데이터베이스 연결"""
     try:
-        conn_str = (
-            f"DRIVER={DB_CONFIG['driver']};"
-            f"SERVER={DB_CONFIG['server']};"
-            f"DATABASE={DB_CONFIG['database']};"
-            f"UID={DB_CONFIG['username']};"
-            f"PWD={DB_CONFIG['password']}"
-        )
-        conn = pyodbc.connect(conn_str)
+        if USE_PYMSSQL:
+            print("🔌 pymssql로 연결 중...")
+            conn = pymssql.connect(
+                server=DB_CONFIG['server'],
+                user=DB_CONFIG['username'],
+                password=DB_CONFIG['password'],
+                database=DB_CONFIG['database']
+            )
+        else:
+            print("🔌 pyodbc로 연결 중...")
+            conn_str = (
+                f"DRIVER={DB_CONFIG['driver']};"
+                f"SERVER={DB_CONFIG['server']};"
+                f"DATABASE={DB_CONFIG['database']};"
+                f"UID={DB_CONFIG['username']};"
+                f"PWD={DB_CONFIG['password']}"
+            )
+            conn = pyodbc.connect(conn_str)
         return conn
     except Exception as e:
         print(f"❌ 데이터베이스 연결 실패: {e}")
+        print("\n💡 해결 방법:")
+        print("  1. VPN 연결 확인")
+        print("  2. 네트워크 확인: ping 172.16.200.204")
+        print("  3. SSMS에서 Quick_Validation_Check.sql 직접 실행")
         sys.exit(1)
 
 def run_diagnosis(conn):
