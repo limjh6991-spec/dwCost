@@ -5,6 +5,14 @@
       <b-row class="search_area">
         <b-col cols="2">
           <div class="form-floating">
+            <div class="form-floating me-1">
+              <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
+              <label for="floatingSelect" class="select">기준월</label>
+            </div>
+          </div>
+        </b-col>
+        <b-col cols="2">
+          <div class="form-floating">
             <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="displaySite" :disabled="true" />
             <label for="floating">사업장</label>
           </div>
@@ -40,10 +48,12 @@ export default {
   },
   data() {
     return {
+      yyyymm: null,
       dataGrid: null,
       dataGridRows: [],
       params: {
         site: 'HQ',
+        yyyymm: null,
       },
       siteMap: {
         '본사': 'HQ',
@@ -80,6 +90,8 @@ export default {
     }
   },
   created() {
+    const now = new Date();
+    this.params.yyyymm = `${now.getFullYear()}-${("0" + (now.getMonth() + 1)).slice(-2)}`;
     this.initializeGrid();
   },
   mounted() {
@@ -94,13 +106,15 @@ export default {
     },
     async getDataList() {
       this.gridView.commit();
+      let yyyymm = this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null;
       let params = {
+        yyyymm: yyyymm,
         site: this.siteMap[this.params.site], // '본사' → 'HQ', 'VINA' → 'VN' 변환
       };
       console.log('조회 파라미터:', params);
       let param = {
         menuId: 'c0007003',
-        queryId: 'selectDataList',
+        queryId: 'selectTab1GridData',
         queryParams: params,
         target: this.dataGridRows,
       };
