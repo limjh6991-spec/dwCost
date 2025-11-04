@@ -242,12 +242,7 @@ export default {
   background-color: #f8f9fa;
 }
 
-.log-display ::v-deep .error-text {
-  color: #dc3545 !important;
-  /* font-weight: bold !important;
-  background-color: #ffe6e6 !important; */
-  padding: 2px 4px !important;
-  border-radius: 2px !important;}
+.log-display ::v-deep .error-text { color: rgb(209, 70, 70);}
 .log-display ::v-deep .start-text { color: green; }  /* 시작은 녹색 */
 .log-display ::v-deep .finish-text { color: blue; }  /* 종료는 청색 */
 </style>
