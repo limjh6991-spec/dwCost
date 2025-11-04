@@ -38,6 +38,16 @@ const c0003000Router = [
       sysResourceId:"C0003005",
       requiresAuth: true,
     }
+  }, 
+ {
+    path: '/c0003009',
+    name: 'FRONT',
+    component: () => import('../views/web/c0003000/C0003009.vue'),
+    meta: {
+      upperSysResourceId:'C0003000',
+      sysResourceId:"C0003005",
+      requiresAuth: true,
+    }
   }, /*
   {
     path: '/m0003001',

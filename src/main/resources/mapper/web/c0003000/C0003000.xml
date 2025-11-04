@@ -37,4 +37,18 @@
 		#{yyyymm},
 		#{site}
     </select>
+	   
+    <select id="C0003009_Sch1" resultType="CamelMap">
+	DECLARE @RET_CODE INT;
+	EXEC @RET_CODE = UP_DOI_STOCK_BOH 
+		#{yyyymm},
+		#{site}
+    </select>
+	   
+    <select id="C0003009_Sch2" resultType="CamelMap">
+	DECLARE @RET_CODE INT;
+	EXEC @RET_CODE = UP_DOI_STOCK_COST
+		#{yyyymm},
+		#{site}
+    </select>
 </mapper>
