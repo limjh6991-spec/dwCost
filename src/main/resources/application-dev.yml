@@ -44,7 +44,7 @@ mybatis:
 
 cors:
   allowed:
-    origin: http://172.16.200.202:4200,http://172.16.200.202:9090
+    origin: http://localhost:4300,http://localhost:9090,http://172.16.200.202:4200,http://172.16.200.202:9090
 
 file:
   upload:
