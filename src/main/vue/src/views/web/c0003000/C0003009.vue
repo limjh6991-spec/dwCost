@@ -1,4 +1,4 @@
-/** * 제조매출원가 > 경비/재료비배부(up_prod_expn) */
+/** * 제조매출원가 > 제품 수불(up_prod_expn) */
 <template>
   <div>
     <div class="search_box">
@@ -134,13 +134,13 @@ export default {
       var current = new Date();
       this.params.yyyymm = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';      
-      this.resultMessage = `실행 버튼을 클릭하면 ${this.params.yyyymm}월 ${this.params.site} 경비/재료비 배부를 실행 합니다`;
+      this.resultMessage = `실행 버튼을 클릭하면 ${this.params.yyyymm}월 ${this.params.site} 제품수불 집계를 실행 합니다`;
     },
     initializeGrid() {
       //this.expenAmtGrid = _.cloneDeep(gridField);
     },
     onDateChange() {
-      this.resultMessage = `실행 버튼을 클릭하면 ${this.params.yyyymm}월 ${this.params.site} 경비/재료비 배부를 실행 합니다`;
+      this.resultMessage = `실행 버튼을 클릭하면 ${this.params.yyyymm}월 ${this.params.site} 제품수불 집계를 실행 합니다`;
     },
     async getDataList() {
       //this.gridView.commit();
@@ -151,19 +151,28 @@ export default {
         selcode: null, // OUTPUT 매개변수용
       };
 
-      let param = {
-        menuId: 'c0003000',
-        queryId: 'C0003003_Sch1',
-        queryParams: params,
-        target: null,
-      };
-      let resp = await this.$axios.api.search(param);
-      console.log('응답 데이터:', JSON.stringify(resp,null,2));
-      console.log('응답 데이터:', resp);
-      console.log('응답 데이터:', resp[0].retmessage);
+      let param = [
+        {
+          menuId: 'c0003000',
+          queryId: 'C0003009_Sch1',
+          queryParams: params,
+          target: null,
+        },
+        {
+          menuId: 'c0003000',
+          queryId: 'C0003009_Sch2',
+          queryParams: params,
+          target: null,
+        },
+      ];
+      let resp = await this.$axios.api.searchAll(param);
+      console.log('응답 데이터(JSON):', JSON.stringify(resp,null,2));
+      // console.log('응답 데이터resp:', resp[0]);
+      console.log('응답 데이터resp[0]:', resp[0][0].retmessage);
+      console.log('응답 데이터resp[0]:', resp[1][0].retmessage);
       // OUTPUT 매개변수로 받은 메시지 표시
-      if (resp && resp[0].retmessage) {
-        this.resultMessage = resp[0].retmessage;
+      if (resp && resp[0][0].retmessage) {
+        this.resultMessage = resp[0][0].retmessage + resp[1][0].retmessage;
           // this.$message({
           //     message: resp.data.retmessage,
           //     type: 'info',
