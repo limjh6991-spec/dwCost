@@ -102,8 +102,14 @@ export default {
       const lines = this.resultMessage.split('\n');
       // 각 줄을检查하여 [ERROR]로 시작하면 span으로 감싸기
       const formattedLines = lines.map(line => {
-        if (line.startsWith('[ERROR]')) {
+       if (line.startsWith('[ERROR]')) {
           return `<span class="error-text">${line}</span>`;
+        }
+        else if (line.startsWith('[START]')) {
+          return `<span class="start-text">${line}</span>`;
+        }
+        else if (line.startsWith('[FINISH]')) {
+          return `<span class="finish-text">${line}</span>`;
         }
         return line;
       });
@@ -235,12 +241,7 @@ export default {
   white-space: pre-wrap;
   background-color: #f8f9fa;
 }
-
-.log-display ::v-deep .error-text {
-  color: #dc3545 !important;
-  /* font-weight: bold !important;
-  background-color: #ffe6e6 !important; */
-  padding: 2px 4px !important;
-  border-radius: 2px !important;
-}
+.log-display ::v-deep .error-text { color: rgb(209, 70, 70);}
+.log-display ::v-deep .start-text { color: green; }  /* 시작은 녹색 */
+.log-display ::v-deep .finish-text { color: blue; }  /* 종료는 청색 */
 </style>
