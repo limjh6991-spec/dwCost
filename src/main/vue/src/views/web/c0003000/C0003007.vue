@@ -105,6 +105,12 @@ export default {
         if (line.startsWith('[ERROR]')) {
           return `<span class="error-text">${line}</span>`;
         }
+        else if (line.startsWith('[START]')) {
+          return `<span class="start-text">${line}</span>`;
+        }
+        else if (line.startsWith('[FINISH]')) {
+          return `<span class="finish-text">${line}</span>`;
+        }
         return line;
       });
       // 다시 합치기
@@ -241,6 +247,7 @@ export default {
   /* font-weight: bold !important;
   background-color: #ffe6e6 !important; */
   padding: 2px 4px !important;
-  border-radius: 2px !important;
-}
+  border-radius: 2px !important;}
+.log-display ::v-deep .start-text { color: green; }  /* 시작은 녹색 */
+.log-display ::v-deep .finish-text { color: blue; }  /* 종료는 청색 */
 </style>
