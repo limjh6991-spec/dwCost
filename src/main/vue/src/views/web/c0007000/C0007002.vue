@@ -5,6 +5,14 @@
       <b-row class="search_area">
         <b-col cols="2">
           <div class="form-floating">
+            <div class="form-floating me-1">
+              <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
+              <label for="floatingSelect" class="select">기준월</label>
+            </div>
+          </div>
+        </b-col>
+        <b-col cols="2">
+          <div class="form-floating">
             <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="displaySite" :disabled="true" />
             <label for="floating">사업장</label>
           </div>
@@ -44,6 +52,7 @@ export default {
       materialGridRows: [],
       params: {
         site: 'HQ',
+        yyyymm: null, // 추가
       },
       siteMap: {
         '본사': 'HQ',
@@ -51,7 +60,7 @@ export default {
         'HQ': 'HQ',
         'VN': 'VN',
       },
-      selectedYear: new Date().getFullYear(),
+      // selectedYear 제거 (불필요)
     };
   },
   watch: {
@@ -61,7 +70,7 @@ export default {
           this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
           console.log('[C0007002] site 변경:', this.params.site);
           if (this.$refs.materialGrid != null) {
-            this.getMaterialList();
+            this.getDataList();
           }
         }
       },
@@ -81,6 +90,9 @@ export default {
     }
   },
   created() {
+    // 기준월을 오늘 날짜 기준으로 세팅 (항상 YYYY-MM 형태)
+    const now = new Date();
+    this.params.yyyymm = `${now.getFullYear()}-${("0" + (now.getMonth() + 1)).slice(-2)}`;
     this.initializeGrid();
   },
   mounted() {
@@ -93,15 +105,18 @@ export default {
     initializeGrid() {
       this.materialGrid = _.cloneDeep(gridField);
     },
-    async getMaterialList() {
+    async getDataList() {
       this.gridView.commit();
+      // 기준월(YYYY-MM)을 DB 쿼리용(YYYYMM)으로 변환
+      let yyyymm = this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null;
       let params = {
-        site: this.siteMap[this.params.site], // '본사' → 'HQ', 'VINA' → 'VN' 변환
+          yyyymm: yyyymm,
+          site: this.siteMap[this.params.site], // '본사' → 'HQ', 'VINA' → 'VN' 변환
       };
       console.log('조회 파라미터:', params);
       let param = {
         menuId: 'c0007002',
-        queryId: 'selectMaterialData',
+        queryId: 'selectTab1GridData',
         queryParams: params,
         target: this.materialGridRows,
       };
@@ -120,7 +135,7 @@ export default {
     },
 
     searchClick() {
-      this.getMaterialList();
+      this.getDataList();
     },
 
     async excelBtnClick() {
