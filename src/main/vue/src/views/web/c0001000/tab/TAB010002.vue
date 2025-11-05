@@ -52,6 +52,7 @@
 <script>
 import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
+import { useC0001001 } from '@web/store/C0001001.js';
 import UploadPopup from '@components/UploadPopup.vue';
 import gridField from '@web/c0001000/js/TAB010002.js';
 export default {
@@ -63,6 +64,7 @@ export default {
     }
   },
   setup() {
+    const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
     return { userAuthInfo };
   },

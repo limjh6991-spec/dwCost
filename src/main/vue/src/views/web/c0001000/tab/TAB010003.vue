@@ -1,4 +1,4 @@
-<!-- 기준정보 > BOM 관리 (TAB010003) -->
+<!-- 기준정보 > 자재코드 -->
 <template>
   <div>
     <div class="search_box">
@@ -42,14 +42,21 @@
 <script>
 import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
+import { useC0001001 } from '@web/store/C0001001.js';
 import UploadPopup from '@components/UploadPopup.vue';
 import gridField from '@web/c0001000/js/TAB010003.js';
+
 
 export default {
   components: { UploadPopup },
   setup() {
+    const srchInfo = useC0001001();
+    console.log(srchInfo.yyyymm);
     const userAuthInfo = useUserAuthInfo();
-    return { userAuthInfo };
+    return { 
+			srchInfo,
+      userAuthInfo 
+    };
   },
   data() {
     return {
@@ -88,7 +95,7 @@ export default {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
-    this.params.yyyymm = `${year}-${month}`;
+    this.params.yyyymm = this.srchInfo.yyyymm; //`${year}-${month}`;
     console.log('[created] 기준월 초기화:', this.params.yyyymm);
     
     this.initializeGrid();

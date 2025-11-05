@@ -96,7 +96,7 @@ const grid = {
       name: 'DEPT',
       fieldName: 'dept',
       width: '150',
-      header: { text: '부서코드' },
+      header: { text: '코스트센터' },
       autoFilter: true,
       editable: false,
       styleName: 'tl',
@@ -114,7 +114,7 @@ const grid = {
         return ret;
       },
     },
-    { name: 'DEPT_NAME', fieldName: 'deptName', width: '120', header: { text: '부서명' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: 'DEPT_NAME', fieldName: 'deptName', width: '120', header: { text: '코스트센터명' }, autoFilter: true, editable: true, styleName: 'edit tl' },
     { name: 'EXPEN_AREA', fieldName: 'expenArea', width: '135', header: { text: '비용구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },
   ],
 };

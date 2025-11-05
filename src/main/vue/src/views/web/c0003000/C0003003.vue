@@ -48,21 +48,26 @@
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
+import { useC0001001 } from '@web/store/C0001001.js';
 //import gridField from '@web/c0008000/js/C0008002.js';
 
 export default {
   props: {},
   components: {},
   setup() {
+    const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { userAuthInfo };
+    return { 
+			srchInfo,
+      userAuthInfo 
+    };
   },
   data() {
     return {
       expenAmtGrid: null,
       expenAmtGridRows: [],
       params: {
-        yyyymm: null,
+        yyyymm: '',
         site: 'HQ',
       },
       siteMap: {
@@ -81,6 +86,14 @@ export default {
         this.onDateChange();
       }
     },
+    'srchInfo.yyyymm': {
+      handler(newVal) {
+        if (newVal) {
+          this.params.yyyymm = newVal;
+          console.log('[C0003001] yyyymm 변경:', this.params.yyyymm);
+        }
+      }
+     },
     userAuthInfo: {
       handler(newVal) {
         if (newVal.curProdCtg) {
@@ -131,8 +144,8 @@ export default {
   beforeUnmount() {},
   methods: {
     initialize() {
-      var current = new Date();
-      this.params.yyyymm = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
+      //var current = new Date();
+      this.params.yyyymm = this.srchInfo.yyyymm;//`${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';      
       this.resultMessage = `실행 버튼을 클릭하면 ${this.params.yyyymm}월 ${this.params.site} 경비/재료비 배부를 실행 합니다`;
     },
@@ -141,6 +154,8 @@ export default {
     },
     onDateChange() {
       this.resultMessage = `실행 버튼을 클릭하면 ${this.params.yyyymm}월 ${this.params.site} 경비/재료비 배부를 실행 합니다`;
+      console.log('onMonthChange ---c0003003'+this.params.yyyymm);
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     async getDataList() {
       //this.gridView.commit();

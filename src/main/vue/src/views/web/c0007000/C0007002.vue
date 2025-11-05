@@ -6,7 +6,7 @@
         <b-col cols="2">
           <div class="form-floating">
             <div class="form-floating me-1">
-              <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
+              <date-picker label="기준월" mode="month" v-model="params.yyyymm"  @change="onMonthChange"/>
               <label for="floatingSelect" class="select">기준월</label>
             </div>
           </div>
@@ -37,14 +37,19 @@
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
+import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007002.js';
 
 export default {
   props: {},
   components: {},
   setup() {
+    const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { userAuthInfo };
+    return { 
+			srchInfo,
+      userAuthInfo 
+    };
   },
   data() {
     return {
@@ -52,7 +57,7 @@ export default {
       materialGridRows: [],
       params: {
         site: 'HQ',
-        yyyymm: null, // 추가
+        yyyymm: '', // 추가
       },
       siteMap: {
         '본사': 'HQ',
@@ -64,6 +69,14 @@ export default {
     };
   },
   watch: {
+    'srchInfo.yyyymm': {
+      handler(newVal) {
+        if (newVal) {
+          this.params.yyyymm = newVal;
+          console.log('[C0007002] yyyymm 변경:', this.params.yyyymm);
+        }
+      }
+     },
     userAuthInfo: {
       handler(newVal) {
         if (newVal && newVal.curProdCtg) {
@@ -74,8 +87,8 @@ export default {
           }
         }
       },
-      deep: true,
-      immediate: true
+      // deep: true,
+      // immediate: true
     }
   },
   computed: {
@@ -92,7 +105,7 @@ export default {
   created() {
     // 기준월을 오늘 날짜 기준으로 세팅 (항상 YYYY-MM 형태)
     const now = new Date();
-    this.params.yyyymm = `${now.getFullYear()}-${("0" + (now.getMonth() + 1)).slice(-2)}`;
+    this.params.yyyymm = this.srchInfo.yyyymm; //`${now.getFullYear()}-${("0" + (now.getMonth() + 1)).slice(-2)}`;
     this.initializeGrid();
   },
   mounted() {
@@ -104,6 +117,10 @@ export default {
   methods: {
     initializeGrid() {
       this.materialGrid = _.cloneDeep(gridField);
+    },
+    onMonthChange() {
+      console.log('onMonthChange ---c0007001'+this.params.yyyymm);
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     async getDataList() {
       this.gridView.commit();
