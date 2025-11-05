@@ -35,7 +35,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="acctGrid" :uid="'acctGrid'" :step="'1'" :rows="acctGridRows" style="height: 100%" />
+        <RealGrid ref="acctGrid" :uid="'acctGrid'" :step="'1'" :rows="acctGridRows" style="height: 100%" :fitLayoutWidthEnable="false"/>
       </div>
     </div>
     <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
@@ -44,6 +44,7 @@
 <script>
 import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
+import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0001000/js/TAB010001.js';
 import axios from 'axios';
 export default {
@@ -55,6 +56,7 @@ export default {
     }
   },
   setup() {
+    const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
     return { userAuthInfo };
   },
