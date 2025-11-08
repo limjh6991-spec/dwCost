@@ -109,6 +109,16 @@ const c0008000Router = [
       requiresAuth: true,
     },
   },
+  {
+    path: '/c0008013',
+    name: '판매관리비',
+    component: () => import('../views/web/c0008000/C0008013.vue'),
+    meta: {
+      upperSysResourceId: 'C0008000',
+      sysResourceId: 'C0008013',
+      requiresAuth: true,
+    },
+  },
 ];
 
 export default c0008000Router;

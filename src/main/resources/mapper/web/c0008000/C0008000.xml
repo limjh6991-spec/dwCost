@@ -651,4 +651,18 @@
         </if>
         order by 거래명세서번호, 거래명세서일;
     </select>
+
+    <select id="C0008013_Sch1" resultType="CamelMap">
+        select 구분,model,SUB_NAME,ITEM_NAME,EXPEN_SEL,EXPEN_SEL명,SALE_AMT,TOT_AMT,TOT_SMCE,TOT_ACCT,DIST_RATE,DIST_AMT
+        from DOI_SMCE_COST
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        order by SUB_NAME, ITEM_NAME, 구분, model, EXPEN_SEL, EXPEN_SEL명 ;
+    </select>
+
 </mapper>
