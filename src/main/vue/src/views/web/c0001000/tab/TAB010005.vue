@@ -3,7 +3,7 @@
   <div>
     <div class="search_box">
       <b-row class="search_area">
-        <b-col cols="2">
+        <!--b-col cols="2">
           <div class="form-floating">
             <select class="form-select label-60" id="floatingSelect" v-model="params.yyyy">
               <option v-for="yyyy in yearList" :key="yyyy.value" :value="yyyy">
@@ -11,6 +11,12 @@
               </option>
             </select>
             <label for="floatingSelect" class="select">년도</label>
+          </div>
+        </b-col-->
+        <b-col cols="1" class="period">
+          <div class="form-floating me-1">
+            <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
+            <label for="floatingSelect" class="select">기준월</label>
           </div>
         </b-col>
         <b-col cols="2">
@@ -52,14 +58,17 @@ export default {
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { userAuthInfo };
+    return { 
+			srchInfo,
+      userAuthInfo 
+    };
   },
   data() {
     return {
       modelGrid: null,
       modelGridRows: [],
       params: {
-        yyyy: null,
+        yyyymm: null,
         site: 'HQ',
       },
       siteMap: {
@@ -69,7 +78,7 @@ export default {
         VN: 'VN',
       },
       isProcessing: false,
-      duplicateKey: ['yyyy', 'selCode', 'site', 'model'],
+      duplicateKey: ['yyyymm', 'selCode', 'site', 'model'],
       isValidteCellModelGrid: false,
     };
   },
@@ -85,15 +94,29 @@ export default {
     this.initializeGrid();
   },
   mounted() {
-    if (this.yearList && this.yearList.length > 0) {
-      this.params.yyyy = this.yearList[0];
-    }
+    // if (this.yearList && this.yearList.length > 0) {
+    //   this.params.yyyy = this.yearList[0];
+    // }
+    this.params.yyyymm = this.srchInfo.yyyymm;
     this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     this.$nextTick(() => {
       this.getModelList();
     });
   },
   watch: {
+    'params.yyyymm': function(newVal) {
+      if (newVal) {
+        this.onDateChange();
+      }
+    },
+    'srchInfo.yyyymm': {
+      handler(newVal) {
+        if (newVal) {
+          this.params.yyyymm = newVal;
+          console.log('[C0003007] yyyymm 변경:', this.params.yyyymm);
+        }
+      }
+     },
     userAuthInfo: {
       handler(newVal) {
         if (newVal) {
@@ -105,13 +128,14 @@ export default {
           }
         }
       },
-      deep: true,
-      immediate: true
     }
   },
   methods: {
     initializeGrid() {
       this.modelGrid = _.cloneDeep(gridField);
+    },
+    onDateChange() {
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
       async getModelList() {
       if (!this.modelGridView) return;
@@ -119,13 +143,14 @@ export default {
       
       try {
         const param = {
-          yyyy: this.params.yyyy?.value || this.params.yyyy,
+          //yyyy: this.params.yyyy?.value || this.params.yyyy,
+          yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
           site: this.siteMap[this.params.site] || this.params.site
         };
 
         // 파라미터 유효성 검사
-        if (!param.yyyy) {
-          this.$toast && this.$toast('error', '년도를 선택해주세요.');
+        if (!param.yyyymm) {
+          this.$toast && this.$toast('error', '기준월를 선택해주세요.');
           return;
         }
 

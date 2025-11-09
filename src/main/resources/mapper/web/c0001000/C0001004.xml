@@ -6,7 +6,7 @@
 	<!-- Tab1: C0001001 (계정과목 관리) -->
 	<select id="selectTab1GridData" resultType="CamelMap">
 		select
-			YYYY,
+			YYYYMM,
 			SEL_CODE,
 			SITE as SITE_ORG,
 			CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then 'VINA' else site end as SITE,
@@ -25,17 +25,19 @@
 			관리항목유형,
 			계정과목Lev AS ACCT_LEV,
 			상위계정과목,
+			경영계획과목,
 			상위계정과목내부코드,
 			소분류,
 			중분류,
 			대분류,
 			EXPEN_SEL,
-			EXPEN_SEL명 AS EXPEN_SEL_NAME
+			EXPEN_SEL명 AS EXPEN_SEL_NAME,
+			특이사항
 		FROM
 			doi_acct
 		where 1=1
-		<if test="yyyy != null and yyyy != ''">
-			and yyyy = #{yyyy}
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
 		</if>
 		<if test="site != null and site != ''">
 			and site = #{site}
@@ -92,7 +94,7 @@
 	<!-- Tab2: C0001002 (부서 관리) -->
 	<select id="selectTab2GridData" resultType="CamelMap">
 		select
-			YYYY,
+			YYYYMM,
 			SEL_CODE,
 			SITE as SITE_ORG,
 			CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then 'VINA' else site end as SITE,
@@ -102,8 +104,8 @@
 		FROM
 			doi_dept
 		where 1=1
-		<if test="yyyy != null and yyyy != ''">
-			and yyyy = #{yyyy}
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
 		</if>
 		<if test="site != null and site != ''">
 			and site = #{site}
@@ -241,7 +243,7 @@
 	<!-- tab5: 면적기준 정보 관리 -->
 	<select id="selectTab5GridData" resultType="CamelMap">
 		select
-			YYYY,
+			YYYYMM,
 			SEL_CODE,
 			SITE as SITE_ORG,
 			CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then 'VINA' else site end as SITE,
@@ -259,8 +261,8 @@
 		from
 			DOI_MODEL_MAST
 		where 1=1
-		<if test="yyyy != null and yyyy != ''">
-			and yyyy = #{yyyy}
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
 		</if>
 		<if test="site != null and site != ''">
 			and site = #{site}
@@ -271,7 +273,7 @@
 	<insert id="insertTab5Data">
 		INSERT INTO DOI_MODEL_MAST
 		(
-		YYYY
+		YYYYMM
 		, SEL_CODE
 		, SITE
 		, MODEL
@@ -288,7 +290,7 @@
 		)
 		VALUES
 		(
-		#{yyyy}
+		#{yyyymm}
 		, #{selCode}
 		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='베트남' then 'VN' else left(#{site},2) end
 		, #{model}
@@ -326,7 +328,7 @@
 		,EXPEN_SEL = #{expenSel}
 		,EXPEN_SEL명 = #{expenSelName}
 		WHERE 1=1
-		and yyyy = #{yyyy}
+		and yyyy = #{yyyymm}
 		and site = #{siteOrg}
 		and acct = #{acct}
 		;
@@ -334,7 +336,7 @@
 	<delete id="deleteTab1Data">
 		DELETE FROM DOI_ACCT
 		WHERE 1=1
-		and yyyy = #{yyyy}
+		and yyyy = #{yyyymm}
 		and sel_code = #{selCode}
 		and site = #{siteOrg}
 		and acct_class = #{acctClassOrg}
@@ -347,7 +349,7 @@
 		SET DEPT_NAME = #{deptName}
 		,EXPEN_AREA = #{expenArea}
 		WHERE 1=1
-		and yyyy = #{yyyy}
+		and yyyy = #{yyyymm}
 		and site = #{site}
 		and dept = #{dept}
 		;
@@ -355,7 +357,7 @@
 	<delete id="deleteTab2Data">
 		DELETE FROM DOI_DEPT
 		WHERE 1=1
-		and yyyy = #{yyyy}
+		and yyyy = #{yyyymm}
 		and site = #{site}
 		and dept = #{dept}
 	</delete>
@@ -415,7 +417,7 @@
 		,Y = #{y}
 		,XY = #{xy}
 		WHERE 1=1
-		and yyyy = #{yyyy}
+		and yyyymm = #{yyyymm}
 		and site = #{siteOrg}
 		and model = #{model}
 		;
@@ -424,7 +426,7 @@
 	<delete id="deleteTab5Data">
 		DELETE FROM DOI_MODEL_MAST
 		WHERE 1=1
-		and yyyy = #{yyyy}
+		and yyyymm = #{yyyymm}
 		and sel_code = #{selCode}
 		and site = #{siteOrg}
 		and model = #{model}
@@ -434,7 +436,7 @@
 		DROP TABLE IF EXISTS #TempTable1;
 
 		CREATE TABLE #TempTable1 (
-			YYYY varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			ACCT_CLASS varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
@@ -447,6 +449,7 @@
 			관리항목유형 nvarchar(18) COLLATE Korean_Wansung_CI_AS NULL,
 			계정과목Lev int NULL,
 			상위계정과목 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
+			경영계획과목 nvarchar(20) COLLATE Korean_Wansung_CI_AS NULL,
 			상위계정과목내부코드 int NULL,
 			소분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			중분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
@@ -457,7 +460,7 @@
 
 		INSERT INTO #TempTable1
 		(
-		YYYY
+		YYYYMM
 		, SEL_CODE
 		, SITE
 		, ACCT_CLASS
@@ -470,12 +473,14 @@
 		, 관리항목유형
 		, 계정과목Lev
 		, 상위계정과목
+		, 경영계획과목
 		, 상위계정과목내부코드
 		, 소분류
 		, 중분류
 		, 대분류
 		, EXPEN_SEL
 		, EXPEN_SEL명
+		, 특이사항
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
@@ -499,6 +504,8 @@
 			, #{item.field18}
 			, #{item.field19}
 			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
 			)
 		</foreach>;
 
@@ -507,7 +514,7 @@
 			SELECT 1
 			FROM DOI_ACCT b
 			WHERE 1=1
-			AND b.YYYY = a.YYYY
+			AND b.YYYYMM = a.YYYYMM
 			AND b.SITE = a.SITE
 			AND b.ACCT = a.ACCT
 		);
@@ -516,7 +523,7 @@
 	<insert id="uploadExcel" parameterType="java.util.List">
 		CREATE TABLE #TempTable (
 			seq_no INT,
-			YYYY varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			ACCT_CLASS varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
@@ -529,18 +536,20 @@
 			관리항목유형 nvarchar(18) COLLATE Korean_Wansung_CI_AS NULL,
 			계정과목Lev int NULL,
 			상위계정과목 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
+			경영계획과목 nvarchar(20) COLLATE Korean_Wansung_CI_AS NULL,
 			상위계정과목내부코드 int NULL,
 			소분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			중분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			대분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			EXPEN_SEL varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
-			EXPEN_SEL명 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL
+			EXPEN_SEL명 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL			
+			특이사항 nvarchar(150) COLLATE Korean_Wansung_CI_AS NULL
 		);
 
 		INSERT INTO #TempTable
 		(
 		seq_no
-		, YYYY
+		, YYYYMM
 		, SEL_CODE
 		, SITE
 		, ACCT_CLASS
@@ -553,12 +562,14 @@
 		, 관리항목유형
 		, 계정과목Lev
 		, 상위계정과목
+		, 경영계획과목
 		, 상위계정과목내부코드
 		, 소분류
 		, 중분류
 		, 대분류
 		, EXPEN_SEL
 		, EXPEN_SEL명
+		, 특이사항
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
@@ -583,11 +594,13 @@
 			, #{item.field18}
 			, #{item.field19}
 			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
 			)
 		</foreach>;
 
-		INSERT INTO DOI_ACCT (YYYY,SEL_CODE,SITE,ACCT_CLASS,계정과목내부코드,전표기표여부,ACCT,ACCT_NAME,차대,계정대분류,관리항목유형,계정과목Lev,상위계정과목,상위계정과목내부코드,소분류,중분류,대분류,EXPEN_SEL,EXPEN_SEL명)
-		SELECT YYYY,SEL_CODE,SITE,ACCT_CLASS,계정과목내부코드,전표기표여부,ACCT,ACCT_NAME,차대,계정대분류,관리항목유형,계정과목Lev,상위계정과목,상위계정과목내부코드,소분류,중분류대분류,EXPEN_SEL,EXPEN_SEL명
+		INSERT INTO DOI_ACCT (YYYYMM,SEL_CODE,SITE,ACCT_CLASS,계정과목내부코드,전표기표여부,ACCT,ACCT_NAME,차대,계정대분류,관리항목유형,계정과목Lev,상위계정과목,경영계획과목,상위계정과목내부코드,소분류,중분류,대분류,EXPEN_SEL,EXPEN_SEL명)
+		SELECT YYYYMM,SEL_CODE,SITE,ACCT_CLASS,계정과목내부코드,전표기표여부,ACCT,ACCT_NAME,차대,계정대분류,관리항목유형,계정과목Lev,상위계정과목,상위계정과목내부코드,소분류,중분류대분류,EXPEN_SEL,EXPEN_SEL명,특이사항
 		FROM (
 			SELECT *, MAX(seq_no) over (partition by YYYY, SITE, ACCT) max_seq_no FROM #TempTable
 		)A
@@ -597,7 +610,7 @@
 			SELECT 1
 			FROM DOI_ACCT b
 			WHERE 1=1
-			AND b.YYYY = a.YYYY
+			AND b.YYYYMM = a.YYYYMM
 			AND b.SITE = a.SITE
 			AND b.ACCT = a.ACCT
 		);

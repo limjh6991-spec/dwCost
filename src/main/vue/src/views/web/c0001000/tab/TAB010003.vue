@@ -111,19 +111,30 @@ export default {
     });
   },
   watch: {
+    'params.yyyymm': function(newVal) {
+      if (newVal) {
+        this.onDateChange();
+      }
+    },
+    'srchInfo.yyyymm': {
+      handler(newVal) {
+        if (newVal) {
+          this.params.yyyymm = newVal;
+          console.log('[C0003007] yyyymm 변경:', this.params.yyyymm);
+        }
+      }
+     },
     userAuthInfo: {
       handler(newVal) {
         if (newVal) {
           if (newVal.curProdCtg) {
             this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
-            if (this.$refs.materialGrid != null) {
-              this.getMaterialList();
+            if (this.$refs.acctGrid != null) {
+              this.getAcctList();
             }
           }
         }
       },
-      deep: true,
-      immediate: true
     }
   },
   methods: {
@@ -165,6 +176,10 @@ export default {
     
     initializeGrid() {
       this.materialGrid = _.cloneDeep(gridField);
+    },
+    
+    onDateChange() {
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     
     async getMaterialList() {

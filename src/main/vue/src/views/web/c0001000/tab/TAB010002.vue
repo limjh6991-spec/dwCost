@@ -3,7 +3,7 @@
   <div>
     <div class="search_box">
       <b-row class="search_area">
-        <b-col cols="2">
+        <!--b-col cols="2">
           <div class="form-floating">
             <select class="form-select label-60" id="floatingSelect" v-model="params.yyyy">
               <option v-for="yyyy in yearList" :key="yyyy.value" :value="yyyy">
@@ -11,6 +11,12 @@
               </option>
             </select>
             <label for="floatingSelect" class="select">년도</label>
+          </div>
+        </b-col-->
+        <b-col cols="1" class="period">
+          <div class="form-floating me-1">
+            <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
+            <label for="floatingSelect" class="select">기준월</label>
           </div>
         </b-col>
         <b-col cols="2">
@@ -66,14 +72,17 @@ export default {
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { userAuthInfo };
+    return { 
+			srchInfo,
+      userAuthInfo 
+    };
   },
   data() {
     return {
       deptGrid: null,
       deptGridRows: [],
       params: {
-        yyyy: null,
+        yyyymm: null,
         site: 'HQ',
       },
       siteMap: {
@@ -83,7 +92,7 @@ export default {
         VN: 'VN',
       },
       isProcessing: false,
-      duplicateKey: ['yyyy', 'selCode', 'site', 'dept'],
+      duplicateKey: ['yyyymm', 'selCode', 'site', 'dept'],
       isValidteCellDeptGrid: false,
     };
   },
@@ -108,10 +117,11 @@ export default {
     console.log('[mounted] yearList:', this.yearList);
     console.log('[mounted] userAuthInfo:', this.userAuthInfo);
     
-    if (this.yearList && this.yearList.length > 0) {
-      this.params.yyyy = this.yearList[0];
-      console.log('[mounted] yyyy 설정:', this.params.yyyy);
-    }
+    // if (this.yearList && this.yearList.length > 0) {
+    //   this.params.yyyy = this.yearList[0];
+    //   console.log('[mounted] yyyy 설정:', this.params.yyyy);
+    // }
+    this.params.yyyymm = this.srchInfo.yyyymm;
     this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     console.log('[mounted] site 설정:', this.params.site);
     
@@ -121,6 +131,19 @@ export default {
     });
   },
   watch: {
+    'params.yyyymm': function(newVal) {
+      if (newVal) {
+        this.onDateChange();
+      }
+    },
+    'srchInfo.yyyymm': {
+      handler(newVal) {
+        if (newVal) {
+          this.params.yyyymm = newVal;
+          console.log('[C0003007] yyyymm 변경:', this.params.yyyymm);
+        }
+      }
+     },
     userAuthInfo: {
       handler(newVal) {
         if (newVal) {
@@ -132,8 +155,8 @@ export default {
           }
         }
       },
-      deep: true,
-      immediate: true
+      // deep: true,
+      // immediate: true
     }
   },
   methods: {
@@ -142,18 +165,22 @@ export default {
       this.deptGrid = _.cloneDeep(gridField);
       console.log('[initializeGrid] TAB010002 그리드 초기화 완료');
     },
+    onDateChange() {
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
+    },
     async getDeptList() {
       if (!this.deptGridView) return;
       this.deptGridView.commit();
       
       try {
         const param = {
-          yyyy: this.params.yyyy?.value || this.params.yyyy,
+          // yyyy: this.params.yyyy?.value || this.params.yyyy,
+          yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
           site: this.siteMap[this.params.site] || this.params.site
         };
 
-        if (!param.yyyy) {
-          this.$toast('error', '연도를 선택해주세요.');
+        if (!param.yyyymm) {
+          this.$toast('error', '기준월를 선택해주세요.');
           return;
         }
 
@@ -212,7 +239,8 @@ export default {
         
         // 새 행 추가
         this.deptDataProvider.addRow({
-          yyyy: this.params.yyyy?.value || this.params.yyyy,
+          //yyyy: this.params.yyyy?.value || this.params.yyyy,
+          yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
           site: this.siteMap[this.params.site] || this.params.site
         });
         
@@ -335,7 +363,8 @@ export default {
           url: '/api/c0001000/c0001004/tab2/excel',
           responseType: 'blob',
           data: {
-            yyyy: this.params.yyyy?.value || this.params.yyyy,
+            //yyyy: this.params.yyyy?.value || this.params.yyyy,
+            yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
             site: this.siteMap[this.params.site] || this.params.site
           }
         });
