@@ -37,14 +37,19 @@
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
+import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007004.js';
 
 export default {
   props: {},
   components: {},
   setup() {
+    const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { userAuthInfo };
+    return { 
+			srchInfo,
+      userAuthInfo 
+    };
   },
   data() {
     return {
@@ -63,6 +68,19 @@ export default {
     };
   },
   watch: {
+    'params.yyyymm': function(newVal) {
+      if (newVal) {
+        this.onDateChange();
+      }
+    },
+    'srchInfo.yyyymm': {
+      handler(newVal) {
+        if (newVal) {
+          this.params.yyyymm = newVal;
+          console.log('[C0003007] yyyymm 변경:', this.params.yyyymm);
+        }
+      }
+     },
     userAuthInfo: {
       handler(newVal) {
         if (newVal && newVal.curProdCtg) {
@@ -89,8 +107,8 @@ export default {
     }
   },
   created() {
-    const now = new Date();
-    this.params.yyyymm = `${now.getFullYear()}-${("0" + (now.getMonth() + 1)).slice(-2)}`;
+    //const now = new Date();
+    this.params.yyyymm = this.srchInfo.yyyymm; //`${now.getFullYear()}-${("0" + (now.getMonth() + 1)).slice(-2)}`;
     this.initializeGrid();
   },
   mounted() {
@@ -102,6 +120,9 @@ export default {
   methods: {
     initializeGrid() {
       this.dataGrid = _.cloneDeep(gridField);
+    },
+    onDateChange() {
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     async getDataList() {
       this.gridView.commit();
