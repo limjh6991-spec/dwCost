@@ -121,7 +121,7 @@ export default {
         else if (line.startsWith('[START]')) {
           return `<span class="start-text">${line}</span>`;
         }
-        else if (line.startsWith('[FINISH]')) {
+        else if (line.startsWith('  [END]')) {
           return `<span class="finish-text">${line}</span>`;
         }
         return line;
@@ -173,21 +173,21 @@ export default {
           queryParams: params,
           target: null,
         },
-        {
-          menuId: 'c0003000',
-          queryId: 'C0003009_Sch2',
-          queryParams: params,
-          target: null,
-        },
+        // {
+        //   menuId: 'c0003000',
+        //   queryId: 'C0003009_Sch2',
+        //   queryParams: params,
+        //   target: null,
+        // },
       ];
       let resp = await this.$axios.api.searchAll(param);
       console.log('응답 데이터(JSON):', JSON.stringify(resp,null,2));
       // console.log('응답 데이터resp:', resp[0]);
       console.log('응답 데이터resp[0]:', resp[0][0].retmessage);
-      console.log('응답 데이터resp[0]:', resp[1][0].retmessage);
+      // console.log('응답 데이터resp[0]:', resp[1][0].retmessage);
       // OUTPUT 매개변수로 받은 메시지 표시
       if (resp && resp[0][0].retmessage) {
-        this.resultMessage = resp[0][0].retmessage + resp[1][0].retmessage;
+        this.resultMessage = resp[0][0].retmessage;// + resp[1][0].retmessage;
           // this.$message({
           //     message: resp.data.retmessage,
           //     type: 'info',
@@ -267,6 +267,6 @@ export default {
 }
 
 .log-display ::v-deep .error-text { color: rgb(209, 70, 70);}
-.log-display ::v-deep .start-text { color: green; }  /* 시작은 녹색 */
-.log-display ::v-deep .finish-text { color: blue; }  /* 종료는 청색 */
+.log-display ::v-deep .start-text { color: blue; }  /* 시작은 녹색 */
+.log-display ::v-deep .finish-text { color: green; }  /* 종료는 청색 */
 </style>

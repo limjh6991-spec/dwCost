@@ -120,10 +120,11 @@
 			,a.seq 
 			,c.level + 1 as level 
 			,a.sys_resource_type_code_id				
-			,cast(c.full_seq + ' > ' + cast(a.seq as nvarchar(max)) as nvarchar(max)) as full_seq
+			,cast(c.full_seq + ' > ' + format(a.seq,'0#') as nvarchar(max)) as full_seq
 			,a.url
 		from DOI_CM_SYS_RESOURCE a	
-		inner join mt c on a.upper_sys_resource_id = c.sys_resource_id
+		inner join mt c on a.upper_sys_resource_id = c.sys_resource_id	
+		--inner join role_sys_resc b on (a.UPPER_SYS_RESOURCE_ID = b.UPPER_SYS_RESOURCE_ID and a.sys_resource_id = b.sys_resource_id)
 		where a.prod_category = #{prodCategory} 		
 	)
 	select 

@@ -19,6 +19,7 @@
         on (b.yyyy=substring(a.yyyymm,1,4) and b.sel_code=a.sel_code and b.site=a.site and b.dept=a.dept)
         where 1=1
           and a.EXPEN_SEL not like 'M%'
+          and a.EXPEN_SEL != 'NONE' --미분류 제외
         <if test="yyyymm != null and yyyymm != ''">
             and a.YYYYMM = #{yyyymm}
         </if>
@@ -239,7 +240,7 @@
             avg(in_qty) in_qty,
             avg(in_qty + OUT_QTY + loss_qty)/ 2 as 환산수량,
             sum([in]) as 투입금액
-            from doi_cost
+            from doi_fab_cost
             where 1=1
             <if test="yyyymm != null and yyyymm != ''">
                 and YYYYMM = #{yyyymm}
@@ -543,7 +544,7 @@
         SUM(EOH) EOH,
         SUM([OUT]) OUT_AMT,
         SUM(LOSS) LOSS
-        from doi_cost
+        from doi_fab_cost
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}
@@ -587,7 +588,7 @@
         ORDER BY 1,2,3,4
     </select>
 
-    <select id="C0008010_Sch1" resultType="CamelMap">
+    <select id="C0008011_Sch1" resultType="CamelMap">
         select
         YYYYMM,
         SEL_CODE,
@@ -618,7 +619,7 @@
         order BY 1,2,3,4,5;
     </select>
 
-    <select id="C0008011_Sch1" resultType="CamelMap">
+    <select id="C0008012_Sch1" resultType="CamelMap">
         select
             거래명세서번호,
             거래명세서일,
@@ -650,6 +651,37 @@
             and SITE = #{site}
         </if>
         order by 거래명세서번호, 거래명세서일;
+    </select>
+    
+    <select id="C0008015_Sch1" resultType="CamelMap">
+    select
+		YYYYMM,
+		sel_code,
+		CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' end AS SITE,
+		구분,
+		model,
+		면적,
+		dist_rate,
+		SUB_NAME,
+		ITEM_NAME,
+		EXPEN_SEL,
+		EXPEN_SEL명,
+		adj_qty,
+		in_qty,
+		out_qty,
+		loss_qty,
+		unit_cost,
+		[in] as input_Amt
+	from
+		doi_expen_matl
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        order by YYYYMM,SEL_CODE,SITE,MODEL;
     </select>
 
     <select id="C0008013_Sch1" resultType="CamelMap">

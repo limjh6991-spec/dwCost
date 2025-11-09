@@ -48,14 +48,18 @@
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
-//import gridField from '@web/c0008000/js/C0008002.js';
+import { useC0001001 } from '@web/store/C0001001.js';
 
 export default {
   props: {},
   components: {},
   setup() {
+    const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { userAuthInfo };
+    return { 
+			srchInfo,
+      userAuthInfo 
+    };
   },
   data() {
     return {
@@ -81,6 +85,14 @@ export default {
         this.onDateChange();
       }
     },
+    'srchInfo.yyyymm': {
+      handler(newVal) {
+        if (newVal) {
+          this.params.yyyymm = newVal;
+          console.log('[C0003007] yyyymm 변경:', this.params.yyyymm);
+        }
+      }
+     },
     userAuthInfo: {
       handler(newVal) {
         if (newVal.curProdCtg) {
@@ -105,6 +117,12 @@ export default {
         if (line.startsWith('[ERROR]')) {
           return `<span class="error-text">${line}</span>`;
         }
+        else if (line.startsWith('[START]')) {
+          return `<span class="start-text">${line}</span>`;
+        }
+        else if (line.startsWith('  [END]')) {
+          return `<span class="finish-text">${line}</span>`;
+        }
         return line;
       });
       // 다시 합치기
@@ -125,8 +143,8 @@ export default {
   beforeUnmount() {},
   methods: {
     initialize() {
-      var current = new Date();
-      this.params.yyyymm = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
+      //var current = new Date();
+      this.params.yyyymm = this.srchInfo.yyyymm; //`${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';      
       this.resultMessage = `실행 버튼을 클릭하면 ${this.params.yyyymm}월 ${this.params.site} 가공비 배부를 실행 합니다`;
     },
@@ -135,6 +153,8 @@ export default {
     },
     onDateChange() {
       this.resultMessage = `실행 버튼을 클릭하면 ${this.params.yyyymm}월 ${this.params.site} 가공비 배부를 실행 합니다`;
+      console.log('onMonthChange ---c0003005'+this.params.yyyymm);
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     async getDataList() {
       //this.gridView.commit();
@@ -236,11 +256,7 @@ export default {
   background-color: #f8f9fa;
 }
 
-.log-display ::v-deep .error-text {
-  color: #dc3545 !important;
-  /* font-weight: bold !important;
-  background-color: #ffe6e6 !important; */
-  padding: 2px 4px !important;
-  border-radius: 2px !important;
-}
+.log-display ::v-deep .error-text { color: rgb(209, 70, 70);}
+.log-display ::v-deep .start-text { color: blue; }  /* 시작은 녹색 */
+.log-display ::v-deep .finish-text { color: green; }  /* 종료는 청색 */
 </style>

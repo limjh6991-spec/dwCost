@@ -26,7 +26,7 @@
        
     <select id="C0003005_Sch1" resultType="CamelMap">
 	DECLARE @RET_CODE INT;
-	EXEC @RET_CODE = Gen_DOI_COST 
+	EXEC @RET_CODE = UP_DOI_FAB_COST 
 		#{yyyymm},
 		#{site}
     </select>
