@@ -16,7 +16,7 @@
             sum(a.ACCT_AMT) ACCT_AMT
         from doi_acct_expen a
         left join doi_dept b
-        on (b.yyyy=substring(a.yyyymm,1,4) and b.sel_code=a.sel_code and b.site=a.site and b.dept=a.dept)
+        on (a.yyyymm=b.yyyymm and b.sel_code=a.sel_code and b.site=a.site and b.dept=a.dept)
         where 1=1
           and a.EXPEN_SEL not like 'M%'
           and a.EXPEN_SEL != 'NONE' --미분류 제외
@@ -661,6 +661,7 @@
 		구분,
 		model,
 		면적,
+        면적*adj_qty AS DIST_VALUE,
 		dist_rate,
 		SUB_NAME,
 		ITEM_NAME,

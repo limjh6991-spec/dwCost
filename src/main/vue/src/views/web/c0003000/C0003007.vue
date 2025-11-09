@@ -258,6 +258,6 @@ export default {
 }
 
 .log-display ::v-deep .error-text { color: rgb(209, 70, 70);}
-.log-display ::v-deep .start-text { color: green; }  /* 시작은 녹색 */
-.log-display ::v-deep .finish-text { color: blue; }  /* 종료는 청색 */
+.log-display ::v-deep .start-text { color: BLUE; }  /* 시작은 녹색 */
+.log-display ::v-deep .finish-text { color: GREEN; }  /* 종료는 청색 */
 </style>
