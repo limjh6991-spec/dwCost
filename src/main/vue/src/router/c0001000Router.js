@@ -1,14 +1,4 @@
 const c0001000Router = [
-// {
-//   path: '/c0001001',
-//   name: '원가 계정코드',
-//   component: () => import('../views/web/c0001000/C0001001.vue'),
-//   meta: {
-//     upperSysResourceId:'C0001000',
-//     sysResourceId:"C0001001",
-//     requiresAuth: false,
-//   }
-// },
 //   {
 //     path: '/c0001002',
 //     name: '원가 부서코드',
