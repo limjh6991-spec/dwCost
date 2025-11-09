@@ -31,7 +31,7 @@ const c0003000Router = [
 },
  {
     path: '/c0003005',
-    name: 'FRONT',
+    name: '가공바배부',
     component: () => import('../views/web/c0003000/C0003005.vue'),
     meta: {
       upperSysResourceId:'C0003000',

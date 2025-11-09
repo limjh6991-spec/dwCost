@@ -6,7 +6,7 @@
 	<!-- Tab1: C0001001 (계정과목 관리) -->
 	<select id="selectTab1GridData" resultType="CamelMap">
 		select
-			YYYY,
+			YYYYMM,
 			SEL_CODE,
 			SITE as SITE_ORG,
 			CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then 'VINA' else site end as SITE,
@@ -23,76 +23,245 @@
 			차대,
 			계정대분류,
 			관리항목유형,
-			계정과목Lev AS ACCT_LEV,
+			계정과목Lev,
 			상위계정과목,
+			경영계획과목,
 			상위계정과목내부코드,
 			소분류,
 			중분류,
 			대분류,
 			EXPEN_SEL,
-			EXPEN_SEL명 AS EXPEN_SEL_NAME
-		FROM
-			doi_acct
+			EXPEN_SEL명,
+			특이사항
+		FROM doi_acct
 		where 1=1
-		<if test="yyyy != null and yyyy != ''">
-			and yyyy = #{yyyy}
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
 		</if>
 		<if test="site != null and site != ''">
 			and site = #{site}
 		</if>
 		order BY acct ;
 	</select>
+
+	<!-- Tab1: C0001001 update/delete -->
+	<update id="updateTab1Data">
+		UPDATE DOI_ACCT
+		SET SEL_CODE = #{selCode}
+		,ACCT_CLASS = CASE WHEN #{acctClass}='가공비' Then 'AA'   WHEN #{acctClass}='개발비' then 'BB' WHEN #{acctClass}='판매관리비' then 'CC' else left(#{acctClass},2) end
+		,계정과목내부코드 = #{계정과목내부코드}
+		,전표기표여부 = #{전표기표여부}
+		,ACCT_NAME = #{acctName}
+		,차대 = #{차대}
+		,계정대분류 = #{계정대분류}
+		,관리항목유형 = #{관리항목유형}
+		,계정과목Lev = #{계정과목lev}
+		,상위계정과목 = #{상위계정과목}
+		,경영계획과목 = #{경영계획과목}
+		,상위계정과목내부코드 = #{상위계정과목내부코드}
+		,소분류 = #{소분류}
+		,중분류 = #{중분류}
+		,대분류 = #{대분류}
+		,EXPEN_SEL = #{expenSel}
+		,EXPEN_SEL명 = #{expenSel명}
+		,특이사항 = #{특이사항}
+		WHERE 1=1
+		and yyyymm = #{yyyymm}
+		and site = #{siteOrg}
+		and acct = #{acct}
+		;
+	</update>
+
+	<delete id="deleteTab1Data">
+		DELETE FROM DOI_ACCT
+		WHERE 1=1
+		and yyyymm = #{yyyymm}
+		and sel_code = #{selCode}
+		and site = #{siteOrg}
+		and acct_class = #{acctClassOrg}
+		and acct = #{acct}
+	</delete>
+
 	<insert id="insertTab1Data">
 		INSERT INTO DOI_ACCT
 		(
-		YYYY
-		, SEL_CODE
-		, SITE
-		, ACCT_CLASS
-		, 계정과목내부코드
-		, 전표기표여부
-		, ACCT
-		, ACCT_NAME
-		, 차대
-		, 계정대분류
-		, 관리항목유형
-		, 계정과목Lev
-		, 상위계정과목
-		, 상위계정과목내부코드
-		, 소분류
-		, 중분류
-		, 대분류
-		, EXPEN_SEL
-		, EXPEN_SEL명
+		YYYYMM,SEL_CODE,SITE,ACCT_CLASS,계정과목내부코드,전표기표여부,ACCT,ACCT_NAME,차대,계정대분류,관리항목유형,계정과목Lev,상위계정과목,경영계획과목,상위계정과목내부코드,소분류,중분류,대분류,expen_sel,expen_sel명,특이사항
 		)
 		VALUES
 		(
-		#{yyyy}
+		#{yyyymm}
 		, #{selCode}
-		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='베트남' then 'VN' else left(#{site},2) end
-		, CASE WHEN #{acctClass}='가공비' Then 'AA'  WHEN #{acctClass}='판매관리비' then 'BB' else left(#{acctClass},2) end
-		, #{acctItnCode}
-		, #{acctIssued}
+		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='VINA' then 'VN' else left(#{site},2) end
+		, CASE WHEN #{acctClass}='가공비' Then 'AA' WHEN #{acctClass}='개발비' then 'BB' WHEN #{acctClass}='판매관리비' then 'CC' else left(#{acctClass},2) end
+		, #{계정과목내부코드}
+		, #{전표기표여부}
 		, #{acct}
 		, #{acctName}
-		, #{debitCredit}
-		, #{largeAcct}
-		, #{mngItemType}
-		, #{acctLev}
-		, #{upperAcct}
-		, #{upperAcctItnCode}
-		, #{smallClass}
-		, #{midClass}
-		, #{largeClass}
+		, #{차대}
+		, #{계정대분류}
+		, #{관리항목유형}
+		, #{계정과목lev}
+		, #{상위계정과목}
+		, #{경영계획과목}
+		, #{상위계정과목내부코드}
+		, #{소분류}
+		, #{중분류}
+		, #{대분류}
 		, #{expenSel}
-		, #{expenSelName}
+		, #{expenSel명}
+		, #{특이사항}
 		);
+	</insert>
+
+	<select id="checkTab1DuplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
+		DROP TABLE IF EXISTS #TempTable1;
+
+		CREATE TABLE #TempTable1 (
+			YYYYMM varchar(20) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			ACCT_CLASS nvarchar(20) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			계정과목내부코드 int NULL,
+			전표기표여부 int NULL,
+			ACCT varchar(8) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			ACCT_NAME nvarchar(25) COLLATE Korean_Wansung_CI_AS NULL,
+			차대 nvarchar(2) COLLATE Korean_Wansung_CI_AS NULL,
+			계정대분류 nvarchar(4) COLLATE Korean_Wansung_CI_AS NULL,
+			관리항목유형 nvarchar(28) COLLATE Korean_Wansung_CI_AS NULL,
+			계정과목Lev int NULL,
+			상위계정과목 nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			경영계획과목 nvarchar(20) COLLATE Korean_Wansung_CI_AS NULL,
+			상위계정과목내부코드 int NULL,
+			소분류 nvarchar(18) COLLATE Korean_Wansung_CI_AS NULL,
+			중분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			대분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			expen_sel nvarchar(4) COLLATE Korean_Wansung_CI_AS NULL,
+			expen_sel명 nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			특이사항 nvarchar(150) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable1
+		(
+			YYYYMM,SEL_CODE,SITE,ACCT_CLASS,계정과목내부코드,전표기표여부,ACCT,ACCT_NAME,차대,계정대분류,관리항목유형,계정과목Lev,상위계정과목,경영계획과목,상위계정과목내부코드,소분류,중분류,대분류,expen_sel,expen_sel명,특이사항
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			)
+		</foreach>;
+
+		SELECT * FROM #TempTable1 a
+		WHERE EXISTS (
+		SELECT 1
+		FROM DOI_ACCT b
+		WHERE 1=1
+		AND b.YYYYMM = a.YYYYMM
+		AND b.SITE = a.SITE
+		AND b.ACCT = a.ACCT
+		);
+	</select>
+
+	<insert id="tab1UploadExcel" parameterType="java.util.List">
+		CREATE TABLE #TempTable (
+		seq_no INT IDENTITY (1, 1) NOT NULL,
+		YYYYMM varchar(20) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		ACCT_CLASS nvarchar(20) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		계정과목내부코드 int NULL,
+		전표기표여부 int NULL,
+		ACCT varchar(8) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		ACCT_NAME nvarchar(25) COLLATE Korean_Wansung_CI_AS NULL,
+		차대 nvarchar(2) COLLATE Korean_Wansung_CI_AS NULL,
+		계정대분류 nvarchar(4) COLLATE Korean_Wansung_CI_AS NULL,
+		관리항목유형 nvarchar(28) COLLATE Korean_Wansung_CI_AS NULL,
+		계정과목Lev int NULL,
+		상위계정과목 nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		경영계획과목 nvarchar(20) COLLATE Korean_Wansung_CI_AS NULL,
+		상위계정과목내부코드 int NULL,
+		소분류 nvarchar(18) COLLATE Korean_Wansung_CI_AS NULL,
+		중분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		대분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		expen_sel nvarchar(4) COLLATE Korean_Wansung_CI_AS NULL,
+		expen_sel명 nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		특이사항 nvarchar(150) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable
+		(
+		YYYYMM,SEL_CODE,SITE,ACCT_CLASS,계정과목내부코드,전표기표여부,ACCT,ACCT_NAME,차대,계정대분류,관리항목유형,계정과목Lev,상위계정과목,경영계획과목,상위계정과목내부코드,소분류,중분류,대분류,expen_sel,expen_sel명,특이사항
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			)
+		</foreach>;
+
+		INSERT INTO DOI_ACCT (YYYYMM,SEL_CODE,SITE,ACCT_CLASS,계정과목내부코드,전표기표여부,ACCT,ACCT_NAME,차대,계정대분류,관리항목유형,계정과목Lev,상위계정과목,경영계획과목,상위계정과목내부코드,소분류,중분류,대분류,expen_sel,expen_sel명,특이사항 )
+		SELECT YYYYMM,SEL_CODE,SITE,ACCT_CLASS,계정과목내부코드,전표기표여부,ACCT,ACCT_NAME,차대,계정대분류,관리항목유형,계정과목Lev,상위계정과목,경영계획과목,상위계정과목내부코드,소분류,중분류,대분류,expen_sel,expen_sel명,특이사항
+		FROM (
+			SELECT *, MAX(seq_no) over (partition by YYYYMM, SITE, ACCT) max_seq_no FROM #TempTable
+		)A
+		WHERE 1=1
+		AND seq_no = max_seq_no
+		AND NOT EXISTS (
+			SELECT 1
+			FROM DOI_ACCT b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SITE = a.SITE
+			AND b.ACCT = a.ACCT
+		);
+
+		DROP TABLE #TempTable;
 	</insert>
 
 	<!-- Tab2: C0001002 (부서 관리) -->
 	<select id="selectTab2GridData" resultType="CamelMap">
 		select
-			YYYY,
+			YYYYMM,
 			SEL_CODE,
 			SITE as SITE_ORG,
 			CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then 'VINA' else site end as SITE,
@@ -102,8 +271,8 @@
 		FROM
 			doi_dept
 		where 1=1
-		<if test="yyyy != null and yyyy != ''">
-			and yyyy = #{yyyy}
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
 		</if>
 		<if test="site != null and site != ''">
 			and site = #{site}
@@ -241,7 +410,7 @@
 	<!-- tab5: 면적기준 정보 관리 -->
 	<select id="selectTab5GridData" resultType="CamelMap">
 		select
-			YYYY,
+			YYYYMM,
 			SEL_CODE,
 			SITE as SITE_ORG,
 			CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then 'VINA' else site end as SITE,
@@ -259,8 +428,8 @@
 		from
 			DOI_MODEL_MAST
 		where 1=1
-		<if test="yyyy != null and yyyy != ''">
-			and yyyy = #{yyyy}
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
 		</if>
 		<if test="site != null and site != ''">
 			and site = #{site}
@@ -271,7 +440,7 @@
 	<insert id="insertTab5Data">
 		INSERT INTO DOI_MODEL_MAST
 		(
-		YYYY
+		YYYYMM
 		, SEL_CODE
 		, SITE
 		, MODEL
@@ -288,7 +457,7 @@
 		)
 		VALUES
 		(
-		#{yyyy}
+		#{yyyymm}
 		, #{selCode}
 		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='베트남' then 'VN' else left(#{site},2) end
 		, #{model}
@@ -306,40 +475,7 @@
 	</insert>
 
 
-	<!-- Tab1: C0001001 update/delete -->
-	<update id="updateTab1Data">
-		UPDATE DOI_ACCT
-		SET SEL_CODE = #{selCode}
-		,ACCT_CLASS = CASE WHEN #{acctClass} ='가공비' Then 'AA'  WHEN #{acctClass}='판매관리비' then 'BB' else left(#{acctClass},2) end
-		,계정과목내부코드 = #{acctItnCode}
-		,전표기표여부 = #{acctIssued}
-		,ACCT_NAME = #{acctName}
-		,차대 = #{debitCredit}
-		,계정대분류 = #{largeAcct}
-		,관리항목유형 = #{mngItemType}
-		,계정과목Lev = #{acctLev}
-		,상위계정과목 = #{upperAcct}
-		,상위계정과목내부코드 = #{upperAcctItnCode}
-		,소분류 = #{smallClass}
-		,중분류 = #{midClass}
-		,대분류 = #{largeClass}
-		,EXPEN_SEL = #{expenSel}
-		,EXPEN_SEL명 = #{expenSelName}
-		WHERE 1=1
-		and yyyy = #{yyyy}
-		and site = #{siteOrg}
-		and acct = #{acct}
-		;
-	</update>
-	<delete id="deleteTab1Data">
-		DELETE FROM DOI_ACCT
-		WHERE 1=1
-		and yyyy = #{yyyy}
-		and sel_code = #{selCode}
-		and site = #{siteOrg}
-		and acct_class = #{acctClassOrg}
-		and acct = #{acct}
-	</delete>
+
 
 	<!-- Tab2: C0001002 update/delete -->
 	<update id="updateTab2Data">
@@ -347,7 +483,7 @@
 		SET DEPT_NAME = #{deptName}
 		,EXPEN_AREA = #{expenArea}
 		WHERE 1=1
-		and yyyy = #{yyyy}
+		and yyyy = #{yyyymm}
 		and site = #{site}
 		and dept = #{dept}
 		;
@@ -355,7 +491,7 @@
 	<delete id="deleteTab2Data">
 		DELETE FROM DOI_DEPT
 		WHERE 1=1
-		and yyyy = #{yyyy}
+		and yyyy = #{yyyymm}
 		and site = #{site}
 		and dept = #{dept}
 	</delete>
@@ -415,7 +551,7 @@
 		,Y = #{y}
 		,XY = #{xy}
 		WHERE 1=1
-		and yyyy = #{yyyy}
+		and yyyymm = #{yyyymm}
 		and site = #{siteOrg}
 		and model = #{model}
 		;
@@ -424,184 +560,9 @@
 	<delete id="deleteTab5Data">
 		DELETE FROM DOI_MODEL_MAST
 		WHERE 1=1
-		and yyyy = #{yyyy}
+		and yyyymm = #{yyyymm}
 		and sel_code = #{selCode}
 		and site = #{siteOrg}
 		and model = #{model}
 	</delete>
-
-	<select id="checkduplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
-		DROP TABLE IF EXISTS #TempTable1;
-
-		CREATE TABLE #TempTable1 (
-			YYYY varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			ACCT_CLASS varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			계정과목내부코드 int NULL,
-			전표기표여부 int NULL,
-			ACCT varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			ACCT_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
-			차대 nvarchar(2) COLLATE Korean_Wansung_CI_AS NULL,
-			계정대분류 nvarchar(4) COLLATE Korean_Wansung_CI_AS NULL,
-			관리항목유형 nvarchar(18) COLLATE Korean_Wansung_CI_AS NULL,
-			계정과목Lev int NULL,
-			상위계정과목 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
-			상위계정과목내부코드 int NULL,
-			소분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			중분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			대분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			EXPEN_SEL varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
-			EXPEN_SEL명 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,	
-		);
-
-		INSERT INTO #TempTable1
-		(
-		YYYY
-		, SEL_CODE
-		, SITE
-		, ACCT_CLASS
-		, 계정과목내부코드
-		, 전표기표여부
-		, ACCT
-		, ACCT_NAME
-		, 차대
-		, 계정대분류
-		, 관리항목유형
-		, 계정과목Lev
-		, 상위계정과목
-		, 상위계정과목내부코드
-		, 소분류
-		, 중분류
-		, 대분류
-		, EXPEN_SEL
-		, EXPEN_SEL명
-		)
-		VALUES
-		<foreach collection="list" item="item" separator=",">
-			(
-			#{item.field2}
-			, #{item.field3}
-			, #{item.field4}
-			, #{item.field5}
-			, #{item.field6}
-			, #{item.field7}
-			, #{item.field8}
-			, #{item.field9}
-			, #{item.field10}
-			, #{item.field11}
-			, #{item.field12}
-			, #{item.field13}
-			, #{item.field14}
-			, #{item.field15}
-			, #{item.field16}
-			, #{item.field17}
-			, #{item.field18}
-			, #{item.field19}
-			, #{item.field20}
-			)
-		</foreach>;
-
-		SELECT * FROM #TempTable1 a
-		WHERE EXISTS (
-			SELECT 1
-			FROM DOI_ACCT b
-			WHERE 1=1
-			AND b.YYYY = a.YYYY
-			AND b.SITE = a.SITE
-			AND b.ACCT = a.ACCT
-		);
-	</select>
-
-	<insert id="uploadExcel" parameterType="java.util.List">
-		CREATE TABLE #TempTable (
-			seq_no INT,
-			YYYY varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			ACCT_CLASS varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			계정과목내부코드 int NULL,
-			전표기표여부 int NULL,
-			ACCT varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			ACCT_NAME nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
-			차대 nvarchar(2) COLLATE Korean_Wansung_CI_AS NULL,
-			계정대분류 nvarchar(4) COLLATE Korean_Wansung_CI_AS NULL,
-			관리항목유형 nvarchar(18) COLLATE Korean_Wansung_CI_AS NULL,
-			계정과목Lev int NULL,
-			상위계정과목 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
-			상위계정과목내부코드 int NULL,
-			소분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			중분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			대분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			EXPEN_SEL varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
-			EXPEN_SEL명 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL
-		);
-
-		INSERT INTO #TempTable
-		(
-		seq_no
-		, YYYY
-		, SEL_CODE
-		, SITE
-		, ACCT_CLASS
-		, 계정과목내부코드
-		, 전표기표여부
-		, ACCT
-		, ACCT_NAME
-		, 차대
-		, 계정대분류
-		, 관리항목유형
-		, 계정과목Lev
-		, 상위계정과목
-		, 상위계정과목내부코드
-		, 소분류
-		, 중분류
-		, 대분류
-		, EXPEN_SEL
-		, EXPEN_SEL명
-		)
-		VALUES
-		<foreach collection="list" item="item" separator=",">
-			(
-			#{item.field1}
-			, #{item.field2}
-			, #{item.field3}
-			, #{item.field4}
-			, #{item.field5}
-			, #{item.field6}
-			, #{item.field7}
-			, #{item.field8}
-			, #{item.field9}
-			, #{item.field10}
-			, #{item.field11}
-			, #{item.field12}
-			, #{item.field13}
-			, #{item.field14}
-			, #{item.field15}
-			, #{item.field16}
-			, #{item.field17}
-			, #{item.field18}
-			, #{item.field19}
-			, #{item.field20}
-			)
-		</foreach>;
-
-		INSERT INTO DOI_ACCT (YYYY,SEL_CODE,SITE,ACCT_CLASS,계정과목내부코드,전표기표여부,ACCT,ACCT_NAME,차대,계정대분류,관리항목유형,계정과목Lev,상위계정과목,상위계정과목내부코드,소분류,중분류,대분류,EXPEN_SEL,EXPEN_SEL명)
-		SELECT YYYY,SEL_CODE,SITE,ACCT_CLASS,계정과목내부코드,전표기표여부,ACCT,ACCT_NAME,차대,계정대분류,관리항목유형,계정과목Lev,상위계정과목,상위계정과목내부코드,소분류,중분류대분류,EXPEN_SEL,EXPEN_SEL명
-		FROM (
-			SELECT *, MAX(seq_no) over (partition by YYYY, SITE, ACCT) max_seq_no FROM #TempTable
-		)A
-		WHERE 1=1
-		AND seq_no = max_seq_no
-		AND NOT EXISTS (
-			SELECT 1
-			FROM DOI_ACCT b
-			WHERE 1=1
-			AND b.YYYY = a.YYYY
-			AND b.SITE = a.SITE
-			AND b.ACCT = a.ACCT
-		);
-
-		DROP TABLE #TempTable;
-	</insert>
 </mapper>

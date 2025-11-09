@@ -1,4 +1,4 @@
-/** * 결산증빙 자료 > 제품별 투입 비용(DOI_PROD_EXPN) */
+/** * 결산증빙 자료 > 제품별 가공비 */
 <template>
   <div>
     <div class="search_box">
@@ -30,14 +30,14 @@
         <RealGrid ref="prodExpnGrid" :uid="'prodExpnGrid'" :step="'1'" :rows="prodExpnGridRows" style="height: 100%" />
       </div>
     </div>
-    <CmDialog1 ref="cmDialog1C00008004" />
+    <CmDialog1 ref="cmDialog1C00008015" />
   </div>
 </template>
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0008000/js/C0008004.js';
+import gridField from '@web/c0008000/js/C0008015.js';
 
 export default {
   props: {},
@@ -111,8 +111,8 @@ export default {
   beforeUnmount() {},
   methods: {
     initialize() {
-      //var current = new Date();
-      this.params.yyyymm = this.srchInfo.yyyymm; //`${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
+      var current = new Date();
+      this.params.yyyymm = this.srchInfo.yyyymm; // `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
@@ -131,7 +131,7 @@ export default {
 
       let param = {
         menuId: 'c0008000',
-        queryId: 'C0008004_Sch1',
+        queryId: 'C0008015_Sch1',
         queryParams: params,
         target: this.prodExpnGridRows,
       };
@@ -149,7 +149,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `제품별투입비용${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `제품별가공비판관비${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',

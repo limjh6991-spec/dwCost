@@ -1,4 +1,4 @@
-/** * 결산증빙 자료 > 제품별 투입 비용(DOI_PROD_EXPN) */
+/** * 결산증빙 자료 > 자재별 투입실적(DOI_MAT_AMT) */
 <template>
   <div>
     <div class="search_box">
@@ -27,17 +27,17 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodExpnGrid" :uid="'prodExpnGrid'" :step="'1'" :rows="prodExpnGridRows" style="height: 100%" />
+        <RealGrid ref="matRescGrid" :uid="'matRescGrid'" :step="'1'" :rows="matRescGridRows" style="height: 100%" />
       </div>
     </div>
-    <CmDialog1 ref="cmDialog1C00008004" />
+    <CmDialog1 ref="cmDialog1C00008005" />
   </div>
 </template>
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0008000/js/C0008004.js';
+import gridField from '@web/c0008000/js/C0008005.js';
 
 export default {
   props: {},
@@ -52,8 +52,8 @@ export default {
   },
   data() {
     return {
-      prodExpnGrid: null,
-      prodExpnGridRows: [],
+      matRescGrid: null,
+      matRescGridRows: [],
       params: {
         yyyymm: null,
         site: 'HQ',
@@ -84,7 +84,7 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.prodExpnGrid != null) {
+          if (this.$refs.matRescGrid != null) {
             this.initialize();
             this.searchClick();
           }
@@ -94,10 +94,10 @@ export default {
   },
   computed: {
     gridView() {
-      return this.$refs.prodExpnGrid.getGridView();
+      return this.$refs.matRescGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.prodExpnGrid.getGridDataProvider();
+      return this.$refs.matRescGrid.getGridDataProvider();
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
@@ -111,12 +111,12 @@ export default {
   beforeUnmount() {},
   methods: {
     initialize() {
-      //var current = new Date();
+      var current = new Date();
       this.params.yyyymm = this.srchInfo.yyyymm; //`${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
-      this.prodExpnGrid = _.cloneDeep(gridField);
+      this.matRescGrid = _.cloneDeep(gridField);
     },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
@@ -131,9 +131,9 @@ export default {
 
       let param = {
         menuId: 'c0008000',
-        queryId: 'C0008004_Sch1',
+        queryId: 'C0008005_Sch1',
         queryParams: params,
-        target: this.prodExpnGridRows,
+        target: this.matRescGridRows,
       };
       let resp = await this.$axios.api.search(param);
     },
@@ -163,29 +163,29 @@ export default {
 
       grid.exportGrid(options);
     },
-    async onCellClickedProdExpnGrid(grid, clickData) {
+    async onCellClickedMatRescGrid(grid, clickData) {
       if (clickData.cellType != 'data') return;
 
-      if (clickData.column == 'model') {
+      if (clickData.column == 'matClass') {
         let queryParams = {
-          yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
-          site: this.params.site != null ? this.siteMap[this.params.site] : null,
-          model: grid.getValue(clickData.itemIndex, 'model'),
+          yyyymm: grid.getValue(clickData.itemIndex, 'yyyymm'),
+          site: grid.getValue(clickData.itemIndex, 'site') != null ? this.siteMap[grid.getValue(clickData.itemIndex, 'site')] : null,
+          matClass: grid.getValue(clickData.itemIndex, 'matClass'),
         };
 
         const params = {
-          dialogTitle: '모델 투입비용',
+          dialogTitle: '상세 MAT_CLASS별 금액',
           popUpSize: 'xl', //sm,lg,xl
           height: 500,
-          gridJs: 'C0008004Detail.js',
+          gridJs: 'C0008005Detail.js',
           search: {
             menuId: 'c0008000',
-            queryId: 'C0008004_Sch2',
+            queryId: 'C0008005_Sch2',
             queryParams: queryParams,
           },
           btnConfirm: false,
         };
-        this.$refs.cmDialog1C00008004.openDialog(params);
+        this.$refs.cmDialog1C00008005.openDialog(params);
       }
     },
   },

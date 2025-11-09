@@ -1,4 +1,4 @@
-/** * 결산증빙 자료 > 제품별 투입 비용(DOI_PROD_EXPN) */
+/** * 결산증빙 자료 > 매출 */
 <template>
   <div>
     <div class="search_box">
@@ -27,17 +27,16 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodExpnGrid" :uid="'prodExpnGrid'" :step="'1'" :rows="prodExpnGridRows" style="height: 100%" />
+        <RealGrid ref="saleResGrid" :uid="'saleResGrid'" :step="'1'" :rows="saleResGridRows" style="height: 100%" />
       </div>
     </div>
-    <CmDialog1 ref="cmDialog1C00008004" />
   </div>
 </template>
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0008000/js/C0008004.js';
+import gridField from '@web/c0008000/js/C0008012.js';
 
 export default {
   props: {},
@@ -52,8 +51,8 @@ export default {
   },
   data() {
     return {
-      prodExpnGrid: null,
-      prodExpnGridRows: [],
+      saleResGrid: null,
+      saleResGridRows: [],
       params: {
         yyyymm: null,
         site: 'HQ',
@@ -84,7 +83,7 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.prodExpnGrid != null) {
+          if (this.$refs.saleResGrid != null) {
             this.initialize();
             this.searchClick();
           }
@@ -94,10 +93,10 @@ export default {
   },
   computed: {
     gridView() {
-      return this.$refs.prodExpnGrid.getGridView();
+      return this.$refs.saleResGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.prodExpnGrid.getGridDataProvider();
+      return this.$refs.saleResGrid.getGridDataProvider();
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
@@ -116,7 +115,7 @@ export default {
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
-      this.prodExpnGrid = _.cloneDeep(gridField);
+      this.saleResGrid = _.cloneDeep(gridField);
     },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
@@ -131,9 +130,9 @@ export default {
 
       let param = {
         menuId: 'c0008000',
-        queryId: 'C0008004_Sch1',
+        queryId: 'C0008012_Sch1',
         queryParams: params,
-        target: this.prodExpnGridRows,
+        target: this.saleResGridRows,
       };
       let resp = await this.$axios.api.search(param);
     },
@@ -149,7 +148,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `제품별투입비용${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `매출${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
@@ -162,31 +161,6 @@ export default {
       };
 
       grid.exportGrid(options);
-    },
-    async onCellClickedProdExpnGrid(grid, clickData) {
-      if (clickData.cellType != 'data') return;
-
-      if (clickData.column == 'model') {
-        let queryParams = {
-          yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
-          site: this.params.site != null ? this.siteMap[this.params.site] : null,
-          model: grid.getValue(clickData.itemIndex, 'model'),
-        };
-
-        const params = {
-          dialogTitle: '모델 투입비용',
-          popUpSize: 'xl', //sm,lg,xl
-          height: 500,
-          gridJs: 'C0008004Detail.js',
-          search: {
-            menuId: 'c0008000',
-            queryId: 'C0008004_Sch2',
-            queryParams: queryParams,
-          },
-          btnConfirm: false,
-        };
-        this.$refs.cmDialog1C00008004.openDialog(params);
-      }
     },
   },
 };

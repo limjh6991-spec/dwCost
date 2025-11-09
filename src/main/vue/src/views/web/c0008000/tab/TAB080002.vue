@@ -1,4 +1,4 @@
-/** * 결산증빙 자료 > 원가항목별 재료비(DOI_MAT_EXPEN) */
+/** * 결산증빙 자료 > 원가항목별 비용(DOI_EXPEN_AMT) */
 <template>
   <div>
     <div class="search_box">
@@ -27,28 +27,33 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="matExpenGrid" :uid="'matExpenGrid'" :step="'1'" :rows="matExpenGridRows" style="height: 100%" />
+        <RealGrid ref="expenAmtGrid" :uid="'expenAmtGrid'" :step="'1'" :rows="expenAmtGridRows" style="height: 100%" />
       </div>
     </div>
-    <CmDialog1 ref="cmDialog1C00008006" />
+    <CmDialog1 ref="cmDialog1C00008002" />
   </div>
 </template>
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
-import gridField from '@web/c0008000/js/C0008006.js';
+import { useC0001001 } from '@web/store/C0001001.js';
+import gridField from '@web/c0008000/js/C0008002.js';
 
 export default {
   props: {},
   components: {},
   setup() {
+    const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { userAuthInfo };
+    return { 
+			srchInfo,
+      userAuthInfo 
+    };
   },
   data() {
     return {
-      matExpenGrid: null,
-      matExpenGridRows: [],
+      expenAmtGrid: null,
+      expenAmtGridRows: [],
       params: {
         yyyymm: null,
         site: 'HQ',
@@ -62,11 +67,24 @@ export default {
     };
   },
   watch: {
+    'params.yyyymm': function(newVal) {
+      if (newVal) {
+        this.onDateChange();
+      }
+    },
+    'srchInfo.yyyymm': {
+      handler(newVal) {
+        if (newVal) {
+          this.params.yyyymm = newVal;
+          console.log('[C0003007] yyyymm 변경:', this.params.yyyymm);
+        }
+      }
+     },
     prodCtg: {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.matExpenGrid != null) {
+          if (this.$refs.expenAmtGrid != null) {
             this.initialize();
             this.searchClick();
           }
@@ -76,10 +94,10 @@ export default {
   },
   computed: {
     gridView() {
-      return this.$refs.matExpenGrid.getGridView();
+      return this.$refs.expenAmtGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.matExpenGrid.getGridDataProvider();
+      return this.$refs.expenAmtGrid.getGridDataProvider();
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
@@ -93,12 +111,15 @@ export default {
   beforeUnmount() {},
   methods: {
     initialize() {
-      var current = new Date();
-      this.params.yyyymm = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
+      //var current = new Date();
+      this.params.yyyymm = this.srchInfo.yyyymm; //`${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
-      this.matExpenGrid = _.cloneDeep(gridField);
+      this.expenAmtGrid = _.cloneDeep(gridField);
+    },
+    onDateChange() {
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     async getDataList() {
       this.gridView.commit();
@@ -110,9 +131,9 @@ export default {
 
       let param = {
         menuId: 'c0008000',
-        queryId: 'C0008006_Sch1',
+        queryId: 'C0008002_Sch1',
         queryParams: params,
-        target: this.matExpenGridRows,
+        target: this.expenAmtGridRows,
       };
       let resp = await this.$axios.api.search(param);
     },
@@ -128,7 +149,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `원가항목별재료비${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `원가항목별비용${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
@@ -142,29 +163,29 @@ export default {
 
       grid.exportGrid(options);
     },
-    async onCellClickedMatExpenGrid(grid, clickData) {
+    async onCellClickedExpenAmtGrid(grid, clickData) {
       if (clickData.cellType != 'data') return;
-      
-      if (clickData.column == 'matClass') {
+
+      if (clickData.column == 'expenSel') {
         let queryParams = {
-          yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
-          site: this.params.site != null ? this.siteMap[this.params.site] : null,
-          matClass: grid.getValue(clickData.itemIndex, 'matClass'),
+          yyyymm: grid.getValue(clickData.itemIndex, 'yyyymm'),
+          site: grid.getValue(clickData.itemIndex, 'site') != null ? this.siteMap[grid.getValue(clickData.itemIndex, 'site')] : null,
+          expenSel: grid.getValue(clickData.itemIndex, 'expenSel'),
         };
 
         const params = {
-          dialogTitle: '상세 MAT_CLASS별 금액',
+          dialogTitle: '상세 EXPEN_SEL 리스트',
           popUpSize: 'xl', //sm,lg,xl
           height: 500,
-          gridJs: 'C0008006Detail.js',
+          gridJs: 'C0008002Detail.js',
           search: {
             menuId: 'c0008000',
-            queryId: 'C0008006_Sch2',
+            queryId: 'C0008002_Sch2',
             queryParams: queryParams,
           },
           btnConfirm: false,
         };
-        this.$refs.cmDialog1C00008006.openDialog(params);
+        this.$refs.cmDialog1C00008002.openDialog(params);
       }
     },
   },

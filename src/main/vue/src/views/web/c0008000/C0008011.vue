@@ -1,4 +1,4 @@
-/** * 결산증빙 자료 > 매출 */
+/** * 결산증빙 자료 > 제품수불_금액 */
 <template>
   <div>
     <div class="search_box">
@@ -15,6 +15,16 @@
             <label for="floating">사업장</label>
           </div>
         </b-col>
+        <b-col cols="2">
+          <div class="form-floating">
+            <select class="form-select label-60" id="floatingSelect" v-model="params.gubun">
+              <option v-for="gubun in gubunList" :key="gubun.value" :value="gubun">
+                {{ gubun.text }}
+              </option>
+            </select>
+            <label for="floatingSelect" class="select">구분</label>
+          </div>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -27,7 +37,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="saleResGrid" :uid="'saleResGrid'" :step="'1'" :rows="saleResGridRows" style="height: 100%" />
+        <RealGrid ref="stockCostGrid" :uid="'stockCostGrid'" :step="'1'" :rows="stockCostGridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -35,23 +45,34 @@
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
+import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0008000/js/C0008011.js';
 
 export default {
   props: {},
   components: {},
   setup() {
+    const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { userAuthInfo };
+    return { 
+			srchInfo,
+      userAuthInfo 
+    };
   },
   data() {
     return {
-      saleResGrid: null,
-      saleResGridRows: [],
+      stockCostGrid: null,
+      stockCostGridRows: [],
       params: {
         yyyymm: null,
         site: 'HQ',
+        gubun: { value: '전체', text: '전체' },
       },
+      gubunList: [
+        { value: '전체', text: '전체' },
+        { value: '개발', text: '개발' },
+        { value: '양산', text: '양산' },
+      ],
       siteMap: {
         본사: 'HQ', //DB map
         VINA: 'VN', //DB map
@@ -61,11 +82,24 @@ export default {
     };
   },
   watch: {
+    'params.yyyymm': function(newVal) {
+      if (newVal) {
+        this.onDateChange();
+      }
+    },
+    'srchInfo.yyyymm': {
+      handler(newVal) {
+        if (newVal) {
+          this.params.yyyymm = newVal;
+          console.log('[C0003007] yyyymm 변경:', this.params.yyyymm);
+        }
+      }
+     },
     prodCtg: {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.saleResGrid != null) {
+          if (this.$refs.stockCostGrid != null) {
             this.initialize();
             this.searchClick();
           }
@@ -75,10 +109,10 @@ export default {
   },
   computed: {
     gridView() {
-      return this.$refs.saleResGrid.getGridView();
+      return this.$refs.stockCostGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.saleResGrid.getGridDataProvider();
+      return this.$refs.stockCostGrid.getGridDataProvider();
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
@@ -88,16 +122,66 @@ export default {
     this.initialize();
     this.initializeGrid();
   },
-  mounted() {},
+  mounted() {
+    this.$nextTick(() => {
+      this.setupColumnGroups();
+    });
+  },
   beforeUnmount() {},
   methods: {
     initialize() {
-      var current = new Date();
-      this.params.yyyymm = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
+      //var current = new Date();
+      this.params.yyyymm = this.srchInfo.yyyymm; //`${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
+      this.params.gubun = { value: '전체', text: '전체' };
     },
     initializeGrid() {
-      this.saleResGrid = _.cloneDeep(gridField);
+      this.stockCostGrid = _.cloneDeep(gridField);
+    },
+    onDateChange() {
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
+    },
+    setupColumnGroups() {
+      if (this.gridView) {
+        try {
+          // 컬럼 레이아웃 설정 - 모든 컬럼 포함
+          const layout = [
+            // "yyyymm",
+            // "selCode", 
+            // "site",
+            "구분",
+            "model",
+            {
+              name: "BOH",
+              direction: "horizontal", 
+              items: ["bohQty", "bohAmt"],
+              header: { text: "BOH" }
+            },
+            {
+              name: "IN",
+              direction: "horizontal",
+              items: ["inQty", "inAmt"], 
+              header: { text: "IN" }
+            },
+            {
+              name: "EOH", 
+              direction: "horizontal",
+              items: ["eohQty", "eohAmt"],
+              header: { text: "EOH" }
+            },
+            {
+              name: "OUT",
+              direction: "horizontal", 
+              items: ["outQty", "outAmt"],
+              header: { text: "OUT" }
+            }
+          ];
+          
+          this.gridView.setColumnLayout(layout);
+        } catch (error) {
+          // 컬럼 그룹 설정 실패 시 기본 레이아웃 유지
+        }
+      }
     },
     async getDataList() {
       this.gridView.commit();
@@ -105,18 +189,23 @@ export default {
       let params = {
         yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
+        gubun: this.params.gubun != null ? this.params.gubun.value : null,
       };
 
       let param = {
         menuId: 'c0008000',
         queryId: 'C0008011_Sch1',
         queryParams: params,
-        target: this.saleResGridRows,
+        target: this.stockCostGridRows,
       };
       let resp = await this.$axios.api.search(param);
     },
     searchClick() {
-      this.getDataList();
+      this.getDataList().then(() => {
+        this.$nextTick(() => {
+          this.setupColumnGroups();
+        });
+      });
     },
     async excelBtnClick() {
       const grid = this.gridView;
@@ -127,7 +216,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `매출${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `제품수불금액${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',

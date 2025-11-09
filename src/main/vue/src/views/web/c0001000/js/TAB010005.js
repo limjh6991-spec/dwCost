@@ -20,7 +20,7 @@ const grid = {
     fixed: { colBarWidth: 1, colCount: 1 },
   },
   fields: [
-    { fieldName: 'yyyy', dataType: ValueType.TEXT },
+    { fieldName: 'yyyymm', dataType: ValueType.TEXT },
     { fieldName: 'selCode', dataType: ValueType.TEXT },
     { fieldName: 'siteOrg', dataType: ValueType.TEXT },
     { fieldName: 'site', dataType: ValueType.TEXT },
@@ -38,10 +38,10 @@ const grid = {
   ],
   columns: [
     {
-      name: 'YYYY',
-      fieldName: 'yyyy',
+      name: 'YYYYMM',
+      fieldName: 'yyyymm',
       width: '80',
-      header: { text: '년도' },
+      header: { text: 'YYYYMM' },
       autoFilter: true,
       editable: false,
       styleName: 'tl',
