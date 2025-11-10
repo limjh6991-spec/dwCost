@@ -29,6 +29,36 @@ const c0007000Router = [
     },
   },
   {
+    path: '/c0007006',
+    name: '생산수불 자체 체크',
+    component: () => import('../views/web/c0007000/C0007006.vue'),
+    meta: {
+      upperSysResourceId: 'C0007000',
+      sysResourceId: 'C0007006',
+      requiresAuth: false,
+    },
+  },
+  {
+    path: '/c0007007',
+    name: '입고수불 자체 체크',
+    component: () => import('../views/web/c0007000/C0007007.vue'),
+    meta: {
+      upperSysResourceId: 'C0007000',
+      sysResourceId: 'C0007007',
+      requiresAuth: false,
+    },
+  },
+  {
+    path: '/c0007008',
+    name: '생산/입고/판매 체크',
+    component: () => import('../views/web/c0007000/C0007008.vue'),
+    meta: {
+      upperSysResourceId: 'C0007000',
+      sysResourceId: 'C0007008',
+      requiresAuth: false,
+    },
+  },
+  {
     path: '/c0007004',
     name: '제품정보',
     component: () => import('../views/web/c0007000/C0007004.vue'),

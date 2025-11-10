@@ -19,9 +19,9 @@ const grid = {
   },
 
   fields: [
-    { fieldName: 'yyyymm', dataType: ValueType.TEXT },
-    { fieldName: 'selCode', dataType: ValueType.TEXT },
-    { fieldName: 'site', dataType: ValueType.TEXT },
+    // { fieldName: 'yyyymm', dataType: ValueType.TEXT },
+    // { fieldName: 'selCode', dataType: ValueType.TEXT },
+    // { fieldName: 'site', dataType: ValueType.TEXT },
     { fieldName: 'model', dataType: ValueType.TEXT },
     { fieldName: 'stock', dataType: ValueType.TEXT },
     { fieldName: 'boh', dataType: ValueType.NUMBER },
@@ -31,10 +31,10 @@ const grid = {
   ],
 
   columns: [
-    { name: 'yyyymm', fieldName: 'yyyymm', width: '80', header: { text: 'YYYYMM' }, autoFilter: true, styleName: 'tl' },
-    { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'tl' },
-    { name: 'site', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true, styleName: 'tl' },
-    { name: 'model', fieldName: 'model', width: '80', header: { text: 'MODEL' }, autoFilter: true, styleName: 'tl' },
+    // { name: 'yyyymm', fieldName: 'yyyymm', width: '80', header: { text: 'YYYYMM' }, autoFilter: true, styleName: 'tl' },
+    // { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'tl' },
+    // { name: 'site', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true, styleName: 'tl' },
+    { name: 'model', fieldName: 'model', width: '80', header: { text: '모델명' }, autoFilter: true, styleName: 'tl' },
     { name: 'stock', fieldName: 'stock', width: '80', header: { text: 'STOCK' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
     { name: 'boh', fieldName: 'boh', width: '80', header: { text: '기초수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'inQty', fieldName: 'inQty', width: '80', header: { text: 'IN수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },

@@ -31,7 +31,8 @@ PRINT '';
 PRINT '============== PART 1: 생산수불 정합성 ==============';
 PRINT '';
 
--- 1-1. 생산수불 기본 수식 검증 (EOH = BOH + IN + BONUS - OUT - LOSS - NG)
+-- 1-1. 생산수불 기본 수식 검증 
+-- 수식: EOH = BOH + IN + BONUS - OUT - NG - 수율제외 - REWORK진행 - SHIPPING_PLAN - SHIPPING_ACTUAL
 PRINT '1-1. 생산수불 수식 검증 (불일치 건수)';
 PRINT '-------------------------------------------------------';
 
@@ -39,9 +40,9 @@ SELECT
     'PS001' AS RULE_CODE,
     '생산수불 수식 불일치' AS ISSUE_TYPE,
     YYYYMM,
-    DW_SITE AS SITE,
-    구분 AS PROD_GUBUN,
-    도우모델 AS MODEL,
+    DW_SITE,
+    구분,
+    도우모델,
     MODEL_N_TYPE,
     
     -- 실제값
@@ -49,18 +50,42 @@ SELECT
     IN_MONTH,
     BONUS_MONTH,
     OUT_MONTH,
-    LOSS_MONTH,
     NG_MONTH,
+    수율제외_MONTH,
+    REWORK진행_MONTH,
+    SHIPPING_PLAN_MONTH,
+    SHIPPING_ACTUAL_MONTH,
     EOH_MONTH,
     
     -- 계산값
-    (BOH_MONTH + IN_MONTH + BONUS_MONTH - OUT_MONTH - LOSS_MONTH - NG_MONTH) AS CALC_EOH,
+    (BOH_MONTH + IN_MONTH + ISNULL(BONUS_MONTH, 0) 
+        - OUT_MONTH 
+        - ISNULL(NG_MONTH, 0) 
+        - ISNULL(수율제외_MONTH, 0)
+        - ISNULL(REWORK진행_MONTH, 0)
+        - ISNULL(SHIPPING_PLAN_MONTH, 0)
+        - ISNULL(SHIPPING_ACTUAL_MONTH, 0)
+    ) AS CALC_EOH,
     
     -- 차이
-    (EOH_MONTH - (BOH_MONTH + IN_MONTH + BONUS_MONTH - OUT_MONTH - LOSS_MONTH - NG_MONTH)) AS DIFF,
+    (EOH_MONTH - (BOH_MONTH + IN_MONTH + ISNULL(BONUS_MONTH, 0) 
+        - OUT_MONTH 
+        - ISNULL(NG_MONTH, 0) 
+        - ISNULL(수율제외_MONTH, 0)
+        - ISNULL(REWORK진행_MONTH, 0)
+        - ISNULL(SHIPPING_PLAN_MONTH, 0)
+        - ISNULL(SHIPPING_ACTUAL_MONTH, 0)
+    )) AS DIFF,
     
     CASE 
-        WHEN ABS(EOH_MONTH - (BOH_MONTH + IN_MONTH + BONUS_MONTH - OUT_MONTH - LOSS_MONTH - NG_MONTH)) > 0.01 
+        WHEN ABS(EOH_MONTH - (BOH_MONTH + IN_MONTH + ISNULL(BONUS_MONTH, 0) 
+            - OUT_MONTH 
+            - ISNULL(NG_MONTH, 0) 
+            - ISNULL(수율제외_MONTH, 0)
+            - ISNULL(REWORK진행_MONTH, 0)
+            - ISNULL(SHIPPING_PLAN_MONTH, 0)
+            - ISNULL(SHIPPING_ACTUAL_MONTH, 0)
+        )) > 0.01 
         THEN 'ERROR'
         ELSE 'OK'
     END AS SEVERITY
@@ -68,8 +93,22 @@ SELECT
 FROM DOI_PROD_SUBUL
 WHERE YYYYMM BETWEEN @START_YYYYMM AND @END_YYYYMM
     AND (@SITE = 'ALL' OR DW_SITE = @SITE)
-    AND ABS(EOH_MONTH - (BOH_MONTH + IN_MONTH + BONUS_MONTH - OUT_MONTH - LOSS_MONTH - NG_MONTH)) > 0.01
-ORDER BY YYYYMM, DW_SITE, 도우모델, DIFF DESC;
+    AND ABS(EOH_MONTH - (BOH_MONTH + IN_MONTH + ISNULL(BONUS_MONTH, 0) 
+        - OUT_MONTH 
+        - ISNULL(NG_MONTH, 0) 
+        - ISNULL(수율제외_MONTH, 0)
+        - ISNULL(REWORK진행_MONTH, 0)
+        - ISNULL(SHIPPING_PLAN_MONTH, 0)
+        - ISNULL(SHIPPING_ACTUAL_MONTH, 0)
+    )) > 0.01
+ORDER BY YYYYMM, DW_SITE, 도우모델, ABS(EOH_MONTH - (BOH_MONTH + IN_MONTH + ISNULL(BONUS_MONTH, 0) 
+        - OUT_MONTH 
+        - ISNULL(NG_MONTH, 0) 
+        - ISNULL(수율제외_MONTH, 0)
+        - ISNULL(REWORK진행_MONTH, 0)
+        - ISNULL(SHIPPING_PLAN_MONTH, 0)
+        - ISNULL(SHIPPING_ACTUAL_MONTH, 0)
+    )) DESC;
 
 PRINT '';
 PRINT '-------------------------------------------------------';

@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007006Mapper">
+	<select id="selectBalanceCheck" resultType="CamelMap">
+		SELECT 
+			-- 테이블 전체 컬럼
+			YYYYMM,
+			SEL_CODE,
+			DW_SITE,
+			구분,
+			구분_ORD,
+			도우코드,
+			MODEL_N_TYPE,
+			[도우모델],
+			작업구분,
+			ORG작업구분,
+			[model],
+			[Inch],
+			SITE,
+			
+			-- 수량 컬럼
+			ISNULL(BOH_MONTH, 0) AS BOH_MONTH,
+			ISNULL(IN_MONTH, 0) AS IN_MONTH,
+			ISNULL(BONUS_MONTH, 0) AS BONUS_MONTH,
+			ISNULL(EOH_MONTH, 0) AS EOH_MONTH,
+			ISNULL(OUT_MONTH, 0) AS OUT_MONTH,
+			ISNULL(LOSS_MONTH, 0) AS LOSS_MONTH,
+			ISNULL(NG_MONTH, 0) AS NG_MONTH,
+			ISNULL(수율제외_MONTH, 0) AS 수율제외_MONTH,
+			ISNULL(REWORK진행_MONTH, 0) AS REWORK진행_MONTH,
+			ISNULL(SHIPPING_PLAN_MONTH, 0) AS SHIPPING_PLAN_MONTH,
+			ISNULL(SHIPPING_ACTUAL_MONTH, 0) AS SHIPPING_ACTUAL_MONTH,
+			ISNULL(MATERIAL_LOSS, 0) AS MATERIAL_LOSS,
+			
+			-- IN-OUT 체크: BOH + IN + BONUS - EOH - OUT - LOSS
+			(ISNULL(BOH_MONTH, 0) + ISNULL(IN_MONTH, 0) + ISNULL(BONUS_MONTH, 0)) 
+			- (ISNULL(EOH_MONTH, 0) + ISNULL(OUT_MONTH, 0) + ISNULL(LOSS_MONTH, 0)) AS IN_OUT_체크,
+			
+			-- LOSS 체크: LOSS_MONTH - (NG + 수율제외 + REWORK진행)
+			ISNULL(LOSS_MONTH, 0) - (ISNULL(NG_MONTH, 0) + ISNULL(수율제외_MONTH, 0) + ISNULL(REWORK진행_MONTH, 0)) AS LOSS_체크,
+			
+			-- 상태: 정상/오류
+			CASE 
+				WHEN ABS((ISNULL(BOH_MONTH, 0) + ISNULL(IN_MONTH, 0) + ISNULL(BONUS_MONTH, 0)) 
+						 - (ISNULL(EOH_MONTH, 0) + ISNULL(OUT_MONTH, 0) + ISNULL(LOSS_MONTH, 0))) &gt; 0.01
+					 OR ABS(ISNULL(LOSS_MONTH, 0) - (ISNULL(NG_MONTH, 0) + ISNULL(수율제외_MONTH, 0) + ISNULL(REWORK진행_MONTH, 0))) &gt; 0.01
+				THEN '오류'
+				ELSE '정상'
+			END AS 상태,
+			
+			-- 비고: 오류 내역 표시
+			CASE 
+				WHEN ABS((ISNULL(BOH_MONTH, 0) + ISNULL(IN_MONTH, 0) + ISNULL(BONUS_MONTH, 0)) 
+						 - (ISNULL(EOH_MONTH, 0) + ISNULL(OUT_MONTH, 0) + ISNULL(LOSS_MONTH, 0))) &gt; 0.01
+					 AND ABS(ISNULL(LOSS_MONTH, 0) - (ISNULL(NG_MONTH, 0) + ISNULL(수율제외_MONTH, 0) + ISNULL(REWORK진행_MONTH, 0))) &gt; 0.01
+				THEN 'IN-OUT 오류, LOSS 수량 오류'
+				WHEN ABS((ISNULL(BOH_MONTH, 0) + ISNULL(IN_MONTH, 0) + ISNULL(BONUS_MONTH, 0)) 
+						 - (ISNULL(EOH_MONTH, 0) + ISNULL(OUT_MONTH, 0) + ISNULL(LOSS_MONTH, 0))) &gt; 0.01
+				THEN 'IN-OUT 오류'
+				WHEN ABS(ISNULL(LOSS_MONTH, 0) - (ISNULL(NG_MONTH, 0) + ISNULL(수율제외_MONTH, 0) + ISNULL(REWORK진행_MONTH, 0))) &gt; 0.01
+				THEN 'LOSS 수량 오류'
+				ELSE ''
+			END AS 비고
+		FROM DOI_PROD_SUBUL
+		WHERE 1=1
+		<if test="yyyymm != null and yyyymm != ''">
+			AND YYYYMM = #{yyyymm}
+		</if>
+		<if test="site != null and site != ''">
+			AND DW_SITE = #{site}
+		</if>
+		<if test="dwModel != null and dwModel != ''">
+			AND [도우모델] LIKE '%' + #{dwModel} + '%'
+		</if>
+		ORDER BY [도우모델], YYYYMM
+	</select>
+
+	<select id="selectContinuityCheck" resultType="CamelMap">
+		WITH UnionData AS (
+			-- 전월 기말 (EOH)
+			SELECT 
+				FORMAT(DATEADD(MONTH, 1, CAST(YYYYMM + '01' AS DATE)), 'yyyyMM') AS YYYYMM,
+				SEL_CODE,
+				DW_SITE,
+				구분,
+				구분_ORD,
+				도우코드,
+				MODEL_N_TYPE,
+				[도우모델],
+				작업구분,
+				ORG작업구분,
+				[model],
+				[Inch],
+				SITE,
+				0 AS BOH_MONTH,
+				ISNULL(EOH_MONTH, 0) AS EOH_MONTH
+			FROM DOI_PROD_SUBUL
+			WHERE FORMAT(DATEADD(MONTH, 1, CAST(YYYYMM + '01' AS DATE)), 'yyyyMM') = 
+			<choose>
+				<when test="yyyymm != null and yyyymm != ''">
+					#{yyyymm}
+				</when>
+				<otherwise>
+					FORMAT(GETDATE(), 'yyyyMM')
+				</otherwise>
+			</choose>
+			<if test="site != null and site != ''">
+				AND DW_SITE = #{site}
+			</if>
+			<if test="dwModel != null and dwModel != ''">
+				AND [도우모델] LIKE '%' + #{dwModel} + '%'
+			</if>
+			
+			UNION ALL
+			
+			-- 당월 기초 (BOH)
+			SELECT 
+				YYYYMM,
+				SEL_CODE,
+				DW_SITE,
+				구분,
+				구분_ORD,
+				도우코드,
+				MODEL_N_TYPE,
+				[도우모델],
+				작업구분,
+				ORG작업구분,
+				[model],
+				[Inch],
+				SITE,
+				ISNULL(BOH_MONTH, 0) AS BOH_MONTH,
+				0 AS EOH_MONTH
+			FROM DOI_PROD_SUBUL
+			WHERE 1=1
+			<if test="yyyymm != null and yyyymm != ''">
+				AND YYYYMM = #{yyyymm}
+			</if>
+			<if test="site != null and site != ''">
+				AND DW_SITE = #{site}
+			</if>
+			<if test="dwModel != null and dwModel != ''">
+				AND [도우모델] LIKE '%' + #{dwModel} + '%'
+			</if>
+		)
+		SELECT 
+			YYYYMM,
+			SEL_CODE,
+			DW_SITE,
+			구분,
+			구분_ORD,
+			도우코드,
+			MODEL_N_TYPE,
+			[도우모델],
+			작업구분,
+			ORG작업구분,
+			[model],
+			[Inch],
+			SITE,
+			SUM(BOH_MONTH) AS BOH_MONTH,
+			SUM(EOH_MONTH) AS PREV_EOH_MONTH,
+			SUM(BOH_MONTH) - SUM(EOH_MONTH) AS 차이수량,
+			CASE 
+				WHEN SUM(EOH_MONTH) = 0 THEN '전월 데이터 없음'
+				WHEN ABS(SUM(BOH_MONTH) - SUM(EOH_MONTH)) &gt; 0.01 THEN '불일치'
+				ELSE '정상'
+			END AS 상태
+		FROM UnionData
+		GROUP BY YYYYMM, SEL_CODE, DW_SITE, 구분, 구분_ORD, 도우코드, MODEL_N_TYPE, [도우모델], 
+				 작업구분, ORG작업구분, [model], [Inch], SITE
+		ORDER BY [도우모델], YYYYMM
+	</select>
+
+	<select id="selectSummary" resultType="CamelMap">
+		SELECT 
+			COUNT(*) AS TOTAL_COUNT,
+			SUM(CASE WHEN 
+				ABS((ISNULL(BOH_MONTH, 0) + ISNULL(IN_MONTH, 0) + ISNULL(BONUS_MONTH, 0)) 
+					- (ISNULL(EOH_MONTH, 0) + ISNULL(OUT_MONTH, 0) + ISNULL(LOSS_MONTH, 0))) &lt;= 0.01
+				AND ABS(ISNULL(LOSS_MONTH, 0) - (ISNULL(NG_MONTH, 0) + ISNULL(수율제외_MONTH, 0) + ISNULL(REWORK진행_MONTH, 0))) &lt;= 0.01
+				THEN 1 ELSE 0 END) AS NORMAL_COUNT,
+			SUM(CASE WHEN 
+				ABS((ISNULL(BOH_MONTH, 0) + ISNULL(IN_MONTH, 0) + ISNULL(BONUS_MONTH, 0)) 
+					- (ISNULL(EOH_MONTH, 0) + ISNULL(OUT_MONTH, 0) + ISNULL(LOSS_MONTH, 0))) &gt; 0.01
+				OR ABS(ISNULL(LOSS_MONTH, 0) - (ISNULL(NG_MONTH, 0) + ISNULL(수율제외_MONTH, 0) + ISNULL(REWORK진행_MONTH, 0))) &gt; 0.01
+				THEN 1 ELSE 0 END) AS ERROR_COUNT,
+			0 AS WARNING_COUNT
+		FROM DOI_PROD_SUBUL
+		WHERE 1=1
+		<if test="yyyymm != null and yyyymm != ''">
+			AND YYYYMM = #{yyyymm}
+		</if>
+		<if test="site != null and site != ''">
+			AND DW_SITE = #{site}
+		</if>
+	</select>
+
+	<select id="selectSummary2" resultType="CamelMap">
+		WITH UnionData AS (
+			-- 전월 기말 (EOH)
+			SELECT 
+				FORMAT(DATEADD(MONTH, 1, CAST(YYYYMM + '01' AS DATE)), 'yyyyMM') AS YYYYMM,
+				DW_SITE,
+				구분,
+				[도우모델],
+				0 AS BOH_MONTH,
+				ISNULL(EOH_MONTH, 0) AS EOH_MONTH
+			FROM DOI_PROD_SUBUL
+			WHERE FORMAT(DATEADD(MONTH, 1, CAST(YYYYMM + '01' AS DATE)), 'yyyyMM') = 
+			<choose>
+				<when test="yyyymm != null and yyyymm != ''">
+					#{yyyymm}
+				</when>
+				<otherwise>
+					FORMAT(GETDATE(), 'yyyyMM')
+				</otherwise>
+			</choose>
+			<if test="site != null and site != ''">
+				AND DW_SITE = #{site}
+			</if>
+			<if test="dwModel != null and dwModel != ''">
+				AND [도우모델] LIKE '%' + #{dwModel} + '%'
+			</if>
+			
+			UNION ALL
+			
+			-- 당월 기초 (BOH)
+			SELECT 
+				YYYYMM,
+				DW_SITE,
+				구분,
+				[도우모델],
+				ISNULL(BOH_MONTH, 0) AS BOH_MONTH,
+				0 AS EOH_MONTH
+			FROM DOI_PROD_SUBUL
+			WHERE 1=1
+			<if test="yyyymm != null and yyyymm != ''">
+				AND YYYYMM = #{yyyymm}
+			</if>
+			<if test="site != null and site != ''">
+				AND DW_SITE = #{site}
+			</if>
+			<if test="dwModel != null and dwModel != ''">
+				AND [도우모델] LIKE '%' + #{dwModel} + '%'
+			</if>
+		),
+		ContinuityData AS (
+			SELECT 
+				YYYYMM,
+				SUM(BOH_MONTH) AS BOH_MONTH,
+				SUM(EOH_MONTH) AS PREV_EOH_MONTH,
+				CASE 
+					WHEN SUM(EOH_MONTH) = 0 THEN '전월 데이터 없음'
+					WHEN ABS(SUM(BOH_MONTH) - SUM(EOH_MONTH)) &gt; 0.01 THEN '불일치'
+					ELSE '정상'
+				END AS 상태
+			FROM UnionData
+			GROUP BY YYYYMM, DW_SITE, 구분, [도우모델]
+		)
+		SELECT 
+			COUNT(*) AS TOTAL_COUNT,
+			SUM(CASE WHEN 상태 = '정상' THEN 1 ELSE 0 END) AS NORMAL_COUNT,
+			SUM(CASE WHEN 상태 = '불일치' THEN 1 ELSE 0 END) AS MISMATCH_COUNT,
+			SUM(CASE WHEN 상태 = '전월 데이터 없음' THEN 1 ELSE 0 END) AS NO_DATA_COUNT
+		FROM ContinuityData
+	</select>
+</mapper>
