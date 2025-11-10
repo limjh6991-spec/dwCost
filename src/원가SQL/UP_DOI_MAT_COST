@@ -1,0 +1,203 @@
+CREATE                       Procedure UP_DOI_MAT_COST
+(
+    @YYYYMM varchar(10),--집계 년/월 설정
+    @SITE varchar(2),  --사업장코드 (본사 : HQ, 베트남 : VN)
+    @SELCODE varchar(10)
+)
+AS
+BEGIN
+   BEGIN TRY
+	SET NOCOUNT ON;
+    SET LOCK_TIMEOUT 10000; -- 10초로 증가
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; -- 격리 수준 변경
+    DECLARE  @Message  NVARCHAR(MAX)='';
+   	DECLARE @CNT INT = 0,
+   		   @CHECK BIT = 0;
+
+  	-- 1초 대기
+    WAITFOR DELAY '00:00:01';
+  	
+	SET  @Message =  '[START]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비배부(DOI_MAT_COST) 테이블에 '+@YYYYMM + '월 '
+						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '데이타 배부를 시작합니다';
+	
+	--데이타 체크	
+	SELECT @CNT = count(*)
+		FROM DOI_MODEL_MAST
+      WHERE yyyymm=@YYYYMM
+        and site  =@SITE;
+	IF @CNT = 0 BEGIN
+		SET @Message = @Message + char(10) + '[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 면적정보(DOI_MODEL_MAST) 테이블에 '
+				+ @YYYYMM + '월 '+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+		SET @CHECK = 1;
+	END
+	
+	SELECT @CNT = count(*)
+		FROM DOI_BOM_MAST
+      WHERE yyyymm=@YYYYMM
+        and site  =@SITE;
+	IF @CNT = 0 BEGIN
+		SET @Message = @Message + char(10) + '[ERROR] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 자재BOM(DOI_BOM_MAST) 테이블에 '+@YYYYMM + '월 '
+						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+		SET @CHECK = 1;
+	END
+			
+	SELECT @CNT = count(*)
+		FROM DOI_PROD_SUBUL
+      WHERE yyyymm=@YYYYMM
+        and dw_site  =@SITE;
+	IF @CNT = 0 BEGIN
+		SET @Message =  @Message + char(10)+'[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 생산집계(DOI_PROD_SUBUL) 테이블에 '
+				+@YYYYMM + '월 '+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+		SET @CHECK = 1;
+	END	
+	
+	SELECT @CNT = count(*)
+		FROM DOI_MAT_AMT WITH (NOLOCK)
+      WHERE yyyymm=@YYYYMM
+        and site  =@SITE;
+	IF @CNT = 0 BEGIN
+		SET @Message =  @Message + char(10)+'[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비집계(DOI_MAT_AMT) 테이블에 '
+				+@YYYYMM + '월 '+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+		SET @CHECK = 1;
+	END
+	
+	IF @CHECK = 1 BEGIN 
+		SET @Message = @Message + char(10)+'[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 기본정보 테이블들에 '
+				+@YYYYMM + '월 '+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+		SELECT @Message as retMessage;
+		RETURN -1;
+	END
+
+	BEGIN TRANSACTION;
+	--삭제
+	DELETE FROM DOI_MAT_COST 
+	WHERE yyyymm=@YYYYMM
+	  and site  =@SITE;
+
+	SET  @Message =  @Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비배부(DOI_MAT_COST) 테이블에 '+@YYYYMM + '월 '
+						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '데이타가 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 삭제 했습니다';
+    
+		--BOM
+		WITH BOM as (
+			select
+				b.yyyymm as byyyymm,
+				b.자재번호,
+				b.제품명,
+				--b.제품번호,
+				--b.품목대분류,
+				b.자재대분류,
+				sum(소요량) 소요량,
+				count(*) cnt,
+				row_number() over (partition by b.자재번호,	b.제품명 order by (b.자재대분류)) rn, 
+				row_number() over (partition by b.자재번호 order by (b.자재대분류)) rn1 --select *
+			from	doi_bom_mast b
+			where 1=1
+				and yyyymm=@YYYYMM
+				and site=@SITE
+				and nullif(자재번호, '') IS NOT NULL
+				--and 공정차수 = '00'
+			group by
+				b.yyyymm,b.자재번호,	b.제품명,	/*b.제품번호,	b.품목대분류,*/ b.자재대분류
+		), CHGQTY AS( --생산 환산량
+		select
+			a.yyyymm,
+			a.sel_code,
+			a.DW_SITE,
+			a.도우모델,
+			sum(a.IN_MONTH) in_qty,
+			/*MODEL_N_TYPE,도우모델+IIF(substring(MODEL_N_TYPE,4,1)='D','D','P') 제품번호_c,*/
+			sum(a.IN_MONTH + a.OUT_MONTH + a.LOSS_MONTH)/ 2 as 환산량
+		from
+			doi_prod_subul a
+		where	1=1
+			and a.yyyymm = @YYYYMM
+			and a.sel_code = 'ACTUAL'
+			and a.DW_SITE = @SITE
+				group by a.yyyymm,a.sel_code,a.DW_SITE,a.도우모델/*MODEL_N_TYPE,도우모델+IIF(substring(MODEL_N_TYPE,4,1)='D','D','P')*/
+				having sum(a.IN_MONTH+a.OUT_MONTH+a.LOSS_MONTH) > 0
+		), MAT_DISTRATE AS(
+		select	(환산량 * 소요량) as 사용량,
+				sum(환산량 * 소요량) over(partition by 자재번호) as 자재사용량,
+				CAST((환산량 * 소요량) AS NUMERIC(38,30))/sum(환산량 * 소요량) over(partition by 자재번호)  as 배부율,
+				--CAST( (환산량 * 소요량) AS DECIMAL(38,15) ) / CAST( sum(환산량 * 소요량) over(partition by 자재번호) AS DECIMAL(38,15) )as 배부적수, 
+			*
+			from BOM a
+			inner join CHGQTY b on	(a.제품명 = b.도우모델 and a.rn = 1)
+			--order by 자재번호
+		), MAT_COMM_RATE AS(
+		select 	a.*,(환산량 * b.xy)/sum(환산량 * b.xy) over() as comm_rate,b.xy
+		  from CHGQTY A   
+		  inner join DOI_MODEL_MAST B ON     --모델별 면적정보
+	         (a.도우모델 = b.MODEL and b.YYYYMM = @YYYYMM and a.DW_SITE = b.SITE)
+		)/*,MAT_AMT as (
+		--자재별 사용 금액
+		select a.mat_code,a.mat_class,b.자재대분류,count(*) mat_cnt,sum(a.in_amt) in_amt  --select *
+		from DOI_MATERIAL_RESC a 
+		left join BOM b on (a.mat_code=b.자재번호 and b.rn1=1)
+		where a.yyyymm=@YYYYMM -- and mat_code='DW00702000'
+			  and a.sel_code='ACTUAL'
+			  and a.SITE=@SITE
+		group by a.mat_code,a.mat_class,b.자재대분류
+		having sum(in_amt) > 0
+		)*/
+		INSERT INTO DOI_MAT_COST
+		(yyyymm,sel_code,site,도우모델,자재번호,mat_class,자재대분류,in_amt,in_qty,환산량,소요량,배부율,배부금액,사용량,배부방식)
+		select
+			b.yyyymm,
+			b.sel_code,
+			b.DW_SITE site,
+			b.도우모델,
+			b.자재번호,
+			a.mat_class,
+			a.자재대분류,
+			a.in_amt,
+			b.in_qty,
+			b.환산량,
+			b.소요량,
+			b.배부율,
+			round(a.in_amt * b.배부율,0) as 배부금액,
+			b.사용량,
+			'BOM' --TRUNCATE TABLE  DOI_MAT_COST
+			-- sum(a.in_amt * b.배부적수)
+		from
+			DOI_MAT_AMT a with(nolock)
+		inner join MAT_DISTRATE b on
+			(a.mat_code = b.자재번호)
+		union all
+			  select
+			b.yyyymm,
+			b.sel_code,
+			b.DW_SITE site,
+			b.도우모델,
+			a.mat_code,
+			a.mat_class,
+			a.자재대분류,
+			a.in_amt,
+			b.in_qty,
+			b.환산량,
+			b.xy,
+			b.comm_rate,
+			round(a.in_amt * b.comm_rate,0) 배부금액,
+			0,'공통'
+			-- sum(a.in_amt*b.comm_rate)
+		from
+			DOI_MAT_AMT a with(nolock)
+		inner join MAT_COMM_RATE b on
+			(1 = 1)
+		where	not exists (select 1 from MAT_DISTRATE c where a.mat_code = c.자재번호)
+		;
+	  SET  @Message =  @Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비배부(DOI_MAT_COST) 테이블에 '+@YYYYMM + '월 '
+						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '재료비 배부 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
+      SET  @Message =  @Message + char(10) + '[FINISH] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비배부(DOI_MAT_COST) 테이블에 '+@YYYYMM + '월 '
+						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '데이타 입력 완료했습니다';
+      COMMIT TRANSACTION; 
+      SELECT @Message as retMessage;
+      RETURN 0;     
+	END TRY
+   
+	BEGIN CATCH
+		SET  @Message =  @Message + char(10) + '[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+(SELECT ERROR_MESSAGE());-- AS ErrorMessage;
+		ROLLBACK TRANSACTION;
+		SELECT @Message as retMessage;
+	END CATCH;
+END;
