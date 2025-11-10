@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007008Mapper">
+	<!-- 탭1: 생산 <-> 입고 체크 -->
+	<select id="selectProdToStock" resultType="CamelMap">
+		SELECT 
+			COALESCE(P.YYYYMM, S.YYYYMM) AS YYYYMM,
+			COALESCE(P.SEL_CODE, S.SEL_CODE) AS SEL_CODE,
+			COALESCE(P.SITE, S.SITE) AS SITE,
+		COALESCE(P.MODEL, S.MODEL) AS MODEL,
+		COALESCE(P.MODEL_TYPE, S.MODEL_TYPE) AS MODEL_TYPE,
+		ISNULL(P.OUT_QTY, 0) AS PROD_OUT,
+		ISNULL(S.INPUT_PROD, 0) AS STOCK_INPUT,
+		ISNULL(P.OUT_QTY, 0) - ISNULL(S.INPUT_PROD, 0) AS DIFF_QTY,
+			CASE 
+				WHEN ISNULL(P.OUT_QTY, 0) - ISNULL(S.INPUT_PROD, 0) = 0 THEN '일치'
+				WHEN P.OUT_QTY IS NULL THEN '생산 데이터 없음'
+				WHEN S.INPUT_PROD IS NULL THEN '입고 데이터 없음'
+				ELSE '불일치'
+			END AS STATUS,
+			CASE 
+				WHEN ISNULL(P.OUT_QTY, 0) - ISNULL(S.INPUT_PROD, 0) != 0 
+					THEN '생산OUT(' + CAST(ISNULL(P.OUT_QTY, 0) AS VARCHAR) + ') != 입고INPUT(' + CAST(ISNULL(S.INPUT_PROD, 0) AS VARCHAR) + ')'
+				ELSE ''
+			END AS REMARK
+		FROM (
+			-- 생산 데이터 (OUT_MONTH 합계)
+			SELECT 
+				YYYYMM,
+				SEL_CODE,
+				SITE,
+				도우모델 AS MODEL,
+				도우코드 AS MODEL_TYPE,
+				SUM(OUT_MONTH) AS OUT_QTY
+			FROM DOI_PROD_SUBUL
+			<where>
+				<if test="yyyymm != null and yyyymm != ''">
+					AND YYYYMM = #{yyyymm}
+				</if>
+				<if test="site != null and site != ''">
+					AND SITE = #{site}
+				</if>
+				<if test="model != null and model != ''">
+					AND 도우모델 LIKE '%' + #{model} + '%'
+				</if>
+			</where>
+			GROUP BY YYYYMM, SEL_CODE, SITE, 도우모델, 도우코드
+		) P
+		FULL OUTER JOIN (
+			-- 입고 데이터 (INPUT 합계)
+			SELECT 
+				YYYYMM,
+				SEL_CODE,
+				SITE,
+				MODEL,
+				MODEL_TYPE,
+				SUM([INPUT]) AS INPUT_PROD
+			FROM DOI_STOCK
+			<where>
+				<if test="yyyymm != null and yyyymm != ''">
+					AND YYYYMM = #{yyyymm}
+				</if>
+				<if test="site != null and site != ''">
+					AND SITE = #{site}
+				</if>
+				<if test="model != null and model != ''">
+					AND MODEL LIKE '%' + #{model} + '%'
+				</if>
+			</where>
+			GROUP BY YYYYMM, SEL_CODE, SITE, MODEL, MODEL_TYPE
+		) S ON P.YYYYMM = S.YYYYMM 
+			AND P.SEL_CODE = S.SEL_CODE 
+			AND P.SITE = S.SITE 
+			AND P.MODEL = S.MODEL
+			AND P.MODEL_TYPE = S.MODEL_TYPE
+		ORDER BY YYYYMM DESC, SEL_CODE, SITE, MODEL, MODEL_TYPE
+	</select>
+
+	<!-- 탭2: 입고 <-> 판매 체크 -->
+	<select id="selectStockToSale" resultType="CamelMap">
+		SELECT 
+			COALESCE(S.YYYYMM, SL.YYYYMM) AS YYYYMM,
+			COALESCE(S.SEL_CODE, SL.SEL_CODE) AS SEL_CODE,
+			COALESCE(S.SITE, SL.SITE) AS SITE,
+		COALESCE(S.MODEL, SL.품번) AS MODEL,
+		S.MODEL_TYPE,
+		ISNULL(S.OUT_INVOICE, 0) AS STOCK_OUT,
+		ISNULL(SL.판매수량, 0) AS SALE_QTY,
+		ISNULL(S.OUT_INVOICE, 0) - ISNULL(SL.판매수량, 0) AS DIFF_QTY,
+			CASE 
+				WHEN ISNULL(S.OUT_INVOICE, 0) - ISNULL(SL.판매수량, 0) = 0 THEN '일치'
+				WHEN S.OUT_INVOICE IS NULL THEN '입고 데이터 없음'
+				WHEN SL.판매수량 IS NULL THEN '판매 데이터 없음'
+				ELSE '불일치'
+			END AS STATUS,
+			CASE 
+				WHEN ISNULL(S.OUT_INVOICE, 0) - ISNULL(SL.판매수량, 0) != 0 
+					THEN '입고출고(' + CAST(ISNULL(S.OUT_INVOICE, 0) AS VARCHAR) + ') != 판매수량(' + CAST(ISNULL(SL.판매수량, 0) AS VARCHAR) + ')'
+				ELSE ''
+			END AS REMARK
+		FROM (
+			-- 입고 데이터 (OUT 합계 = 판매출고)
+			SELECT 
+				YYYYMM,
+				SEL_CODE,
+				SITE,
+				MODEL,
+				MODEL_TYPE,
+				SUM([OUT]) AS OUT_INVOICE
+			FROM DOI_STOCK
+			<where>
+				<if test="yyyymm != null and yyyymm != ''">
+					AND YYYYMM = #{yyyymm}
+				</if>
+				<if test="site != null and site != ''">
+					AND SITE = #{site}
+				</if>
+				<if test="model != null and model != ''">
+					AND MODEL LIKE '%' + #{model} + '%'
+				</if>
+			</where>
+			GROUP BY YYYYMM, SEL_CODE, SITE, MODEL, MODEL_TYPE
+		) S
+		FULL OUTER JOIN (
+			-- 판매 데이터
+			SELECT 
+				YYYYMM,
+				SEL_CODE,
+				SITE,
+				품번,
+				SUM(수량) AS 판매수량
+			FROM DOI_SALE_RESC
+			<where>
+				<if test="yyyymm != null and yyyymm != ''">
+					AND YYYYMM = #{yyyymm}
+				</if>
+				<if test="site != null and site != ''">
+					AND SITE = #{site}
+				</if>
+				<if test="model != null and model != ''">
+					AND 품번 LIKE '%' + #{model} + '%'
+				</if>
+			</where>
+			GROUP BY YYYYMM, SEL_CODE, SITE, 품번
+		) SL ON S.YYYYMM = SL.YYYYMM 
+			AND S.SEL_CODE = SL.SEL_CODE 
+			AND S.SITE = SL.SITE 
+			AND S.MODEL_TYPE = SL.품번
+		ORDER BY YYYYMM DESC, SEL_CODE, SITE, MODEL, MODEL_TYPE
+	</select>
+
+	<!-- 탭1 요약 정보 -->
+	<select id="selectSummary1" resultType="CamelMap">
+		WITH DATA_CHECK AS (
+			SELECT 
+				CASE 
+					WHEN ISNULL(P.OUT_QTY, 0) - ISNULL(S.INPUT_PROD, 0) = 0 THEN '일치'
+					WHEN P.OUT_QTY IS NULL THEN '생산 데이터 없음'
+					WHEN S.INPUT_PROD IS NULL THEN '입고 데이터 없음'
+					ELSE '불일치'
+				END AS STATUS
+			FROM (
+				SELECT YYYYMM, SEL_CODE, SITE, 도우모델 AS MODEL, 도우코드 AS MODEL_TYPE, SUM(OUT_MONTH) AS OUT_QTY
+				FROM DOI_PROD_SUBUL
+				<where>
+					<if test="yyyymm != null and yyyymm != ''">
+						AND YYYYMM = #{yyyymm}
+					</if>
+					<if test="site != null and site != ''">
+						AND SITE = #{site}
+					</if>
+					<if test="model != null and model != ''">
+						AND 도우모델 LIKE '%' + #{model} + '%'
+					</if>
+				</where>
+				GROUP BY YYYYMM, SEL_CODE, SITE, 도우모델, 도우코드
+			) P
+			FULL OUTER JOIN (
+				SELECT YYYYMM, SEL_CODE, SITE, MODEL, MODEL_TYPE, SUM([INPUT]) AS INPUT_PROD
+				FROM DOI_STOCK
+				<where>
+					<if test="yyyymm != null and yyyymm != ''">
+						AND YYYYMM = #{yyyymm}
+					</if>
+					<if test="site != null and site != ''">
+						AND SITE = #{site}
+					</if>
+					<if test="model != null and model != ''">
+						AND MODEL LIKE '%' + #{model} + '%'
+					</if>
+				</where>
+				GROUP BY YYYYMM, SEL_CODE, SITE, MODEL, MODEL_TYPE
+			) S ON P.YYYYMM = S.YYYYMM AND P.SEL_CODE = S.SEL_CODE 
+				AND P.SITE = S.SITE AND P.MODEL = S.MODEL AND P.MODEL_TYPE = S.MODEL_TYPE
+		)
+		SELECT 
+			COUNT(*) AS totalCount,
+			SUM(CASE WHEN STATUS = '일치' THEN 1 ELSE 0 END) AS normalCount,
+			SUM(CASE WHEN STATUS = '불일치' THEN 1 ELSE 0 END) AS mismatchCount,
+			SUM(CASE WHEN STATUS IN ('생산 데이터 없음', '입고 데이터 없음') THEN 1 ELSE 0 END) AS noDataCount
+		FROM DATA_CHECK
+	</select>
+
+	<!-- 탭2 요약 정보 -->
+	<select id="selectSummary2" resultType="CamelMap">
+		WITH DATA_CHECK AS (
+			SELECT 
+				CASE 
+					WHEN ISNULL(S.OUT_INVOICE, 0) - ISNULL(SL.판매수량, 0) = 0 THEN '일치'
+					WHEN S.OUT_INVOICE IS NULL THEN '입고 데이터 없음'
+					WHEN SL.판매수량 IS NULL THEN '판매 데이터 없음'
+					ELSE '불일치'
+				END AS STATUS
+			FROM (
+				SELECT YYYYMM, SEL_CODE, SITE, MODEL, MODEL_TYPE, SUM([OUT]) AS OUT_INVOICE
+				FROM DOI_STOCK
+				<where>
+					<if test="yyyymm != null and yyyymm != ''">
+						AND YYYYMM = #{yyyymm}
+					</if>
+					<if test="site != null and site != ''">
+						AND SITE = #{site}
+					</if>
+					<if test="model != null and model != ''">
+						AND MODEL LIKE '%' + #{model} + '%'
+					</if>
+				</where>
+				GROUP BY YYYYMM, SEL_CODE, SITE, MODEL, MODEL_TYPE
+			) S
+			FULL OUTER JOIN (
+				SELECT YYYYMM, SEL_CODE, SITE, 품번, SUM(수량) AS 판매수량
+				FROM DOI_SALE_RESC
+				<where>
+					<if test="yyyymm != null and yyyymm != ''">
+						AND YYYYMM = #{yyyymm}
+					</if>
+					<if test="site != null and site != ''">
+						AND SITE = #{site}
+					</if>
+					<if test="model != null and model != ''">
+						AND 품번 LIKE '%' + #{model} + '%'
+					</if>
+				</where>
+				GROUP BY YYYYMM, SEL_CODE, SITE, 품번
+			) SL ON S.YYYYMM = SL.YYYYMM AND S.SEL_CODE = SL.SEL_CODE 
+				AND S.SITE = SL.SITE AND S.MODEL_TYPE = SL.품번
+		)
+		SELECT 
+			COUNT(*) AS totalCount,
+			SUM(CASE WHEN STATUS = '일치' THEN 1 ELSE 0 END) AS normalCount,
+			SUM(CASE WHEN STATUS = '불일치' THEN 1 ELSE 0 END) AS mismatchCount,
+			SUM(CASE WHEN STATUS IN ('입고 데이터 없음', '판매 데이터 없음') THEN 1 ELSE 0 END) AS noDataCount
+		FROM DATA_CHECK
+	</select>
+</mapper>

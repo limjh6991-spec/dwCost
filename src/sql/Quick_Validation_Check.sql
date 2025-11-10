@@ -20,30 +20,47 @@ PRINT '';
 -- =====================================================
 -- 1. 생산수불 기본 통계
 -- =====================================================
+-- 수식: EOH_MONTH = BOH_MONTH + IN_MONTH + BONUS_MONTH 
+--                  - OUT_MONTH - NG_MONTH - 수율제외_MONTH 
+--                  - REWORK진행_MONTH - SHIPPING_PLAN_MONTH - SHIPPING_ACTUAL_MONTH
+-- =====================================================
 PRINT '📈 [1] 생산수불 기본 통계';
 PRINT '-----------------------------------------------------';
 
 SELECT 
-    '1. 생산수불 통계' AS [구분],
-    YYYYMM AS [년월],
-    DW_SITE AS [사이트],
-    COUNT(*) AS [총건수],
-    SUM(CASE WHEN EOH_MONTH < 0 THEN 1 ELSE 0 END) AS [음수재고건수],
+    YYYYMM,
+    DW_SITE,
+    COUNT(*) AS TOTAL_COUNT,
+    SUM(CASE WHEN EOH_MONTH < 0 THEN 1 ELSE 0 END) AS NEGATIVE_COUNT,
     SUM(CASE 
-        WHEN ABS(EOH_MONTH - (BOH_MONTH + IN_MONTH + ISNULL(BONUS_MONTH,0) 
-            - OUT_MONTH - ISNULL(LOSS_MONTH,0) - ISNULL(NG_MONTH,0))) > 0.01 
+        WHEN ABS(EOH_MONTH - (
+            BOH_MONTH + IN_MONTH + ISNULL(BONUS_MONTH, 0)
+            - OUT_MONTH 
+            - ISNULL(NG_MONTH, 0) 
+            - ISNULL(수율제외_MONTH, 0)
+            - ISNULL(REWORK진행_MONTH, 0)
+            - ISNULL(SHIPPING_PLAN_MONTH, 0)
+            - ISNULL(SHIPPING_ACTUAL_MONTH, 0)
+        )) > 0.01 
         THEN 1 ELSE 0 
-    END) AS [수식오류건수],
+    END) AS FORMULA_ERROR_COUNT,
     CASE 
         WHEN SUM(CASE WHEN EOH_MONTH < 0 THEN 1 ELSE 0 END) = 0 
             AND SUM(CASE 
-                WHEN ABS(EOH_MONTH - (BOH_MONTH + IN_MONTH + ISNULL(BONUS_MONTH,0) 
-                    - OUT_MONTH - ISNULL(LOSS_MONTH,0) - ISNULL(NG_MONTH,0))) > 0.01 
+                WHEN ABS(EOH_MONTH - (
+                    BOH_MONTH + IN_MONTH + ISNULL(BONUS_MONTH, 0)
+                    - OUT_MONTH 
+                    - ISNULL(NG_MONTH, 0) 
+                    - ISNULL(수율제외_MONTH, 0)
+                    - ISNULL(REWORK진행_MONTH, 0)
+                    - ISNULL(SHIPPING_PLAN_MONTH, 0)
+                    - ISNULL(SHIPPING_ACTUAL_MONTH, 0)
+                )) > 0.01 
                 THEN 1 ELSE 0 
             END) = 0 
-        THEN '✅ 정상'
-        ELSE '⚠️ 오류 있음'
-    END AS [상태]
+        THEN 'OK'
+        ELSE 'ERROR'
+    END AS STATUS
 FROM DOI_PROD_SUBUL
 WHERE YYYYMM BETWEEN @START_YYYYMM AND @END_YYYYMM
     AND (@SITE = 'ALL' OR DW_SITE = @SITE)
@@ -59,24 +76,23 @@ PRINT '📈 [2] 재고수불 기본 통계';
 PRINT '-----------------------------------------------------';
 
 SELECT 
-    '2. 재고수불 통계' AS [구분],
-    YYYYMM AS [년월],
-    SITE AS [사이트],
-    COUNT(*) AS [총건수],
-    SUM(CASE WHEN EOH < 0 THEN 1 ELSE 0 END) AS [음수재고건수],
+    YYYYMM,
+    SITE,
+    COUNT(*) AS TOTAL_COUNT,
+    SUM(CASE WHEN EOH < 0 THEN 1 ELSE 0 END) AS NEGATIVE_COUNT,
     SUM(CASE 
         WHEN ABS(EOH - (BOH + INPUT_PROD + INPUT_PURCH - OUT_INVOICE - OUT_ADJ)) > 0.01 
         THEN 1 ELSE 0 
-    END) AS [수식오류건수],
+    END) AS FORMULA_ERROR_COUNT,
     CASE 
         WHEN SUM(CASE WHEN EOH < 0 THEN 1 ELSE 0 END) = 0 
             AND SUM(CASE 
                 WHEN ABS(EOH - (BOH + INPUT_PROD + INPUT_PURCH - OUT_INVOICE - OUT_ADJ)) > 0.01 
                 THEN 1 ELSE 0 
             END) = 0 
-        THEN '✅ 정상'
-        ELSE '⚠️ 오류 있음'
-    END AS [상태]
+        THEN 'OK'
+        ELSE 'ERROR'
+    END AS STATUS
 FROM DOI_STOCK
 WHERE YYYYMM BETWEEN @START_YYYYMM AND @END_YYYYMM
     AND (@SITE = 'ALL' OR SITE = @SITE)
@@ -92,16 +108,15 @@ PRINT '🔗 [3] 생산→재고 연결 검증 ⭐ 핵심';
 PRINT '-----------------------------------------------------';
 
 SELECT 
-    '3. 생산→재고 연결' AS [구분],
-    P.YYYYMM AS [년월],
-    P.DW_SITE AS [사이트],
-    COUNT(*) AS [총건수],
-    SUM(CASE WHEN S.INPUT_PROD IS NULL THEN 1 ELSE 0 END) AS [재고누락건수],
+    P.YYYYMM,
+    P.DW_SITE,
+    COUNT(*) AS TOTAL_COUNT,
+    SUM(CASE WHEN S.INPUT_PROD IS NULL THEN 1 ELSE 0 END) AS MISSING_COUNT,
     SUM(CASE 
         WHEN S.INPUT_PROD IS NOT NULL 
             AND ABS(P.OUT_MONTH - S.INPUT_PROD) > 0.01 
         THEN 1 ELSE 0 
-    END) AS [수량불일치건수],
+    END) AS MISMATCH_COUNT,
     CASE 
         WHEN SUM(CASE WHEN S.INPUT_PROD IS NULL THEN 1 ELSE 0 END) = 0 
             AND SUM(CASE 
@@ -109,9 +124,9 @@ SELECT
                     AND ABS(P.OUT_MONTH - S.INPUT_PROD) > 0.01 
                 THEN 1 ELSE 0 
             END) = 0 
-        THEN '✅ 정상'
-        ELSE '⚠️ 오류 있음'
-    END AS [상태]
+        THEN 'OK'
+        ELSE 'ERROR'
+    END AS STATUS
 FROM DOI_PROD_SUBUL P
 LEFT JOIN DOI_STOCK S ON P.YYYYMM = S.YYYYMM 
     AND P.DW_SITE = S.SITE 
@@ -132,16 +147,20 @@ PRINT '-----------------------------------------------------';
 
 -- 4-1. 생산수불 음수 재고
 SELECT TOP 20
-    '생산수불' AS [테이블],
-    YYYYMM AS [년월],
-    DW_SITE AS [사이트],
-    도우모델 AS [모델],
-    구분 AS [구분],
-    BOH_MONTH AS [기초],
-    IN_MONTH AS [입고],
-    OUT_MONTH AS [출고],
-    EOH_MONTH AS [기말],
-    '즉시 수정 필요' AS [조치사항]
+    YYYYMM,
+    DW_SITE,
+    도우모델,
+    구분,
+    BOH_MONTH,
+    IN_MONTH,
+    BONUS_MONTH,
+    OUT_MONTH,
+    NG_MONTH,
+    수율제외_MONTH,
+    REWORK진행_MONTH,
+    SHIPPING_PLAN_MONTH,
+    SHIPPING_ACTUAL_MONTH,
+    EOH_MONTH
 FROM DOI_PROD_SUBUL
 WHERE YYYYMM BETWEEN @START_YYYYMM AND @END_YYYYMM
     AND (@SITE = 'ALL' OR DW_SITE = @SITE)
@@ -150,16 +169,14 @@ ORDER BY EOH_MONTH;
 
 -- 4-2. 재고수불 음수 재고
 SELECT TOP 20
-    '재고수불' AS [테이블],
-    YYYYMM AS [년월],
-    SITE AS [사이트],
-    MODEL AS [모델],
-    ITEM_GUBUN AS [구분],
-    BOH AS [기초],
-    (INPUT_PROD + INPUT_PURCH) AS [입고],
-    (OUT_INVOICE + OUT_ADJ) AS [출고],
-    EOH AS [기말],
-    '즉시 수정 필요' AS [조치사항]
+    YYYYMM,
+    SITE,
+    MODEL,
+    ITEM_GUBUN,
+    BOH,
+    (INPUT_PROD + INPUT_PURCH) AS INPUT_TOTAL,
+    (OUT_INVOICE + OUT_ADJ) AS OUT_TOTAL,
+    EOH
 FROM DOI_STOCK
 WHERE YYYYMM BETWEEN @START_YYYYMM AND @END_YYYYMM
     AND (@SITE = 'ALL' OR SITE = @SITE)

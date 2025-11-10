@@ -1,0 +1,313 @@
+<!-- 타시스템 > 생산/입고/판매 체크 -->
+<template>
+  <div>
+    <div class="search_box">
+      <b-row class="search_area">
+        <b-col cols="2">
+          <div class="form-floating">
+            <div class="form-floating me-1">
+              <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
+              <label for="floatingSelect" class="select">기준월</label>
+            </div>
+          </div>
+        </b-col>
+        <b-col cols="2">
+          <div class="form-floating">
+            <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" />
+            <label for="floating">SITE</label>
+          </div>
+        </b-col>
+        <b-col cols="2">
+          <div class="form-floating">
+            <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="MODEL" v-model="params.model" />
+            <label for="floating">MODEL</label>
+          </div>
+        </b-col>
+      </b-row>
+      <div class="btn_area">
+        <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
+      </div>
+    </div>
+
+    <!-- 통계 요약 카드 -->
+    <div class="statistics-section" style="display: flex; gap: 16px; margin-bottom: 16px;">
+      <!-- 탭1: 생산 <-> 입고 체크 통계 -->
+      <div style="flex: 1; border: 2px solid #0d6efd; border-radius: 8px; padding: 16px; background: #f8f9fa;">
+        <h6 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 8px;">
+          생산 ↔ 입고 체크
+        </h6>
+        <div style="display: flex; gap: 8px;">
+          <div class="stat-card" style="flex: 1; padding: 12px; background: white; border-radius: 6px; text-align: center; border: 1px solid #dee2e6;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 4px;">총 체크 건수</div>
+            <div style="font-size: 24px; font-weight: bold; color: #212529;">{{ summary1.totalCount }}</div>
+          </div>
+          <div class="stat-card" style="flex: 1; padding: 12px; background: #d1e7dd; border-radius: 6px; text-align: center; border: 1px solid #badbcc;">
+            <div style="font-size: 11px; color: #0f5132; margin-bottom: 4px;">일치</div>
+            <div style="font-size: 24px; font-weight: bold; color: #0f5132;">
+              {{ summary1.normalCount }}
+              <span style="font-size: 12px; margin-left: 4px;">({{ summary1.normalPercent }}%)</span>
+            </div>
+          </div>
+          <div class="stat-card" style="flex: 1; padding: 12px; background: #f8d7da; border-radius: 6px; text-align: center; border: 1px solid #f5c2c7;">
+            <div style="font-size: 11px; color: #842029; margin-bottom: 4px;">불일치</div>
+            <div style="font-size: 24px; font-weight: bold; color: #842029;">
+              {{ summary1.mismatchCount }}
+              <span style="font-size: 12px; margin-left: 4px;">({{ summary1.mismatchPercent }}%)</span>
+            </div>
+          </div>
+          <div class="stat-card" style="flex: 1; padding: 12px; background: #fff3cd; border-radius: 6px; text-align: center; border: 1px solid #ffecb5;">
+            <div style="font-size: 11px; color: #664d03; margin-bottom: 4px;">데이터 없음</div>
+            <div style="font-size: 24px; font-weight: bold; color: #664d03;">
+              {{ summary1.noDataCount }}
+              <span style="font-size: 12px; margin-left: 4px;">({{ summary1.noDataPercent }}%)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 탭2: 입고 <-> 판매 체크 통계 -->
+      <div style="flex: 1; border: 2px solid #6c757d; border-radius: 8px; padding: 16px; background: #f8f9fa;">
+        <h6 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #6c757d; border-bottom: 2px solid #6c757d; padding-bottom: 8px;">
+          입고 ↔ 판매 체크
+        </h6>
+        <div style="display: flex; gap: 8px;">
+          <div class="stat-card" style="flex: 1; padding: 12px; background: white; border-radius: 6px; text-align: center; border: 1px solid #dee2e6;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 4px;">총 체크 건수</div>
+            <div style="font-size: 24px; font-weight: bold; color: #212529;">{{ summary2.totalCount }}</div>
+          </div>
+          <div class="stat-card" style="flex: 1; padding: 12px; background: #d1e7dd; border-radius: 6px; text-align: center; border: 1px solid #badbcc;">
+            <div style="font-size: 11px; color: #0f5132; margin-bottom: 4px;">일치</div>
+            <div style="font-size: 24px; font-weight: bold; color: #0f5132;">
+              {{ summary2.normalCount }}
+              <span style="font-size: 12px; margin-left: 4px;">({{ summary2.normalPercent }}%)</span>
+            </div>
+          </div>
+          <div class="stat-card" style="flex: 1; padding: 12px; background: #f8d7da; border-radius: 6px; text-align: center; border: 1px solid #f5c2c7;">
+            <div style="font-size: 11px; color: #842029; margin-bottom: 4px;">불일치</div>
+            <div style="font-size: 24px; font-weight: bold; color: #842029;">
+              {{ summary2.mismatchCount }}
+              <span style="font-size: 12px; margin-left: 4px;">({{ summary2.mismatchPercent }}%)</span>
+            </div>
+          </div>
+          <div class="stat-card" style="flex: 1; padding: 12px; background: #fff3cd; border-radius: 6px; text-align: center; border: 1px solid #ffecb5;">
+            <div style="font-size: 11px; color: #664d03; margin-bottom: 4px;">데이터 없음</div>
+            <div style="font-size: 24px; font-weight: bold; color: #664d03;">
+              {{ summary2.noDataCount }}
+              <span style="font-size: 12px; margin-left: 4px;">({{ summary2.noDataPercent }}%)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 탭 메뉴 및 내용 -->
+    <div class="grid_box">
+      <b-tabs v-model="activeTab" class="custom-tabs">
+        <b-tab title="생산 ↔ 입고">
+          <div class="left_box">
+            <div class="btn_wrap ms-auto">
+              <b-button class="second" @click="excelBtnClick">엑셀 다운로드</b-button>
+            </div>
+          </div>
+          <div class="grid-border-none" style="height: 500px;">
+            <RealGrid ref="dataGrid" :uid="'dataGrid'" :step="'1'" :rows="dataGridRows" style="height: 100%" />
+          </div>
+        </b-tab>
+        <b-tab title="입고 ↔ 판매">
+          <div class="left_box">
+            <div class="btn_wrap ms-auto">
+              <b-button class="second" @click="excelBtnClick">엑셀 다운로드</b-button>
+            </div>
+          </div>
+          <div class="grid-border-none" style="height: 500px;">
+            <RealGrid ref="dataGrid2" :uid="'dataGrid2'" :step="'2'" :rows="dataGrid2Rows" style="height: 100%" />
+          </div>
+        </b-tab>
+      </b-tabs>
+    </div>
+  </div>
+</template>
+
+<script>
+import gridField from '@web/c0007000/js/C0007008.js';
+import gridField2 from '@web/c0007000/js/C0007008_Tab2.js';
+
+export default {
+  name: 'C0007008',
+  components: {},
+  data() {
+    return {
+      activeTab: 0,
+      dataGrid: gridField,
+      dataGrid2: gridField2,
+      dataGridRows: [],
+      dataGrid2Rows: [],
+      params: {
+        site: '',
+        yyyymm: null,
+        model: null,
+      },
+      summary1: {
+        totalCount: 0,
+        normalCount: 0,
+        mismatchCount: 0,
+        noDataCount: 0,
+        normalPercent: '0.0',
+        mismatchPercent: '0.0',
+        noDataPercent: '0.0',
+      },
+      summary2: {
+        totalCount: 0,
+        normalCount: 0,
+        mismatchCount: 0,
+        noDataCount: 0,
+        normalPercent: '0.0',
+        mismatchPercent: '0.0',
+        noDataPercent: '0.0',
+      },
+    };
+  },
+  computed: {
+    gridView() {
+      return this.$refs.dataGrid?.getGridView();
+    },
+    gridDataProvider() {
+      return this.$refs.dataGrid?.getGridDataProvider();
+    },
+    gridView2() {
+      return this.$refs.dataGrid2?.getGridView();
+    },
+    gridDataProvider2() {
+      return this.$refs.dataGrid2?.getGridDataProvider();
+    },
+  },
+  created() {
+    const now = new Date();
+    this.params.yyyymm = `${now.getFullYear()}-${("0" + (now.getMonth() + 1)).slice(-2)}`;
+  },
+  mounted() {},
+  beforeUnmount() {},
+  methods: {
+    async getDataList() {
+      if (this.gridView) {
+        this.gridView.commit();
+      }
+      
+      try {
+        let yyyymm = this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null;
+        let params = {
+          yyyymm: yyyymm,
+          site: this.params.site || null,
+          model: this.params.model || null,
+        };
+
+        // 요약 정보 조회 - Tab1
+        let summary1Param = {
+          menuId: 'c0007008',
+          queryId: 'selectSummary1',
+          queryParams: params,
+        };
+
+        let summary1Resp = await this.$axios.api.search(summary1Param);
+        console.log('Summary1 Response:', summary1Resp);
+        if (summary1Resp && summary1Resp.length > 0) {
+        const data = summary1Resp[0];
+        this.summary1.totalCount = data.totalcount || 0;
+        this.summary1.normalCount = data.normalcount || 0;
+        this.summary1.mismatchCount = data.mismatchcount || 0;
+        this.summary1.noDataCount = data.nodatacount || 0;
+        
+        if (this.summary1.totalCount > 0) {
+          this.summary1.normalPercent = ((this.summary1.normalCount / this.summary1.totalCount) * 100).toFixed(1);
+          this.summary1.mismatchPercent = ((this.summary1.mismatchCount / this.summary1.totalCount) * 100).toFixed(1);
+          this.summary1.noDataPercent = ((this.summary1.noDataCount / this.summary1.totalCount) * 100).toFixed(1);
+        }
+        console.log('Summary1 Updated:', this.summary1);
+      }
+
+      // 요약 정보 조회 - Tab2
+      let summary2Param = {
+        menuId: 'c0007008',
+        queryId: 'selectSummary2',
+        queryParams: params,
+      };
+
+      let summary2Resp = await this.$axios.api.search(summary2Param);
+      console.log('Summary2 Response:', summary2Resp);
+      if (summary2Resp && summary2Resp.length > 0) {
+        const data = summary2Resp[0];
+        this.summary2.totalCount = data.totalcount || 0;
+        this.summary2.normalCount = data.normalcount || 0;
+        this.summary2.mismatchCount = data.mismatchcount || 0;
+        this.summary2.noDataCount = data.nodatacount || 0;
+        
+        if (this.summary2.totalCount > 0) {
+          this.summary2.normalPercent = ((this.summary2.normalCount / this.summary2.totalCount) * 100).toFixed(1);
+          this.summary2.mismatchPercent = ((this.summary2.mismatchCount / this.summary2.totalCount) * 100).toFixed(1);
+          this.summary2.noDataPercent = ((this.summary2.noDataCount / this.summary2.totalCount) * 100).toFixed(1);
+        }
+        console.log('Summary2 Updated:', this.summary2);
+      }
+
+      // 탭1: 생산 <-> 입고 체크 데이터 조회
+      let param1 = {
+        menuId: 'c0007008',
+        queryId: 'selectProdToStock',
+        queryParams: params,
+        target: this.dataGridRows,
+      };
+      await this.$axios.api.search(param1);
+
+      // 탭2: 입고 <-> 판매 체크 데이터 조회
+      let param2 = {
+        menuId: 'c0007008',
+        queryId: 'selectStockToSale',
+        queryParams: params,
+        target: this.dataGrid2Rows,
+      };
+      await this.$axios.api.search(param2);
+      } catch (error) {
+        console.error('데이터 조회 중 오류:', error);
+      }
+    },
+
+    searchClick() {
+      this.getDataList();
+    },
+
+    async excelBtnClick() {
+      const grid = this.activeTab === 0 ? this.gridView : this.gridView2;
+      const tabName = this.activeTab === 0 ? '생산입고체크' : '입고판매체크';
+      const now = new Date();
+      const yyyymmdd = this.$utils.getTodayDate();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const fileName = `생산입고판매_${tabName}_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+
+      const options = {
+        type: 'excel',
+        target: 'local',
+        fileName: fileName,
+        indicator: 'hidden',
+        header: 'default',
+        footer: 'default',
+        showProgress: true,
+        progressMessage: '엑셀 Export중입니다.',
+        done: function () {
+          console.log('엑셀 다운로드 완료');
+        },
+      };
+
+      grid.exportGrid(options);
+    },
+  },
+};
+</script>
+
+<style scoped>
+.custom-tabs {
+  border-bottom: 1px solid #dee2e6;
+  margin-bottom: 0;
+}
+</style>
