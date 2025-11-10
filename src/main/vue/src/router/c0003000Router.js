@@ -89,6 +89,16 @@ const c0003000Router = [
       requiresAuth: true,
     }
   },
+  {
+    path: '/c0003010',
+    name: '제품수불 체크',
+    component: () => import('../views/web/c0003000/C0003010.vue'),
+    meta: {
+      upperSysResourceId:'C0003000',
+      sysResourceId:"C0003010",
+      requiresAuth: true,
+    }
+  },
  /* {
     path: '/m0003008',
     name: 'Rework',
