@@ -1,0 +1,107 @@
+
+with MODEL_OUT단가 AS (
+			SELECT
+				a.YYYYMM,
+				a.SITE,
+				a.구분,
+				a.model,
+				b.inch,
+				a.expen_sel,
+				max(a.expen_sel명) expen_sel명,
+				sum(a.out_단가) out_단가,
+				sum(a.unit_cost) unit_cost,
+				avg(sum(a.out_단가)) over (partition by inch) avg_cost,
+				row_number() over (partition by inch,a.model,a.expen_sel order by a.model,a.expen_sel) as rn --select *
+			FROM
+				DOI_FAB_COST a 
+			left join  DOI_MODEL_MAST b on (a.model=b.model and a.yyyymm=b.yyyymm and a.site=b.site)
+			WHERE 1=1
+			  AND a.YYYYMM='202507'
+			  AND a.SITE='HQ'
+			GROUP BY
+				a.YYYYMM,
+				a.SITE,
+				a.구분,
+				b.inch,
+				a.model,
+				a.expen_sel
+			HAVING sum(a.out_단가) > 0
+		)
+		--INSERT INTO DOI_STOCK_BOH	
+		select
+			a.YYYYMM,
+			a.SITE,
+			a.sel_code,
+			case when a.stock='개발 창고' then '개발' when a.stock='완제품 창고' then '양산' else '기타' end as 구분,
+			a.model,
+			a.model_type,
+			b.expen_sel,
+			b.expen_sel명,
+			a.stock,
+			round(a.boh * b.out_단가,0) as boh_amt,
+			'model_1' 조건,
+			b.inch,
+			a.boh ,
+			b.out_단가 --select * 
+		from
+			DOI_STOCK a
+		inner join MODEL_OUT단가 b on
+			(a.model = b.model 
+			 and b.구분=case when a.stock='개발 창고' then '개발' when a.stock='완제품 창고' then '양산' else '기타' end  )
+		where 1=1
+		  AND a.YYYYMM='202507'
+		  AND a.SITE='HQ'
+		UNION 
+		select
+			a.YYYYMM,
+			a.SITE,
+			a.sel_code,
+			case when a.stock='개발 창고' then '개발' when a.stock='완제품 창고' then '양산' else '기타' end as 구분,
+			a.model,
+			a.model_type,
+			b.expen_sel,
+			b.expen_sel명,
+			a.stock,
+			round(a.boh * b.out_단가,0) as boh_amt,
+			'model_2' 구분,
+			b.inch,
+			a.boh ,
+			b.out_단가 --select * 
+		from
+			DOI_STOCK a
+		inner join MODEL_OUT단가 b on	(a.model = b.model)
+		where 1=1
+		  AND a.YYYYMM='202507' 
+		  AND a.SITE='HQ'
+		  AND not exists (select 1 from MODEL_OUT단가 c
+		  					where 1=1
+		  					  and b.model = c.model 
+			 				  and c.구분=case when a.stock='개발 창고' then '개발' when a.stock='완제품 창고' then '양산' else '기타' end)
+		UNION
+		select
+			a.YYYYMM,
+			a.SITE,
+			a.sel_code,
+			case when a.stock='개발 창고' then '개발' when a.stock='완제품 창고' then '양산' else '기타' end as 구분,
+			a.model,
+			a.model_type,
+			c.expen_sel,
+			c.expen_sel명,
+			a.stock,
+			round(a.boh * coalesce(c.avg_cost,0),0) as boh_amt,
+			'inch',
+			b.inch,
+			a.boh ,
+			coalesce(c.avg_cost,0)
+		from
+			DOI_STOCK a
+		left join 	DOI_MODEL_MAST b on (a.model=b.model)
+		left join MODEL_OUT단가 c on
+			(c.inch = case 	when b.inch in (7.99,8.01) then 8
+							when b.inch=7.61 then 7.72 
+							when b.inch in(6.86,7.55) then 7.56 else b.inch end and c.rn=1)
+		where 1=1
+		  AND a.YYYYMM='202507'
+		  AND a.SITE='HQ'
+		  AND not exists (select 1 from MODEL_OUT단가 c where a.model=c.model)
+		order by a.model;

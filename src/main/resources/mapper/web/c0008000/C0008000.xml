@@ -677,13 +677,14 @@
 	from
 		doi_expen_matl
         where 1=1
+        and   expen_sel != 'NONE'
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
-        order by YYYYMM,SEL_CODE,SITE,MODEL;
+        order by YYYYMM,SEL_CODE,SITE,MODEL,EXPEN_SEL;
     </select>
 
     <select id="C0008013_Sch1" resultType="CamelMap">
@@ -696,7 +697,7 @@
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
-        order by SUB_NAME, ITEM_NAME, 구분, model, EXPEN_SEL, EXPEN_SEL명 ;
+        order by  model, EXPEN_SEL, EXPEN_SEL명 ,구분 ;  --SUB_NAME, ITEM_NAME,
     </select>
 
 </mapper>
