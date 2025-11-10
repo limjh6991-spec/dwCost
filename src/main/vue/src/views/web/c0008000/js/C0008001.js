@@ -19,9 +19,9 @@ const grid = {
   },
 
   fields: [
-    { fieldName: 'yyyymm', dataType: ValueType.TEXT },
-    { fieldName: 'selCode', dataType: ValueType.TEXT },
-    { fieldName: 'site', dataType: ValueType.TEXT },
+    // { fieldName: 'yyyymm', dataType: ValueType.TEXT },
+    // { fieldName: 'selCode', dataType: ValueType.TEXT },
+    // { fieldName: 'site', dataType: ValueType.TEXT },
     { fieldName: '구분', dataType: ValueType.TEXT },
     { fieldName: 'model', dataType: ValueType.TEXT },
     { fieldName: 'modelNType', dataType: ValueType.TEXT },
@@ -38,11 +38,11 @@ const grid = {
   ],
 
   columns: [
-    { name: 'yyyymm', fieldName: 'yyyymm', width: '80', header: { text: 'YYYYMM' }, autoFilter: true, styleName: 'tl' },
-    { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'tl' },
-    { name: 'site', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true, styleName: 'tl' },
+    // { name: 'yyyymm', fieldName: 'yyyymm', width: '80', header: { text: 'YYYYMM' }, autoFilter: true, styleName: 'tl' },
+    // { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'tl' },
+    // { name: 'site', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true, styleName: 'tl' },
     { name: '구분', fieldName: '구분', width: '80', header: { text: '구분' }, autoFilter: true, styleName: 'tl' },
-    { name: 'model', fieldName: 'model', width: '80', header: { text: 'MODEL' }, autoFilter: true, styleName: 'tl' },
+    { name: 'model', fieldName: 'model', width: '80', header: { text: '모델명' }, autoFilter: true, styleName: 'tl' },
     { name: 'modelNType', fieldName: 'modelNType', width: '80', header: { text: '작업구분' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
     { name: 'bohMonth', fieldName: 'bohMonth', width: '80', header: { text: '기초재공' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'inMonth', fieldName: 'inMonth', width: '80', header: { text: '투입수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },

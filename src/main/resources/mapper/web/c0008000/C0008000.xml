@@ -242,6 +242,7 @@
             sum([in]) as 투입금액
             from doi_fab_cost
             where 1=1
+            and expen_sel not in ('MDAX','MIAX','NONE')
             <if test="yyyymm != null and yyyymm != ''">
                 and YYYYMM = #{yyyymm}
             </if>

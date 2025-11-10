@@ -33,7 +33,7 @@ const grid = {
   ],
 
   columns: [
-    { name: 'model', fieldName: 'model', width: '80', header: { text: 'model' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
+    { name: 'model', fieldName: 'model', width: '80', header: { text: '모델명' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
     { name: 'inQty', fieldName: 'inQty', width: '80', header: { text: '투입수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'chgQty', fieldName: 'chgQty', width: '80', header: { text: '생산환산량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'totAmt', fieldName: 'totAmt', width: '80', header: { text: '합계' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
