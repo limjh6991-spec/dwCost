@@ -1,6 +1,5 @@
 /*
- * 복사본: C0001002.js
- * 구조 참고: TAB012000.js
+ * 기준정보 > 부서코드 관리 (TAB010002)
  */
 const { ValueType } = require('realgrid');
 
@@ -11,13 +10,12 @@ const grid = {
     display: { columnMovable: false, editItemMerging: true, fitStyle: 'fill', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
     edit: { editable: true, columnEditableFirst: true, commitByCell: true, commitWhenLeave: true },
     footer: { visible: false },
-    header: { height: 25 },
+    header: { height: 40, showTooltip: true, tooltipEllipsisOnly: true },
     hideDeletedRows: true,
     paste: { enabled: true, checkReadOnly: true },
     rowIndicator: { visible: true },
     sorting: { enabled: false },
     stateBar: { visible: true },
-    fixed: { colBarWidth: 1, colCount: 1 },
   },
   fields: [
     { fieldName: 'yyyymm', dataType: ValueType.TEXT },
@@ -30,7 +28,7 @@ const grid = {
   ],
   columns: [
     {
-      name: 'YYYYMM',
+      name: 'yyyymm',
       fieldName: 'yyyymm',
       width: '80',
       header: { text: 'YYYYMM' },
@@ -50,7 +48,7 @@ const grid = {
       },
     },
     {
-      name: 'SEL_CODE',
+      name: 'selCode',
       fieldName: 'selCode',
       width: '80',
       header: { text: 'SEL_CODE' },
@@ -69,9 +67,9 @@ const grid = {
         return ret;
       },
     },
-    { name: 'SITE_ORG', fieldName: 'siteOrg', width: '0', header: { text: '사이트' }, autoFilter: true, visible: false, editable: false, styleName: 'tl' },
+    { name: 'siteOrg', fieldName: 'siteOrg', width: '0', header: { text: '사이트' }, autoFilter: true, visible: false, editable: false, styleName: 'tl' },
     {
-      name: 'SITE',
+      name: 'site',
       fieldName: 'site',
       width: '80',
       header: { text: '사이트' },
@@ -93,7 +91,7 @@ const grid = {
       },
     },
     {
-      name: 'DEPT',
+      name: 'dept',
       fieldName: 'dept',
       width: '150',
       header: { text: '코스트센터' },
@@ -114,8 +112,8 @@ const grid = {
         return ret;
       },
     },
-    { name: 'DEPT_NAME', fieldName: 'deptName', width: '120', header: { text: '코스트센터명' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'EXPEN_AREA', fieldName: 'expenArea', width: '135', header: { text: '비용구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: 'deptName', fieldName: 'deptName', width: '120', header: { text: '코스트센터명' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: 'expenArea', fieldName: 'expenArea', width: '135', header: { text: '비용구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },
   ],
 };
 

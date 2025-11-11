@@ -3,23 +3,13 @@
   <div>
     <div class="search_box">
       <b-row class="search_area">
-        <!--b-col cols="2">
-          <div class="form-floating">
-            <select class="form-select label-60" id="floatingSelect" v-model="params.yyyy">
-              <option v-for="yyyy in yearList" :key="yyyy.value" :value="yyyy">
-                {{ yyyy.text }}
-              </option>
-            </select>
-            <label for="floatingSelect" class="select">년도</label>
-          </div>
-        </b-col-->
         <b-col cols="1" class="period">
           <div class="form-floating me-1">
             <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
             <label for="floatingSelect" class="select">기준월</label>
           </div>
         </b-col>
-        <b-col cols="2">
+        <b-col cols="2" class="ms-3">
           <div class="form-floating">
             <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" :disabled="true" />
             <label for="floating">사업장</label>
@@ -27,19 +17,24 @@
         </b-col>
       </b-row>
       <div class="btn_area">
-        <b-button @click="searchClick" onclick="console.log('TAB010005 onclick 이벤트 발생')"><span class="ico_search"></span>조회</b-button>
+        <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
       </div>
     </div>
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <b-button class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
+          <b-button class="sub" @click="addBtnClick">추가</b-button>
+          <b-button @click="delBtnClick">삭제</b-button>
+          <b-button class="main" @click="saveBtnClick">저장</b-button>
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="modelGrid" :uid="'modelGrid'" :step="'1'" :rows="modelGridRows" style="height: 100%" />
+        <RealGrid ref="modelGrid" :uid="'modelGrid'" :step="'1'" :rows="modelGridRows" style="height: 100%" :fitLayoutWidthEnable="false" />
       </div>
     </div>
+    <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
   </div>
 </template>
 <script>
@@ -47,20 +42,21 @@ import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0001000/js/TAB010005.js';
+import axios from 'axios';
 export default {
   components: {},
   props: {
     yearList: {
       type: Array,
-      default: () => []
-    }
+      default: () => [],
+    },
   },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
     return { 
 			srchInfo,
-      userAuthInfo 
+      userAuthInfo,
     };
   },
   data() {
@@ -83,25 +79,15 @@ export default {
     };
   },
   computed: {
-    modelGridView() {
+    gridView() {
       return this.$refs.modelGrid && this.$refs.modelGrid.getGridView();
     },
-    modelDataProvider() {
+    gridDataProvider() {
       return this.$refs.modelGrid && this.$refs.modelGrid.getGridDataProvider();
-    }
-  },
-  created() {
-    this.initializeGrid();
-  },
-  mounted() {
-    // if (this.yearList && this.yearList.length > 0) {
-    //   this.params.yyyy = this.yearList[0];
-    // }
-    this.params.yyyymm = this.srchInfo.yyyymm;
-    this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
-    this.$nextTick(() => {
-      this.getModelList();
-    });
+    },
+    prodCtg() {
+      return this.userAuthInfo.curProdCtg;
+    },
   },
   watch: {
     'params.yyyymm': function(newVal) {
@@ -113,22 +99,29 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.yyyymm = newVal;
-          console.log('[C0003007] yyyymm 변경:', this.params.yyyymm);
         }
       }
      },
-    userAuthInfo: {
+     prodCtg: {
       handler(newVal) {
         if (newVal) {
-          if (newVal.curProdCtg) {
-            this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
+            this.params.site = newVal === 'VN' ? 'VINA' : '본사';
             if (this.$refs.modelGrid != null) {
-              this.getModelList();
+              this.searchClick();
             }
           }
-        }
+        },
       },
-    }
+    },
+  created() {
+    this.initializeGrid();
+  },
+  mounted() {
+    this.params.yyyymm = this.srchInfo.yyyymm;
+    this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
+    this.$nextTick(() => {
+      this.searchClick();
+    });
   },
   methods: {
     initializeGrid() {
@@ -137,73 +130,149 @@ export default {
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
-      async getModelList() {
-      if (!this.modelGridView) return;
-      this.modelGridView.commit();
+      async getDataList() {
+      if (!this.gridView) return;
+
+      this.gridView.commit();
       
-      try {
-        const param = {
-          //yyyy: this.params.yyyy?.value || this.params.yyyy,
+      let params = {
           yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
-          site: this.siteMap[this.params.site] || this.params.site
+          site: this.siteMap[this.params.site],
         };
 
-        // 파라미터 유효성 검사
-        if (!param.yyyymm) {
-          this.$toast && this.$toast('error', '기준월를 선택해주세요.');
-          return;
-        }
+        let param = {
+          menuId: 'c0001004',
+          queryId: 'selectTab5GridData',
+          queryParams: params,
+          target: this.modelGridRows,
+        };
+        let resp = await this.$axios.api.search(param);
+      },
+    searchClick() {
+      if (!this.params.yyyymm) {
+        this.$toast && this.$toast('error', '년월 선택해 주세요.');
+        return;
+      }
+      this.getDataList();
+    }, 
+    addBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
 
-        console.log('getModelList 요청 파라미터:', param);
-        
-        const response = await this.$axios.post('/api/c0001000/c0001004/tab5/select', param);
-        
-        if (response.data) {
-          await this.modelDataProvider.setRows(response.data);
-          console.log('getModelList 응답:', response.data);
-        } else {
-          console.warn('응답에 데이터가 없습니다');
-          await this.modelDataProvider.setRows([]);
-        }
-      } catch (error) {
-        console.error('getModelList 오류:', error);
-        
-        let errorMessage;
-        if (error.response) {
-          // 서버 응답이 있는 경우
-          switch (error.response.status) {
-            case 404:
-              errorMessage = 'API를 찾을 수 없습니다. 백엔드 설정을 확인해주세요.';
-              break;
-            case 401:
-              errorMessage = '인증이 필요합니다.';
-              break;
-            case 403:
-              errorMessage = '접근 권한이 없습니다.';
-              break;
-            default:
-              errorMessage = error.response.data?.message || '면적기준정보 조회에 실패했습니다.';
+      this.gridView.commit();
+      this.gridDataProvider.addRow({ yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, site: this.params.site });
+      let itemIndex = this.gridView.getItemCount() - 1;
+      this.gridView.setCurrent({ itemIndex: itemIndex });
+    },
+    delBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
+
+      this.gridView.commit();
+      const checkedRows = this.gridView.getCheckedRows();
+      if (checkedRows.length === 0) {
+        this.$toast('info', '삭제할 행을 선택하세요');
+      } else {
+        let delItems = [];
+        checkedRows.forEach((itemIndex) => {
+          if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
+            delItems.push(itemIndex);
+          } else {
+            this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
           }
-        } else if (error.request) {
-          // 요청은 보냈지만 응답이 없는 경우
-          errorMessage = '서버 응답이 없습니다. 네트워크 연결을 확인해주세요.';
-        } else {
-          // 요청 설정 중 오류 발생
-          errorMessage = '요청 설정 중 오류가 발생했습니다.';
-        }
-
-        this.$toast && this.$toast('error', errorMessage);
-        await this.modelDataProvider.setRows([]);
+        });
+        this.gridDataProvider.removeRows(delItems);
       }
     },
-    searchClick() {
-      console.log('[searchClick] TAB010005 조회 버튼 클릭됨');
-      console.log('[searchClick] params:', this.params);
-      console.log('[searchClick] modelGridView:', this.modelGridView);
-      console.log('[searchClick] modelDataProvider:', this.modelDataProvider);
-      this.getModelList();
+    async saveBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
+      this.gridView.commit();
+
+      let saveData = this.$refs.modelGrid.getSaveData();
+      if (saveData.count <= 0) {
+        this.$toast('info', '변경된 내용이 없습니다.');
+        return;
+      }
+      this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
+
+      this.isValidteCellModelGrid = true;
+      let rslt = this.gridView.validateCells(null, false);
+      this.isValidteCellModelGrid = false;
+
+      if (rslt === null) {
+        this.$confirm('확인', '수정하신 내용을 저장 하시겠습니까?', async (confirm) => {
+          if (confirm) {
+            let param = {
+              menuId: 'c0001004',
+              delete: [{ queryId: 'deleteTab5Data', data: saveData.delete }],
+              insert: [{ queryId: 'insertTab5Data', data: saveData.insert }],
+              update: [{ queryId: 'updateTab5Data', data: saveData.update }],
+            };
+
+            try {
+              let resp = await this.$axios.api.saveData(param);
+              this.$toast('info', '저장완료');
+              this.searchClick();
+            } catch {
+              this.$toast('info', '에러발생. 다시 작업해주세요.');
+            }
+          }
+        });
+      }
     },
-    excelBtnClick() {},
+    onValidateColumnModelGrid(grid, column, inserting, value, itemIndex, dataRow) {
+      let error = {};
+      if (!this.isValidteCellModelGrid) return error;
+
+      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', 'model'], column.fieldName)) {
+        if (_.isNil(value)) {
+          error.level = 'error';
+          error.message = '필수 입력입니다.';
+        }
+      }
+
+      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'selCode', 'site', 'model'], column.fieldName)) {
+        error.level = 'warning';
+        error.message = '중복 입력입니다.';
+      }
+
+      return error;
+    },
+    async excelBtnClick() {
+      const grid = this.gridView;
+
+      const now = new Date();
+      const yyyymmdd = this.$utils.getTodayDate();
+
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const fileName = `면적기준정보${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+
+      const options = {
+        type: 'excel',
+        target: 'local',
+        fileName: fileName,
+        progressMessage: '엑셀 Export중입니다.',
+        done: function () {
+          alert('엑셀 내보내기가 완료되었습니다!');
+        },
+      };
+
+      grid.exportGrid(options);
+    },
+    uploadClick() {
+      let excelGrid = _.cloneDeep(gridField);
+      excelGrid.options.display.fitStyle = 'none'; // 엑셀다운로드시 none 아니면 width 0이 됨.
+      this.$refs.uploadPopup1.openDialog({
+        dialogTitle: '업로드 팝업',
+        uploadApi: '/api/c0001000/c0001004/tab5Upload',
+        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10', 'field11', 'field12', 'field13', 'field14', 'field15'],
+        excelGrid,
+        fileName: '면적기준정보_template',
+      });
+    },
+    closePopup() {
+      this.searchClick();
+    },
   },
 };
 </script>

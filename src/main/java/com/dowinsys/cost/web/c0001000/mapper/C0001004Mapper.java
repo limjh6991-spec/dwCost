@@ -18,20 +18,14 @@ public interface C0001004Mapper {
     int tab1UploadExcel(List<Map<String, String>> list);
 
     // Tab2
-    List<CamelMap<String, Object>> selectTab2GridData(Map<String, Object> params);
-    int insertTab2Data(Map<String, Object> body);
-    int updateTab2Data(Map<String, Object> body);
-    int deleteTab2Data(Map<String, Object> body);
+    List<Map<String, String>> checkTab2DuplicateOrgList(List<Map<String, String>> list);
+    int tab2UploadExcel(List<Map<String, String>> list);
 
     // Tab3
-    List<CamelMap<String, Object>> selectTab3GridData(Map<String, Object> params);
-    int insertTab3Data(Map<String, Object> body);
-    int updateTab3Data(Map<String, Object> body);
-    int deleteTab3Data(Map<String, Object> body);
+    List<Map<String, String>> checkTab3DuplicateOrgList(List<Map<String, String>> list);
+    int tab3UploadExcel(List<Map<String, String>> list);
 
     // Tab5
-    List<CamelMap<String, Object>> selectTab5GridData(Map<String, Object> params);
-    int insertTab5Data(Map<String, Object> body);
-    int updateTab5Data(Map<String, Object> body);
-    int deleteTab5Data(Map<String, Object> body);
+    List<Map<String, String>> checkTab5DuplicateOrgList(List<Map<String, String>> list);
+    int tab5UploadExcel(List<Map<String, String>> list);
 }
