@@ -77,23 +77,11 @@ const routes = [
   ...m0008000Router,
   ...m0009000Router,*/
 ]
-console.log('🔍 routes 배열에서 c0001000Router 내용:');
-const foundRoutes = routes.filter(route => 
-  route.path && route.path.includes('c0001000') ||
-  route.meta && route.meta.upperSysResourceId === 'C0001000'
-);
-console.log('   찾은 c0001000 관련 라우트:', foundRoutes);
+console.log('🔍 routes 배열에서 c0003008 확인:');
+const foundC0003008 = routes.find(route => route.path === '/c0003008');
+console.log('   C0003008 라우트:', foundC0003008);
+
 const router = createRouter({
-  history: createWebHistory(),
-  routes
-})
-console.log('🔍 routes 배열에서 m0006000Router 내용:');
-const foundRoutes1 = routes.filter(route => 
-  route.path && route.path.includes('m0006000') ||
-  route.meta && route.meta.upperSysResourceId === 'M0006000'
-);
-console.log('   찾은 m0006000 관련 라우트:', foundRoutes1);
-const router1 = createRouter({
   history: createWebHistory(),
   routes
 })

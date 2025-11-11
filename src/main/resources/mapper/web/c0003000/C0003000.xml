@@ -51,4 +51,153 @@
 		#{yyyymm},
 		#{site}
     </select>
+
+    <!-- C0003008: 매출원가 (모델별/거래선별 매출금액 비율 배부) -->
+    <select id="C0003008_Sch1" resultType="CamelMap">
+        WITH stco AS (
+            SELECT
+                YYYYMM,
+                CASE WHEN SITE='HQ' THEN '본사' WHEN SITE='VN' THEN 'VINA' ELSE SITE END AS SITE,
+                MODEL,
+                구분,
+                EXPEN_SEL,
+                EXPEN_SEL명,
+                AVG([OUT]) AS out_qty,
+                SUM(OUT_AMT) AS out_amt
+            FROM DOI_STOCK_COST a
+            WHERE 1 = 1
+                AND a.SEL_CODE = 'ACTUAL'
+        <if test="yyyymm != null and yyyymm != ''">
+                AND a.YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+                AND a.SITE = #{site}
+        </if>
+        <if test="gubun != null and gubun != '' and gubun != '전체'">
+                AND a.구분 = #{gubun}
+        </if>
+            GROUP BY YYYYMM, SITE, MODEL, 구분, EXPEN_SEL, EXPEN_SEL명
+            HAVING SUM(OUT_AMT) > 0
+        ),
+        sale AS (
+            SELECT
+                SUBSTRING(거래명세서일, 1, 6) AS YYYYMM,
+                CASE WHEN SITE='HQ' THEN '본사' WHEN SITE='VN' THEN 'VINA' ELSE SITE END AS SITE,
+                거래처,
+                품명,
+                CASE WHEN RIGHT(품번,1)='D' THEN '개발' ELSE '양산' END AS 구분,
+                SUM(수량) AS sale_qty,
+                SUM(원화판매금액계) AS sale_amt
+            FROM DOI_SALE_RESC a
+            WHERE 1 = 1
+        <if test="yyyymm != null and yyyymm != ''">
+                AND SUBSTRING(거래명세서일, 1, 6) = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+                AND a.SITE = #{site}
+        </if>
+        <if test="gubun != null and gubun != '' and gubun != '전체'">
+                AND CASE WHEN RIGHT(품번,1)='D' THEN '개발' ELSE '양산' END = #{gubun}
+        </if>
+            GROUP BY SUBSTRING(거래명세서일, 1, 6), SITE, 거래처, 품명, 
+                     CASE WHEN RIGHT(품번,1)='D' THEN '개발' ELSE '양산' END
+        ),
+        sale_total AS (
+            SELECT
+                YYYYMM,
+                SITE,
+                품명 AS MODEL,
+                구분,
+                SUM(sale_amt) AS total_sale_amt
+            FROM sale
+            GROUP BY YYYYMM, SITE, 품명, 구분
+        )
+        SELECT
+            a.YYYYMM,
+            a.SITE,
+            a.거래처,
+            a.품명,
+            a.구분,
+            b.MODEL,
+            b.EXPEN_SEL,
+            b.EXPEN_SEL명,
+            a.sale_qty AS saleQty,
+            a.sale_amt AS saleAmt,
+            b.out_qty AS outQty,
+            b.out_amt AS outAmt,
+            CASE 
+                WHEN ISNULL(st.total_sale_amt, 0) = 0 THEN 0
+                ELSE ROUND((a.sale_amt * 100.0 / st.total_sale_amt), 2)
+            END AS 배부율,
+            CASE 
+                WHEN ISNULL(st.total_sale_amt, 0) = 0 THEN 0
+                ELSE ROUND((b.out_amt * a.sale_amt / st.total_sale_amt), 0)
+            END AS 매출원가
+        FROM sale a
+        LEFT JOIN stco b ON (a.품명 = b.MODEL AND a.구분 = b.구분 AND a.YYYYMM = b.YYYYMM AND a.SITE = b.SITE)
+        LEFT JOIN sale_total st ON (a.품명 = st.MODEL AND a.구분 = st.구분 AND a.YYYYMM = st.YYYYMM AND a.SITE = st.SITE)
+        WHERE b.out_amt IS NOT NULL
+        ORDER BY a.YYYYMM, a.SITE, a.거래처, a.품명, b.EXPEN_SEL
+    </select>
+
+    <!-- C0003008: 매출원가 생성 -->
+    <select id="C0003008_Generate" resultType="CamelMap">
+        EXEC UP_DOI_SALE_COST 
+            #{yyyymm},
+            #{site}
+    </select>
+
+    <!-- C0003008: 매출원가 조회 (SLCO 테이블에서) -->
+    <select id="C0003008_Sch2" resultType="CamelMap">
+        SELECT
+            a.YYYYMM,
+            CASE WHEN a.SITE='HQ' THEN '본사' WHEN a.SITE='VN' THEN 'VINA' ELSE a.SITE END AS SITE,
+            a.거래처,
+            a.MODEL AS 품명,
+            a.구분,
+            a.expen_sel AS EXPEN_SEL,
+            a.expen_sel명 AS EXPEN_SEL명,
+            a.OUT_qty AS outQty,
+            a.OUT_AMT AS outAmt,
+            b.sale_qty AS saleQty,
+            b.sale_amt AS saleAmt,
+            CASE 
+                WHEN ISNULL(b.sale_amt, 0) = 0 THEN 0
+                ELSE ROUND((a.OUT_AMT * 100.0 / b.sale_amt), 2)
+            END AS 매출원가율,
+            a.OUT_AMT AS 매출원가,
+            (b.sale_amt - a.OUT_AMT) AS 이익금액
+        FROM DOI_SLCO a
+        LEFT JOIN (
+            SELECT
+                거래처,
+                품명,
+                CASE WHEN RIGHT(품번,1)='D' THEN '개발' ELSE '양산' END AS 구분,
+                SUM(수량) AS sale_qty,
+                SUM(원화판매금액계) AS sale_amt
+            FROM DOI_SALE_RESC
+            WHERE 1 = 1
+        <if test="yyyymm != null and yyyymm != ''">
+                AND SUBSTRING(거래명세서일, 1, 6) = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+                AND SITE = #{site}
+        </if>
+            GROUP BY 거래처, 품명, CASE WHEN RIGHT(품번,1)='D' THEN '개발' ELSE '양산' END
+        ) b ON a.거래처 = b.거래처 
+           AND a.MODEL = b.품명 
+           AND a.구분 = b.구분
+        WHERE 1 = 1
+          AND a.SEL_CODE = 'ACTUAL'
+        <if test="yyyymm != null and yyyymm != ''">
+          AND a.YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+          AND a.SITE = #{site}
+        </if>
+        <if test="gubun != null and gubun != '' and gubun != '전체'">
+          AND a.구분 = #{gubun}
+        </if>
+        ORDER BY a.YYYYMM, a.SITE, a.거래처, a.MODEL, a.expen_sel
+    </select>
 </mapper>
