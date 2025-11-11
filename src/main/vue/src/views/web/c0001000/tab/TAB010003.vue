@@ -185,12 +185,13 @@ export default {
     async saveBtnClick() {
       if (!this.gridView || !this.gridDataProvider) return;
       this.gridView.commit();
-
+  
       let saveData = this.$refs.materialGrid.getSaveData();
       if (saveData.count <= 0) {
         this.$toast('info', '변경된 내용이 없습니다.');
         return;
       }
+
       this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
 
       this.isValidteCellMaterialGrid = true;
@@ -208,7 +209,7 @@ export default {
             };
 
             try {
-              let resp = await this.$axios.api.save(param);
+              let resp = await this.$axios.api.saveData(param);
               this.$toast('info', '저장완료');
               this.searchClick();              
             } catch {
@@ -222,13 +223,13 @@ export default {
       let error = {};
       if (this.isValidteCellMaterialGrid) return error;
 
-      if (this.$utils.containsValue(['yyyymm', 'site', '제품명', '제품번호'], column.fieldName)) {
+      if (this.$utils.containsValue(['yyyymm', 'site', '제품번호', '자재번호'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';
         }
       }
-      if (this.duplicateIndices.includes(iteminex) && this.$utils.containsValue(['yyyymm', 'site', '제품명', '제품번호'], column.fieldName)) {
+      if (this.duplicateIndices.includes(iteminex) && this.$utils.containsValue(['yyyymm', 'site', '제품번호', '자재번호'], column.fieldName)) {
         error.level = 'warning';
         error.message = '중복 입력입니다.';
       }
