@@ -34,3 +34,16 @@ build/
 .vscode/
 /logs/
 /bin/
+
+### 로그 파일 ###
+*.log
+spring-boot.log
+vue-serve.log
+src/vue-serve.log
+
+### 임시 문서 ###
+원가시스템/
+src/원가SQL/*.backup
+
+### Lock 파일 ###
+.~lock.*

@@ -596,6 +596,8 @@
         CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end SITE,
         구분,
         MODEL,
+        EXPEN_SEL,
+        EXPEN_SEL명,
         BOH AS BOH_QTY,
         BOH_AMT,
         INPUT AS IN_QTY,

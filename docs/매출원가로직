@@ -1,0 +1,72 @@
+창고의 수량은 stock
+
+여기에 대응하는 금액이 stco에 들어가고
+(boh,input,eoh,out 금액)
+
+stock 수량, stco stock수량에 대한 금액
+
+stock의 input은 prod의 goods
+stco의 input은 cost의 goods(out)
+
+
+판매에 대해서는
+판매정보의 sales 정보를 upload
+(수량,매출액)
+
+여기에 원가를 입혀야 되는데 이것은
+
+stock의 out수량과 sales의 수량이 일치하는지 점검하고
+일치하면
+stco의 out금액을 
+sales의 제품과 엮어서 stco의 금액을 배부하는데 매출수량비로 배부
+
+stock out 100개 모델이 8080
+stco의 out 금액이 1000원이면
+
+sales를 보니(100개/1220원)
+거래선 s1에 90개.../1100원
+거래선 s2에 10개.../120원
+
+매출원가가 없으니 이를 산정해야 됨
+
+stco의 금액이 1000원
+거래선 s1에 90개.../1100원/매출원가는 수량비로 배부 900원
+거래선 s2에 10개.../120원/매출원가는 수량비로 배부 100원
+
+
+slco는 테이블을 sales의 정보에서 컬럼 두개를 추가해서 expen_sel, amt
+amt는 매출원가배부된 금액
+slco에는 매출수량,매출금액은 제외
+900원 레코드가 발생되고
+100원 레코드가 발생...
+즉 매출테이블의 갯수와 동일
+8080 매출수량 100개,매출원가 1000원, 이익 220원
+
+====END
+with stco as (
+	select
+		MODEL,구분,
+		avg([out]) as out_qty,
+		sum(OUT_AMT) out_amt
+	from	DOI_STOCK_COST a
+	where	1 = 1
+		AND a.YYYYMM = '202507'
+		AND a.SITE = 'HQ'
+	group by	MODEL,구분
+	having	sum(OUT_AMT) > 0
+),sale as (
+	select
+		거래처,
+		품명,case when RIGHT(품번,1)='D' then '개발' else '양산' end as 구분,
+		sum(수량) as sale_qty,
+		sum(원화판매금액계) as sale_amt
+	from	DOI_SALE_RESC a
+	where	1 = 1
+		AND a.YYYYMM = '202507'
+		AND a.SITE = 'HQ'
+	group by 거래처,	품명, case when RIGHT(품번,1)='D' then '개발' else '양산' end
+)
+select	*
+from	sale a
+left join stco b on
+	(a.품명 = b.model and a.구분=b.구분);

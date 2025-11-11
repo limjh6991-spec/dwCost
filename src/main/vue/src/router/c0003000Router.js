@@ -90,6 +90,16 @@ const c0003000Router = [
     }
   },
   {
+    path: '/c0003008',
+    name: '매출원가',
+    component: () => import('../views/web/c0003000/C0003008.vue'),
+    meta: {
+      upperSysResourceId:'C0003000',
+      sysResourceId:"C0003008",
+      requiresAuth: true,
+    }
+  },
+  {
     path: '/c0003010',
     name: '제품수불 체크',
     component: () => import('../views/web/c0003000/C0003010.vue'),

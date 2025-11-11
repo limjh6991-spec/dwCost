@@ -151,6 +151,8 @@ export default {
             // "site",
             "구분",
             "model",
+            "expenSel",
+            "expenSel명",
             {
               name: "BOH",
               direction: "horizontal", 
@@ -199,6 +201,7 @@ export default {
         target: this.stockCostGridRows,
       };
       let resp = await this.$axios.api.search(param);
+      console.log('C0008011_Sch1',resp);
     },
     searchClick() {
       this.getDataList().then(() => {
