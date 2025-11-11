@@ -1,0 +1,27 @@
+with stco as (
+	select
+		MODEL,구분,
+		avg([out]) as out_qty,
+		sum(OUT_AMT) out_amt
+	from	DOI_STOCK_COST a
+	where	1 = 1
+		AND a.YYYYMM = '202507'
+		AND a.SITE = 'HQ'
+	group by	MODEL,구분
+	having	sum(OUT_AMT) > 0
+),sale as (
+	select
+		거래처,
+		품명,case when RIGHT(품번,1)='D' then '개발' else '양산' end as 구분,
+		sum(수량) as sale_qty,
+		sum(원화판매금액계) as sale_amt
+	from	DOI_SALE_RESC a
+	where	1 = 1
+		AND a.YYYYMM = '202507'
+		AND a.SITE = 'HQ'
+	group by 거래처,	품명, case when RIGHT(품번,1)='D' then '개발' else '양산' end
+)
+select	*
+from	sale a
+left join stco b on
+	(a.품명 = b.model and a.구분=b.구분);
