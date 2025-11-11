@@ -229,7 +229,7 @@ export default {
 				params['roleId'] = this.selectedRoleId;
 				params['prodCategory'] = this.selectdProdCtg;
 				const response = await this.$axios.post(URI_PREFIX +'/role/menutab/save',params);        
-				if(response.data === "OK"){
+				if(response && response.data === "OK"){
 					this.$toast('success','저장되었습니다.');
 				}
 			} catch (error){

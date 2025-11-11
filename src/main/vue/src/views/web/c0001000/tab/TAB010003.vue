@@ -1,17 +1,15 @@
-<!-- 기준정보 > 자재코드 -->
+<!-- 기준정보 > 자재코드 (TAB010003) -->
 <template>
   <div>
     <div class="search_box">
       <b-row class="search_area">
-        <b-col cols="2">
-          <div class="form-floating">
-            <div class="form-floating me-1">
+        <b-col cols="1" class="period">
+          <div class="form-floating me-1">
               <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
               <label for="floatingSelect" class="select">기준월</label>
             </div>
-          </div>
         </b-col>
-        <b-col cols="2">
+        <b-col cols="2" class="ms-3">
           <div class="form-floating">
             <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" :disabled="true" />
             <label for="floating">사업장</label>
@@ -19,7 +17,7 @@
         </b-col>
       </b-row>
       <div class="btn_area">
-        <b-button @click="searchClick" onclick="console.log('TAB010003 onclick 이벤트 발생')"><span class="ico_search"></span>조회</b-button>
+        <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
       </div>
     </div>
     <div class="grid_box search_onerow">
@@ -33,7 +31,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="materialGrid" :uid="'materialGrid'" :step="'1'" :rows="materialGridRows" style="height: 100%" />
+        <RealGrid ref="materialGrid" :uid="'materialGrid'" :step="'1'" :rows="materialGridRows" style="height: 100%" :fitLayoutWidthEnable="false" />
       </div>
     </div>
     <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
@@ -43,19 +41,22 @@
 import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import UploadPopup from '@components/UploadPopup.vue';
 import gridField from '@web/c0001000/js/TAB010003.js';
-
-
+import axios from 'axios';
 export default {
-  components: { UploadPopup },
+  components: {},
+  props: {
+    yearList: {
+      type: Array,
+      default: () => [],
+    },
+  },
   setup() {
     const srchInfo = useC0001001();
-    console.log(srchInfo.yyyymm);
     const userAuthInfo = useUserAuthInfo();
     return { 
 			srchInfo,
-      userAuthInfo 
+      userAuthInfo,
     };
   },
   data() {
@@ -73,44 +74,22 @@ export default {
         VN: 'VN',
       },
       isProcessing: false,
-      duplicateKey: ['yyyymm', 'site', 'matCode'],
+      duplicateKey: ['yyyymm', 'site', '제품명', '제품번호'],
       isValidteCellMaterialGrid: false,
     };
   },
   computed: {
-    materialGridView() {
-      const gridView = this.$refs.materialGrid && this.$refs.materialGrid.getGridView();
-      console.log('[computed] materialGridView:', gridView);
-      return gridView;
+    gridView() {
+      return this.$refs.materialGrid && this.$refs.materialGrid.getGridView();
     },
-    materialDataProvider() {
-      const dataProvider = this.$refs.materialGrid && this.$refs.materialGrid.getGridDataProvider();
-      console.log('[computed] materialDataProvider:', dataProvider);
-      return dataProvider;
-    }
+    gridDataProvider() {
+      return this.$refs.materialGrid && this.$refs.materialGrid.getGridDataProvider();
+    },
+    prodCtg() {
+      return this.userAuthInfo.curProdCtg;
+    },
   },
-  created() {
-    console.log('[created] TAB010003 컴포넌트 생성됨');
-    // 기준월을 현재 월로 초기화
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    this.params.yyyymm = this.srchInfo.yyyymm; //`${year}-${month}`;
-    console.log('[created] 기준월 초기화:', this.params.yyyymm);
-    
-    this.initializeGrid();
-  },
-  mounted() {
-    console.log('[mounted] TAB010003 마운트됨');
-    console.log('[mounted] userAuthInfo:', this.userAuthInfo);
-    this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
-    console.log('[mounted] site 설정:', this.params.site);
-    this.$nextTick(() => {
-      console.log('[mounted] $nextTick에서 getMaterialList 호출');
-      this.getMaterialList();
-    });
-  },
-  watch: {
+    watch: {
     'params.yyyymm': function(newVal) {
       if (newVal) {
         this.onDateChange();
@@ -120,256 +99,179 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.yyyymm = newVal;
-          console.log('[C0003007] yyyymm 변경:', this.params.yyyymm);
         }
-      }
+      },
      },
-    userAuthInfo: {
+     prodCtg: {
       handler(newVal) {
         if (newVal) {
-          if (newVal.curProdCtg) {
-            this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
-            if (this.$refs.acctGrid != null) {
-              this.getAcctList();
-            }
+          this.params.site = newVal === 'VN' ? 'VINA' : '본사';
+          if (this.$refs.materialGrid != null) {
+            this.searchClick();
           }
         }
       },
-    }
-  },
-  methods: {
-    // 한글 컬럼명을 영어 fieldName으로 매핑하는 함수
-    mapDataFields(data) {
-      if (!data || !Array.isArray(data)) return [];
-      
-      return data.map(item => ({
-        ...item,
-        // 한글 컬럼명을 영어 fieldName으로 매핑
-        prodName: item['제품명'],
-        prodCode: item['제품번호'],
-        prodInventoryClass: item['품목자산분류'],
-        prodLargeClass: item['품목대분류'],
-        prodMidClass: item['품목중분류'],
-        prodSmallClass: item['품목소분류'],
-        processSeq: item['공정차수'],
-        process: item['공정'],
-        processMatName: item['공정품명'],
-        processMatCode: item['공정품번호'],
-        matName: item['자재명'],
-        matCode: item['자재번호'],
-        matInventoryClass: item['자재자산분류'],
-        matLargeClass: item['자재대분류'],
-        matMidClass: item['자재중분류'],
-        matSmallClass: item['자재소분류'],
-        inputUnit: item['투입단위'],
-        reqQty: item['소요량'],
-        inLossRate: item['내부Loss율'],
-        outLossRate: item['외부Loss율'],
-        assyLoc: item['조립위치'],
-        etc: item['특이사항'],
-        firstRegDate: item['최초작성일'],
-        firstRegId: item['최초작성자'],
-        lastModDate: item['최종수정일'],
-        lastModId: item['최종수정자']
-      }));
     },
-    
+  },
+  created() {
+    this.initializeGrid();
+  },
+  mounted() {
+    this.params.yyyymm = this.srchInfo.yyyymm;  
+    this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
+    this.$nextTick(() => {
+      this.searchClick();
+    });
+  },
+  methods: {    
     initializeGrid() {
       this.materialGrid = _.cloneDeep(gridField);
     },
-    
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
-    
-    async getMaterialList() {
-      if (!this.materialGridView) return;
-      this.materialGridView.commit();
+    async getDataList() {
+      if (!this.gridView) return;
+
+      this.gridView.commit();
       
-      try {
-        // yyyymm 값 처리 (YYYY-MM 형태를 YYYYMM으로 변환)
-        let yyyymm = this.params.yyyymm;
-        if (yyyymm && yyyymm.includes('-')) {
-          yyyymm = yyyymm.replace('-', '');
-        }
-        
-        const param = {
-          yyyymm: yyyymm,
-          site: this.siteMap[this.params.site] || this.params.site
+        let params = { 
+          yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+          site: this.siteMap[this.params.site],
         };
 
-        // 파라미터 유효성 검사
-        if (!param.yyyymm) {
-          this.$toast('error', '기준월을 선택해주세요.');
-          return;
-        }
-
-        console.log('[getMaterialList] 요청 파라미터:', param);
-        
-        const response = await this.$axios.post('/api/c0001000/c0001004/tab3/select', param);
-        
-        if (response.data) {
-          // 데이터 매핑 적용
-          const mappedData = this.mapDataFields(response.data);
-          await this.materialDataProvider.setRows(mappedData);
-          console.log('[getMaterialList] 응답:', response.data);
-          console.log('[getMaterialList] 매핑된 데이터:', mappedData);
-        } else {
-          console.warn('[getMaterialList] 응답에 데이터가 없습니다');
-          await this.materialDataProvider.setRows([]);
-          this.$toast('info', '조회된 데이터가 없습니다.');
-        }
-      } catch (error) {
-        console.error('[getMaterialList] 오류:', error);
-        let errorMessage = 'BOM 조회에 실패했습니다.';
-        
-        if (error.response?.status) {
-          switch (error.response.status) {
-            case 404: errorMessage = 'API를 찾을 수 없습니다.'; break;
-            case 401: errorMessage = '인증이 필요합니다.'; break;
-            case 403: errorMessage = '접근 권한이 없습니다.'; break;
-            default: errorMessage = error.response.data?.message || errorMessage;
-          }
-        } else if (error.request) {
-          errorMessage = '서버 응답이 없습니다. 네트워크 연결을 확인해주세요.';
-        }
-        
-        this.$toast('error', errorMessage);
-        await this.materialDataProvider.setRows([]);
-      }
-    },
-    
+        let param = {
+          menuId: 'c0001004',
+          queryId: 'selectTab3GridData',
+          queryParams: params,
+          target: this.materialGridRows,
+        };
+        let resp = await this.$axios.api.search(param);
+      },
     searchClick() {
-      console.log('[searchClick] 조회 버튼 클릭됨');
-      console.log('[searchClick] params:', this.params);
-      console.log('[searchClick] materialGridView:', this.materialGridView);
-      console.log('[searchClick] materialDataProvider:', this.materialDataProvider);
-      this.getMaterialList();
-    },
-    
-    addBtnClick() {
-      if (!this.materialGridView || !this.materialDataProvider) return;
-      
-      this.materialGridView.commit();
-      
-      // yyyymm 값 처리 (YYYY-MM 형태를 YYYYMM으로 변환)
-      let yyyymm = this.params.yyyymm;
-      if (yyyymm && yyyymm.includes('-')) {
-        yyyymm = yyyymm.replace('-', '');
-      }
-      
-      const newRow = {
-        yyyymm: yyyymm,
-        site: this.siteMap[this.params.site] || this.params.site
-      };
-      
-      this.materialDataProvider.addRow(newRow);
-      
-      const lastIndex = this.materialGridView.getItemCount() - 1;
-      this.materialGridView.setCurrent({ 
-        itemIndex: lastIndex,
-        fieldName: 'matCode' 
-      });
-    },
-    
-    delBtnClick() {
-      if (!this.materialGridView || !this.materialDataProvider) return;
-      
-      this.materialGridView.commit();
-      
-      const selectedItems = this.materialGridView.getSelectedItems();
-      if (_.isEmpty(selectedItems)) {
-        this.$toast('info', '선택된 정보가 없습니다.');
+      if (!this.params.yyyymm) {
+        this.$toast && this.$toast('error', '년월을 선택해주세요.');
         return;
       }
-      
-      // 새로 추가된 행 처리
-      const newItems = selectedItems.filter(itemIndex => 
-        this.materialDataProvider.getRowState(itemIndex) === RowState.CREATED
-      );
-      if (newItems.length > 0) {
-        this.materialDataProvider.removeRows(newItems);
-      }
-      
-      // 기존 행 처리
-      selectedItems.forEach(itemIndex => {
-        const state = this.materialDataProvider.getRowState(itemIndex);
-        if (state !== RowState.CREATED) {
-          this.materialDataProvider.setRowState(itemIndex, RowState.DELETED);
-        }
-      });
+      this.getDataList();
     },
-    
-    async saveBtnClick() {
-      if (!this.materialGridView || !this.materialDataProvider) return;
+    addBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
       
-      try {
-        this.materialGridView.commit();
-        
-        const saveData = this.$refs.materialGrid.getSaveData();
-        const params = {
-          menuId: 'C0001004',
-          delete: [{ queryId: 'deleteMaterial', data: saveData.delete }],
-          insert: [{ queryId: 'insertMaterial', data: saveData.insert }],
-          update: [{ queryId: 'updateMaterial', data: saveData.update }]
-        };
-        
-        const response = await this.$axios.post('/api/c0001000/c0001004/tab3/save', params);
-        
-        if (response.data?.status === 'success') {
-          this.materialDataProvider.clearRowStates();
-          this.$toast('success', '저장되었습니다.');
-          await this.getMaterialList();
-        } else {
-          this.$toast('error', response.data?.message || '저장 실패');
-        }
-      } catch (error) {
-        console.error('saveBtnClick 오류:', error);
-        this.$toast('error', error.response?.data?.message || '저장 중 오류가 발생했습니다.');
-      }
+      this.gridView.commit();
+      this.gridDataProvider.addRow({ yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, site: this.params.site });
+      let itemIndex = this.gridView.getItemCount() - 1;
+      this.gridView.setCurrent({ itemIndex: itemIndex });
     },
-    
-    async excelBtnClick() {
-      if (!this.materialGridView) return;
+    delBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
       
-      try {
-        this.materialGridView.commit();
-        
-        // yyyymm 값 처리 (YYYY-MM 형태를 YYYYMM으로 변환)
-        let yyyymm = this.params.yyyymm;
-        if (yyyymm && yyyymm.includes('-')) {
-          yyyymm = yyyymm.replace('-', '');
-        }
-        
-        const response = await this.$axios({
-          method: 'post',
-          url: '/api/c0001000/c0001004/tab3/excel',
-          responseType: 'blob',
-          data: {
-            yyyymm: yyyymm,
-            site: this.siteMap[this.params.site] || this.params.site
+      this.gridView.commit();
+      const checkedRows = this.gridView.getCheckedRows();
+      if (checkedRows.length === 0) {
+        this.$toast('info', '삭제할 행을 선택하세요.');
+      } else {
+        let delItems = [];
+        checkedRows.forEach((itemIndex) => {
+          if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
+            delItems.push(itemIndex);
+          } else {
+            this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
           }
         });
-        
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `BOM_${new Date().getTime()}.xlsx`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (error) {
-        console.error('excelBtnClick 오류:', error);
-        this.$toast('error', '엑셀 다운로드에 실패했습니다.');
+        this.gridDataProvider.removeRows(delItems);
+      }
+    },    
+    async saveBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
+      this.gridView.commit();
+  
+      let saveData = this.$refs.materialGrid.getSaveData();
+      if (saveData.count <= 0) {
+        this.$toast('info', '변경된 내용이 없습니다.');
+        return;
+      }
+
+      this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
+
+      this.isValidteCellMaterialGrid = true;
+      let rslt = this.gridView.validateCells(null, false);
+      this.isValidteCellMaterialGrid = false;
+      
+      if (rslt === null) {
+        this.$confirm('확인', '수정하신 내용을 저장 하시겠습니까?', async (confirm) => {
+          if (confirm) {
+            let param = {
+              menuId: 'c0001004',
+              delete: [{ queryId: 'deleteTab3Data', data: saveData.delete }],
+              insert: [{ queryId: 'insertTab3Data', data: saveData.insert }],
+              update: [{ queryId: 'updateTab3Data', data: saveData.update }],
+            };
+
+            try {
+              let resp = await this.$axios.api.saveData(param);
+              this.$toast('info', '저장완료');
+              this.searchClick();              
+            } catch {
+              this.$toast('error', '에러발생. 다시 작업해주세요.');
+            }
+          }
+        });
       }
     },
-    
-    uploadClick() {
-      console.warn('[uploadClick] 구현 예정');
+    onValidateColumnMaterialGrid(grid, column, inserting, value, iteminex, dataRow) {
+      let error = {};
+      if (this.isValidteCellMaterialGrid) return error;
+
+      if (this.$utils.containsValue(['yyyymm', 'site', '제품번호', '자재번호'], column.fieldName)) {
+        if (_.isNil(value)) {
+          error.level = 'error';
+          error.message = '필수 입력입니다.';
+        }
+      }
+      if (this.duplicateIndices.includes(iteminex) && this.$utils.containsValue(['yyyymm', 'site', '제품번호', '자재번호'], column.fieldName)) {
+        error.level = 'warning';
+        error.message = '중복 입력입니다.';
+      }
+
+      return error;
     },
-    
+    async excelBtnClick() {
+      const grid = this.gridView;
+
+      const now = new Date();
+      const yyyymmdd = this.$utils.getTodayDate();
+
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const fileName = `자재코드${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+
+      const options = {
+        type: 'excel',
+        target: 'local',
+        fileName: fileName,
+        progressMessage: '엑셀 Export중입니다.',
+        done: function () {
+          alert('엑셀 내보내기가 완료되었습니다.');
+        },
+      };
+
+      grid.exportGrid(options);
+    },
+    uploadClick() {
+      let excelGrid = _.cloneDeep(gridField);
+      excelGrid.options.display.fitStyle = 'none'; // 엑셀다운로드시 none 아니면 width 0이 됨.
+      this.$refs.uploadPopup1.openDialog({
+        dialogTitle: '업로드 팝업',
+        uploadApi: '/api/c0001000/c0001004/tab3Upload',
+        headers: ['field1','field2','field3','field4','field5','field6','field7','field8','field9','field10','field11','field12','field13','field14','field15', 'field16','field17','field18','field19','field20','field21','field22','field23','field24','field25','field26','field27','field28','field29'],
+        excelGrid,
+        fileName: '자재코드정보_template',
+      });
+    },
     closePopup() {
-      this.$emit('close');
+      this.searchClick();
     },
   },
 };

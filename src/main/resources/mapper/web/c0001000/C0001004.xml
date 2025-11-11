@@ -282,7 +282,7 @@
 	<insert id="insertTab2Data">
 		INSERT INTO DOI_DEPT
 		(
-		YYYY
+		YYYYMM
 		, SEL_CODE
 		, SITE
 		, DEPT
@@ -291,21 +291,124 @@
 		)
 		VALUES
 		(
-		#{yyyy}
+		#{yyyymm}
 		, #{selCode}
-		, #{site}
+		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='VINA' then 'VN' else left(#{site},2) end
 		, #{dept}
 		, #{deptName}
 		, #{expenArea}
 		);
 	</insert>
 
-	<!-- Tab3: C0001003 (BOM 관리) -->
+		<!-- Tab2: C0001002 update/delete -->
+	<update id="updateTab2Data">
+		UPDATE DOI_DEPT
+		SET DEPT_NAME = #{deptName}
+		,EXPEN_AREA = #{expenArea}
+		WHERE 1=1
+		and yyyymm = #{yyyymm}
+		and site = #{siteOrg}
+		and dept = #{dept}
+		;
+	</update>
+	<delete id="deleteTab2Data">
+		DELETE FROM DOI_DEPT
+		WHERE 1=1
+		and yyyymm = #{yyyymm}
+		and site = #{siteOrg}
+		and dept = #{dept}
+	</delete>
+	<select id="checkTab2DuplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
+		DROP TABLE IF EXISTS #TempTable1;
+
+		CREATE TABLE #TempTable1 (
+			YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			DEPT varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			DEPT_NAME nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
+			EXPEN_AREA nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable1
+		(
+			YYYYMM,SEL_CODE,SITE,DEPT,DEPT_NAME,EXPEN_AREA
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			)
+		</foreach>;
+
+			SELECT * FROM #TempTable1 a
+			WHERE EXISTS (
+			SELECT 1
+			FROM DOI_DEPT b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SITE = a.SITE
+			AND b.DEPT = a.DEPT
+			);
+		</select>
+	<insert id="tab2UploadExcel" parameterType="java.util.List">
+		CREATE TABLE #TempTable (
+		seq_no INT IDENTITY (1, 1) NOT NULL,
+		YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		DEPT varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		DEPT_NAME nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
+		EXPEN_AREA nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable
+		(
+		YYYYMM,SEL_CODE,SITE,DEPT,DEPT_NAME,EXPEN_AREA
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			)
+		</foreach>;
+
+		INSERT INTO DOI_DEPT (YYYYMM,SEL_CODE,SITE,DEPT,DEPT_NAME,EXPEN_AREA )
+		SELECT YYYYMM,SEL_CODE,SITE,DEPT,DEPT_NAME,EXPEN_AREA
+		FROM (
+			SELECT *, MAX(seq_no) over (partition by YYYYMM, SITE, DEPT) max_seq_no FROM #TempTable
+		)A
+		WHERE 1=1
+		AND seq_no = max_seq_no
+		AND NOT EXISTS (
+			SELECT 1
+			FROM DOI_DEPT b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SITE = a.SITE
+			AND b.DEPT = a.DEPT
+		);
+
+		DROP TABLE #TempTable;
+	</insert>
+
+
+	<!-- Tab3: C0001003 (자재코드 관리) -->
 	<select id="selectTab3GridData" resultType="CamelMap">
 		SELECT
 			YYYYMM,
 			SITE as SITE_ORG,
-			CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then 'VINA' else site end as SITE,
+			CASE WHEN SITE='HQ' Then '본사' WHEN SITE='VN' then 'VINA' else site end as SITE,
 			제품명,
 			제품번호,
 			품목자산분류,
@@ -341,7 +444,7 @@
 		<if test="site != null and site != ''">
 			and site = #{site}
 		</if>            
-		ORDER BY 제품번호
+		ORDER BY 제품명
 	</select>
 	<insert id="insertTab3Data">
 		INSERT INTO DOI_BOM_MAST
@@ -378,7 +481,7 @@
 		VALUES
 		(
 		#{yyyymm}
-		, #{site}
+		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='VINA' then 'VN' else left(#{site},2) end
 		, #{제품명}
 		, #{제품번호}
 		, #{품목자산분류}
@@ -407,6 +510,226 @@
 		, #{최종수정자}
 		);
 	</insert>
+
+	<!-- Tab3: C0001003 update/delete -->
+	<update id="updateTab3Data">
+		UPDATE DOI_BOM_MAST
+		SET 제품명 = #{제품명}
+		,품목자산분류 = #{품목자산분류}
+		,품목대분류 = #{품목대분류}
+		,품목중분류 = #{품목중분류}
+		,품목소분류 = #{품목소분류}
+		,공정차수 = #{공정차수}
+		,공정품명 = #{공정품명}
+		,공정품번호 = #{공정품번호}
+		,자재명 = #{자재명}
+		,자재자산분류 = #{자재자산분류}
+		,자재대분류 = #{자재대분류}
+		,자재중분류 = #{자재중분류}
+		,자재소분류 = #{자재소분류}
+		,투입단위 = #{투입단위}
+		,소요량 = #{소요량}
+		,내부Loss율 = #{내부Loss율}
+		,외부Loss율 = #{외부Loss율}
+		,조립위치 = #{조립위치}
+		,특이사항 = #{특이사항}
+		,최초작성일 = #{최초작성일}
+		,최초작성자 = #{최초작성자}
+		,최종수정일 = #{최종수정일}
+		,최종수정자 = #{최종수정자}
+		WHERE 1=1
+		and yyyymm = #{yyyymm}
+		and site = #{siteOrg}
+		and 제품번호 = #{제품번호}
+		and 공정 = #{공정}
+		and ISNULL(자재번호, '') = ISNULL(#{자재번호}, '')
+		;
+	</update>
+	<delete id="deleteTab3Data">
+		DELETE FROM DOI_BOM_MAST
+		WHERE yyyymm = #{yyyymm}
+		AND site = #{siteOrg}
+		AND 제품번호 = #{제품번호}
+		AND 공정 = #{공정}
+		AND ISNULL(자재번호, '') = ISNULL(#{자재번호}, '')
+	</delete>
+	<select id="checkTab3DuplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
+		DROP TABLE IF EXISTS #TempTable1;
+
+		CREATE TABLE #TempTable1 (
+		YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+		SITE varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		제품명 nvarchar(25) COLLATE Korean_Wansung_CI_AS NULL,
+		제품번호 nvarchar(26) COLLATE Korean_Wansung_CI_AS NULL,
+		품목자산분류 nvarchar(16) COLLATE Korean_Wansung_CI_AS NULL,
+		품목대분류 nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		품목중분류 nvarchar(18) COLLATE Korean_Wansung_CI_AS NULL,
+		품목소분류 nvarchar(26) COLLATE Korean_Wansung_CI_AS NULL,
+		공정차수 varchar(2) COLLATE Korean_Wansung_CI_AS NULL,
+		공정 nvarchar(25) COLLATE Korean_Wansung_CI_AS NULL,
+		공정품명 nvarchar(25) COLLATE Korean_Wansung_CI_AS NULL,
+		공정품번호 nvarchar(26) COLLATE Korean_Wansung_CI_AS NULL,
+		자재명 nvarchar(37) COLLATE Korean_Wansung_CI_AS NULL,
+		자재번호 nvarchar(34) COLLATE Korean_Wansung_CI_AS NULL,
+		자재자산분류 nvarchar(14) COLLATE Korean_Wansung_CI_AS NULL,
+		자재대분류 nvarchar(17) COLLATE Korean_Wansung_CI_AS NULL,
+		자재중분류 nvarchar(16) COLLATE Korean_Wansung_CI_AS NULL,
+		자재소분류 nvarchar(37) COLLATE Korean_Wansung_CI_AS NULL,
+		투입단위 nvarchar(7) COLLATE Korean_Wansung_CI_AS NULL,
+		소요량 numeric(15,4) NULL,
+		내부Loss율 numeric(5,2) NULL,
+		외부Loss율 numeric(5,2) NULL,
+		조립위치 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		특이사항 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+		최초작성일 date NULL,
+		최초작성자 nvarchar(13) COLLATE Korean_Wansung_CI_AS NULL,
+		최종수정일 date NULL,
+		최종수정자 nvarchar(13) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable1
+		(
+			YYYYMM,SITE,제품명,제품번호,품목자산분류,품목대분류,품목중분류,품목소분류,공정차수,공정,공정품명,공정품번호,자재명,자재번호,자재자산분류,자재대분류,자재중분류,자재소분류,투입단위,소요량,내부Loss율,외부Loss율,조립위치,특이사항,최초작성일,최초작성자,최종수정일,최종수정자
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			, #{item.field23}
+			, #{item.field24}
+			, #{item.field25}
+			, #{item.field26}
+			, #{item.field27}
+			, #{item.field28}
+			, #{item.field29}
+			)
+		</foreach>;
+
+			SELECT * FROM #TempTable1 a
+			WHERE EXISTS (
+			SELECT 1
+			FROM DOI_BOM_MAST b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SITE = a.SITE
+			AND b.제품번호 = a.제품번호
+			AND b.공정 = a.공정	
+			AND b.자재번호 = a.자재번호
+			);
+		</select>
+	<insert id="tab3UploadExcel" parameterType="java.util.List">
+		CREATE TABLE #TempTable (
+		seq_no INT IDENTITY (1, 1) NOT NULL,
+		YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+		SITE varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		제품명 nvarchar(25) COLLATE Korean_Wansung_CI_AS NULL,
+		제품번호 nvarchar(26) COLLATE Korean_Wansung_CI_AS NULL,
+		품목자산분류 nvarchar(16) COLLATE Korean_Wansung_CI_AS NULL,
+		품목대분류 nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		품목중분류 nvarchar(18) COLLATE Korean_Wansung_CI_AS NULL,
+		품목소분류 nvarchar(26) COLLATE Korean_Wansung_CI_AS NULL,
+		공정차수 varchar(2) COLLATE Korean_Wansung_CI_AS NULL,
+		공정 nvarchar(25) COLLATE Korean_Wansung_CI_AS NULL,
+		공정품명 nvarchar(25) COLLATE Korean_Wansung_CI_AS NULL,
+		공정품번호 nvarchar(26) COLLATE Korean_Wansung_CI_AS NULL,
+		자재명 nvarchar(37) COLLATE Korean_Wansung_CI_AS NULL,
+		자재번호 nvarchar(34) COLLATE Korean_Wansung_CI_AS NULL,
+		자재자산분류 nvarchar(14) COLLATE Korean_Wansung_CI_AS NULL,
+		자재대분류 nvarchar(17) COLLATE Korean_Wansung_CI_AS NULL,
+		자재중분류 nvarchar(16) COLLATE Korean_Wansung_CI_AS NULL,
+		자재소분류 nvarchar(37) COLLATE Korean_Wansung_CI_AS NULL,
+		투입단위 nvarchar(7) COLLATE Korean_Wansung_CI_AS NULL,
+		소요량 numeric(15,4) NULL,
+		내부Loss율 numeric(5,2) NULL,
+		외부Loss율 numeric(5,2) NULL,
+		조립위치 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		특이사항 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+		최초작성일 date NULL,
+		최초작성자 nvarchar(13) COLLATE Korean_Wansung_CI_AS NULL,
+		최종수정일 date NULL,
+		최종수정자 nvarchar(13) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable
+		(
+		YYYYMM,SITE,제품명,제품번호,품목자산분류,품목대분류,품목중분류,품목소분류,공정차수,공정,공정품명,공정품번호,자재명,자재번호,자재자산분류,자재대분류,자재중분류,자재소분류,투입단위,소요량,내부Loss율,외부Loss율,조립위치,특이사항,최초작성일,최초작성자,최종수정일,최종수정자
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			, #{item.field23}
+			, #{item.field24}
+			, #{item.field25}
+			, #{item.field26}
+			, #{item.field27}
+			, #{item.field28}
+			, #{item.field29}
+			)
+		</foreach>;
+
+		INSERT INTO DOI_BOM_MAST (YYYYMM,SITE,제품명,제품번호,품목자산분류,품목대분류,품목중분류,품목소분류,공정차수,공정,공정품명,공정품번호,자재명,자재번호,자재자산분류,자재대분류,자재중분류,자재소분류,투입단위,소요량,내부Loss율,외부Loss율,조립위치,특이사항,최초작성일,최초작성자,최종수정일,최종수정자 )
+		SELECT YYYYMM,SITE,제품명,제품번호,품목자산분류,품목대분류,품목중분류,품목소분류,공정차수,공정,공정품명,공정품번호,자재명,자재번호,자재자산분류,자재대분류,자재중분류,자재소분류,투입단위,소요량,내부Loss율,외부Loss율,조립위치,특이사항,최초작성일,최초작성자,최종수정일,최종수정자
+		FROM (
+			SELECT *, MAX(seq_no) over (partition by YYYYMM, SITE, 제품번호, 공정, 자재번호) max_seq_no FROM #TempTable
+		)A
+		WHERE 1=1
+		AND seq_no = max_seq_no
+		AND NOT EXISTS (
+			SELECT 1
+			FROM DOI_BOM_MAST b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SITE = a.SITE
+			AND b.제품번호 = a.제품번호
+			AND b.공정 = a.공정
+			AND b.자재번호 = a.자재번호
+		);
+
+		DROP TABLE #TempTable;
+	</insert>
+
+
 	<!-- tab5: 면적기준 정보 관리 -->
 	<select id="selectTab5GridData" resultType="CamelMap">
 		select
@@ -459,7 +782,7 @@
 		(
 		#{yyyymm}
 		, #{selCode}
-		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='베트남' then 'VN' else left(#{site},2) end
+		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='VINA' then 'VN' else left(#{site},2) end
 		, #{model}
 		, #{spec}
 		, #{inch}
@@ -474,67 +797,6 @@
 		);
 	</insert>
 
-
-
-
-	<!-- Tab2: C0001002 update/delete -->
-	<update id="updateTab2Data">
-		UPDATE DOI_DEPT
-		SET DEPT_NAME = #{deptName}
-		,EXPEN_AREA = #{expenArea}
-		WHERE 1=1
-		and yyyy = #{yyyymm}
-		and site = #{site}
-		and dept = #{dept}
-		;
-	</update>
-	<delete id="deleteTab2Data">
-		DELETE FROM DOI_DEPT
-		WHERE 1=1
-		and yyyy = #{yyyymm}
-		and site = #{site}
-		and dept = #{dept}
-	</delete>
-
-	<!-- Tab3: C0001003 update/delete -->
-	<update id="updateTab3Data">
-		UPDATE DOI_BOM_MAST
-		SET 제품명 = #{제품명}
-		,품목자산분류 = #{품목자산분류}
-		,품목대분류 = #{품목대분류}
-		,품목중분류 = #{품목중분류}
-		,품목소분류 = #{품목소분류}
-		,공정차수 = #{공정차수}
-		,공정 = #{공정}
-		,공정품명 = #{공정품명}
-		,공정품번호 = #{공정품번호}
-		,자재명 = #{자재명}
-		,자재번호 = #{자재번호}
-		,자재자산분류 = #{자재자산분류}
-		,자재대분류 = #{자재대분류}
-		,자재중분류 = #{자재중분류}
-		,자재소분류 = #{자재소분류}
-		,투입단위 = #{투입단위}
-		,소요량 = #{소요량}
-		,내부Loss율 = #{내부Loss율}
-		,외부Loss율 = #{외부Loss율}
-		,조립위치 = #{조립위치}
-		,특이사항 = #{특이사항}
-		,최종수정일 = #{최종수정일}
-		,최종수정자 = #{최종수정자}
-		WHERE 1=1
-		and yyyymm = #{yyyymm}
-		and site = #{site}
-		and 제품번호 = #{제품번호}
-		;
-	</update>
-	<delete id="deleteTab3Data">
-		DELETE FROM DOI_BOM_MAST
-		WHERE 1=1
-		and yyyymm = #{yyyymm}
-		and site = #{site}
-		and 제품번호 = #{제품번호}
-	</delete>
 	<!-- tab5: 면적기준 정보 관리 update/delete -->
 	<update id="updateTab5Data">
 		UPDATE DOI_MODEL_MAST
@@ -565,4 +827,119 @@
 		and site = #{siteOrg}
 		and model = #{model}
 	</delete>
+	<select id="checkTab5DuplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
+		DROP TABLE IF EXISTS #TempTable1;
+
+		CREATE TABLE #TempTable1 (
+			YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			MODEL varchar(50) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SPEC nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
+			INCH nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			GLASS_THICK nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			SHEET nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			BLOCK nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			CELL nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			RUN_SIZE nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			X nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			Y nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			XY nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable1
+		(
+			YYYYMM,SEL_CODE,SITE,MODEL,SPEC,INCH,GLASS_THICK,SHEET,BLOCK,CELL,RUN_SIZE,X,Y,XY
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			)
+		</foreach>;
+
+			SELECT * FROM #TempTable1 a
+			WHERE EXISTS (
+			SELECT 1
+			FROM DOI_MODEL_MAST b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SITE = a.SITE
+			AND b.MODEL = a.MODEL
+			);
+		</select>
+	<insert id="tab5UploadExcel" parameterType="java.util.List">
+		CREATE TABLE #TempTable (
+		seq_no INT IDENTITY (1, 1) NOT NULL,
+		YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		MODEL varchar(50) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SPEC nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
+		INCH nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		GLASS_THICK nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		SHEET nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		BLOCK nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		CELL nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		RUN_SIZE nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		X nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		Y nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		XY nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable
+		(
+		YYYYMM,SEL_CODE,SITE,MODEL,SPEC,INCH,GLASS_THICK,SHEET,BLOCK,CELL,RUN_SIZE,X,Y,XY
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			)
+		</foreach>;
+
+		INSERT INTO DOI_MODEL_MAST (YYYYMM,SEL_CODE,SITE,MODEL,SPEC,INCH,GLASS_THICK,SHEET,BLOCK,CELL,RUN_SIZE,X,Y,XY )
+		SELECT YYYYMM,SEL_CODE,SITE,MODEL,SPEC,INCH,GLASS_THICK,SHEET,BLOCK,CELL,RUN_SIZE,X,Y,XY
+		FROM (
+			SELECT *, MAX(seq_no) over (partition by YYYYMM, SITE, MODEL) max_seq_no FROM #TempTable
+		)A
+		WHERE 1=1
+		AND seq_no = max_seq_no
+		AND NOT EXISTS (
+			SELECT 1
+			FROM DOI_MODEL_MAST b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SITE = a.SITE
+			AND b.MODEL = a.MODEL
+		);
+
+		DROP TABLE #TempTable;
+	</insert>
 </mapper>
