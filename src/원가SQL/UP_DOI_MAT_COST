@@ -188,6 +188,66 @@ BEGIN
 		;
 	  SET  @Message =  @Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비배부(DOI_MAT_COST) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '재료비 배부 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
+      
+      -- ========================================
+      -- 데이터 무결성 검증
+      -- ========================================
+      DECLARE @SOURCE_AMT DECIMAL(18,2) = 0,
+              @TARGET_AMT DECIMAL(18,2) = 0,
+              @DIFF_AMT DECIMAL(18,2) = 0;
+      
+      -- 1. 소스 데이터 (DOI_MAT_AMT)
+      SELECT @SOURCE_AMT = ISNULL(SUM(in_amt), 0)
+      FROM DOI_MAT_AMT
+      WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SELCODE;
+      
+      -- 2. 타겟 데이터 (DOI_MAT_COST)
+      SELECT @TARGET_AMT = ISNULL(SUM(배부금액), 0)
+      FROM DOI_MAT_COST
+      WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SELCODE;
+      
+      SET @DIFF_AMT = @SOURCE_AMT - @TARGET_AMT;
+      
+      SET  @Message =  @Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                    + '- 소스금액(재료비집계): ' + FORMAT(@SOURCE_AMT, 'N0') + '원, '
+                    + '타겟금액(재료비배부): ' + FORMAT(@TARGET_AMT, 'N0') + '원, '
+                    + '차이: ' + FORMAT(@DIFF_AMT, 'N0') + '원';
+      
+      IF ABS(@DIFF_AMT) > 1 BEGIN
+          -- 누락 원인 확인
+          DECLARE @BOM_MISSING INT = 0, @PROD_MISSING INT = 0;
+          
+          -- BOM 배부율 없는 자재 확인
+          SELECT @BOM_MISSING = COUNT(DISTINCT a.mat_code)
+          FROM DOI_MAT_AMT a
+          LEFT JOIN DOI_BOM_MAST b ON (a.yyyymm = b.yyyymm AND a.site = b.site AND a.mat_code = b.mat_code)
+          WHERE a.yyyymm = @YYYYMM AND a.site = @SITE AND a.sel_code = @SELCODE
+            AND b.mat_code IS NULL;
+          
+          -- 생산수불 없는 모델 확인
+          SELECT @PROD_MISSING = COUNT(DISTINCT model)
+          FROM DOI_PROD_SUBUL
+          WHERE yyyymm = @YYYYMM AND dw_site = @SITE
+            AND model NOT IN (SELECT DISTINCT 도우모델 FROM DOI_MAT_COST WHERE yyyymm = @YYYYMM AND site = @SITE);
+          
+          IF @BOM_MISSING > 0 BEGIN
+              SET  @Message =  @Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                            + '- BOM 마스터 미등록 자재: ' + CAST(@BOM_MISSING AS VARCHAR) + '개';
+          END
+          
+          IF @PROD_MISSING > 0 BEGIN
+              SET  @Message =  @Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                            + '- 배부되지 않은 모델: ' + CAST(@PROD_MISSING AS VARCHAR) + '개';
+          END
+          
+          SET  @Message =  @Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                        + '- 재료비배부 데이터 불일치 발생!';
+      END
+      ELSE BEGIN
+          SET  @Message =  @Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                        + '- 재료비배부 데이터 무결성 검증 완료 (일치)';
+      END
+      
       SET  @Message =  @Message + char(10) + '[FINISH] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비배부(DOI_MAT_COST) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '데이타 입력 완료했습니다';
       COMMIT TRANSACTION; 
