@@ -1,0 +1,246 @@
+CREATE     procedure UP_DOI_STOCK_COST
+(
+    @YYYYMM varchar(10),--집계 년/월 설정
+    @SITE varchar(2),  --사업장코드 (본사 : HQ, 베트남 : VN)
+ 	@R_Message nvarchar(MAX) OUTPUT
+)
+AS
+BEGIN
+	BEGIN TRY
+	SET NOCOUNT ON;
+    SET LOCK_TIMEOUT 5000; -- 10초로 증가
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; -- 격리 수준 변경
+--    DECLARE  @R_Message  NVARCHAR(MAX)='';
+
+   	DECLARE @CNT INT = 0,
+   		    @CHECK BIT = 0;
+   	
+  	  	
+ 	SET  @R_Message =   char(10) + @R_Message + char(10) + '[START]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STOCK_COST) 테이블에 '
+				+ @YYYYMM + '월 '	+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '제품수불금액 집계를 시작합니다'; 	
+   	
+   	--데이타 체크
+    IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID('DOI_FAB_COST') AND type in ('U')) -- 테이블 존재 여부 확인
+    BEGIN
+		SELECT @CNT = count(*)
+			FROM DOI_FAB_COST
+	      WHERE yyyymm=@YYYYMM
+	        and site  =@SITE;
+		IF @CNT = 0 BEGIN
+			SET  @R_Message =  @R_Message + char(10) + '[ERROR] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 가공비 배부(DOI_FAB_COST) 테이블에 '
+					+ @YYYYMM + '월 ' + CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+			SET @CHECK = 1;
+		END
+		ELSE
+		BEGIN
+			SET  @R_Message =  @R_Message + char(10) + '[CHECK]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 가공비 배부(DOI_FAB_COST) 테이블에 '
+					+ @YYYYMM + '월 ' + CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 '+CAST(@CNT AS VARCHAR)+'건 정상입니다'
+		END	
+	END
+    ELSE
+    BEGIN
+        SET  @R_Message =  @R_Message + char(10) + '[ERROR] ' +  '가공비 배부(DOI_FAB_COST)테이블이 존재하지 않습니다.';
+        SET @CHECK = 1;
+    END	
+
+    -- 5초 대기
+--    WAITFOR DELAY '00:00:03';
+    
+	SELECT @CNT = count(*)
+		FROM DOI_STOCK_BOH
+      WHERE yyyymm=@YYYYMM
+        and site  =@SITE;
+	IF @CNT = 0 BEGIN
+		SET  @R_Message =  @R_Message + char(10) + '[ERROR] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품BOH(DOI_STOCK_BOH) 테이블에 '
+					+@YYYYMM + '월 ' + CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+		SET @CHECK = 1;
+	END
+	ELSE
+	BEGIN
+		SET  @R_Message =  @R_Message + char(10) + '[CHECK]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품BOH(DOI_STOCK_BOH) 테이블에 '
+				+ @YYYYMM + '월 ' + CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 '+CAST(@CNT AS VARCHAR)+'건 정상입니다'
+	END	
+	
+	SELECT @CNT = count(*)
+		FROM DOI_STOCK
+      WHERE yyyymm=@YYYYMM
+        and site  =@SITE;
+	IF @CNT = 0 BEGIN
+		SET  @R_Message =  @R_Message + char(10) + '[ERROR] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불(DOI_STOCK) 테이블에 '
+					+ @YYYYMM + '월 ' + CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+		SET @CHECK = 1;
+	END
+	ELSE
+	BEGIN
+		SET  @R_Message =  @R_Message + char(10) + '[CHECK]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불(DOI_STOCK) 테이블에 '
+				+ @YYYYMM + '월 ' + CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 '+CAST(@CNT AS VARCHAR)+'건 정상입니다'
+	END	
+	IF @CHECK = 1 BEGIN
+		RETURN -1;
+	END
+
+--	SET  @R_Message =   char(10) + @R_Message + char(10) + '[START]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STOCK_COST) 테이블에 '+@YYYYMM + '월 '
+--						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '제품수불금액 집계를 시작합니다';
+		
+		BEGIN TRANSACTION;
+		
+		DELETE FROM DOI_STOCK_COST 
+		WHERE YYYYMM	= @YYYYMM
+		  AND SITE		= @SITE;
+			
+		SET  @R_Message =  @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STOCK_COST) 테이블에 '+@YYYYMM + '월 '
+						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '제품수불금액 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 삭제 했습니다';
+
+
+		WITH MODEL_IN_AMT AS(
+			SELECT a.YYYYMM,a.site,a.model,a.구분,SUM([out]) IN_AMT
+			FROM DOI_FAB_COST a 
+			WHERE A.yyyymm=@YYYYMM
+			  AND a.site=@SITE
+			GROUP BY a.yyyymm,a.site,a.model,a.구분
+		), MODEL_BOH_AMT AS(
+			SELECT a.YYYYMM,a.site,a.model,a.구분,SUM(BOH_AMT) BOH_AMT --select *
+			FROM DOI_STOCK_BOH a 
+			WHERE A.yyyymm=@YYYYMM
+			  AND a.site=@SITE
+			GROUP BY a.yyyymm,a.site,a.model,a.구분
+		), MODEL_STOCK AS (
+		select
+			a.YYYYMM,
+			a.SITE,
+			a.SEL_CODE,
+			case when a.stock='개발 창고' then '개발' when a.stock='완제품 창고' then '양산' else '기타' end as 구분,
+			A.MODEL,
+			SUM(A.BOH) as BOH,
+			SUM(A.INPUT) as INPUT,
+			SUM(A.OUT) as OUT,
+			SUM(A.EOH) as EOH
+		from
+			DOI_STOCK a
+		where 	a.YYYYMM=@YYYYMM
+		  and a.SITE =@SITE
+		group by 
+			a.YYYYMM,
+			a.SITE,
+			a.SEL_CODE,
+			A.MODEL,
+			case when a.stock='개발 창고' then '개발' when a.stock='완제품 창고' then '양산' else '기타' end
+		), MODEL_EOH_AMT AS(
+		select
+			a.YYYYMM,
+			a.SITE,
+			a.SEL_CODE,
+			a.구분,
+			A.MODEL,
+			A.BOH,A.INPUT,A.OUT,A.EOH,
+			B.BOH_AMT,
+			coalesce(c.IN_AMT,0) as IN_AMT,
+			round(case when a.out = 0 then coalesce(b.boh_amt,0)+coalesce(c.IN_AMT,0)
+				 else (coalesce(b.boh_amt,0)+coalesce(c.IN_AMT,0))/nullif((a.eoh + a.out),0)*a.eoh end,0) as EOH_AMT
+		from
+			MODEL_STOCK a
+		 left join MODEL_BOH_AMT b 
+		 		on (a.yyyymm=b.yyyymm and a.site=b.site and a.model=b.model and b.구분=a.구분)
+		 left join MODEL_IN_AMT c  
+		 		on (a.yyyymm=c.yyyymm and a.site=c.site and a.model=c.model and c.구분=a.구분)
+		WHERE A.yyyymm=@YYYYMM
+		  AND a.site=@SITE
+		)--, tot as (
+		INSERT INTO DOI_STOCK_COST
+		select * ,round(case when eoh=0 then  (boh_amt+IN_AMT) else (boh_amt+IN_AMT-eoh_amt) end,0) as OUT_AMT  --INTO DOI_STOCK_COST
+		from MODEL_EOH_AMT a
+		--) select sum(boh_amt+in_amt) ,sum(eoh_amt+out_amt) from tot a
+		ORDER BY a.MODEL,4;
+
+		SET  @R_Message =  @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STOCK_COST) 테이블에 '+@YYYYMM + '월 '
+						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '재품수불금액 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
+
+		-- ========================================
+		-- 데이터 무결성 검증
+		-- ========================================
+		DECLARE @SOURCE_BOH_AMT DECIMAL(18,2) = 0,
+				@SOURCE_IN_AMT DECIMAL(18,2) = 0,
+				@TARGET_BOH_AMT DECIMAL(18,2) = 0,
+				@TARGET_IN_AMT DECIMAL(18,2) = 0,
+				@TARGET_EOH_AMT DECIMAL(18,2) = 0,
+				@TARGET_OUT_AMT DECIMAL(18,2) = 0,
+				@DIFF_BOH DECIMAL(18,2) = 0,
+				@DIFF_IN DECIMAL(18,2) = 0;
+		
+		-- 1. 소스 데이터: 기초재고(DOI_STOCK_BOH)
+		SELECT @SOURCE_BOH_AMT = ISNULL(SUM(boh_amt), 0)
+		FROM DOI_STOCK_BOH
+		WHERE yyyymm = @YYYYMM AND site = @SITE;
+		
+		-- 2. 소스 데이터: 투입금액(DOI_FAB_COST)
+		SELECT @SOURCE_IN_AMT = ISNULL(SUM([IN]), 0)
+		FROM DOI_FAB_COST
+		WHERE yyyymm = @YYYYMM AND site = @SITE;
+		
+		-- 3. 타겟 데이터 (DOI_STOCK_COST)
+		SELECT @TARGET_BOH_AMT = ISNULL(SUM(boh_amt), 0),
+			   @TARGET_IN_AMT = ISNULL(SUM(in_amt), 0),
+			   @TARGET_EOH_AMT = ISNULL(SUM(eoh_amt), 0),
+			   @TARGET_OUT_AMT = ISNULL(SUM(out_amt), 0)
+		FROM DOI_STOCK_COST
+		WHERE yyyymm = @YYYYMM AND site = @SITE;
+		
+		SET @DIFF_BOH = @SOURCE_BOH_AMT - @TARGET_BOH_AMT;
+		SET @DIFF_IN = @SOURCE_IN_AMT - @TARGET_IN_AMT;
+		
+		SET  @R_Message =  @R_Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+					+ '- 기초재고: 소스=' + FORMAT(@SOURCE_BOH_AMT, 'N0') + '원, '
+					+ '타겟=' + FORMAT(@TARGET_BOH_AMT, 'N0') + '원, '
+					+ '차이=' + FORMAT(@DIFF_BOH, 'N0') + '원';
+		
+		SET  @R_Message =  @R_Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+					+ '- 투입금액: 소스=' + FORMAT(@SOURCE_IN_AMT, 'N0') + '원, '
+					+ '타겟=' + FORMAT(@TARGET_IN_AMT, 'N0') + '원, '
+					+ '차이=' + FORMAT(@DIFF_IN, 'N0') + '원';
+		
+		SET  @R_Message =  @R_Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+					+ '- 기말재고: ' + FORMAT(@TARGET_EOH_AMT, 'N0') + '원, '
+					+ '출고금액: ' + FORMAT(@TARGET_OUT_AMT, 'N0') + '원';
+		
+		-- 밸런스 체크: BOH + IN = EOH + OUT
+		DECLARE @BALANCE_DIFF DECIMAL(18,2) = (@TARGET_BOH_AMT + @TARGET_IN_AMT) - (@TARGET_EOH_AMT + @TARGET_OUT_AMT);
+		
+		SET  @R_Message =  @R_Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+					+ '- 밸런스 체크(BOH+IN=EOH+OUT): ' + FORMAT(@BALANCE_DIFF, 'N0') + '원';
+		
+		IF ABS(@DIFF_BOH) > 1 OR ABS(@DIFF_IN) > 1 OR ABS(@BALANCE_DIFF) > 1 BEGIN
+			IF ABS(@DIFF_BOH) > 1 BEGIN
+				SET  @R_Message =  @R_Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+							+ '- 기초재고 불일치! DOI_STOCK_BOH 데이터 확인 필요';
+			END
+			
+			IF ABS(@DIFF_IN) > 1 BEGIN
+				SET  @R_Message =  @R_Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+							+ '- 투입금액 불일치! DOI_FAB_COST 데이터 확인 필요';
+			END
+			
+			IF ABS(@BALANCE_DIFF) > 1 BEGIN
+				SET  @R_Message =  @R_Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+							+ '- 수불 밸런스 불일치! 계산 로직 확인 필요';
+			END
+			
+			SET  @R_Message =  @R_Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+						+ '- 제품수불 데이터 불일치 발생!';
+		END
+		ELSE BEGIN
+			SET  @R_Message =  @R_Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+						+ '- 제품수불 데이터 무결성 검증 완료 (일치)';
+		END
+
+     	SET  @R_Message =  @R_Message + char(10) + '  [END]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STOCK_COST) 테이블에 '+@YYYYMM + '월 '
+						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '재품수불금액 집계 완료했습니다';
+      COMMIT TRANSACTION;
+     	
+      END TRY   
+      
+   BEGIN CATCH
+		SET  @R_Message =  @R_Message + char(10) + '[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+(SELECT ERROR_Message());-- AS ErrorR_Message;
+		ROLLBACK TRANSACTION;
+--		SELECT @R_Message as retMessage;
+   END CATCH;
+END;

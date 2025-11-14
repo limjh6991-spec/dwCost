@@ -1,4 +1,4 @@
-ALTER procedure UP_DOI_COST_MAT
+CREATE         procedure UP_DOI_COST_MAT
 (
     @YYYYMM varchar(10),--집계 년/월 설정
     @SITE varchar(2),  --사업장코드 (본사 : HQ, 베트남 : VN)
@@ -37,25 +37,24 @@ BEGIN
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '재료비 데이타 배부를 시작합니다';
 		
 	BEGIN TRANSACTION;
-      --삭제 (재료비 관련 데이터: EXPEN_SEL이 MDAX 또는 MIAX인 데이터)
+      --삭제
       DELETE FROM DOI_FAB_COST
       WHERE yyyymm= @YYYYMM
         and site  = @SITE
-        and sel_code = @SELCODE
-		and EXPEN_SEL IN ('MDAX', 'MIAX');
+		and acct_name='재료비';
 			
 	SET  @Message =  @Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 경비/재료비집계(DOI_FAB_COST) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '재료비 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 삭제 했습니다';
     
 		INSERT INTO DOI_FAB_COST    
-		(YYYYMM,SEL_CODE,SITE,구분,MODEL,expen_sel명,SUB_NAME,ITEM_NAME,EXPEN_SEL,[IN])
+		(YYYYMM,SEL_CODE,SITE,구분,MODEL,ACCT_NAME,SUB_NAME,ITEM_NAME,EXPEN_SEL,[IN])
 		 select
 			yyyymm,
 			sel_code,
 			site,
 			'양산' as 구분,
 			도우모델 as model,
-			'재료비' as expen_sel명,
+			'재료비' as acct_name,
 			 case when mat_class='원자재' then '직접재료비' else '간접재료비' end as SUB_NAME,
 			 case when mat_class='원자재' then '직접재료비' else '간접재료비' end as ITEM_NAME,
 			 case when mat_class='원자재' then 'MDAX' else 'MIAX' end as EXPEN_SEL,
@@ -68,45 +67,9 @@ BEGIN
 			sel_code,
 			site,
 			도우모델,
-			case when mat_class='원자재' then '직접재료비' else '간접재료비' end,
-			case when mat_class='원자재' then '직접재료비' else '간접재료비' end,
-			case when mat_class='원자재' then 'MDAX' else 'MIAX' end;
+			mat_class;
   	  SET  @Message =  @Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 경비/재료비집계(DOI_FAB_COST) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '재료비집계 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
-      
-      -- ========================================
-      -- 데이터 무결성 검증
-      -- ========================================
-      DECLARE @SOURCE_AMT DECIMAL(18,2) = 0,
-              @TARGET_AMT DECIMAL(18,2) = 0,
-              @DIFF_AMT DECIMAL(18,2) = 0;
-      
-      -- 1. 소스 데이터 (DOI_MAT_COST)
-      SELECT @SOURCE_AMT = ISNULL(SUM(배부금액), 0)
-      FROM DOI_MAT_COST
-      WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SELCODE;
-      
-      -- 2. 타겟 데이터 (DOI_FAB_COST - 재료비만)
-      SELECT @TARGET_AMT = ISNULL(SUM([IN]), 0)
-      FROM DOI_FAB_COST
-      WHERE yyyymm = @YYYYMM AND site = @SITE AND expen_sel명 = '재료비';
-      
-      SET @DIFF_AMT = @SOURCE_AMT - @TARGET_AMT;
-      
-      SET  @Message =  @Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
-                    + '- 소스금액(재료비배부): ' + FORMAT(@SOURCE_AMT, 'N0') + '원, '
-                    + '타겟금액(재공평가): ' + FORMAT(@TARGET_AMT, 'N0') + '원, '
-                    + '차이: ' + FORMAT(@DIFF_AMT, 'N0') + '원';
-      
-      IF ABS(@DIFF_AMT) > 1 BEGIN
-          SET  @Message =  @Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
-                        + '- 재공평가(재료비) 데이터 불일치 발생!';
-      END
-      ELSE BEGIN
-          SET  @Message =  @Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
-                        + '- 재공평가(재료비) 데이터 무결성 검증 완료 (일치)';
-      END
-      
       SET  @Message =  @Message + char(10) + '[FINISH] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 경비/재료비집계(DOI_FAB_COST) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '재료비 데이타 입력 완료했습니다';
       COMMIT TRANSACTION; 

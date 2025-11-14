@@ -60,7 +60,7 @@ BEGIN
       DELETE FROM DOI_FAB_COST
       WHERE yyyymm=@YYYYMM
         and site  =@SITE
-		and acct_name!='재료비';
+		and expen_sel명!='재료비';
    	  
      SET  @Message =  @Message + char(10) + ' [INFO] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 가공비배부(DOI_FAB_COST) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 삭제했습니다';
@@ -162,14 +162,14 @@ BEGIN
          A.EXPEN_SEL
       )
       INSERT into DOI_FAB_COST 
-      (YYYYMM,SEL_CODE,SITE,구분,model,acct_name,SUB_NAME,ITEM_NAME,EXPEN_SEL,IN_QTY,OUT_QTY,[IN],[OUT])
+      (YYYYMM,SEL_CODE,SITE,구분,model,expen_sel명,SUB_NAME,ITEM_NAME,EXPEN_SEL,IN_QTY,OUT_QTY,[IN],[OUT])
       SELECT
          A.YYYYMM,
          'ACTUAL' as sel_code,
          A.SITE,
          '양산' 구분,
          B.CST_NO model,
-         A.acct_name,
+         A.acct_name as expen_sel명,
          A.SUB_NAME,
          A.ITEM_NAME,
          A.EXPEN_SEL,
@@ -188,38 +188,164 @@ BEGIN
       -- ========================================
       -- 데이터 무결성 검증
       -- ========================================
-      DECLARE @SOURCE_AMT DECIMAL(18,2) = 0,
-              @TARGET_AMT DECIMAL(18,2) = 0,
-              @DIFF_AMT DECIMAL(18,2) = 0;
+      DECLARE @SOURCE_AMT BIGINT = 0,
+              @TARGET_AMT BIGINT = 0,
+              @DIFF_AMT BIGINT = 0;
       
-      -- 1. 소스 데이터 금액 합계 (DOI_EXPEN_MATL)
-      SELECT @SOURCE_AMT = ISNULL(SUM([IN]), 0)
+      -- 소스 금액 (DOI_EXPEN_MATL)
+      SELECT @SOURCE_AMT = ISNULL(CAST(SUM([IN]) AS BIGINT), 0)
       FROM DOI_EXPEN_MATL
       WHERE YYYYMM = @YYYYMM AND SITE = @SITE;
       
-      -- 2. 타겟 데이터 금액 합계 (DOI_FAB_COST - 가공비만)
-      SELECT @TARGET_AMT = ISNULL(SUM([IN]), 0)
+      -- 타겟 금액 (DOI_FAB_COST)
+      SELECT @TARGET_AMT = ISNULL(CAST(SUM([IN]) AS BIGINT), 0)
       FROM DOI_FAB_COST
-      WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND acct_name = '가공비';
+      WHERE YYYYMM = @YYYYMM AND SITE = @SITE;
       
       SET @DIFF_AMT = @SOURCE_AMT - @TARGET_AMT;
       
-      SET  @Message =  @Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
-                    + '- 소스금액(경비집계): ' + FORMAT(@SOURCE_AMT, 'N0') + '원, '
-                    + '타겟금액(가공비배부): ' + FORMAT(@TARGET_AMT, 'N0') + '원, '
-                    + '차이: ' + FORMAT(@DIFF_AMT, 'N0') + '원';
+      -- ========================================
+      -- 1. 소스 vs 타겟 금액 검증
+      -- ========================================
+      SET  @Message =  @Message + char(10) + char(10) + '====================================================================================================';
+      SET  @Message =  @Message + char(10) + '1. 소스 데이터와 타겟 데이터 금액 검증';
+      SET  @Message =  @Message + char(10) + '====================================================================================================';
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 10) + '구분' + REPLICATE(' ', 30) + '건수' + REPLICATE(' ', 10) + '금액';
+      SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
       
-      IF ABS(@DIFF_AMT) > 1 BEGIN
-          SET  @Message =  @Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
-                        + '- 가공비배부 데이터 불일치 발생! 원인을 확인하세요.';
+      -- 소스 상세
+      DECLARE @SOURCE_CNT INT = 0;
+      SELECT @SOURCE_CNT = COUNT(*) FROM DOI_EXPEN_MATL WHERE YYYYMM = @YYYYMM AND SITE = @SITE;
+      
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 10) + '소스(DOI_EXPEN_MATL)' + REPLICATE(' ', 15) + RIGHT(REPLICATE(' ', 10) + CAST(@SOURCE_CNT AS VARCHAR(10)), 10) + REPLICATE(' ', 4) + RIGHT(REPLICATE(' ', 20) + FORMAT(@SOURCE_AMT, 'N0'), 20) + '원';
+      
+      -- 타겟 상세
+      DECLARE @TARGET_CNT INT = 0;
+      SELECT @TARGET_CNT = COUNT(*) FROM DOI_FAB_COST WHERE YYYYMM = @YYYYMM AND SITE = @SITE;
+      
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 10) + '타겟(DOI_FAB_COST)' + REPLICATE(' ', 17) + RIGHT(REPLICATE(' ', 10) + CAST(@TARGET_CNT AS VARCHAR(10)), 10) + REPLICATE(' ', 4) + RIGHT(REPLICATE(' ', 20) + FORMAT(@TARGET_AMT, 'N0'), 20) + '원';
+      SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 10) + '차이' + REPLICATE(' ', 44) + RIGHT(REPLICATE(' ', 20) + FORMAT(@DIFF_AMT, 'N0'), 20) + '원';
+      SET  @Message =  @Message + char(10) + '====================================================================================================';
+      
+      -- ========================================
+      -- 2. 차이금액 상세 (항목별)
+      -- ========================================
+      IF ABS(@DIFF_AMT) > 100 BEGIN
+          SET  @Message =  @Message + char(10) + char(10) + '====================================================================================================';
+          SET  @Message =  @Message + char(10) + '2. 차이금액 상세 (항목별)';
+          SET  @Message =  @Message + char(10) + '====================================================================================================';
+          
+          DECLARE @EXPEN_SEL NVARCHAR(50), @EXPEN_NAME NVARCHAR(100);
+          DECLARE @SOURCE_ITEM_AMT BIGINT, @TARGET_ITEM_AMT BIGINT, @ITEM_DIFF BIGINT;
+          
+          SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) + '항목코드' + REPLICATE(' ', 7) + '항목명' + REPLICATE(' ', 34) + '소스금액' + REPLICATE(' ', 10) + '타겟금액' + REPLICATE(' ', 10) + '차이';
+          SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
+          
+          DECLARE item_cursor CURSOR FOR
+          SELECT DISTINCT EXPEN_SEL, EXPEN_SEL명
+          FROM DOI_EXPEN_MATL
+          WHERE YYYYMM = @YYYYMM AND SITE = @SITE
+          ORDER BY EXPEN_SEL;
+          
+          OPEN item_cursor;
+          FETCH NEXT FROM item_cursor INTO @EXPEN_SEL, @EXPEN_NAME;
+          
+          WHILE @@FETCH_STATUS = 0
+          BEGIN
+              -- 소스에서 해당 항목 금액
+              SELECT @SOURCE_ITEM_AMT = ISNULL(CAST(SUM([IN]) AS BIGINT), 0)
+              FROM DOI_EXPEN_MATL
+              WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND EXPEN_SEL = @EXPEN_SEL;
+              
+              -- 타겟에서 해당 항목 금액
+              SELECT @TARGET_ITEM_AMT = ISNULL(CAST(SUM([IN]) AS BIGINT), 0)
+              FROM DOI_FAB_COST
+              WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND EXPEN_SEL = @EXPEN_SEL;
+              
+              SET @ITEM_DIFF = @SOURCE_ITEM_AMT - @TARGET_ITEM_AMT;
+              
+              IF ABS(@ITEM_DIFF) > 10 BEGIN
+                  SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) 
+                      + LEFT(@EXPEN_SEL + REPLICATE(' ', 15), 15)
+                      + LEFT(ISNULL(@EXPEN_NAME, '') + REPLICATE(' ', 40), 40)
+                      + RIGHT(REPLICATE(' ', 18) + FORMAT(@SOURCE_ITEM_AMT, 'N0'), 18)
+                      + RIGHT(REPLICATE(' ', 18) + FORMAT(@TARGET_ITEM_AMT, 'N0'), 18)
+                      + RIGHT(REPLICATE(' ', 18) + FORMAT(@ITEM_DIFF, 'N0'), 18);
+              END
+              
+              FETCH NEXT FROM item_cursor INTO @EXPEN_SEL, @EXPEN_NAME;
+          END
+          
+          CLOSE item_cursor;
+          DEALLOCATE item_cursor;
+          
+          SET  @Message =  @Message + char(10) + '====================================================================================================';
+      END
+      
+      -- ========================================
+      -- 3. 경비항목별 상세 집계
+      -- ========================================
+      SET  @Message =  @Message + char(10) + char(10) + '====================================================================================================';
+      SET  @Message =  @Message + char(10) + '3. 경비항목별 상세 집계';
+      SET  @Message =  @Message + char(10) + '====================================================================================================';
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) + '항목코드' + REPLICATE(' ', 7) + '항목명' + REPLICATE(' ', 34) + '소스집계' + REPLICATE(' ', 10) + '타겟집계' + REPLICATE(' ', 10) + '차이금액';
+      SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
+      
+      DECLARE @EXPEN_SEL_DTL NVARCHAR(50), @EXPEN_NAME_DTL NVARCHAR(100);
+      DECLARE @SOURCE_DTL_AMT BIGINT, @TARGET_DTL_AMT BIGINT, @DTL_DIFF BIGINT;
+      
+      DECLARE detail_cursor CURSOR FOR
+      SELECT DISTINCT EXPEN_SEL, EXPEN_SEL명
+      FROM DOI_EXPEN_MATL
+      WHERE YYYYMM = @YYYYMM AND SITE = @SITE
+        AND EXPEN_SEL IS NOT NULL
+      ORDER BY EXPEN_SEL;
+      
+      OPEN detail_cursor;
+      FETCH NEXT FROM detail_cursor INTO @EXPEN_SEL_DTL, @EXPEN_NAME_DTL;
+      
+      WHILE @@FETCH_STATUS = 0
+      BEGIN
+          -- 소스 금액
+          SELECT @SOURCE_DTL_AMT = ISNULL(CAST(SUM([IN]) AS BIGINT), 0)
+          FROM DOI_EXPEN_MATL
+          WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND EXPEN_SEL = @EXPEN_SEL_DTL;
+          
+          -- 타겟 금액
+          SELECT @TARGET_DTL_AMT = ISNULL(CAST(SUM([IN]) AS BIGINT), 0)
+          FROM DOI_FAB_COST
+          WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND EXPEN_SEL = @EXPEN_SEL_DTL;
+          
+          SET @DTL_DIFF = @SOURCE_DTL_AMT - @TARGET_DTL_AMT;
+          
+          SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) 
+              + LEFT(ISNULL(@EXPEN_SEL_DTL, '') + REPLICATE(' ', 15), 15)
+              + LEFT(ISNULL(@EXPEN_NAME_DTL, '') + REPLICATE(' ', 40), 40)
+              + RIGHT(REPLICATE(' ', 18) + FORMAT(@SOURCE_DTL_AMT, 'N0'), 18)
+              + RIGHT(REPLICATE(' ', 18) + FORMAT(@TARGET_DTL_AMT, 'N0'), 18)
+              + RIGHT(REPLICATE(' ', 18) + FORMAT(@DTL_DIFF, 'N0'), 18);
+          
+          FETCH NEXT FROM detail_cursor INTO @EXPEN_SEL_DTL, @EXPEN_NAME_DTL;
+      END
+      
+      CLOSE detail_cursor;
+      DEALLOCATE detail_cursor;
+      
+      SET  @Message =  @Message + char(10) + '====================================================================================================';
+      
+      -- 최종 상태
+      IF ABS(@DIFF_AMT) > 100 BEGIN
+          DECLARE @DIFF_PCT DECIMAL(10,4) = (CAST(@DIFF_AMT AS DECIMAL(20,2)) / CAST(@TARGET_AMT AS DECIMAL(20,2))) * 100;
+          SET  @Message =  @Message + char(10) + char(10) + '⚠️  [WARN] 가공비배부 데이터 불일치 발생! (차이율: ' + CAST(@DIFF_PCT AS VARCHAR(10)) + '%)';
       END
       ELSE BEGIN
-          SET  @Message =  @Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
-                        + '- 가공비배부 데이터 무결성 검증 완료 (일치)';
+          SET  @Message =  @Message + char(10) + char(10) + '✅ [CHECK] 가공비배부 데이터 무결성 검증 통과';
       END
+      SET  @Message =  @Message + char(10);
       
-      SET  @Message =  @Message + char(10) + '  [END] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 가공비배부(DOI_FAB_COST) 테이블에 '+@YYYYMM + '월 '
-						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '데이타 배부 완료했습니다';
+      SET  @Message =  @Message + char(10) + '[FINISH] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 가공비배부(DOI_FAB_COST) 테이블에 '+@YYYYMM + '월 '
+						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타 배부 완료했습니다';
    
       COMMIT TRANSACTION; 
       SELECT @Message as retMessage;
