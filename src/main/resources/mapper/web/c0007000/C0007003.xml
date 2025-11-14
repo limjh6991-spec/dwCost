@@ -43,6 +43,10 @@
 		order BY DW_MODEL;
 	</select>
 
+	<select id="uploadProdSubul" resultType="CamelMap">
+		EXEC UP_DOI_PROD_SUBUL #{yyyymm}, #{site};
+	</select>
+
 	<select id="checkduplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
 		DROP TABLE IF EXISTS #TempTable1;
 
