@@ -313,6 +313,88 @@ BEGIN
       order by B.CST_NO;
       SET  @Message =  @Message + char(10) + ' [INFO] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 경비집계(DOI_EXPEN_MATL) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '카세스팀 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 집계했습니다';
+      
+      -- ========================================
+      -- 데이터 무결성 검증
+      -- ========================================
+      DECLARE @SOURCE_AMT DECIMAL(18,2) = 0,
+              @TARGET_AMT DECIMAL(18,2) = 0,
+              @DIFF_AMT DECIMAL(18,2) = 0,
+              @MISSING_DEPT VARCHAR(MAX) = '',
+              @MISSING_ACCT VARCHAR(MAX) = '';
+      
+      -- 1. 소스 데이터 금액 합계 (DOI_ACCT_EXPEN)
+      SELECT @SOURCE_AMT = ISNULL(SUM(ACCT_AMT), 0)
+      FROM DOI_ACCT_EXPEN
+      WHERE yyyymm = @YYYYMM AND site = @SITE;
+      
+      -- 2. 타겟 데이터 금액 합계 (DOI_EXPEN_MATL)
+      SELECT @TARGET_AMT = ISNULL(SUM([IN]), 0)
+      FROM DOI_EXPEN_MATL
+      WHERE YYYYMM = @YYYYMM AND SITE = @SITE;
+      
+      SET @DIFF_AMT = @SOURCE_AMT - @TARGET_AMT;
+      
+      SET  @Message =  @Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                    + '- 소스금액: ' + FORMAT(@SOURCE_AMT, 'N0') + '원, '
+                    + '타겟금액: ' + FORMAT(@TARGET_AMT, 'N0') + '원, '
+                    + '차이: ' + FORMAT(@DIFF_AMT, 'N0') + '원';
+      
+      -- 3. 금액 차이가 1원 이상이면 누락 데이터 확인
+      IF ABS(@DIFF_AMT) > 1 BEGIN
+          -- 누락된 부서 확인
+          SELECT @MISSING_DEPT = STUFF((
+              SELECT DISTINCT ', ' + a.DEPT + '(' + b.DEPT_NAME + ')'
+              FROM DOI_ACCT_EXPEN a
+              LEFT JOIN DOI_DEPT b ON (a.yyyymm = b.yyyymm AND a.site = b.site AND a.dept = b.dept)
+              LEFT JOIN DOI_EXPEN_MATL c ON (a.yyyymm = c.YYYYMM AND a.site = c.SITE AND a.dept = c.dept)
+              WHERE a.yyyymm = @YYYYMM AND a.site = @SITE
+                AND c.dept IS NULL
+              FOR XML PATH('')
+          ), 1, 2, '');
+          
+          -- 누락된 계정 확인
+          SELECT @MISSING_ACCT = STUFF((
+              SELECT DISTINCT ', ' + a.ACCT + '(' + b.ACCT_NAME + ')'
+              FROM DOI_ACCT_EXPEN a
+              LEFT JOIN DOI_ACCT b ON (a.yyyymm = b.yyyymm AND a.site = b.site AND a.acct = b.acct)
+              LEFT JOIN DOI_EXPEN_MATL c ON (a.yyyymm = c.YYYYMM AND a.site = c.SITE AND a.acct = c.acct)
+              WHERE a.yyyymm = @YYYYMM AND a.site = @SITE
+                AND c.acct IS NULL
+              FOR XML PATH('')
+          ), 1, 2, '');
+          
+          IF @MISSING_DEPT IS NOT NULL AND LEN(@MISSING_DEPT) > 0 BEGIN
+              SET  @Message =  @Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                            + '- 누락 부서: ' + @MISSING_DEPT;
+          END
+          
+          IF @MISSING_ACCT IS NOT NULL AND LEN(@MISSING_ACCT) > 0 BEGIN
+              SET  @Message =  @Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                            + '- 누락 계정: ' + @MISSING_ACCT;
+          END
+          
+          -- 조인 실패 원인 확인
+          DECLARE @MISSING_DEPT_IN_MASTER INT = 0;
+          SELECT @MISSING_DEPT_IN_MASTER = COUNT(DISTINCT a.dept)
+          FROM DOI_ACCT_EXPEN a
+          LEFT JOIN DOI_DEPT b ON (a.yyyymm = b.yyyymm AND a.site = b.site AND a.dept = b.dept)
+          WHERE a.yyyymm = @YYYYMM AND a.site = @SITE
+            AND b.dept IS NULL;
+          
+          IF @MISSING_DEPT_IN_MASTER > 0 BEGIN
+              SET  @Message =  @Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                            + '- DOI_DEPT 마스터에 없는 부서: ' + CAST(@MISSING_DEPT_IN_MASTER AS VARCHAR) + '개';
+          END
+          
+          SET  @Message =  @Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                        + '- 경비집계 데이터 불일치 발생! 원인을 확인하세요.';
+      END
+      ELSE BEGIN
+          SET  @Message =  @Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                        + '- 경비집계 데이터 무결성 검증 완료 (일치)';
+      END
+      
       SET  @Message =  @Message + char(10) + '[FINISH] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 경비집계(DOI_EXPEN_MATL) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타 집계 완료했습니다';
       COMMIT TRANSACTION;

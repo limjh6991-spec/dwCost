@@ -70,6 +70,40 @@ BEGIN
 			mat_class;
   	  SET  @Message =  @Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 경비/재료비집계(DOI_FAB_COST) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '재료비집계 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
+      
+      -- ========================================
+      -- 데이터 무결성 검증
+      -- ========================================
+      DECLARE @SOURCE_AMT DECIMAL(18,2) = 0,
+              @TARGET_AMT DECIMAL(18,2) = 0,
+              @DIFF_AMT DECIMAL(18,2) = 0;
+      
+      -- 1. 소스 데이터 (DOI_MAT_COST)
+      SELECT @SOURCE_AMT = ISNULL(SUM(배부금액), 0)
+      FROM DOI_MAT_COST
+      WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SELCODE;
+      
+      -- 2. 타겟 데이터 (DOI_FAB_COST - 재료비만)
+      SELECT @TARGET_AMT = ISNULL(SUM([IN]), 0)
+      FROM DOI_FAB_COST
+      WHERE yyyymm = @YYYYMM AND site = @SITE AND acct_name = '재료비';
+      
+      SET @DIFF_AMT = @SOURCE_AMT - @TARGET_AMT;
+      
+      SET  @Message =  @Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                    + '- 소스금액(재료비배부): ' + FORMAT(@SOURCE_AMT, 'N0') + '원, '
+                    + '타겟금액(재공평가): ' + FORMAT(@TARGET_AMT, 'N0') + '원, '
+                    + '차이: ' + FORMAT(@DIFF_AMT, 'N0') + '원';
+      
+      IF ABS(@DIFF_AMT) > 1 BEGIN
+          SET  @Message =  @Message + char(10) + '[WARN] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                        + '- 재공평가(재료비) 데이터 불일치 발생!';
+      END
+      ELSE BEGIN
+          SET  @Message =  @Message + char(10) + '[CHECK] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+                        + '- 재공평가(재료비) 데이터 무결성 검증 완료 (일치)';
+      END
+      
       SET  @Message =  @Message + char(10) + '[FINISH] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 경비/재료비집계(DOI_FAB_COST) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '재료비 데이타 입력 완료했습니다';
       COMMIT TRANSACTION; 
