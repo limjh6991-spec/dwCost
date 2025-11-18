@@ -1,0 +1,131 @@
+DECLARE @YYYY VARCHAR(4)='2025';
+WITH GEN_YYYYMM AS (
+    SELECT 
+        CAST(@YYYY + '0101' AS DATE) AS DT,
+        FORMAT(CAST(@YYYY + '0101' AS DATE), 'yyyyMM') AS YYYYMM
+    UNION ALL
+    SELECT 
+        DATEADD(MONTH, 1, DT),
+        FORMAT(DATEADD(MONTH, 1, DT), 'yyyyMM') AS YYYYMM
+    FROM GEN_YYYYMM
+    WHERE DT < CAST(@YYYY + '1201' AS DATE)
+)SELECT * INTO #GEN_YYYYMM FROM GEN_YYYYMM;
+
+--구   분
+--매출액
+--수량 (Cell)
+--판가 (단위:원)
+SELECT a.YYYYMM,'매출액' as  구분,sum(원화판매금액계) 매출액,sum(수량) as '수량(Cell)',sum(원화판매금액계)/sum(수량) as '판가 (단위:원)'
+FROM #GEN_YYYYMM a 
+  LEFT JOIN DOI_SALE_RESC b ON (a.YYYYMM=b.YYYYMM and b.SITE='HQ')
+GROUP BY a.YYYYMM UNION ALL  
+--양산매출
+--수량 (Cell)
+--판가 (단위:원)
+SELECT a.YYYYMM,'양산매출' as  구분,sum(원화판매금액계) 매출액,sum(수량) as '수량(Cell)',sum(원화판매금액계)/sum(수량) as '판가 (단위:원)'
+FROM #GEN_YYYYMM a 
+  LEFT JOIN DOI_SALE_RESC b ON (a.YYYYMM=b.YYYYMM and b.SITE='HQ' and RIGHT(b.품번,1)!='D')
+GROUP BY a.YYYYMM UNION ALL
+--개발매출
+--수량 (Cell)
+--판가 (단위:원)
+SELECT a.YYYYMM,'개발매출' as  구분,sum(원화판매금액계) 매출액,sum(수량) as '수량(Cell)',sum(원화판매금액계)/sum(수량) as '판가 (단위:원)'
+FROM #GEN_YYYYMM a 
+  LEFT JOIN DOI_SALE_RESC b ON (a.YYYYMM=b.YYYYMM and b.SITE='HQ' and RIGHT(b.품번,1)='D')
+GROUP BY a.YYYYMM;  
+
+CST매출
+수량 (Cell)
+판가 (단위:원)
+원장상계 外
+상품매출
+기타매출
+
+--매출원가
+--기초제품재고액
+--당기제품제조원가
+--타계정으로(샘플,….)
+--타계정으로(재공)
+--관세환급금
+--기말제품재고액
+--상품매출원가
+SELECT a.YYYYMM,'매출원가' as 구분,sum(BOH_AMT) 기초제품재고액,sum(IN_AMT) 당기제품제조원가,
+		sum(EOH_AMT) 기말제품재고액,sum(OUT_AMT) 상품매출원가
+FROM #GEN_YYYYMM a 
+  LEFT JOIN DOI_STOCK_COST b ON (a.YYYYMM=b.YYYYMM and b.SITE='HQ' )
+GROUP BY a.YYYYMM;
+  
+관세환급금
+기말제품재고액
+상품매출원가
+재료비
+원재료
+부재료
+노무비
+제)인건비
+도급비
+제조경비
+제)복리후생비-건강,장기요양보험
+제)복리후생비-사내식대
+제)복리후생비-기타
+제)여비교통비
+제)접대비
+제)통신비
+제)수도광열비
+제)전력비
+제)세금과공과-연금보험
+제)세금과공과-기타
+제)감가상각비
+제)지급임차료
+제)수선비
+제)보험료-고용,산재보험
+제)보험료-차량
+제)보험료-기타
+제)차량유지비-유류비
+제)차량유지비-기타
+제)차량유지비-자동차세
+제)운반비
+제)소모품비
+제)지급수수료-기타
+제)지급수수료-유지보수료
+제)지급수수료-감사.법률.자문
+제)기타
+당기총제조비용
+기초재공품재고액
+기말재공품재고액
+매출총이익
+(매출총이익률)
+판매관리비
+판)인건비
+판)복리후생비-건강,장기요양보험
+판)복리후생비-사내식대
+판)복리후생비-기타
+판)여비교통비
+판)접대비
+판)통신비
+판)수도광열비
+판)전력비
+판)세금과공과-연금보험
+판)세금과공과-기타
+판)감가상각비
+판)지급임차료
+판)수선비
+판)보험료-산재,고용보험
+판)보험료-차량
+판)보험료-기타
+판)차량유지비-유류비
+판)차량유지비-기타
+판)차량유지비-자동차세
+판)경상연구개발비-기타
+판)경상연구개발비-개발소모품
+판)경상연구개발비-인건비
+판)경상연구개발비-4대보험
+판)운반비
+판)소모품비
+판)지급수수료-기타
+판)지급수수료-유지보수료
+판)지급수수료-감사.법률.자문
+판)해외시장개척비
+판)기타
+영업이익
+(영업이익률)
