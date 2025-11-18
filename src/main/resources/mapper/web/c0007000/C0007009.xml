@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007009Mapper">
+
+    <!-- 1) 불량반품 데이터 조회 -->
+    <select id="selectRmaData" resultType="CamelMap">
+        SELECT
+            ROW_NUMBER() OVER (
+            PARTITION BY YYYYMM, SEL_CODE, SITE, 모델명
+            ORDER BY 생성시각 ) AS ROW_SEQ,
+            YYYYMM,
+            SEL_CODE,
+            SITE AS SITE_ORG,
+            CASE 
+                WHEN SITE = 'HQ' THEN '본사' 
+                WHEN SITE = 'VN' THEN 'VINA' 
+            END AS SITE,
+            모델명,
+            RMA_IN,
+            RMA_OUT,
+            생성자,
+            생성시각
+        FROM DOI_RMA_INOUT
+        WHERE 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            AND YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            AND SITE = #{site}
+        </if>
+        ORDER BY 모델명
+    </select>
+
+    <!-- 2) 불량반품 데이터 입력 -->
+    <insert id="insertRmaData">
+        INSERT INTO DOI_RMA_INOUT
+        (
+            YYYYMM,
+            SEL_CODE,
+            SITE,
+            모델명,
+            RMA_IN,
+            RMA_OUT,
+            생성자,
+            생성시각
+        )
+        VALUES
+        (
+            #{yyyymm},
+            #{selCode},
+            CASE WHEN #{site} = '본사'  THEN 'HQ' WHEN #{site} = '베트남' THEN 'VN' ELSE LEFT(#{site}, 2)
+            END,
+            #{모델명},
+            #{rmaIn},
+            #{rmaOut},
+            #{생성자},
+            SYSDATETIME()
+        )
+    </insert>
+
+    <!-- 3) 불량반품 데이터 업데이트 -->
+    <update id="updateRmaData">
+        UPDATE DOI_RMA_INOUT
+        SET 
+            RMA_IN  = #{rmaIn},
+            RMA_OUT = #{rmaOut},
+            생성자 = #{생성자},
+            생성시각 = SYSDATETIME()
+        WHERE 1=1
+            AND YYYYMM = #{yyyymm}
+            AND SEL_CODE = #{selCode}
+            AND SITE = #{siteOrg}
+            AND 모델명 = #{모델명}
+            AND 생성시각 = #{생성시각}
+    </update>
+
+    <!-- 3-1) 불량반품 데이터 삭제 -->
+    <delete id="deleteRmaData">
+        ;WITH T AS (
+            SELECT
+                ROW_NUMBER() OVER (
+                    PARTITION BY YYYYMM, SEL_CODE, SITE, 모델명
+                    ORDER BY 생성시각
+                ) AS ROW_SEQ,
+                *
+            FROM DOI_RMA_INOUT
+            WHERE YYYYMM = #{yyyymm}
+            AND SEL_CODE = #{selCode}
+            AND SITE = #{siteOrg}
+            AND 모델명 = #{모델명}
+        )
+        DELETE FROM T
+        WHERE ROW_SEQ = #{rowSeq}
+    </delete>
+
+    <!-- 4) 팝업용 모델 리스트 (DOI_MODEL_MAST) -->
+    <select id="selectModelPopup" resultType="CamelMap">
+        SELECT
+            MODEL,
+            SPEC,
+            INCH
+        FROM DOI_MODEL_MAST
+        WHERE 1=1
+        AND YYYYMM = '202507'
+        <if test="site != null and site != ''">
+            AND SITE = #{site}
+        </if>
+        <if test="model != null and model != ''">
+            AND MODEL = #{model}
+        </if>
+        ORDER BY MODEL
+    </select>
+</mapper>
