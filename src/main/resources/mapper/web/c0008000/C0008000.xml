@@ -711,4 +711,7 @@
         order by  model, EXPEN_SEL, EXPEN_SEL명 ,구분 ;  --SUB_NAME, ITEM_NAME,
     </select>
 
+    <select id="C0008014_Sch1" resultType="CamelMap">
+        exec DOI_AnnualReportBySite @YYYY=#{yyyy}, @SITE=#{site};
+    </select>
 </mapper>
