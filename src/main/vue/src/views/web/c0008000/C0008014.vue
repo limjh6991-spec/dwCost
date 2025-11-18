@@ -37,7 +37,7 @@
         <span style="font-size: 14px">(단위 : 백만원)</span>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="reportGrid" :uid="'reportGrid'" :step="'1'" :rows="reportGridRows" style="height: 100%" />
+        <RealGrid ref="reportGrid" :uid="'reportGrid'" :step="'1'" :rows="reportGridRows" style="height: 100%" :fitLayoutWidthEnable="false" />
       </div>
     </div>
   </div>
