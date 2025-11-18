@@ -110,6 +110,202 @@ BEGIN
 		--order by 1,2
 	  SET  @Message =  @Message + char(10) + ' [INFO] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비집계(DOI_MAT_AMT) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '재료비 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 집계했습니다';
+      
+      -- ========================================
+      -- 데이터 무결성 검증
+      -- ========================================
+      DECLARE @SOURCE_AMT BIGINT = 0,
+              @SOURCE_QTY DECIMAL(18,2) = 0,
+              @TARGET_AMT BIGINT = 0,
+              @TARGET_QTY DECIMAL(18,2) = 0,
+              @DIFF_AMT BIGINT = 0,
+              @DIFF_QTY DECIMAL(18,2) = 0;
+      
+      -- 소스 데이터 (DOI_MATERIAL_RESC)
+      SELECT @SOURCE_AMT = ISNULL(CAST(SUM(in_amt) AS BIGINT), 0),
+             @SOURCE_QTY = ISNULL(SUM(in_qty), 0)
+      FROM DOI_MATERIAL_RESC
+      WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SELCODE;
+      
+      -- 타겟 데이터 (DOI_MAT_AMT)
+      SELECT @TARGET_AMT = ISNULL(CAST(SUM(in_amt) AS BIGINT), 0),
+             @TARGET_QTY = ISNULL(SUM(in_qty), 0)
+      FROM DOI_MAT_AMT
+      WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SELCODE;
+      
+      SET @DIFF_AMT = @SOURCE_AMT - @TARGET_AMT;
+      SET @DIFF_QTY = @SOURCE_QTY - @TARGET_QTY;
+      
+      -- ========================================
+      -- 1. 소스 vs 타겟 금액/수량 검증
+      -- ========================================
+      SET  @Message =  @Message + char(10) + char(10) + '====================================================================================================';
+      SET  @Message =  @Message + char(10) + '1. 소스 데이터와 타겟 데이터 금액/수량 검증';
+      SET  @Message =  @Message + char(10) + '====================================================================================================';
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 10) + '구분' + REPLICATE(' ', 30) + '건수' + REPLICATE(' ', 10) + '수량' + REPLICATE(' ', 16) + '금액';
+      SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
+      
+      -- 소스 상세
+      DECLARE @SOURCE_CNT INT = 0;
+      SELECT @SOURCE_CNT = COUNT(*) FROM DOI_MATERIAL_RESC WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND sel_code = @SELCODE;
+      
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 10) + '소스(DOI_MATERIAL_RESC)' + REPLICATE(' ', 12) 
+          + RIGHT(REPLICATE(' ', 10) + CAST(@SOURCE_CNT AS VARCHAR(10)), 10) + REPLICATE(' ', 4) 
+          + RIGHT(REPLICATE(' ', 18) + FORMAT(@SOURCE_QTY, 'N2'), 18) 
+          + RIGHT(REPLICATE(' ', 20) + FORMAT(@SOURCE_AMT, 'N0'), 20) + '원';
+      
+      -- 타겟 상세
+      DECLARE @TARGET_CNT INT = 0;
+      SELECT @TARGET_CNT = COUNT(*) FROM DOI_MAT_AMT WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND sel_code = @SELCODE;
+      
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 10) + '타겟(DOI_MAT_AMT)' + REPLICATE(' ', 18) 
+          + RIGHT(REPLICATE(' ', 10) + CAST(@TARGET_CNT AS VARCHAR(10)), 10) + REPLICATE(' ', 4) 
+          + RIGHT(REPLICATE(' ', 18) + FORMAT(@TARGET_QTY, 'N2'), 18) 
+          + RIGHT(REPLICATE(' ', 20) + FORMAT(@TARGET_AMT, 'N0'), 20) + '원';
+      SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 10) + '차이' + REPLICATE(' ', 48) 
+          + RIGHT(REPLICATE(' ', 18) + FORMAT(@DIFF_QTY, 'N2'), 18) 
+          + RIGHT(REPLICATE(' ', 20) + FORMAT(@DIFF_AMT, 'N0'), 20) + '원';
+      SET  @Message =  @Message + char(10) + '====================================================================================================';
+      
+      -- ========================================
+      -- 2. 차이금액 상세 (자재대분류별)
+      -- ========================================
+      IF ABS(@DIFF_AMT) > 100 BEGIN
+          SET  @Message =  @Message + char(10) + char(10) + '====================================================================================================';
+          SET  @Message =  @Message + char(10) + '2. 차이금액 상세 (자재대분류별)';
+          SET  @Message =  @Message + char(10) + '====================================================================================================';
+          
+          DECLARE @MAT_CLASS NVARCHAR(50);
+          DECLARE @SOURCE_CLASS_AMT BIGINT, @TARGET_CLASS_AMT BIGINT, @CLASS_DIFF BIGINT;
+          
+          SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) + '자재대분류' + REPLICATE(' ', 30) + '소스금액' + REPLICATE(' ', 10) + '타겟금액' + REPLICATE(' ', 10) + '차이';
+          SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
+          
+          DECLARE class_cursor CURSOR FOR
+          SELECT DISTINCT 자재대분류
+          FROM DOI_MAT_AMT
+          WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND sel_code = @SELCODE
+          ORDER BY 자재대분류;
+          
+          OPEN class_cursor;
+          FETCH NEXT FROM class_cursor INTO @MAT_CLASS;
+          
+          WHILE @@FETCH_STATUS = 0
+          BEGIN
+              -- 소스에서 해당 분류 금액
+              SELECT @SOURCE_CLASS_AMT = ISNULL(CAST(SUM(in_amt) AS BIGINT), 0)
+              FROM DOI_MATERIAL_RESC a
+              LEFT JOIN (SELECT DISTINCT mat_code, 자재대분류 FROM DOI_MAT_AMT WHERE YYYYMM = @YYYYMM AND SITE = @SITE) b 
+                ON a.mat_code = b.mat_code
+              WHERE a.yyyymm = @YYYYMM AND a.site = @SITE AND a.sel_code = @SELCODE
+                AND b.자재대분류 = @MAT_CLASS;
+              
+              -- 타겟에서 해당 분류 금액
+              SELECT @TARGET_CLASS_AMT = ISNULL(CAST(SUM(in_amt) AS BIGINT), 0)
+              FROM DOI_MAT_AMT
+              WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND sel_code = @SELCODE
+                AND 자재대분류 = @MAT_CLASS;
+              
+              SET @CLASS_DIFF = @SOURCE_CLASS_AMT - @TARGET_CLASS_AMT;
+              
+              IF ABS(@CLASS_DIFF) > 10 BEGIN
+                  SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) 
+                      + LEFT(ISNULL(@MAT_CLASS, '미분류') + REPLICATE(' ', 40), 40)
+                      + RIGHT(REPLICATE(' ', 18) + FORMAT(@SOURCE_CLASS_AMT, 'N0'), 18)
+                      + RIGHT(REPLICATE(' ', 18) + FORMAT(@TARGET_CLASS_AMT, 'N0'), 18)
+                      + RIGHT(REPLICATE(' ', 18) + FORMAT(@CLASS_DIFF, 'N0'), 18);
+              END
+              
+              FETCH NEXT FROM class_cursor INTO @MAT_CLASS;
+          END
+          
+          CLOSE class_cursor;
+          DEALLOCATE class_cursor;
+          
+          SET  @Message =  @Message + char(10) + '====================================================================================================';
+      END
+      
+      -- ========================================
+      -- 3. 자재대분류별 상세 집계
+      -- ========================================
+      SET  @Message =  @Message + char(10) + char(10) + '====================================================================================================';
+      SET  @Message =  @Message + char(10) + '3. 자재대분류별 상세 집계';
+      SET  @Message =  @Message + char(10) + '====================================================================================================';
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) + '자재대분류' + REPLICATE(' ', 30) + '소스집계' + REPLICATE(' ', 10) + '타겟집계' + REPLICATE(' ', 10) + '차이금액';
+      SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
+      
+      DECLARE @MAT_CLASS_DTL NVARCHAR(50);
+      DECLARE @SOURCE_DTL_AMT BIGINT, @TARGET_DTL_AMT BIGINT, @DTL_DIFF BIGINT;
+      
+      DECLARE detail_cursor CURSOR FOR
+      SELECT DISTINCT ISNULL(자재대분류, '미분류') as 자재대분류
+      FROM DOI_MAT_AMT
+      WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND sel_code = @SELCODE
+      ORDER BY ISNULL(자재대분류, '미분류');
+      
+      OPEN detail_cursor;
+      FETCH NEXT FROM detail_cursor INTO @MAT_CLASS_DTL;
+      
+      WHILE @@FETCH_STATUS = 0
+      BEGIN
+          -- 소스 금액: DOI_MATERIAL_RESC에서 해당 자재대분류의 자재들 합계
+          SELECT @SOURCE_DTL_AMT = ISNULL(CAST(SUM(a.in_amt) AS BIGINT), 0)
+          FROM DOI_MATERIAL_RESC a
+          INNER JOIN (SELECT DISTINCT mat_code, 자재대분류 FROM DOI_MAT_AMT WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND sel_code = @SELCODE) b
+            ON a.mat_code = b.mat_code
+          WHERE a.yyyymm = @YYYYMM AND a.site = @SITE AND a.sel_code = @SELCODE
+            AND ISNULL(b.자재대분류, '미분류') = @MAT_CLASS_DTL;
+          
+          -- 타겟 금액: DOI_MAT_AMT 합계
+          SELECT @TARGET_DTL_AMT = ISNULL(CAST(SUM(in_amt) AS BIGINT), 0)
+          FROM DOI_MAT_AMT
+          WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND sel_code = @SELCODE
+            AND ISNULL(자재대분류, '미분류') = @MAT_CLASS_DTL;
+          
+          SET @DTL_DIFF = @SOURCE_DTL_AMT - @TARGET_DTL_AMT;
+          
+          SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) 
+              + LEFT(@MAT_CLASS_DTL + REPLICATE(' ', 40), 40)
+              + RIGHT(REPLICATE(' ', 18) + FORMAT(@SOURCE_DTL_AMT, 'N0'), 18)
+              + RIGHT(REPLICATE(' ', 18) + FORMAT(@TARGET_DTL_AMT, 'N0'), 18)
+              + RIGHT(REPLICATE(' ', 18) + FORMAT(@DTL_DIFF, 'N0'), 18);
+          
+          FETCH NEXT FROM detail_cursor INTO @MAT_CLASS_DTL;
+      END
+      
+      CLOSE detail_cursor;
+      DEALLOCATE detail_cursor;
+      
+      SET  @Message =  @Message + char(10) + '====================================================================================================';
+      
+      -- 최종 상태
+      IF ABS(@DIFF_AMT) > 100 OR ABS(@DIFF_QTY) > 0.01 BEGIN
+          DECLARE @DIFF_PCT DECIMAL(10,4) = (CAST(@DIFF_AMT AS DECIMAL(20,2)) / NULLIF(CAST(@TARGET_AMT AS DECIMAL(20,2)), 0)) * 100;
+          SET  @Message =  @Message + char(10) + char(10) + '⚠️  [WARN] 재료비집계 데이터 불일치 발생! (차이율: ' + CAST(ISNULL(@DIFF_PCT, 0) AS VARCHAR(10)) + '%)';
+          
+          -- 누락된 자재 확인
+          DECLARE @MISSING_MAT VARCHAR(MAX) = '';
+          SELECT @MISSING_MAT = STUFF((
+              SELECT DISTINCT TOP 10 ', ' + a.mat_code
+              FROM DOI_MATERIAL_RESC a
+              LEFT JOIN DOI_MAT_AMT b ON (a.yyyymm = b.yyyymm AND a.site = b.site AND a.mat_code = b.mat_code AND a.sel_code = b.sel_code)
+              WHERE a.yyyymm = @YYYYMM AND a.site = @SITE AND a.sel_code = @SELCODE
+                AND a.in_amt > 0
+                AND b.mat_code IS NULL
+              FOR XML PATH('')
+          ), 1, 2, '');
+          
+          IF @MISSING_MAT IS NOT NULL AND LEN(@MISSING_MAT) > 0 BEGIN
+              SET  @Message =  @Message + char(10) + '💡 누락 자재(상위10개): ' + @MISSING_MAT;
+              SET  @Message =  @Message + char(10) + '💡 원인: BOM 마스터 미등록 또는 in_amt <= 0 필터링';
+          END
+      END
+      ELSE BEGIN
+          SET  @Message =  @Message + char(10) + char(10) + '✅ [CHECK] 재료비집계 데이터 무결성 검증 통과';
+      END
+      SET  @Message =  @Message + char(10);
+      
       SET  @Message =  @Message + char(10) + '[FINISH] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비집계(DOI_MAT_AMT) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '데이타 집계 완료했습니다';
       COMMIT TRANSACTION; 

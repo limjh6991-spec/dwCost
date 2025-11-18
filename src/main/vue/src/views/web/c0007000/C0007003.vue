@@ -25,6 +25,7 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <b-button class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
         </div>
       </div>
@@ -155,6 +156,35 @@ export default {
 
     searchClick() {
       this.getDataList();
+    },
+    async uploadClick() {
+      let yyyymm = this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null;
+      let params = {
+        yyyymm: yyyymm,
+        site: this.siteMap[this.params.site], // '본사' → 'HQ', 'VINA' → 'VN' 변환
+      };
+      console.log('업로드 파라미터:', params);
+      let param = {
+        menuId: 'c0007003',
+        queryId: 'uploadProdSubul',
+        queryParams: params,
+        target: null,
+      };
+      try {
+        let resp = await this.$axios.api.search(param);
+        if (resp && resp[0].retmessage) {
+          this.$toast('info',resp[0].retmessage);
+        }
+        this.getDataList();
+      } catch (error) {
+        if (error.response) {
+          console.error('업로드 중 오류 발생:', error.response.data);
+          this.$toast('error', `서버 오류: ${error.response.data?.message || error.response.status}`);
+        } else {
+          console.error('업로드 중 오류 발생:', error.message);
+          this.$toast('error', `서버 연결에 실패했습니다: ${error.message}`);
+        }
+      }
     },
 
     async excelBtnClick() {

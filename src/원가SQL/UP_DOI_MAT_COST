@@ -1,4 +1,4 @@
-CREATE                       Procedure UP_DOI_MAT_COST
+ALTER                       Procedure UP_DOI_MAT_COST
 (
     @YYYYMM varchar(10),--집계 년/월 설정
     @SITE varchar(2),  --사업장코드 (본사 : HQ, 베트남 : VN)
@@ -111,7 +111,7 @@ BEGIN
 			doi_prod_subul a
 		where	1=1
 			and a.yyyymm = @YYYYMM
-			and a.sel_code = 'ACTUAL'
+			--and a.sel_code = @SELCODE
 			and a.DW_SITE = @SITE
 				group by a.yyyymm,a.sel_code,a.DW_SITE,a.도우모델/*MODEL_N_TYPE,도우모델+IIF(substring(MODEL_N_TYPE,4,1)='D','D','P')*/
 				having sum(a.IN_MONTH+a.OUT_MONTH+a.LOSS_MONTH) > 0
@@ -163,6 +163,9 @@ BEGIN
 			DOI_MAT_AMT a with(nolock)
 		inner join MAT_DISTRATE b on
 			(a.mat_code = b.자재번호)
+		where a.yyyymm = @YYYYMM 
+			and a.site = @SITE 
+			--and (a.sel_code = @SELCODE OR @SELCODE IS NULL OR @SELCODE = '')
 		union all
 			  select
 			b.yyyymm,
@@ -184,10 +187,111 @@ BEGIN
 			DOI_MAT_AMT a with(nolock)
 		inner join MAT_COMM_RATE b on
 			(1 = 1)
-		where	not exists (select 1 from MAT_DISTRATE c where a.mat_code = c.자재번호)
+		where a.yyyymm = @YYYYMM 
+			and a.site = @SITE 
+			--and (a.sel_code = @SELCODE OR @SELCODE IS NULL OR @SELCODE = '')
+			and not exists (select 1 from MAT_DISTRATE c where a.mat_code = c.자재번호)
 		;
 	  SET  @Message =  @Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비배부(DOI_MAT_COST) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '재료비 배부 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
+      
+      -- ========================================
+      -- 데이터 무결성 검증
+      -- ========================================
+      DECLARE @SOURCE_AMT BIGINT = 0,
+              @TARGET_AMT BIGINT = 0,
+              @DIFF_AMT BIGINT = 0,
+              @SOURCE_CNT INT = 0,
+              @TARGET_CNT INT = 0,
+              @MODEL_CNT INT = 0;
+      
+      -- 1. 소스 데이터 (DOI_MAT_AMT)
+      SELECT @SOURCE_AMT = ISNULL(CAST(SUM(in_amt) AS BIGINT), 0),
+             @SOURCE_CNT = COUNT(*)
+      FROM DOI_MAT_AMT
+      WHERE yyyymm = @YYYYMM AND site = @SITE;
+        --AND (sel_code = @SELCODE OR @SELCODE IS NULL OR @SELCODE = '');
+      
+      -- 2. 타겟 데이터 (DOI_MAT_COST) - 자재별로 그룹핑한 배부금액 합계
+      SELECT @TARGET_AMT = ISNULL(CAST(SUM(배부금액) AS BIGINT), 0),
+             @TARGET_CNT = COUNT(DISTINCT 자재번호)
+      FROM DOI_MAT_COST
+      WHERE yyyymm = @YYYYMM AND site = @SITE;
+        --AND (sel_code = @SELCODE OR @SELCODE IS NULL OR @SELCODE = '');
+      
+      -- 3. 모델 수
+      SELECT @MODEL_CNT = COUNT(DISTINCT 도우모델)
+      FROM DOI_MAT_COST
+      WHERE yyyymm = @YYYYMM AND site = @SITE;
+        --AND (sel_code = @SELCODE OR @SELCODE IS NULL OR @SELCODE = '');
+      
+      SET @DIFF_AMT = @SOURCE_AMT - @TARGET_AMT;
+      
+      SET  @Message =  @Message + char(10) + char(10) + '====================================================================================================';
+      SET  @Message =  @Message + char(10) + '데이터 무결성 검증';
+      SET  @Message =  @Message + char(10) + '====================================================================================================';
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) + '구분' + REPLICATE(' ', 36) + '건수' + REPLICATE(' ', 14) + '금액';
+      SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) 
+          + LEFT('소스(DOI_MAT_AMT)' + REPLICATE(' ', 40), 40)
+          + RIGHT(REPLICATE(' ', 18) + FORMAT(@SOURCE_CNT, 'N0'), 18)
+          + RIGHT(REPLICATE(' ', 18) + FORMAT(@SOURCE_AMT, 'N0'), 18);
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) 
+          + LEFT('타겟(DOI_MAT_COST) - 자재별' + REPLICATE(' ', 40), 40)
+          + RIGHT(REPLICATE(' ', 18) + FORMAT(@TARGET_CNT, 'N0'), 18)
+          + RIGHT(REPLICATE(' ', 18) + FORMAT(@TARGET_AMT, 'N0'), 18);
+      SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) 
+          + LEFT('차이' + REPLICATE(' ', 40), 40)
+          + RIGHT(REPLICATE(' ', 18) + '', 18)
+          + RIGHT(REPLICATE(' ', 18) + FORMAT(@DIFF_AMT, 'N0'), 18);
+      SET  @Message =  @Message + char(10) + '====================================================================================================';
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) + '배부된 모델 수: ' + CAST(@MODEL_CNT AS VARCHAR) + '개';
+      
+      -- 세부 검증 정보 (항상 표시)
+      DECLARE @BOM_MISSING INT = 0, @PROD_MISSING INT = 0, @MAT_NOALLOC INT = 0;
+      
+      -- BOM 미등록 자재 수
+      SELECT @BOM_MISSING = COUNT(DISTINCT a.mat_code)
+      FROM DOI_MAT_AMT a
+      LEFT JOIN DOI_BOM_MAST b ON (a.yyyymm = b.yyyymm AND a.site = b.site AND a.mat_code = b.자재번호)
+      WHERE a.yyyymm = @YYYYMM AND a.site = @SITE
+        --AND a.sel_code = @SELCODE
+        AND b.자재번호 IS NULL;
+      
+      -- 미배부 자재 수 (소스에는 있는데 타겟에 없는 자재)
+      SELECT @MAT_NOALLOC = COUNT(DISTINCT a.mat_code)
+      FROM DOI_MAT_AMT a
+      LEFT JOIN DOI_MAT_COST b ON (a.yyyymm = b.yyyymm AND a.site = b.site AND a.mat_code = b.자재번호)
+      WHERE a.yyyymm = @YYYYMM AND a.site = @SITE
+        --AND a.sel_code = @SELCODE
+        AND b.자재번호 IS NULL;
+      
+      SET  @Message =  @Message + char(10) + '====================================================================================================';
+      SET  @Message =  @Message + char(10) + '세부 검증 정보:';
+      SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) + 'BOM 미등록 자재: ' + CAST(@BOM_MISSING AS VARCHAR) + '개';
+      SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) + '미배부 자재: ' + CAST(@MAT_NOALLOC AS VARCHAR) + '개';
+      SET  @Message =  @Message + char(10) + '====================================================================================================';
+      
+      IF ABS(@DIFF_AMT) > 100 BEGIN
+          IF @BOM_MISSING > 0 BEGIN
+              SET  @Message =  @Message + char(10) + '⚠️  [WARN] BOM 마스터 미등록 자재가 공통 배부로 적용되었습니다';
+          END
+          
+          IF @MAT_NOALLOC > 0 BEGIN
+              SET  @Message =  @Message + char(10) + '❌ [ERROR] 미배부 자재가 발견되었습니다';
+          END
+          
+          DECLARE @DIFF_PCT DECIMAL(10,4) = (CAST(@DIFF_AMT AS DECIMAL(20,2)) / NULLIF(CAST(@SOURCE_AMT AS DECIMAL(20,2)), 0)) * 100;
+          SET  @Message =  @Message + char(10) + '⚠️  [WARN] 재료비배부 데이터 불일치 발생! (차이율: ' + CAST(ISNULL(@DIFF_PCT, 0) AS VARCHAR(10)) + '%)';
+      END
+      ELSE BEGIN
+          SET  @Message =  @Message + char(10) + '✅ [CHECK] 재료비배부 데이터 무결성 검증 통과';
+      END
+      SET  @Message =  @Message + char(10) + '====================================================================================================';
+      SET  @Message =  @Message + char(10);
+      
       SET  @Message =  @Message + char(10) + '[FINISH] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비배부(DOI_MAT_COST) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '데이타 입력 완료했습니다';
       COMMIT TRANSACTION; 

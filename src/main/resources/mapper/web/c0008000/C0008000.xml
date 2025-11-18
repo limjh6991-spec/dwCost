@@ -413,6 +413,15 @@
         order by 1,2,3,4;
     </select>
 
+    <!-- C0008005: 재료비집계 프로시저 실행 (UP_DOI_MAT_AMT) -->
+    <select id="C0008005_Exec" resultType="CamelMap">
+	DECLARE @RET_CODE INT;
+	EXEC @RET_CODE = UP_DOI_MAT_AMT 
+		#{yyyymm},
+		#{site},
+		N'ACTUAL'
+    </select>
+
     <select id="C0008006_Sch1" resultType="CamelMap">
       WITH BOM as (
 		SELECT * 
