@@ -172,7 +172,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `판매관리비${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `경영실행${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
@@ -188,11 +188,14 @@ export default {
     },
     setCellStyleCallbackReportGrid(grid, dataCell) {
       var ret = {};
+      if (dataCell.dataColumn.name != '구분') {
+        return ret;
+      }
       var gubun = dataCell.value;
       if (this.$utils.containsValue(['매출액', '매출원가', '재료비', '노무비', '제조경비', '매출총이익', '판매관리비', '영업이익'], gubun)) {
-        ret.style = { fontWeight: 'bold' };
+        ret.style = { fontWeight: 'bold', whiteSpace: 'pre' };
       } else {
-        ret.style = { fontWeight: 'normal' };
+        ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
       }
       return ret;
     },
@@ -216,5 +219,8 @@ export default {
 }
 ::v-deep .grid-border-none {
   height: calc(100% - 102px);
+}
+.space {
+  white-space: pre-wrap;
 }
 </style>
