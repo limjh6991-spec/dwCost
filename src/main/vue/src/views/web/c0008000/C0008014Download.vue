@@ -40,6 +40,7 @@ export default {
 
         data.forEach((item, index) => {
           var rowNumber = index + 6;
+          worksheet.getCell('B' + rowNumber).value = item['구분'];
           worksheet.getCell('C' + rowNumber).value = item['tot'];
           worksheet.getCell('D' + rowNumber).value = item['1월'];
           worksheet.getCell('E' + rowNumber).value = item['2월'];
