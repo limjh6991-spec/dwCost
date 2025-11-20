@@ -40,6 +40,7 @@
         <RealGrid ref="reportGrid" :uid="'reportGrid'" :step="'1'" :rows="reportGridRows" style="height: 100%" :fitLayoutWidthEnable="false" />
       </div>
     </div>
+    <C0008014Download ref="c0008014Download" />
   </div>
 </template>
 
@@ -47,10 +48,11 @@
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0008000/js/C0008014.js';
+import C0008014Download from './C0008014Download.vue';
 
 export default {
   props: {},
-  components: {},
+  components: { C0008014Download },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -164,27 +166,13 @@ export default {
       this.getDataList();
     },
     async excelBtnClick() {
-      const grid = this.gridView;
-
-      const now = new Date();
-      const yyyymmdd = this.$utils.getTodayDate();
-
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `경영실행${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
-
-      const options = {
-        type: 'excel',
-        target: 'local',
-        fileName: fileName,
-        progressMessage: '엑셀 Export중입니다.',
-        done: function () {
-          alert('엑셀 내보내기가 완료되었습니다!');
-        },
-      };
-
-      grid.exportGrid(options);
+      if (this.reportGridRows.length == 0) {
+        this.$toast('info', '데이터가 없습니다. 조회 후 다시 시도해 주세요.');
+        return;
+      }
+      await this.$refs.c0008014Download.loadExcel(this.siteMap[this.params.site]);
+      await this.$refs.c0008014Download.addDataToExcel(this.params.yyyy?.text, this.reportGridRows);
+      await this.$refs.c0008014Download.downloadExcel();
     },
     setCellStyleCallbackReportGrid(grid, dataCell) {
       var ret = {};
@@ -219,8 +207,5 @@ export default {
 }
 ::v-deep .grid-border-none {
   height: calc(100% - 102px);
-}
-.space {
-  white-space: pre-wrap;
 }
 </style>
