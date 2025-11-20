@@ -62,18 +62,26 @@
 
     <!-- 3) 불량반품 데이터 업데이트 -->
     <update id="updateRmaData">
-        UPDATE DOI_RMA_INOUT
+     ;WITH T AS (
+        SELECT
+            ROW_NUMBER() OVER (
+                PARTITION BY YYYYMM, SEL_CODE, SITE, 모델명
+                ORDER BY 생성시각
+            ) AS ROW_SEQ,
+            *
+        FROM DOI_RMA_INOUT
+        WHERE YYYYMM = #{yyyymm}
+          AND SEL_CODE = #{selCode}
+          AND SITE = #{siteOrg}
+          AND 모델명 = #{모델명}
+        )
+        UPDATE T
         SET 
             RMA_IN  = #{rmaIn},
             RMA_OUT = #{rmaOut},
-            생성자 = #{생성자},
+            생성자   = #{생성자},
             생성시각 = SYSDATETIME()
-        WHERE 1=1
-            AND YYYYMM = #{yyyymm}
-            AND SEL_CODE = #{selCode}
-            AND SITE = #{siteOrg}
-            AND 모델명 = #{모델명}
-            AND 생성시각 = #{생성시각}
+        WHERE ROW_SEQ = #{rowSeq}
     </update>
 
     <!-- 3-1) 불량반품 데이터 삭제 -->
