@@ -243,8 +243,8 @@ export default {
 <style scoped>
 .log-display {
   width: 100%;
-  min-height: 200px;
-  max-height: 400px;
+  min-height: 900px;
+  max-height: 900px;
   overflow-y: auto;
   border: 1px solid #ccc;
   border-radius: 4px;

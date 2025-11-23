@@ -47,7 +47,7 @@ const grid = {
     { name: 'model', fieldName: 'model', width: '80', header: { text: '모델명' }, autoFilter: true, styleName: 'tl' },
     { name: 'expenSel', fieldName: 'expenSel', width: '80', header: { text: '원가항목코드' }, autoFilter: true, styleName: 'tl' },
     { name: 'expenSel명', fieldName: 'expenSel명', width: '80', header: { text: '원가항목명' }, autoFilter: true, styleName: 'tl' },
-    { name: 'subName', fieldName: 'subName', width: '80', header: { text: '비목코드' }, autoFilter: true, styleName: 'tl' },
+    { name: 'subName', fieldName: 'subName', width: '80', header: { text: '배부구분' }, autoFilter: true, styleName: 'tl' },
      { name: '면적', fieldName: '면적', width: '80', header: { text: '면적' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
     { name: 'distRate', fieldName: 'distRate', width: '80', header: { text: '배부율' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0.00', },
     { name: 'distValue', fieldName: 'distValue', width: '80', header: { text: '배부적수' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
