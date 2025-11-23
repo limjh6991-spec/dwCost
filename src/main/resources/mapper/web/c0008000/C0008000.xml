@@ -18,7 +18,7 @@
         left join doi_dept b
         on (a.yyyymm=b.yyyymm and b.sel_code=a.sel_code and b.site=a.site and b.dept=a.dept)
         where 1=1
-          and a.EXPEN_SEL not like 'M%'
+          and a.EXPEN_SEL not in ('MDAX','MIAX')
           and a.EXPEN_SEL != 'NONE' --미분류 제외
         <if test="yyyymm != null and yyyymm != ''">
             and a.YYYYMM = #{yyyymm}
@@ -94,7 +94,7 @@
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
-        and expen_sel not like 'M%'
+        and expen_sel not in ('MDAX','MIAX') --재료비 제외
         GROUP BY YYYYMM,SEL_CODE,SITE,SUB_NAME,ITEM_NAME,EXPEN_SEL,EXPEN_SEL명,ACCT_CLASS
         UNION ALL
         select
@@ -240,7 +240,7 @@
             avg(in_qty) in_qty,
             avg(in_qty + OUT_QTY + loss_qty)/ 2 as 환산수량,
             sum([in]) as 투입금액
-            from doi_fab_cost
+            from doi_cost
             where 1=1
             and expen_sel not in ('MDAX','MIAX','NONE')
             <if test="yyyymm != null and yyyymm != ''">
@@ -350,6 +350,17 @@
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
+            and nullif(자재번호,'') is not null
+       union all     
+       select 자재번호,투입단위,품목소분류 ,row_number() over (partition by 자재번호 order by 자재명) as rn     
+       from doi_cst_bom
+		WHERE 1=1  
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
 	)
      select
 		--a.MAT_CLASS,
@@ -379,8 +390,8 @@
 			a.MAT_CLASS,
 			a.MAT_CODE,
 			a.MAT_DESC
-        having sum(in_amt) > 0
-		order by 4,1;
+        having sum(in_amt) != 0
+		order by 5,1;
     </select>
 
     <select id="C0008005_Sch2" resultType="CamelMap">
@@ -437,6 +448,19 @@
 				and yyyymm = #{yyyymm}
 				and site = #{site}
 				and nullif(자재번호, '') IS NOT NULL
+			union all	
+			select
+				c.yyyymm,
+				c.자재번호,
+				c.자재명,
+				c.품목대분류, 
+				row_number() over (partition by c.자재번호 order by (c.품목대분류)) rn1  --select *
+			from	DOI_CST_BOM c
+			where 1=1
+				and yyyymm = #{yyyymm}
+				and site = #{site}
+				and 품목자산분류 NOT IN ('카세트제품', '제품')
+				and nullif(자재번호, '') IS NOT NULL				
 					
 			)a where rn1=1
 		)	
@@ -453,8 +477,8 @@
 		--a.자재대분류,
 		a.in_amt,
 		a.환산량,
-		CASE WHEN 배부방식='BOM' THEN a.소요량 ELSE NULL END AS 소요량,
-		CASE WHEN 배부방식!='BOM' THEN a.소요량 ELSE NULL END AS 면적,
+		CASE WHEN 배부방식 IN ('BOM','CST') THEN a.소요량 ELSE NULL END AS 소요량,
+		CASE WHEN 배부방식 = '공통' THEN a.소요량 ELSE NULL END AS 면적,
 		a.사용량 as 배부적수, --소요량 * 환산량
 		a.배부율,
 		a.배부금액,
@@ -554,7 +578,7 @@
         SUM(EOH) EOH,
         SUM([OUT]) OUT_AMT,
         SUM(LOSS) LOSS
-        from doi_fab_cost
+        from doi_cost
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}
@@ -615,7 +639,7 @@
         EOH_AMT,
         [OUT] AS OUT_QTY,
         OUT_AMT
-        from doi_stock_cost
+        from doi_stco
         where 1=1
             and sel_code = 'ACTUAL'
         <if test="yyyymm != null and yyyymm != ''">
@@ -662,7 +686,39 @@
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
-        order by 거래명세서번호, 거래명세서일;
+        union all
+        select
+            Invoice관리번호,
+            Invoice_Date,
+            부서,
+            담당자,
+            Buyer,
+            품명,
+            품번,
+            단위,
+            수량,
+            통화,
+            환율,
+            판매단가,
+            판매금액,
+            null 부가세액,
+            null 판매금액계,
+            원화판매금액,
+            null 원화부가세액,
+            null 원화판매금액계,
+            null 매출수량,
+            null 매출금액계,
+            null 세금계산서금액계
+        from
+            doi_invoice_resc
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>    
+        order by 거래처,거래명세서번호, 거래명세서일;
     </select>
     
     <select id="C0008015_Sch1" resultType="CamelMap">

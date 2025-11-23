@@ -18,7 +18,7 @@
     </select>
  
  	<select id="C0003003_Sch1" resultType="CamelMap">
-	EXEC UP_DOI_MAT_COST 
+	EXEC UP_DOI_COST_MAT 
 		#{yyyymm},
 		#{site},
 		#{selcode}
@@ -33,7 +33,7 @@
     
     <select id="C0003007_Sch1" resultType="CamelMap">
 	DECLARE @RET_CODE INT;
-	EXEC @RET_CODE = Gen_EXPEN_MATL 
+	EXEC @RET_CODE = UP_DOI_EXPEN_MATL 
 		#{yyyymm},
 		#{site}
     </select>
