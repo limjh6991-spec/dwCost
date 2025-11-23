@@ -11,12 +11,11 @@
             a.acct,
             a.EXPEN_SEL,
             a.EXPEN_SEL명,
-            a.SUB_NAME,
+            a.ACCT_NAME,
             a.ITEM_NAME,
             sum(a.ACCT_AMT) ACCT_AMT
         from doi_acct_expen a
-        left join doi_dept b
-        on (a.yyyymm=b.yyyymm and b.sel_code=a.sel_code and b.site=a.site and b.dept=a.dept)
+        left join (select distinct dept,dept_name from doi_dept where yyyymm=#{yyyymm} and site = #{site}) b on (b.dept=a.dept)
         where 1=1
           and a.EXPEN_SEL not in ('MDAX','MIAX')
           and a.EXPEN_SEL != 'NONE' --미분류 제외
@@ -32,10 +31,10 @@
         <if test="prodCost != null and prodCost != ''">
             <choose>
                 <when test="prodCost == '가공비'">
-                    AND a.ACCT_CLASS='AA' AND a.EXPEN_SEL NOT LIKE 'M%'
+                    AND a.ACCT_CLASS='AA' AND a.EXPEN_SEL NOT IN ('MDAX','MIAX')
                 </when>
                 <when test="prodCost == '재료비'">
-                    AND a.ACCT_CLASS='AA' AND a.EXPEN_SEL LIKE 'X%'
+                    AND a.ACCT_CLASS='AA' AND a.EXPEN_SEL IN  ('MDAX','MIAX')
                 </when>
                 <otherwise>
                 </otherwise>
@@ -48,7 +47,7 @@
 	        a.acct,
 	        a.EXPEN_SEL,
 	        a.EXPEN_SEL명,
-	        a.SUB_NAME,
+	        a.ACCT_NAME,
 	        a.ITEM_NAME
         <if test="costGubun == null or prodCost == '전체' or prodCost == '재료비'">
 		union all
@@ -74,7 +73,7 @@
 		group by
 			MAT_CLASS
 		HAVING
-			sum(IN_AMT) > 0
+			sum(IN_AMT) != 0
         </if>
         order BY 1,2,3,4,5;
     </select>
@@ -83,8 +82,9 @@
         CASE WHEN ACCT_CLASS='AA' THEN '제조비용' WHEN ACCT_CLASS='BB' THEN '개발비' WHEN ACCT_CLASS='CC' THEN '판매관리비' END ACCT_CLASS,
         EXPEN_SEL,
         EXPEN_SEL명,
-        SUB_NAME,
+        ACCT_NAME,
         ITEM_NAME,
+        DISP_SEQ,
         SUM(ACCT_AMT) ACCT_AMT
         from DOI_ACCT_EXPEN
         where 1=1
@@ -95,7 +95,8 @@
             and SITE = #{site}
         </if>
         and expen_sel not in ('MDAX','MIAX') --재료비 제외
-        GROUP BY YYYYMM,SEL_CODE,SITE,SUB_NAME,ITEM_NAME,EXPEN_SEL,EXPEN_SEL명,ACCT_CLASS
+        GROUP BY YYYYMM,SEL_CODE,SITE,ACCT_NAME,ITEM_NAME,disp_seq,EXPEN_SEL,EXPEN_SEL명,ACCT_CLASS
+        HAVING SUM(ACCT_AMT) != 0
         UNION ALL
         select
 			'제조비용',
@@ -103,6 +104,7 @@
 			CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end,
             '재료비',
             CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end,
+            CASE WHEN MAT_CLASS='원자재' then 0 else 0.5 end as disp_seq,
 			sum(IN_AMT) 금액  --select *
 		from
 			doi_material_resc
@@ -116,10 +118,11 @@
 		group by
 			CASE WHEN MAT_CLASS='원자재' then 'MDAX' else 'MIAX' end,
 			CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end,
-            CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end
+            CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end,
+            CASE WHEN MAT_CLASS='원자재' then 0 else 0.5 end
 		HAVING
-			sum(IN_AMT) > 0
-        order by ACCT_CLASS,EXPEN_SEL,SUB_NAME,ITEM_NAME;
+			sum(IN_AMT) != 0
+        order by ACCT_CLASS,DISP_SEQ,EXPEN_SEL,ACCT_NAME,ITEM_NAME;
     </select>
 
     <select id="C0008002_Sch2" resultType="CamelMap">
@@ -751,7 +754,7 @@
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
-        order by YYYYMM,SEL_CODE,SITE,MODEL,EXPEN_SEL;
+        order by YYYYMM,SEL_CODE,SITE,MODEL,DISP_SEQ,EXPEN_SEL;
     </select>
 
     <select id="C0008013_Sch1" resultType="CamelMap">

@@ -15,7 +15,7 @@ const grid = {
 	sorting: { enabled: true },
     stateBar: { visible: false },
     filtering: { enabled: true },
-    fixed: { colBarWidth: 1, colCount: 1 },
+    // fixed: { colBarWidth: 1, colCount: 1 },
   },
 
   fields: [
@@ -25,8 +25,8 @@ const grid = {
     { fieldName: 'acctClass', dataType: ValueType.TEXT },
     { fieldName: 'expenSel', dataType: ValueType.TEXT },
     { fieldName: 'expenSel명', dataType: ValueType.TEXT },
-    { fieldName: 'subName', dataType: ValueType.TEXT },
-    { fieldName: 'itemName', dataType: ValueType.TEXT },
+    { fieldName: 'acctName', dataType: ValueType.TEXT },
+    // { fieldName: 'itemName', dataType: ValueType.TEXT },
     { fieldName: 'acctAmt', dataType: ValueType.NUMBER },
   ],
 
@@ -37,8 +37,8 @@ const grid = {
     { name: 'ACCT_CLASS', fieldName: 'acctClass', width: '80', header: { text: '경비구분' }, autoFilter: true, styleName: 'tl' },
     { name: 'expenSel', fieldName: 'expenSel', width: '80', header: { text: '원가항목코드' }, autoFilter: true, styleName: 'tl' },
     { name: 'expenSel명', fieldName: 'expenSel명', width: '80', header: { text: '원가항목명' }, autoFilter: true, styleName: 'tl' },
-    { name: 'subName', fieldName: 'subName', width: '80', header: { text: '계정명' }, autoFilter: true, styleName: 'tl' },
-    { name: 'itemName', fieldName: 'itemName', width: '80', header: { text: '비목코드' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
+    { name: 'acctName', fieldName: 'acctName', width: '80', header: { text: '계정명' }, autoFilter: true, styleName: 'tl' },
+    // { name: 'itemName', fieldName: 'itemName', width: '80', header: { text: '비목코드' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
     { name: 'acctAmt', fieldName: 'acctAmt', width: '80', header: { text: '금액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };
