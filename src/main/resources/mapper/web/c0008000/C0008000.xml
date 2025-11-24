@@ -773,4 +773,113 @@
     <select id="C0008014_Sch1" resultType="CamelMap">
         exec DOI_AnnualReportBySite @YYYY=#{yyyy}, @SITE=#{site};
     </select>
+
+    <select id="C0008003_Select" resultType="CamelMap">
+        WITH dist_cost AS (
+            <!-- 제조경비 (seq=1) -->
+            SELECT 
+                '제조경비' AS GUBUN, 
+                FROM_DEPT_CODE, 
+                FROM_DEPT_NAME, 
+                FROM_ACCT_CODE, 
+                FROM_ACCT_NAME, 
+                EXPEN_SEL, 
+                EXPEN_SEL_NAME, 
+                ACCT_AMT,
+                1 AS seq 
+            FROM DOI_MFG_EXP 
+            WHERE yyyymm = #{yyyymm}
+            AND site = #{site}
+            
+            UNION ALL
+            
+            <!-- 연구개발부서 - 제조비용 (seq=2) -->
+            SELECT 
+                '연구개발부서' AS GUBUN,
+                FROM_DEPT_CODE, 
+                FROM_DEPT_NAME, 
+                FROM_ACCT_CODE, 
+                FROM_ACCT_NAME, 
+                EXPEN_SEL, 
+                EXPEN_SEL_NAME, 
+                ACCT_AMT,
+                2 AS seq
+            FROM DOI_RND
+            WHERE yyyymm = #{yyyymm}
+            AND site = #{site}
+            AND cost_type = '제조비용'
+            
+            UNION ALL
+            
+            <!-- 카세트팀 (seq=3) -->
+            SELECT 
+                '카세트팀' AS GUBUN,
+                FROM_DEPT_CODE, 
+                FROM_DEPT_NAME, 
+                FROM_ACCT_CODE, 
+                FROM_ACCT_NAME, 
+                EXPEN_SEL, 
+                EXPEN_SEL_NAME, 
+                ACCT_AMT,
+                3 AS seq
+            FROM DOI_CASET
+            WHERE yyyymm = #{yyyymm}
+            AND site = #{site}
+            
+            UNION ALL
+            
+            <!-- 판매관리비 (seq=4) -->
+            SELECT 
+                '판매관리비' AS GUBUN,
+                FROM_DEPT_CODE, 
+                FROM_DEPT_NAME, 
+                FROM_ACCT_CODE, 
+                FROM_ACCT_NAME, 
+                EXPEN_SEL, 
+                EXPEN_SEL_NAME, 
+                ACCT_AMT,
+                4 AS seq
+            FROM DOI_SGA
+            WHERE yyyymm = #{yyyymm}
+            AND site = #{site}
+            
+            UNION ALL
+            
+            <!-- 연구개발부서 - 비제조비용 (seq=5) -->
+            SELECT 
+                '연구개발부서(비제조)' AS GUBUN,
+                FROM_DEPT_CODE, 
+                FROM_DEPT_NAME, 
+                FROM_ACCT_CODE, 
+                FROM_ACCT_NAME, 
+                EXPEN_SEL, 
+                EXPEN_SEL_NAME, 
+                ACCT_AMT,
+                5 AS seq
+            FROM DOI_RND
+            WHERE yyyymm = #{yyyymm}
+            AND site = #{site}
+            AND cost_type != '제조비용'
+        )
+        SELECT * FROM dist_cost
+        WHERE 1=1
+        <choose>
+            <when test="gubun == null or gubun == '' or '전체'.equals(gubun)">
+                <!-- 전체: 모든 데이터 -->
+            </when>
+            <when test="'제조경비'.equals(gubun)">
+                <!-- 제조경비 관련 (제조경비+연구개발+카세트) -->
+                AND seq IN (1, 2, 3)
+            </when>
+            <when test="'판매관리비'.equals(gubun)">
+                <!-- 판매관리비 관련 (판매관리비+연구개발(비제조)) -->
+                AND seq IN (4, 5)
+            </when>
+        </choose>
+        <!-- ✅ seq 필터: 하위 탭에서 개별 선택 -->
+        <if test="seq != null and seq != '' and !'전체'.equals(seq)">
+            AND seq = CAST(#{seq} AS INT)
+        </if>
+        ORDER BY seq
+    </select>
 </mapper>
