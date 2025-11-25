@@ -113,20 +113,38 @@ export default {
       // ERROR를 빨간색으로 강조 - 대괄호 이스케이프 및 여러 줄 처리
       // 각 줄로 분할
       const lines = this.resultMessage.split('\n');
-      // 각 줄을检查하여 [ERROR]로 시작하면 span으로 감싸기
+      // 각 줄을 검사하여 스타일 적용
       const formattedLines = lines.map(line => {
+        // 공백을 &nbsp;로 변환 (HTML에서 연속 공백 유지)
+        let escapedLine = line.replace(/ /g, '&nbsp;');
+        
         if (line.startsWith('[ERROR]')) {
-          return `<span class="error-text">${line}</span>`;
+          return `<span class="error-text">${escapedLine}</span>`;
         }
         else if (line.startsWith('[START]')) {
-          return `<span class="start-text">${line}</span>`;
+          return `<span class="start-text">${escapedLine}</span>`;
         }
         else if (line.startsWith('[FINISH]')) {
-          return `<span class="finish-text">${line}</span>`;
+          return `<span class="finish-text">${escapedLine}</span>`;
         }
-        return line;
+        else if (line.startsWith(' [INFO]') || line.startsWith(' [WARN]')) {
+          return `<span class="info-text">${escapedLine}</span>`;
+        }
+        else if (line.includes('=======')) {
+          return `<span class="divider-text">${escapedLine}</span>`;
+        }
+        else if (line.includes('------')) {
+          return `<span class="line-text">${escapedLine}</span>`;
+        }
+        else if (line.includes('✅') || line.includes('[CHECK]')) {
+          return `<span class="success-text">${escapedLine}</span>`;
+        }
+        else if (line.includes('⚠️')) {
+          return `<span class="warning-text">${escapedLine}</span>`;
+        }
+        return escapedLine;
       });
-      // 다시 합치기
+      // 다시 합치기 (br 태그로 줄바꿈)
       return formattedLines.join('<br>');
     },
     // gridView() {
@@ -244,20 +262,57 @@ export default {
 <style scoped>
 .log-display {
   width: 100%;
-  min-height: 800px;
+  min-height: 500px;
   max-height: 800px;
   overflow-y: auto;
+  overflow-x: auto;
   border: 1px solid #ccc;
   border-radius: 4px;
-  padding: 10px;
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.4;
-  white-space: pre-wrap;
+  padding: 15px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: normal;
+  word-break: keep-all;
   background-color: #f8f9fa;
+  tab-size: 4;
 }
 
-.log-display ::v-deep .error-text { color: rgb(209, 70, 70);}
-.log-display ::v-deep .start-text { color: BLUE; }  /* 시작은 녹색 */
-.log-display ::v-deep .finish-text { color: GREEN; }  /* 종료는 청색 */
+.log-display ::v-deep .error-text { 
+  color: rgb(209, 70, 70);
+  font-weight: bold;
+}
+
+.log-display ::v-deep .start-text { 
+  color: #0056b3;
+  font-weight: bold;
+}
+
+.log-display ::v-deep .finish-text { 
+  color: #28a745;
+  font-weight: bold;
+}
+
+.log-display ::v-deep .info-text {
+  color: #333;
+}
+
+.log-display ::v-deep .warning-text {
+  color: #ff8c00;
+  font-weight: bold;
+}
+
+.log-display ::v-deep .success-text {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.log-display ::v-deep .divider-text {
+  color: #666;
+  font-weight: bold;
+}
+
+.log-display ::v-deep .line-text {
+  color: #999;
+}
 </style>

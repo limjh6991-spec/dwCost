@@ -346,7 +346,7 @@ BEGIN
       SET  @Message =  @Message + char(10) + char(10) + '====================================================================================================';
       SET  @Message =  @Message + char(10) + '1. 소스 데이터와 타겟 데이터 금액 검증';
       SET  @Message =  @Message + char(10) + '====================================================================================================';
-      SET  @Message =  @Message + char(10) + REPLICATE(' ', 10) + '구분' + REPLICATE(' ', 30) + '건수' + REPLICATE(' ', 10) + '금액';
+      SET  @Message =  @Message + char(10) + LEFT('구분' + REPLICATE(' ', 40), 40) + RIGHT(REPLICATE(' ', 15) + '건수', 15) + RIGHT(REPLICATE(' ', 25) + '금액', 25) + REPLICATE(' ', 20);
       SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
       
       -- 소스 상세
@@ -354,15 +354,15 @@ BEGIN
       SELECT @SOURCE_CNT = COUNT(*) FROM DOI_ACCT_EXPEN 
       WHERE yyyymm = @YYYYMM AND site = @SITE AND ACCT LIKE '5%' AND ACCT NOT LIKE '51%';
       
-      SET  @Message =  @Message + char(10) + REPLICATE(' ', 10) + '소스(필터링 후)' + REPLICATE(' ', 20) + RIGHT(REPLICATE(' ', 10) + CAST(@SOURCE_CNT AS VARCHAR(10)), 10) + REPLICATE(' ', 4) + RIGHT(REPLICATE(' ', 20) + FORMAT(@SOURCE_AMT, 'N0'), 20) + '원';
+      SET  @Message =  @Message + char(10) + LEFT('소스(필터링 후)' + REPLICATE(' ', 40), 40) + RIGHT(REPLICATE(' ', 15) + CAST(@SOURCE_CNT AS VARCHAR), 15) + RIGHT(REPLICATE(' ', 25) + FORMAT(@SOURCE_AMT, 'N0'), 25) + ' 원' + REPLICATE(' ', 17);
       
       -- 타겟 상세
       DECLARE @TARGET_CNT INT = 0;
       SELECT @TARGET_CNT = COUNT(*) FROM DOI_EXPEN_MATL WHERE YYYYMM = @YYYYMM AND SITE = @SITE;
       
-      SET  @Message =  @Message + char(10) + REPLICATE(' ', 10) + '타겟(DOI_EXPEN_MATL)' + REPLICATE(' ', 15) + RIGHT(REPLICATE(' ', 10) + CAST(@TARGET_CNT AS VARCHAR(10)), 10) + REPLICATE(' ', 4) + RIGHT(REPLICATE(' ', 20) + FORMAT(@TARGET_AMT, 'N0'), 20) + '원';
+      SET  @Message =  @Message + char(10) + LEFT('타겟(DOI_EXPEN_MATL)' + REPLICATE(' ', 40), 40) + RIGHT(REPLICATE(' ', 15) + CAST(@TARGET_CNT AS VARCHAR), 15) + RIGHT(REPLICATE(' ', 25) + FORMAT(@TARGET_AMT, 'N0'), 25) + ' 원' + REPLICATE(' ', 17);
       SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
-      SET  @Message =  @Message + char(10) + REPLICATE(' ', 10) + '차이' + REPLICATE(' ', 44) + RIGHT(REPLICATE(' ', 20) + FORMAT(@DIFF_AMT, 'N0'), 20) + '원';
+      SET  @Message =  @Message + char(10) + LEFT('차이' + REPLICATE(' ', 40), 40) + REPLICATE(' ', 15) + RIGHT(REPLICATE(' ', 25) + FORMAT(@DIFF_AMT, 'N0'), 25) + ' 원' + REPLICATE(' ', 17);
       SET  @Message =  @Message + char(10) + '====================================================================================================';
       
       -- ========================================
@@ -377,7 +377,7 @@ BEGIN
           DECLARE @EXPEN_SEL NVARCHAR(50), @EXPEN_NAME NVARCHAR(100);
           DECLARE @SOURCE_ITEM_AMT BIGINT, @TARGET_ITEM_AMT BIGINT, @ITEM_DIFF BIGINT;
           
-          SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) + '항목코드' + REPLICATE(' ', 7) + '항목명' + REPLICATE(' ', 20) + '소스금액' + REPLICATE(' ', 14) + '타겟금액' + REPLICATE(' ', 14) + '차이';
+          SET  @Message =  @Message + char(10) + LEFT('항목코드' + REPLICATE(' ', 15), 15) + LEFT('항목명' + REPLICATE(' ', 40), 40) + RIGHT(REPLICATE(' ', 20) + '소스금액', 20) + RIGHT(REPLICATE(' ', 20) + '타겟금액', 20) + RIGHT(REPLICATE(' ', 15) + '차이', 15);
           SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
           
           DECLARE item_cursor CURSOR FOR
@@ -406,9 +406,9 @@ BEGIN
               SET @ITEM_DIFF = @SOURCE_ITEM_AMT - @TARGET_ITEM_AMT;
               
               IF ABS(@ITEM_DIFF) > 10 BEGIN
-                  SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) 
+                  SET  @Message =  @Message + char(10) 
                       + LEFT(@EXPEN_SEL + REPLICATE(' ', 15), 15)
-                      + LEFT(ISNULL(@EXPEN_NAME, '') + REPLICATE(' ', 26), 26)
+                      + LEFT(ISNULL(@EXPEN_NAME, '') + REPLICATE(' ', 40), 40)
                       + RIGHT(REPLICATE(' ', 20) + FORMAT(@SOURCE_ITEM_AMT, 'N0'), 20)
                       + RIGHT(REPLICATE(' ', 20) + FORMAT(@TARGET_ITEM_AMT, 'N0'), 20)
                       + RIGHT(REPLICATE(' ', 15) + FORMAT(@ITEM_DIFF, 'N0'), 15);
@@ -429,7 +429,7 @@ BEGIN
       SET  @Message =  @Message + char(10) + char(10) + '====================================================================================================';
       SET  @Message =  @Message + char(10) + '3. 경비항목별 상세 집계';
       SET  @Message =  @Message + char(10) + '====================================================================================================';
-      SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) + '항목코드' + REPLICATE(' ', 7) + '항목명' + REPLICATE(' ', 34) + '소스집계' + REPLICATE(' ', 10) + '타겟집계' + REPLICATE(' ', 10) + '차이금액';
+      SET  @Message =  @Message + char(10) + LEFT('항목코드' + REPLICATE(' ', 15), 15) + LEFT('항목명' + REPLICATE(' ', 40), 40) + RIGHT(REPLICATE(' ', 20) + '소스집계', 20) + RIGHT(REPLICATE(' ', 20) + '타겟집계', 20) + RIGHT(REPLICATE(' ', 15) + '차이금액', 15);
       SET  @Message =  @Message + char(10) + '----------------------------------------------------------------------------------------------------';
       
       DECLARE @EXPEN_SEL_DTL NVARCHAR(50), @EXPEN_NAME_DTL NVARCHAR(100);
@@ -463,12 +463,12 @@ BEGIN
           
           SET @DTL_DIFF = @SOURCE_DTL_AMT - @TARGET_DTL_AMT;
           
-          SET  @Message =  @Message + char(10) + REPLICATE(' ', 5) 
+          SET  @Message =  @Message + char(10) 
               + LEFT(ISNULL(@EXPEN_SEL_DTL, '') + REPLICATE(' ', 15), 15)
               + LEFT(ISNULL(@EXPEN_NAME_DTL, '') + REPLICATE(' ', 40), 40)
-              + RIGHT(REPLICATE(' ', 18) + FORMAT(@SOURCE_DTL_AMT, 'N0'), 18)
-              + RIGHT(REPLICATE(' ', 18) + FORMAT(@TARGET_DTL_AMT, 'N0'), 18)
-              + RIGHT(REPLICATE(' ', 18) + FORMAT(@DTL_DIFF, 'N0'), 18);
+              + RIGHT(REPLICATE(' ', 20) + FORMAT(@SOURCE_DTL_AMT, 'N0'), 20)
+              + RIGHT(REPLICATE(' ', 20) + FORMAT(@TARGET_DTL_AMT, 'N0'), 20)
+              + RIGHT(REPLICATE(' ', 15) + FORMAT(@DTL_DIFF, 'N0'), 15);
           
           FETCH NEXT FROM detail_cursor INTO @EXPEN_SEL_DTL, @EXPEN_NAME_DTL;
       END
