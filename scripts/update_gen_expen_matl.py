@@ -20,7 +20,12 @@ def main():
     
     try:
         # SQL 파일 읽기
-        with open('/home/roarm_m3/dwisCOST/src/원가SQL/Gen_EXPEN_MATL.sql', 'r', encoding='utf-8') as f:
+        import os
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(script_dir)
+        sql_file_path = os.path.join(project_root, 'src', '원가SQL', 'Gen_EXPEN_MATL.sql')
+        
+        with open(sql_file_path, 'r', encoding='utf-8') as f:
             sql_content = f.read()
         
         print("\n✅ SQL 파일 읽기 완료")
