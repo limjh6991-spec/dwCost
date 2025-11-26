@@ -7,28 +7,14 @@ const grid = {
   options: {
     checkBar: { visible: true, exclusive: false, syncHeadCheck: true },
     copy: { enabled: true, singleMode: false },
-    //dataDrop: {},
     display: { columnMovable: false, editItemMerging: true, fitStyle: 'fill', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
     edit: { editable: true, columnEditableFirst: true, commitByCell: true, commitWhenLeave: true },
-    //editor: {},
-    //filtering: {},
-    //filterMode: {},
-    //filterPanel: {},
-    //fixed: {},
     footer: { visible: false },
-    //footers: {},
-    //format: {},
-    header: { height: 25 },
-    //headerSummaries: {},
-    //headerSummary: {},
     hideDeletedRows: true,
     paste: { enabled: true, checkReadOnly: true },
     rowIndicator: { visible: true },
     sorting: { enabled: false },
-    //sortMode: {},
     stateBar: { visible: true },
-    //summaryMode: {},
-    fixed: { colBarWidth: 1, colCount: 1 },
   },
   fields: [
     { fieldName: 'yyyymm', dataType: ValueType.TEXT },
@@ -38,18 +24,18 @@ const grid = {
     { fieldName: 'model', dataType: ValueType.TEXT },
     { fieldName: 'modelType', dataType: ValueType.TEXT },
     { fieldName: 'stock', dataType: ValueType.TEXT },
-    { fieldName: 'boh', dataType: ValueType.TEXT },
-    { fieldName: 'input', dataType: ValueType.TEXT },
-    { fieldName: 'out', dataType: ValueType.TEXT },
-    { fieldName: 'eoh', dataType: ValueType.TEXT },
-    { fieldName: 'inputEtc', dataType: ValueType.TEXT },
-    { fieldName: 'inputMoving', dataType: ValueType.TEXT },
-    { fieldName: 'inputProd', dataType: ValueType.TEXT },
-    { fieldName: 'outSheet', dataType: ValueType.TEXT },
-    { fieldName: 'outReturn', dataType: ValueType.TEXT },
-    { fieldName: 'outInvoice', dataType: ValueType.TEXT },
-    { fieldName: 'outEtc', dataType: ValueType.TEXT },
-    { fieldName: 'outMoving', dataType: ValueType.TEXT },
+    { fieldName: 'boh', dataType: ValueType.NUMBER },
+    { fieldName: 'input', dataType: ValueType.NUMBER },
+    { fieldName: 'out', dataType: ValueType.NUMBER },
+    { fieldName: 'eoh', dataType: ValueType.NUMBER },
+    { fieldName: 'inputEtc', dataType: ValueType.NUMBER },
+    { fieldName: 'inputMoving', dataType: ValueType.NUMBER },
+    { fieldName: 'inputProd', dataType: ValueType.NUMBER },
+    { fieldName: 'outSheet', dataType: ValueType.NUMBER },
+    { fieldName: 'outReturn', dataType: ValueType.NUMBER },
+    { fieldName: 'outInvoice', dataType: ValueType.NUMBER },
+    { fieldName: 'outEtc', dataType: ValueType.NUMBER },
+    { fieldName: 'outMoving', dataType: ValueType.NUMBER },
   ],
 
   columns: [
@@ -81,8 +67,8 @@ const grid = {
       width: '80',
       header: { text: 'SEL_CODE' },
       autoFilter: true,
-      editable: true,
-      styleName: 'edit tl',
+      editable: false,
+      styleName: 'tl',
       styleCallback: function (grid, dataCell) {
         var ret = {};
 
@@ -126,26 +112,78 @@ const grid = {
       width: '90',
       header: { text: 'MODEL' },
       autoFilter: true,
-      editable: true,
-      styleName: 'edit tl',
+      editable: false,
+      styleName: 'tl',
       styleCallback: function (grid, dataCell) {
-        return { editable: true, styleName: 'edit tl' };
+        var ret = {};
+
+        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
+          ret.editable = true;
+          ret.styleName = 'edit tl';
+        } else {
+          ret.editable = false;
+          ret.styleName = 'tl';
+        }
+
+        return ret;
       },
     },
-    { name: 'MODEL_TYPE', fieldName: 'modelType', width: '70', header: { text: 'MODEL_TYPE' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'STOCK', fieldName: 'stock', width: '120', header: { text: 'STOCK' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'BOH', fieldName: 'boh', width: '135', header: { text: 'BOH' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'INPUT', fieldName: 'input', width: '135', header: { text: 'INPUT' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-	{ name: 'OUT', fieldName: 'out', width: '70', header: { text: 'OUT' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-	{ name: 'EOH', fieldName: 'eoh', width: '120', header: { text: 'EOH' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-  { name: 'INPUT_ETC', fieldName: 'inputEtc', width: '135', header: { text: 'INPUT_ETC' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-  { name: 'INPUT_MOVING', fieldName: 'inputMoving', width: '135', header: { text: 'INPUT_MOVING' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-  { name: 'INPUT_PROD', fieldName: 'inputProd', width: '70', header: { text: 'INPUT_PROD' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-  { name: 'OUT_SHEET', fieldName: 'outSheet', width: '120', header: { text: 'OUT_SHEET' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-  { name: 'OUT_RETURN', fieldName: 'outReturn', width: '120', header: { text: 'OUT_RETURN' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-  { name: 'OUT_INVOICE', fieldName: 'outInvoice', width: '120', header: { text: 'OUT_INVOICE' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-  { name: 'OUT_ETC', fieldName: 'outEtc', width: '120', header: { text: 'OUT_ETC' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-  { name: 'OUT_MOVING', fieldName: 'outMoving', width: '120', header: { text: 'OUT_MOVING' }, autoFilter: true, editable: true, styleName: 'edit tl' }
+    {
+      name: 'MODEL_TYPE',
+      fieldName: 'modelType',
+      width: '70',
+      header: { text: 'MODEL_TYPE' },
+      autoFilter: true,
+      editable: false,
+      styleName: 'tl',
+      styleCallback: function (grid, dataCell) {
+        var ret = {};
+
+        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
+          ret.editable = true;
+          ret.styleName = 'edit tl';
+        } else {
+          ret.editable = false;
+          ret.styleName = 'tl';
+        }
+
+        return ret;
+      },
+    },
+    {
+      name: 'STOCK',
+      fieldName: 'stock',
+      width: '120',
+      header: { text: 'STOCK' },
+      autoFilter: true,
+      editable: false,
+      styleName: 'tl',
+      styleCallback: function (grid, dataCell) {
+        var ret = {};
+
+        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
+          ret.editable = true;
+          ret.styleName = 'edit tl';
+        } else {
+          ret.editable = false;
+          ret.styleName = 'tl';
+        }
+
+        return ret;
+      },
+    },
+    { name: 'BOH', fieldName: 'boh', width: '135', header: { text: 'BOH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
+    { name: 'INPUT', fieldName: 'input', width: '135', header: { text: 'INPUT' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
+    { name: 'OUT', fieldName: 'out', width: '70', header: { text: 'OUT' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
+    { name: 'EOH', fieldName: 'eoh', width: '120', header: { text: 'EOH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
+    { name: 'INPUT_ETC', fieldName: 'inputEtc', width: '135', header: { text: 'INPUT_ETC' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
+    { name: 'INPUT_MOVING', fieldName: 'inputMoving', width: '135', header: { text: 'INPUT_MOVING' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
+    { name: 'INPUT_PROD', fieldName: 'inputProd', width: '70', header: { text: 'INPUT_PROD' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
+    { name: 'OUT_SHEET', fieldName: 'outSheet', width: '120', header: { text: 'OUT_SHEET' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
+    { name: 'OUT_RETURN', fieldName: 'outReturn', width: '120', header: { text: 'OUT_RETURN' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
+    { name: 'OUT_INVOICE', fieldName: 'outInvoice', width: '120', header: { text: 'OUT_INVOICE' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
+    { name: 'OUT_ETC', fieldName: 'outEtc', width: '120', header: { text: 'OUT_ETC' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
+    { name: 'OUT_MOVING', fieldName: 'outMoving', width: '120', header: { text: 'OUT_MOVING' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
   ],
 };
 
