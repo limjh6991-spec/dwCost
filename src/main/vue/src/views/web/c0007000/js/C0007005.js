@@ -86,9 +86,66 @@ const grid = {
   ],
 
   columns: [
-    { name: 'yyyymm', fieldName: 'yyyymm', width: '80', header: { text: 'YYYYMM' }, autoFilter: true, styleName: 'edit tl' },
-    { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'edit tl' },
-    { name: 'site', fieldName: 'site', width: '80', header: { text: 'SITE' }, autoFilter: true, styleName: 'edit tl' },
+    {
+      name: 'yyyymm',
+      fieldName: 'yyyymm',
+      width: '80',
+      header: { text: 'YYYYMM' },
+      autoFilter: true,
+      editable: false,
+      styleName: 'tl',
+      styleCallback: function (grid, dataCell) {
+        var ret = {};
+        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
+          ret.editable = true;
+          ret.styleName = 'edit tl';
+        } else {
+          ret.editable = false;
+          ret.styleName = 'tl';
+        }
+        return ret;
+      },
+    },
+    {
+      name: 'selCode',
+      fieldName: 'selCode',
+      width: '80',
+      header: { text: 'SEL_CODE' },
+      autoFilter: true,
+      editable: false,
+      styleName: 'tl',
+      styleCallback: function (grid, dataCell) {
+        var ret = {};
+        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
+          ret.editable = true;
+          ret.styleName = 'edit tl';
+        } else {
+          ret.editable = false;
+          ret.styleName = 'tl';
+        }
+        return ret;
+      },
+    },
+    {
+      name: 'site',
+      fieldName: 'site',
+      width: '80',
+      header: { text: 'SITE' },
+      autoFilter: true,
+      editable: false,
+      styleName: 'tl',
+      styleCallback: function (grid, dataCell) {
+        var ret = {};
+        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
+          ret.editable = true;
+          ret.styleName = 'edit tl';
+        } else {
+          ret.editable = false;
+          ret.styleName = 'tl';
+        }
+        return ret;
+      },
+    },
     { name: '선택', fieldName: '선택', width: '80', header: { text: '선택' }, autoFilter: true, styleName: 'edit tl' },
     { name: '출고처리', fieldName: '출고처리', width: '120', header: { text: '출고처리' }, autoFilter: true, styleName: 'edit tl' },
     { name: '사업단위', fieldName: '사업단위', width: '120', header: { text: '사업단위' }, autoFilter: true, styleName: 'edit tl' },

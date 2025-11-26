@@ -50,9 +50,9 @@ export default {
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { 
-			srchInfo,
-      userAuthInfo 
+    return {
+      srchInfo,
+      userAuthInfo,
     };
   },
   data() {
@@ -70,12 +70,12 @@ export default {
         HQ: 'HQ', //DB map
         VN: 'VN', //DB map
       },
-      duplicateKey: ['거래명세서번호'],
-      isValidteCellSaleRescGrid: false,
+      duplicateKey: ['yyyymm', 'selCode', 'site', '거래명세서번호'],
+      isValidateCellSaleRescGrid: false,
     };
   },
   watch: {
-    'params.yyyymm': function(newVal) {
+    'params.yyyymm': function (newVal) {
       if (newVal) {
         this.onDateChange();
       }
@@ -84,16 +84,14 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.yyyymm = newVal;
-          console.log('[C0003007] yyyymm 변경:', this.params.yyyymm);
         }
-      }
-     },
+      },
+    },
     prodCtg: {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
           if (this.$refs.saleRescGrid != null) {
-            this.initialize();
             this.searchClick();
           }
         }
@@ -112,17 +110,17 @@ export default {
     },
   },
   created() {
-    this.initialize();
     this.initializeGrid();
   },
-  mounted() {},
+  mounted() {
+    this.params.yyyymm = this.srchInfo.yyyymm;
+    this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
+    this.$nextTick(() => {
+      this.searchClick();
+    });
+  },
   beforeUnmount() {},
   methods: {
-    initialize() {
-      //var current = new Date();
-      this.params.yyyymm = this.srchInfo.yyyymm; //`${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
-      this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
-    },
     initializeGrid() {
       this.saleRescGrid = _.cloneDeep(gridField);
     },
@@ -146,7 +144,122 @@ export default {
       let resp = await this.$axios.api.search(param);
     },
     searchClick() {
+      if (!this.params.yyyymm) {
+        this.$toast && this.$toast('error', '년월 선택해주세요.');
+        return;
+      }
       this.getDataList();
+    },
+    async excelBtnClick() {
+      const grid = this.gridView;
+
+      const now = new Date();
+      const yyyymmdd = this.$utils.getTodayDate();
+
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const fileName = `매출정보${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+
+      const options = {
+        type: 'excel',
+        target: 'local',
+        fileName: fileName,
+        progressMessage: '엑셀 Export중입니다.',
+        done: function () {
+          alert('엑셀 내보내기가 완료되었습니다!');
+        },
+      };
+
+      grid.exportGrid(options);
+    },
+    addBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
+
+      this.gridView.commit();
+      this.gridDataProvider.addRow({ yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, site: this.params.site != null ? this.siteMap[this.params.site] : null });
+      let itemIndex = this.gridView.getItemCount() - 1;
+      this.gridView.setCurrent({ itemIndex: itemIndex });
+    },
+    delBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
+
+      this.gridView.commit();
+      const checkedRows = this.gridView.getCheckedRows();
+      if (checkedRows.length === 0) {
+        this.$toast('info', '삭제할 행을 선택하세요');
+      } else {
+        let delItems = [];
+        checkedRows.forEach((itemIndex) => {
+          if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
+            delItems.push(itemIndex);
+          } else {
+            this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
+          }
+        });
+        this.gridDataProvider.removeRows(delItems);
+      }
+    },
+    async saveBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
+      this.gridView.commit();
+
+      let saveData = this.$refs.saleRescGrid.getSaveData();
+      if (saveData.count <= 0) {
+        this.$toast('info', '변경된 내용이 없습니다.');
+        return;
+      }
+      this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
+
+      this.isValidateCellSaleRescGrid = true;
+      let rslt = this.gridView.validateCells(null, false);
+      this.isValidateCellSaleRescGrid = false;
+
+      if (rslt === null) {
+        this.$confirm('확인', '수정하신 내용을 저장 하시겠습니까?', async (confirm) => {
+          if (confirm) {
+            let param = {
+              menuId: 'c0007005',
+              delete: [{ queryId: 'C0007005_Delete1', data: saveData.delete }],
+              insert: [{ queryId: 'C0007005_Insert1', data: saveData.insert }],
+              update: [{ queryId: 'C0007005_Update1', data: saveData.update }],
+            };
+
+            try {
+              let resp = await this.$axios.api.saveData(param);
+              this.$toast('info', '저장완료');
+              this.searchClick();
+            } catch {
+              this.$toast('info', '에러발생. 다시 작업해주세요.');
+            }
+          }
+        });
+      }
+    },
+    onValidateColumnSaleRescGrid(grid, column, inserting, value, itemIndex, dataRow) {
+      let error = {};
+      if (!this.isValidateCellSaleRescGrid) return error;
+
+      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', '거래명세서번호'], column.fieldName)) {
+        if (_.isNil(value)) {
+          error.level = 'error';
+          error.message = '필수 입력입니다.';
+        }
+      }
+
+      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'selCode', 'site', '거래명세서번호'], column.fieldName)) {
+        error.level = 'warning';
+        error.message = '중복 입력입니다.';
+      }
+
+      if (this.$utils.containsValue(['선택', '출고처리', '부가세포함', '반품', '단가소급여부', '유상사급여부'], column.fieldName)) {
+        if (!_.isNil(value) && value.length >= 2) {
+          error.level = 'warning';
+          error.message = '한자리로 입력해주세요.';
+        }
+      }
+
+      return error;
     },
     uploadClick() {
       let excelGrid = _.cloneDeep(gridField);
@@ -226,118 +339,6 @@ export default {
     },
     closePopup() {
       this.searchClick();
-    },
-    async excelBtnClick() {
-      const grid = this.gridView;
-
-      const now = new Date();
-      const yyyymmdd = this.$utils.getTodayDate();
-
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `매출정보${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
-
-      const options = {
-        type: 'excel',
-        target: 'local',
-        fileName: fileName,
-        progressMessage: '엑셀 Export중입니다.',
-        done: function () {
-          alert('엑셀 내보내기가 완료되었습니다!');
-        },
-      };
-
-      grid.exportGrid(options);
-    },
-
-    addBtnClick() {
-      this.gridView.commit();
-      this.gridDataProvider.addRow({ yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, site: this.params.site != null ? this.siteMap[this.params.site] : null });
-      let itemIndex = this.gridView.getItemCount() - 1;
-      this.gridView.setCurrent({ itemIndex: itemIndex });
-    },
-
-    delBtnClick() {
-      this.gridView.commit();
-      const checkedRows = this.gridView.getCheckedRows();
-      if (checkedRows.length === 0) {
-        this.$toast('info', '삭제할 행을 선택하세요');
-      } else {
-        let delItems = [];
-        checkedRows.forEach((itemIndex) => {
-          if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
-            delItems.push(itemIndex);
-          } else {
-            this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
-          }
-        });
-        this.gridDataProvider.removeRows(delItems);
-      }
-    },
-
-    async saveBtnClick() {
-      this.gridView.commit();
-      await this.saveData();
-    },
-
-    async saveData() {
-      let saveData = this.$refs.saleRescGrid.getSaveData();
-      if (saveData.count <= 0) {
-        this.$toast('info', '변경된 내용이 없습니다.');
-        return;
-      }
-      this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
-
-      this.isValidteCellSaleRescGrid = true;
-      let rslt = this.gridView.validateCells(null, false);
-      this.isValidteCellSaleRescGrid = false;
-
-      if (rslt === null) {
-        this.$confirm('확인', '수정하신 내용을 저장 하시겠습니까?', async (confirm) => {
-          if (confirm) {
-            let param = {
-              menuId: 'c0007005',
-              delete: [{ queryId: 'C0007005_Del1', data: saveData.delete }],
-              insert: [{ queryId: 'C0007005_Ins1', data: saveData.insert }],
-              update: [{ queryId: 'C0007005_Update1', data: saveData.update }],
-            };
-
-            try {
-              let resp = await this.$axios.api.saveData(param);
-              this.$toast('info', '저장완료');
-              this.searchClick();
-            } catch {
-              this.$toast('info', '에러발생. 다시 작업해주세요.');
-            }
-          }
-        });
-      }
-    },
-    onValidateColumnSaleRescGrid(grid, column, inserting, value, itemIndex, dataRow) {
-      let error = {};
-      if (!this.isValidteCellSaleRescGrid) return error;
-
-      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', '거래명세서번호'], column.fieldName)) {
-        if (_.isNil(value)) {
-          error.level = 'error';
-          error.message = '필수 입력입니다.';
-        }
-      }
-      
-      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['거래명세서번호'], column.fieldName)) {
-        error.level = 'warning';
-        error.message = '중복 입력입니다.';
-      }
-
-      if (this.$utils.containsValue(['선택', '출고처리', '부가세포함', '반품', '단가소급여부', '유상사급여부'], column.fieldName)) {
-        if (!_.isNil(value) && value.length >= 2) {
-          error.level = 'warning';
-          error.message = '한자리로 입력해주세요.';
-        }
-      }
-
-      return error;
     },
   },
 };
