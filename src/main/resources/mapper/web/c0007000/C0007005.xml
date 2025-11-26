@@ -15,6 +15,18 @@
 		order by 1,2,3,4,5,6,7,8,9;
 	</select>
 
+	<select id="C0007005_Sch2" resultType="CamelMap">
+		select * FROM DOI_INVOICE_RESC
+		where 1=1
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
+		</if>
+		<if test="site != null and site != ''">
+			and site = #{site}
+		</if>
+		order by 1,2,3,4,5,6,7,8,9;
+	</select>
+
 	<select id="checkduplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
 		DROP TABLE IF EXISTS #TempTable1;
 
