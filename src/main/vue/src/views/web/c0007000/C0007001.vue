@@ -3,17 +3,15 @@
   <div>
     <div class="search_box">
       <b-row class="search_area">
-        <b-col cols="2">
-          <div class="form-floating">
-            <div class="form-floating me-1">
-              <date-picker label="기준월" mode="month" v-model="params.yyyymm" @change="onMonthChange"/>
-              <label for="floatingSelect" class="select">기준월</label>
-            </div>
+        <b-col cols="1" class="period">
+          <div class="form-floating me-1">
+            <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
+            <label for="floatingSelect" class="select">기준월</label>
           </div>
         </b-col>
-        <b-col cols="2">
+        <b-col cols="2" class="ms-3">
           <div class="form-floating">
-            <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="displaySite" :disabled="true" />
+            <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" :disabled="true" />
             <label for="floating">사업장</label>
           </div>
         </b-col>
@@ -25,17 +23,22 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <b-button class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
+          <b-button class="sub" @click="addBtnClick">추가</b-button>
+          <b-button @click="delBtnClick">삭제</b-button>
+          <b-button class="main" @click="saveBtnClick">저장</b-button>
         </div>
       </div>
       <div class="grid-border-none">
         <RealGrid ref="modelGrid" :uid="'modelGrid'" :step="'1'" :rows="modelGridRows" style="height: 100%" />
       </div>
     </div>
+    <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
   </div>
 </template>
-
 <script>
+import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007001.js';
@@ -46,9 +49,9 @@ export default {
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { 
-			srchInfo,
-      userAuthInfo 
+    return {
+      srchInfo,
+      userAuthInfo,
     };
   },
   data() {
@@ -57,38 +60,41 @@ export default {
       modelGridRows: [],
       params: {
         site: 'HQ',
-        yyyymm: this.srchInfo.yyyymm,
+        yyyymm: null,
       },
       siteMap: {
-        '본사': 'HQ',
-        'VINA': 'VN',
-        'HQ': 'HQ',
-        'VN': 'VN',
+        본사: 'HQ',
+        VINA: 'VN',
+        HQ: 'HQ',
+        VN: 'VN',
       },
-      isProcessing: false,
       duplicateKey: ['yyyymm', 'selCode', 'site', '코스트센터', '계정코드'],
-      isValidteCellmodelGrid: false,
+      isValidateCellModelGrid: false,
     };
   },
   watch: {
+    'params.yyyymm': function (newVal) {
+      if (newVal) {
+        this.onDateChange();
+      }
+    },
     'srchInfo.yyyymm': {
       handler(newVal) {
         if (newVal) {
           this.params.yyyymm = newVal;
-          console.log('[C0007001] yyyymm 변경:', this.params.yyyymm);
-        }
-      }
-     },
-    userAuthInfo: {
-      handler(newVal) {
-        if (newVal && newVal.curProdCtg) {
-          this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
-          console.log('[C0007001] site 변경:', this.params.site);
         }
       },
-      // deep: true,
-      // immediate: true
-    }
+    },
+    prodCtg: {
+      handler(newVal) {
+        if (newVal) {
+          this.params.site = newVal === 'VN' ? 'VINA' : '본사';
+          if (this.$refs.modelGrid != null) {
+            this.searchClick();
+          }
+        }
+      },
+    },
   },
   computed: {
     gridView() {
@@ -97,63 +103,142 @@ export default {
     gridDataProvider() {
       return this.$refs.modelGrid.getGridDataProvider();
     },
-    displaySite() {
-      return this.params.site; // '본사' 또는 'VINA' 표시
-    }
+    prodCtg() {
+      return this.userAuthInfo.curProdCtg;
+    },
   },
   created() {
-    // 기준월을 오늘 날짜 기준으로 세팅 (항상 YYYY-MM 형태)
-    const now = new Date();
-    this.params.yyyymm = this.srchInfo.yyyymm; //`${now.getFullYear()}-${("0" + (now.getMonth() + 1)).slice(-2)}`;
     this.initializeGrid();
   },
   mounted() {
-    console.log('[mounted] C0007001 컴포넌트 마운트됨');
+    this.params.yyyymm = this.srchInfo.yyyymm;
     this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
-    console.log('[mounted] site 설정:', this.params.site);
+    this.$nextTick(() => {
+      this.searchClick();
+    });
   },
   beforeUnmount() {},
   methods: {
-    onMonthChange() {
-      console.log('onMonthChange ---c0007001'+this.params.yyyymm);
-      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
-    },
     initializeGrid() {
       this.modelGrid = _.cloneDeep(gridField);
     },
+    onDateChange() {
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
+    },
     async getDataList() {
+      if (!this.gridView) return;
+
       this.gridView.commit();
-      // 기준월(YYYY-MM)을 DB 쿼리용(YYYYMM)으로 변환
-      let yyyymm = this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null;
+
       let params = {
-        yyyymm: yyyymm,
-        site: this.siteMap[this.params.site], // '본사' → 'HQ', 'VINA' → 'VN' 변환
+        yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+        site: this.siteMap[this.params.site],
       };
-      console.log('조회 파라미터:', params);
+
       let param = {
         menuId: 'c0007001',
-        queryId: 'selectTab1GridData',
+        queryId: 'C0007001_Sch1',
         queryParams: params,
         target: this.modelGridRows,
       };
       try {
         let resp = await this.$axios.api.search(param);
-        console.log('조회 성공:', resp);
       } catch (error) {
         if (error.response) {
-          console.error('조회 중 오류 발생:', error.response.data);
           this.$toast('error', `서버 오류: ${error.response.data?.message || error.response.status}`);
         } else {
-          console.error('조회 중 오류 발생:', error.message);
           this.$toast('error', `서버 연결에 실패했습니다: ${error.message}`);
         }
       }
     },
-
     searchClick() {
+      if (!this.params.yyyymm) {
+        this.$toast && this.$toast('error', '년월 선택해주세요.');
+        return;
+      }
       this.getDataList();
     },
+    addBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
 
+      this.gridView.commit();
+      this.gridDataProvider.addRow({ yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, site: this.params.site });
+      let itemIndex = this.gridView.getItemCount() - 1;
+      this.gridView.setCurrent({ itemIndex: itemIndex });
+    },
+    delBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
+
+      this.gridView.commit();
+      const checkedRows = this.gridView.getCheckedRows();
+      if (checkedRows.length === 0) {
+        this.$toast('info', '삭제할 행을 선택하세요');
+      } else {
+        let delItems = [];
+        checkedRows.forEach((itemIndex) => {
+          if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
+            delItems.push(itemIndex);
+          } else {
+            this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
+          }
+        });
+        this.gridDataProvider.removeRows(delItems);
+      }
+    },
+    async saveBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
+      this.gridView.commit();
+
+      let saveData = this.$refs.modelGrid.getSaveData();
+      if (saveData.count <= 0) {
+        this.$toast('info', '변경된 내용이 없습니다.');
+        return;
+      }
+      this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
+
+      this.isValidateCellModelGrid = true;
+      let rslt = this.gridView.validateCells(null, false);
+      this.isValidateCellModelGrid = false;
+
+      if (rslt === null) {
+        this.$confirm('확인', '수정하신 내용을 저장 하시겠습니까?', async (confirm) => {
+          if (confirm) {
+            let param = {
+              menuId: 'c0007001',
+              delete: [{ queryId: 'C0007001_Delete1', data: saveData.delete }],
+              insert: [{ queryId: 'C0007001_Insert1', data: saveData.insert }],
+              update: [{ queryId: 'C0007001_Update1', data: saveData.update }],
+            };
+
+            try {
+              let resp = await this.$axios.api.saveData(param);
+              this.$toast('info', '저장완료');
+              this.searchClick();
+            } catch {
+              this.$toast('info', '에러발생. 다시 작업해주세요.');
+            }
+          }
+        });
+      }
+    },
+    onValidateColumnModelGrid(grid, column, inserting, value, itemIndex, dataRow) {
+      let error = {};
+      if (!this.isValidateCellModelGrid) return error;
+
+      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', '코스트센터', '계정코드'], column.fieldName)) {
+        if (_.isNil(value)) {
+          error.level = 'error';
+          error.message = '필수 입력입니다.';
+        }
+      }
+
+      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'selCode', 'site', '코스트센터', '계정코드'], column.fieldName)) {
+        error.level = 'warning';
+        error.message = '중복 입력입니다.';
+      }
+
+      return error;
+    },
     async excelBtnClick() {
       const grid = this.gridView;
       const now = new Date();
@@ -175,161 +260,20 @@ export default {
 
       grid.exportGrid(options);
     },
+    uploadClick() {
+      let excelGrid = _.cloneDeep(gridField);
+      excelGrid.options.display.fitStyle = 'none'; // 엑셀다운로드시 none 아니면 width 0이 됨.
+      this.$refs.uploadPopup1.openDialog({
+        dialogTitle: '업로드 팝업',
+        uploadApi: '/api/c0007000/c0007001/upload',
+        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10', 'field11', 'field12'],
+        excelGrid,
+        fileName: '부서별_계정별_비용_template',
+      });
+    },
+    closePopup() {
+      this.searchClick();
+    },
   },
 };
 </script>
-
-<style scoped>
-.input-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.input-label {
-  margin-right: 4px;
-  font-weight: 500;
-  color: #333;
-}
-.form-select {
-  height: 32px;
-  font-size: 15px;
-  border-radius: 6px;
-  border: 1px solid #bdbdbd;
-  background: #fff;
-  padding: 0 8px;
-}
-.yyyymm-tab-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 140px;
-}
-.yyyymm-input-wrap {
-  position: relative;
-  width: 100%;
-  display: flex;
-  align-items: center;
-}
-.yyyymm-input {
-  width: 100%;
-  font-size: 16px;
-  font-family: inherit;
-  font-weight: 400;
-  color: #222;
-  border: 1px solid #bdbdbd;
-  border-radius: 6px;
-  background: #fff;
-  text-align: center;
-  cursor: pointer;
-  padding-right: 32px;
-  height: 38px;
-  line-height: 38px;
-  box-sizing: border-box;
-}
-.dropdown-arrow {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  height: 24px;
-  cursor: pointer;
-  z-index: 2;
-}
-.yyyymm-label {
-  position: absolute;
-  left: 14px;
-  top: 8px;
-  font-size: 14px;
-  color: #888;
-  pointer-events: none;
-  background: transparent;
-  z-index: 1;
-}
-.yyyymm-popup-inside {
-  position: absolute;
-  left: 0;
-  top: 44px;
-  background: #fff;
-  border: 1px solid #bdbdbd;
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
-  padding: 16px 18px 10px 18px;
-  z-index: 200;
-  min-width: 220px;
-  min-height: 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.popup-close-x {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 14px;
-  color: #888;
-  cursor: pointer;
-  z-index: 10;
-}
-.popup-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-  margin-top: 8px;
-}
-.popup-year {
-  font-weight: bold;
-  font-size: 17px;
-  color: #333;
-  margin: 0 12px;
-}
-.popup-arrow {
-  background: none;
-  border: none;
-  font-size: 17px;
-  color: #333;
-  cursor: pointer;
-  padding: 0 8px;
-}
-.month-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-top: 8px;
-}
-.month-cell {
-  aspect-ratio: 1/1;
-  width: 44px;
-  min-width: 44px;
-  max-width: 60px;
-  min-height: 44px;
-  max-height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  background: #f5f5f5;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 15px;
-  color: #222;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  transition: background 0.2s, box-shadow 0.2s;
-}
-.month-cell.selected {
-  background: #333;
-  color: #fff;
-  font-weight: bold;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.16);
-}
-.popup-footer {
-  text-align: right;
-  margin-top: 8px;
-  width: 100%;
-}
-</style>
