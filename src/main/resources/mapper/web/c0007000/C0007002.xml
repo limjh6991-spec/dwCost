@@ -3,7 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007002Mapper">
-	<select id="selectTab1GridData" resultType="CamelMap">
+	<select id="C0007002_Sch1" resultType="CamelMap">
 		select
 			YYYYMM,
 			SEL_CODE,
@@ -16,6 +16,7 @@
 			UNIT_COST,
 			IN_AMT,
 			COST_GUBUN,
+			MAT_GUBUN,
 			MAT_CLASS,
 			MODEL,
 			MODEL_N_TYPE
@@ -29,7 +30,7 @@
 		<if test="site != null and site != ''">
 			and site = #{site}
 		</if>
-		order BY MAT_CODE;
+		order BY MAT_CODE, MODEL, MODEL_N_TYPE;
 	</select>
 
 	<select id="checkduplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
@@ -44,28 +45,17 @@
 			[SIZE] varchar(40) COLLATE Korean_Wansung_CI_AS NULL,
 			IN_QTY real NULL,
 			UNIT_COST real NULL,
-			IN_AMT real NULL,
+			IN_AMT numeric(15,2) NULL,
 			COST_GUBUN nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			MAT_GUBUN nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			MAT_CLASS nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			MODEL varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			MODEL varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
 			MODEL_N_TYPE varchar(15) COLLATE Korean_Wansung_CI_AS NULL
 		);
 
 		INSERT INTO #TempTable1
 		(
-		YYYYMM
-		, SEL_CODE
-		, SITE
-		, MAT_CODE
-		, MAT_DESC
-		, [SIZE]
-		, IN_QTY
-		, UNIT_COST
-		, IN_AMT
-		, COST_GUBUN
-		, MAT_CLASS
-		, MODEL
-		, MODEL_N_TYPE
+		YYYYMM,SEL_CODE,SITE,MAT_CODE,MAT_DESC,[SIZE],IN_QTY,UNIT_COST,IN_AMT,COST_GUBUN,MAT_GUBUN,MAT_CLASS,MODEL,MODEL_N_TYPE
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
@@ -83,6 +73,7 @@
 			, #{item.field12}
 			, #{item.field13}
 			, #{item.field14}
+			, #{item.field15}
 			)
 		</foreach>;
 
@@ -92,14 +83,17 @@
 			FROM DOI_MATERIAL_RESC b
 			WHERE 1=1
 			AND b.YYYYMM = a.YYYYMM
+			AND b.SEL_CODE = a.SEL_CODE
 			AND b.SITE = a.SITE
 			AND b.MAT_CODE = a.MAT_CODE
 			AND b.MODEL = a.MODEL
+			AND b.MODEL_N_TYPE = a.MODEL_N_TYPE
 		);
 	</select>
 
 	<insert id="uploadExcel" parameterType="java.util.List">
 		CREATE TABLE #TempTable (
+			seq_no INT IDENTITY (1, 1) NOT NULL,
 			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
 			SEL_CODE varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
 			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
@@ -108,35 +102,22 @@
 			[SIZE] varchar(40) COLLATE Korean_Wansung_CI_AS NULL,
 			IN_QTY real NULL,
 			UNIT_COST real NULL,
-			IN_AMT real NULL,
+			IN_AMT numeric(15,2) NULL,
 			COST_GUBUN nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			MAT_GUBUN nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			MAT_CLASS nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			MODEL varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			MODEL varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
 			MODEL_N_TYPE varchar(15) COLLATE Korean_Wansung_CI_AS NULL
 		);
 
 		INSERT INTO #TempTable
 		(
-		seq_no
-		, YYYYMM
-		, SEL_CODE
-		, SITE
-		, MAT_CODE
-		, MAT_DESC
-		, [SIZE]
-		, IN_QTY
-		, UNIT_COST
-		, IN_AMT
-		, COST_GUBUN
-		, MAT_CLASS
-		, MODEL
-		, MODEL_N_TYPE
+		YYYYMM,SEL_CODE,SITE,MAT_CODE,MAT_DESC,[SIZE],IN_QTY,UNIT_COST,IN_AMT,COST_GUBUN,MAT_GUBUN,MAT_CLASS,MODEL,MODEL_N_TYPE
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
 			(
-			#{item.field1}
-			, #{item.field2}
+			 #{item.field2}
 			, #{item.field3}
 			, #{item.field4}
 			, #{item.field5}
@@ -149,13 +130,14 @@
 			, #{item.field12}
 			, #{item.field13}
 			, #{item.field14}
+			, #{item.field15}
 			)
 		</foreach>;
 
-		INSERT INTO DOI_MATERIAL_RESC (YYYYMM, SEL_CODE, SITE, MAT_CODE, MAT_DESC, [SIZE], IN_QTY, UNIT_COST, IN_AMT, COST_GUBUN, MAT_CLASS, MODEL, MODEL_N_TYPE)
-		SELECT YYYYMM, SEL_CODE, SITE, MAT_CODE, MAT_DESC, [SIZE], IN_QTY, UNIT_COST, IN_AMT, COST_GUBUN, MAT_CLASS, MODEL, MODEL_N_TYPE
+		INSERT INTO DOI_MATERIAL_RESC (YYYYMM,SEL_CODE,SITE,MAT_CODE,MAT_DESC,[SIZE],IN_QTY,UNIT_COST,IN_AMT,COST_GUBUN,MAT_GUBUN,MAT_CLASS,MODEL,MODEL_N_TYPE)
+		SELECT YYYYMM,SEL_CODE,SITE,MAT_CODE,MAT_DESC,[SIZE],IN_QTY,UNIT_COST,IN_AMT,COST_GUBUN,MAT_GUBUN,MAT_CLASS,MODEL,MODEL_N_TYPE
 		FROM (
-			SELECT *, MAX(seq_no) over (partition by YYYYMM, SITE, MAT_CODE, MODEL) max_seq_no FROM #TempTable
+			SELECT *, MAX(seq_no) over (partition by YYYYMM, SEL_CODE, SITE, MAT_CODE, MODEL, MODEL_N_TYPE) max_seq_no FROM #TempTable
 		) A
 		WHERE 1=1
 		AND seq_no = max_seq_no
@@ -164,36 +146,26 @@
 			FROM DOI_MATERIAL_RESC b
 			WHERE 1=1
 			AND b.YYYYMM = a.YYYYMM
+			AND b.SEL_CODE = a.SEL_CODE
 			AND b.SITE = a.SITE
 			AND b.MAT_CODE = a.MAT_CODE
 			AND b.MODEL = a.MODEL
+			AND b.MODEL_N_TYPE = a.MODEL_N_TYPE
 		);
 
 		DROP TABLE #TempTable;
 	</insert>
 	
-	<insert id="insertTab1Data">
+	<insert id="C0007002_Insert1">
 		INSERT INTO DOI_MATERIAL_RESC
 		(
-		YYYYMM
-		, SEL_CODE
-		, SITE
-		, MAT_CODE
-		, MAT_DESC
-		, [SIZE]
-		, IN_QTY
-		, UNIT_COST
-		, IN_AMT
-		, COST_GUBUN
-		, MAT_CLASS
-		, MODEL
-		, MODEL_N_TYPE
+		YYYYMM,SEL_CODE,SITE,MAT_CODE,MAT_DESC,[SIZE],IN_QTY,UNIT_COST,IN_AMT,COST_GUBUN,MAT_GUBUN,MAT_CLASS,MODEL,MODEL_N_TYPE
 		)
 		VALUES
 		(
 		#{yyyymm}
 		, #{selCode}
-		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='베트남' then 'VN' else left(#{site},2) end
+		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='VINA' then 'VN' else left(#{site},2) end
 		, #{matCode}
 		, #{matDesc}
 		, #{size}
@@ -201,37 +173,41 @@
 		, #{unitCost}
 		, #{inAmt}
 		, #{costGubun}
+		, #{matGubun}
 		, #{matClass}
 		, #{model}
 		, #{modelNType}				
 		);
 	</insert>
 
-	<delete id="deleteTab1Data">
+	<delete id="C0007002_Delete1">
 		DELETE FROM DOI_MATERIAL_RESC
 		WHERE 1=1
-		and yyyymm = #{yyyymm}
-		and sel_code = #{selCode}
-		and site = #{siteOrg}
-		and mat_code = #{matCode}
-		and model = #{model}
+		and YYYYMM = #{yyyymm}
+		and SEL_CODE = #{selCode}
+		and SITE = #{siteOrg}
+		and MAT_CODE = #{matCode}
+		and MODEL = #{model}
+		and MODEL_N_TYPE = #{modelNType}
 	</delete>
 
-	<update id="updateTab1Data">
+	<update id="C0007002_Update1">
 		UPDATE DOI_MATERIAL_RESC
-		SET SEL_CODE = #{selCode}
+		SET MAT_DESC = #{matDesc}
 		,[SIZE] = #{size}
 		,IN_QTY = #{inQty}
 		,UNIT_COST = #{unitCost}
 		,IN_AMT = #{inAmt}
 		,COST_GUBUN = #{costGubun}
+		,MAT_GUBUN = #{matGubun}
 		,MAT_CLASS = #{matClass}
-		,MODEL_N_TYPE = #{modelNType}
 		WHERE 1=1
-		and yyyymm = #{yyyymm}
-		and site = #{siteOrg}
-		and mat_code = #{matCode}
-		and model = #{model}
+		and YYYYMM = #{yyyymm}
+		and SEL_CODE = #{selCode}
+		and SITE = #{siteOrg}
+		and MAT_CODE = #{matCode}
+		and MODEL = #{model}
+		and MODEL_N_TYPE = #{modelNType}
 		;
 	</update>
 </mapper>

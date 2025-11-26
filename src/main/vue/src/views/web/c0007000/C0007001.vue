@@ -141,15 +141,7 @@ export default {
         queryParams: params,
         target: this.modelGridRows,
       };
-      try {
-        let resp = await this.$axios.api.search(param);
-      } catch (error) {
-        if (error.response) {
-          this.$toast('error', `서버 오류: ${error.response.data?.message || error.response.status}`);
-        } else {
-          this.$toast('error', `서버 연결에 실패했습니다: ${error.message}`);
-        }
-      }
+      let resp = await this.$axios.api.search(param);
     },
     searchClick() {
       if (!this.params.yyyymm) {

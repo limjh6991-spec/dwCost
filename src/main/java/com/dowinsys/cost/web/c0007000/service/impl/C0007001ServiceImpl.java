@@ -119,7 +119,7 @@ public class C0007001ServiceImpl implements C0007001Service {
                     } else {
                         errorMessage.append(" ");
                     }
-                    errorMessage.append("계정코드는 동일년도 동일사업장 동일코스트센터에 이미 존재하는 데이터로 업로드 대상이 아닙니다.");
+                    errorMessage.append("계정코드는 동일년월 동일사업장 동일코스트센터에 이미 존재하는 데이터로 업로드 대상이 아닙니다.");
                     if (!duplicateList.isEmpty() || !pkDuplicateList.isEmpty()) {
                         errorMessage.append("\n");
                     }
