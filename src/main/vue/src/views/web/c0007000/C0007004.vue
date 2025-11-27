@@ -67,7 +67,6 @@ export default {
       params: {
         yyyymm: null,
         site: 'HQ',
-        yyyymm: null,
       },
       siteMap: {
         본사: 'HQ',
