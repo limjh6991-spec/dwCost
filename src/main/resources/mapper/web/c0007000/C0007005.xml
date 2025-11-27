@@ -15,6 +15,18 @@
 		order by 1,2,3,4,5,6,7,8,9;
 	</select>
 
+	<select id="C0007005_Sch2" resultType="CamelMap">
+		select * FROM DOI_INVOICE_RESC
+		where 1=1
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
+		</if>
+		<if test="site != null and site != ''">
+			and site = #{site}
+		</if>
+		order by 1,2,3,4,5,6,7,8,9;
+	</select>
+
 	<select id="checkduplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
 		DROP TABLE IF EXISTS #TempTable1;
 
@@ -25,7 +37,7 @@
 		선택 varchar(1) COLLATE Korean_Wansung_CI_AS NULL,
 		출고처리 varchar(1) COLLATE Korean_Wansung_CI_AS NULL,
 		사업단위 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
-		거래명세서번호 varchar(12) COLLATE Korean_Wansung_CI_AS NULL,
+		거래명세서번호 varchar(12) COLLATE Korean_Wansung_CI_AS NOT NULL,
 		거래명세서일 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 		Local구분 nvarchar(20) COLLATE Korean_Wansung_CI_AS NULL,
 		출고구분 nvarchar(8) COLLATE Korean_Wansung_CI_AS NULL,
@@ -44,7 +56,7 @@
 		납기일 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 		품명 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
 		품번 varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
-		규격 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		규격 nvarchar(25) COLLATE Korean_Wansung_CI_AS NULL,
 		판매단위 varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
 		판매기준가 numeric(18,0) NULL,
 		수량 int NULL,
@@ -168,6 +180,9 @@
 		SELECT 1
 		FROM doi_sale_resc b
 		WHERE 1=1
+		AND b.YYYYMM = a.YYYYMM
+		AND b.SEL_CODE = a.SEL_CODE
+		AND b.SITE = a.SITE
 		AND b.거래명세서번호 = a.거래명세서번호
 		);
 	</select>
@@ -181,7 +196,7 @@
 		선택 varchar(1) COLLATE Korean_Wansung_CI_AS NULL,
 		출고처리 varchar(1) COLLATE Korean_Wansung_CI_AS NULL,
 		사업단위 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
-		거래명세서번호 varchar(12) COLLATE Korean_Wansung_CI_AS NULL,
+		거래명세서번호 varchar(12) COLLATE Korean_Wansung_CI_AS NOT NULL,
 		거래명세서일 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 		Local구분 nvarchar(20) COLLATE Korean_Wansung_CI_AS NULL,
 		출고구분 nvarchar(8) COLLATE Korean_Wansung_CI_AS NULL,
@@ -200,7 +215,7 @@
 		납기일 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 		품명 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
 		품번 varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
-		규격 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		규격 nvarchar(25) COLLATE Korean_Wansung_CI_AS NULL,
 		판매단위 varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
 		판매기준가 numeric(18,0) NULL,
 		수량 int NULL,
@@ -337,7 +352,7 @@
 		,PO_No,반품,매출수량,매출금액계,미매출금액,세금계산서금액계,계산서미발행액,계산서미발행수량,기타출고구분,품목자산분류
 		,단가소급여부,[수량(단가소급)],유상사급여부
 		FROM (
-			SELECT *, MAX(seq_no) over (partition by 거래명세서번호) max_seq_no FROM #TempTable
+			SELECT *, MAX(seq_no) over (partition by YYYYMM,SEL_CODE,SITE,거래명세서번호) max_seq_no FROM #TempTable
 		)A
 		WHERE 1=1
 		AND seq_no = max_seq_no
@@ -345,19 +360,25 @@
 			SELECT 1
 			FROM doi_sale_resc b
 			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SEL_CODE = a.SEL_CODE
+			AND b.SITE = a.SITE
 			AND b.거래명세서번호 = a.거래명세서번호
 		);
 
 		DROP TABLE #TempTable;
 	</insert>
 
-	<delete id="C0007005_Del1">
+	<delete id="C0007005_Delete1">
 		DELETE FROM doi_sale_resc
 		WHERE 1=1
-		and 거래명세서번호=#{거래명세서번호}
+		AND YYYYMM = #{yyyymm}
+		AND SEL_CODE= #{selCode}
+		AND SITE= #{site}
+		and 거래명세서번호 = #{거래명세서번호}
 	</delete>
 
-	<insert id="C0007005_Ins1">
+	<insert id="C0007005_Insert1">
 		INSERT INTO doi_sale_resc
 		(
 		YYYYMM,SEL_CODE,SITE,선택,출고처리,사업단위,거래명세서번호,거래명세서일,Local구분,출고구분
@@ -438,7 +459,7 @@
 
 	<update id="C0007005_Update1">
 		UPDATE doi_sale_resc
-		SET YYYYMM =#{yyyymm} ,SEL_CODE=#{selCode} ,SITE=#{site} ,선택=#{선택} ,출고처리=#{출고처리}
+		SET 선택=#{선택} ,출고처리=#{출고처리}
 		,사업단위=#{사업단위} ,거래명세서일=#{거래명세서일} ,Local구분=#{local구분}
 		,출고구분 =#{출고구분} ,부서=#{부서} ,담당자=#{담당자} ,청구처=#{청구처} ,거래처=#{거래처} ,유통구조=#{유통구조}
 		,거래처번호=#{거래처번호} ,중개인=#{중개인} ,납품장소=#{납품장소} ,인도조건=#{인도조건} ,판매후보관 =#{판매후보관} ,위탁=#{위탁}
@@ -451,6 +472,9 @@
 		,미매출금액=#{미매출금액} ,세금계산서금액계=#{세금계산서금액계} ,계산서미발행액=#{계산서미발행액} ,계산서미발행수량=#{계산서미발행수량}
 		,기타출고구분=#{기타출고구분} ,품목자산분류 =#{품목자산분류}	,단가소급여부=#{단가소급여부} ,[수량(단가소급)]=#{수량(단가소급)} ,유상사급여부=#{유상사급여부}
 		WHERE 1=1
+		AND YYYYMM = #{yyyymm}
+		AND SEL_CODE= #{selCode}
+		AND SITE= #{site}
 		and 거래명세서번호 = #{거래명세서번호}
 		;
 	</update>

@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @RestController("com.dowinsys.cost.web.c0007000.controller.C0007004Controller")
-@RequestMapping("/api/c0007000/C0007004")
+@RequestMapping("/api/c0007000/c0007004")
 public class C0007004Controller {
 
     @Autowired

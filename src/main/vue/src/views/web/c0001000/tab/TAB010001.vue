@@ -73,9 +73,8 @@ export default {
         HQ: 'HQ',
         VN: 'VN',
       },
-      isProcessing: false,
       duplicateKey: ['yyyymm', 'selCode', 'site', 'acct'],
-      isValidteCellAcctGrid: false,
+      isValidateCellAcctGrid: false,
     };
   },
   computed: {
@@ -193,9 +192,9 @@ export default {
       }
       this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
 
-      this.isValidteCellAcctGrid = true;
+      this.isValidateCellAcctGrid = true;
       let rslt = this.gridView.validateCells(null, false);
-      this.isValidteCellAcctGrid = false;
+      this.isValidateCellAcctGrid = false;
 
       if (rslt === null) {
         this.$confirm('확인', '수정하신 내용을 저장 하시겠습니까?', async (confirm) => {
@@ -220,7 +219,7 @@ export default {
     },
     onValidateColumnAcctGrid(grid, column, inserting, value, itemIndex, dataRow) {
       let error = {};
-      if (!this.isValidteCellAcctGrid) return error;
+      if (!this.isValidateCellAcctGrid) return error;
 
       if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', 'acctClass', 'acct'], column.fieldName)) {
         if (_.isNil(value)) {

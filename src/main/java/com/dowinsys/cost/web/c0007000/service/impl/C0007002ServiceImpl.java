@@ -35,7 +35,7 @@ public class C0007002ServiceImpl implements C0007002Service {
                 //TODO:: add SITE
                 if (item.get("field4").equalsIgnoreCase("본사")) {
                     item.put("field4", "HQ");
-                } else if (item.get("field4").equalsIgnoreCase("베트남")) {
+                } else if (item.get("field4").equalsIgnoreCase("VINA")) {
                     item.put("field4", "VN");
                 } else {
                     item.put("field4", "HQ");
@@ -45,29 +45,31 @@ public class C0007002ServiceImpl implements C0007002Service {
             }).collect(Collectors.toList());
 
             //check excel pk duplicate
-            List<Map<String, String>> list2 = ExcelUtils.readExcel(file, headerList, 1, true, true);
-            for (Map<String, String> item : list2) {
-                item.remove("field1");
-                item.remove("field3");
-                item.remove("field5");
-                item.remove("field7");
-                item.remove("field8");
-                item.remove("field9");
-                item.remove("field10");
+            List<Map<String, String>> list3 = ExcelUtils.readExcel(file, headerList, 1, true, true);
+            List<Map<String, String>> list2 = new ArrayList<>();
+            for (Map<String, String> item : list3) {
+                Map<String, String> addItem = new HashMap<>();
+                addItem.put("field2", item.get("field2"));
+                addItem.put("field3", item.get("field3"));
+                addItem.put("field4", item.get("field4"));
+                addItem.put("field5", item.get("field5"));
+                addItem.put("field14", item.get("field14"));
+                addItem.put("field15", item.get("field15"));
+                list2.add(addItem);
             }
             List<Map<String, String>> finalList2 = list2;
             List<Map<String, String>> pkDuplicateList = list2.stream().filter(i -> Collections.frequency(finalList2, i) > 1).toList();
             pkDuplicateList = pkDuplicateList.stream().distinct().toList();
 
             List<Map<String, String>> duplicateOrgList = new ArrayList<>();
-            int loopCnt = list.size() / 200;
-            int remain = list.size() % 200;
+            int loopCnt = list.size() / 100;
+            int remain = list.size() % 100;
             int cnt = 0;
             int retCnt = 0;
 
             for (int i = 1; i <= loopCnt; i++) {
                 List<Map<String, String>> splitList = new ArrayList<>();
-                for (int j = 0; j < 200; j++) {
+                for (int j = 0; j < 100; j++) {
                     splitList.add(list.get(cnt));
                     cnt++;
                 }
@@ -95,7 +97,7 @@ public class C0007002ServiceImpl implements C0007002Service {
                 StringBuilder errorMessage = new StringBuilder();
                 List<String> acctList = new ArrayList<>();
                 for (Map<String, String> item : duplicateOrgList) {
-                    acctList.add(item.get("acct"));
+                    acctList.add(item.get("matCode"));
                 }
                 acctList = acctList.stream().distinct().toList();
 
@@ -105,7 +107,7 @@ public class C0007002ServiceImpl implements C0007002Service {
                         errorMessage.append(acct);
                     } else {
                         errorMessage.append(", ");
-                        if (index % 8 == 0) {
+                        if (index % 5 == 0) {
                             errorMessage.append("\n");
                         }
                         errorMessage.append(acct);
@@ -113,12 +115,12 @@ public class C0007002ServiceImpl implements C0007002Service {
                     index++;
                 }
                 if (!duplicateOrgList.isEmpty()) {
-                    if (index % 8 == 0) {
+                    if (index % 5 == 0) {
                         errorMessage.append("\n");
                     } else {
                         errorMessage.append(" ");
                     }
-                    errorMessage.append("계정코드는 동일년도 동일사업장에 이미 존재하는 데이터로 업로드 대상이 아닙니다.");
+                    errorMessage.append("자재코드는 동일년월 동일사업장 동일모델에 이미 존재하는 데이터로 업로드 대상이 아닙니다.");
                     if (!duplicateList.isEmpty() || !pkDuplicateList.isEmpty()) {
                         errorMessage.append("\n");
                     }
@@ -126,10 +128,10 @@ public class C0007002ServiceImpl implements C0007002Service {
 
                 List<String> acctList2 = new ArrayList<>();
                 for (Map<String, String> item : duplicateList) {
-                    acctList2.add(item.get("field6"));
+                    acctList2.add(item.get("field5"));
                 }
                 for (Map<String, String> item : pkDuplicateList) {
-                    acctList2.add(item.get("field6"));
+                    acctList2.add(item.get("field5"));
                 }
                 acctList2 = acctList2.stream().distinct().toList();
 
@@ -139,7 +141,7 @@ public class C0007002ServiceImpl implements C0007002Service {
                         errorMessage.append(cstNo);
                     } else {
                         errorMessage.append(", ");
-                        if (index % 8 == 0) {
+                        if (index % 5 == 0) {
                             errorMessage.append("\n");
                         }
                         errorMessage.append(cstNo);
@@ -147,7 +149,7 @@ public class C0007002ServiceImpl implements C0007002Service {
                     index++;
                 }
                 if (!duplicateList.isEmpty() || !pkDuplicateList.isEmpty()) {
-                    if (index % 8 == 0) {
+                    if (index % 5 == 0) {
                         errorMessage.append("\n");
                     } else {
                         errorMessage.append(" ");
