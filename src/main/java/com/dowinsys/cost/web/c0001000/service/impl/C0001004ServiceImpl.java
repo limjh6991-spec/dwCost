@@ -137,7 +137,7 @@ public class C0001004ServiceImpl implements C0001004Service {
                     } else {
                         errorMessage.append(" ");
                     }
-                    errorMessage.append("계정코드는 동일년월 동일사업장에 이미 존재하는 데이터로 업로드 대상이 아닙니다.");
+                    errorMessage.append("계정코드는 동일년도 동일사업장에 이미 존재하는 데이터로 업로드 대상이 아닙니다.");
                     if (!duplicateList.isEmpty() || !pkDuplicateList.isEmpty()) {
                         errorMessage.append("\n");
                     }
@@ -779,43 +779,5 @@ public class C0001004ServiceImpl implements C0001004Service {
         } catch (Exception e) {
             throw e;
         }
-    }
-
-    @Override
-    public Map<String, Object> tab5CarryOver(String yyyymm, String prevYyyymm, String site) throws Exception {
-
-        Map<String, Object> result = new HashMap<>();
-
-        Map<String, Object> curParam = new HashMap<>();
-        curParam.put("yyyymm", yyyymm);
-        curParam.put("site", site);
-
-        int curCnt = mapper.countTab5ByYyyymmAndSite(curParam);
-        if (curCnt > 0) {
-            result.put("status", "CURRENT_EXISTS");
-            return result;
-        }
-
-        Map<String, Object> prevParam = new HashMap<>();
-        prevParam.put("yyyymm", prevYyyymm);
-        prevParam.put("site", site);
-
-        List<Map<String, Object>> prevList = mapper.selectTab5ByYyyymmAndSite(prevParam);
-        if (prevList == null || prevList.isEmpty()) {
-            result.put("status", "NO_PREV_DATA");
-            return result;
-        }
-
-        List<Map<String, Object>> newList = prevList.stream()
-                .map(row -> {
-                    Map<String, Object> copy = new HashMap<>(row);
-                    copy.put("yyyymm", yyyymm);
-                    return copy;
-                })
-                .collect(Collectors.toList());
-
-        result.put("status", "OK");
-        result.put("rows", newList);
-        return result;
     }
 }    
