@@ -1,4 +1,4 @@
-/** * 타시스템 > 자재투입정보 */
+<!-- 타시스템 > 자재투입정보 -->
 <template>
   <div>
     <div class="search_box">
@@ -31,7 +31,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="materialGrid" :uid="'materialGrid'" :step="'1'" :rows="materialGridRows" style="height: 100%" />
+        <RealGrid ref="materialGrid" :uid="'materialGrid'" :step="'1'" :rows="materialGridRows" style="height: 100%" :fixLayoutWidth="false" />
       </div>
     </div>
     <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
@@ -45,8 +45,13 @@ import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007002.js';
 
 export default {
-  props: {},
   components: {},
+  props: {
+    yearList: {
+      type: Array,
+      default: () => [],
+    },
+  },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -60,8 +65,8 @@ export default {
       materialGrid: null,
       materialGridRows: [],
       params: {
-        site: 'HQ',
         yyyymm: null,
+        site: 'HQ',
       },
       siteMap: {
         본사: 'HQ',
@@ -72,6 +77,17 @@ export default {
       duplicateKey: ['yyyymm', 'selCode', 'site', 'matCode', 'model', 'modelNType'],
       isValidateCellMaterialGrid: false,
     };
+  },
+  computed: {
+    gridView() {
+      return this.$refs.materialGrid && this.$refs.materialGrid.getGridView();
+    },
+    gridDataProvider() {
+      return this.$refs.materialGrid && this.$refs.materialGrid.getGridDataProvider();
+    },
+    prodCtg() {
+      return this.userAuthInfo.curProdCtg; // '본사' 또는 'VINA' 표시
+    }
   },
   watch: {
     'params.yyyymm': function (newVal) {
@@ -118,7 +134,6 @@ export default {
       this.searchClick();
     });
   },
-  beforeUnmount() {},
   methods: {
     initializeGrid() {
       this.materialGrid = _.cloneDeep(gridField);

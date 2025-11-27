@@ -1,4 +1,4 @@
-/** * 타시스템 > 제품정보 */
+<!-- * 타시스템 > 제품정보 -->
 <template>
   <div>
     <div class="search_box">
@@ -31,7 +31,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="dataGrid" :uid="'dataGrid'" :step="'1'" :rows="dataGridRows" style="height: 100%" />
+        <RealGrid ref="dataGrid" :uid="'dataGrid'" :step="'1'" :rows="dataGridRows" style="height: 100%" :fixLayoutWidth="false" />
       </div>
     </div>
     <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
@@ -45,8 +45,13 @@ import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007004.js';
 
 export default {
-  props: {},
   components: {},
+  props: {
+    yearList: {
+      type: Array,
+      default: () => [],
+    },
+  },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -60,6 +65,7 @@ export default {
       dataGrid: null,
       dataGridRows: [],
       params: {
+        yyyymm: null,
         site: 'HQ',
         yyyymm: null,
       },
@@ -73,6 +79,17 @@ export default {
       isValidateCellDataGrid: false,
     };
   },
+  computed: {
+    gridView() {
+      return this.$refs.dataGrid && this.$refs.dataGrid.getGridView();
+    },
+    gridDataProvider() {
+      return this.$refs.dataGrid && this.$refs.dataGrid.getGridDataProvider();
+    },
+    prodCtg() {
+      return this.userAuthInfo.curProdCtg; // '본사' 또는 'VINA' 표시
+    }
+  }, 
   watch: {
     'params.yyyymm': function (newVal) {
       if (newVal) {
@@ -118,7 +135,6 @@ export default {
       this.searchClick();
     });
   },
-  beforeUnmount() {},
   methods: {
     initializeGrid() {
       this.dataGrid = _.cloneDeep(gridField);
@@ -127,6 +143,8 @@ export default {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     async getDataList() {
+      if (!this.gridView) return;
+
       this.gridView.commit();
 
       let params = {

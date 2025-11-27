@@ -1,4 +1,4 @@
-<!-- 기준정보 > 부서별, 계정별 비용 -->
+<!-- 타시스템 > 부서별, 계정별 비용 -->
 <template>
   <div>
     <div class="search_box">
@@ -31,7 +31,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="modelGrid" :uid="'modelGrid'" :step="'1'" :rows="modelGridRows" style="height: 100%" />
+        <RealGrid ref="modelGrid" :uid="'modelGrid'" :step="'1'" :rows="modelGridRows" style="height: 100%" :fixLayoutWidth="false" />
       </div>
     </div>
     <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
@@ -44,8 +44,13 @@ import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007001.js';
 
 export default {
-  props: {},
   components: {},
+  props: {
+    yearList: {
+      type: Array,
+      default: () => [],
+    },
+  },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -59,8 +64,8 @@ export default {
       modelGrid: null,
       modelGridRows: [],
       params: {
-        site: 'HQ',
         yyyymm: null,
+        site: 'HQ',
       },
       siteMap: {
         본사: 'HQ',
@@ -71,6 +76,17 @@ export default {
       duplicateKey: ['yyyymm', 'selCode', 'site', '코스트센터', '계정코드'],
       isValidateCellModelGrid: false,
     };
+  },
+    computed: {
+    gridView() {
+      return this.$refs.modelGrid && this.$refs.modelGrid.getGridView();
+    },
+    gridDataProvider() {
+      return this.$refs.modelGrid && this.$refs.modelGrid.getGridDataProvider();
+    },
+    prodCtg() {
+      return this.userAuthInfo.curProdCtg;
+    }
   },
   watch: {
     'params.yyyymm': function (newVal) {
@@ -117,7 +133,6 @@ export default {
       this.searchClick();
     });
   },
-  beforeUnmount() {},
   methods: {
     initializeGrid() {
       this.modelGrid = _.cloneDeep(gridField);
