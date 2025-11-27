@@ -41,11 +41,11 @@ const grid = {
       styleName: 'center-column',
       styleCallback: function (grid, dataCell) {
         const value = dataCell.value;
-        if (value === 'DOI_FAB_COST') {
+        if (value === 'DOI_COST') {
           return { background: '#e7f3ff', foreground: '#0066cc', fontBold: true };
         } else if (value === 'DOI_STOCK_BOH') {
           return { background: '#d1e7dd', foreground: '#0f5132', fontBold: true };
-        } else if (value === 'DOI_STOCK_COST') {
+        } else if (value === 'DOI_STCO') {
           return { background: '#fff3cd', foreground: '#664d03', fontBold: true };
         }
       },
