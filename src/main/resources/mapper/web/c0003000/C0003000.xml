@@ -64,7 +64,7 @@
                 EXPEN_SEL명,
                 AVG([OUT]) AS out_qty,
                 SUM(OUT_AMT) AS out_amt
-            FROM DOI_STOCK_COST a
+            FROM DOI_STCO a
             WHERE 1 = 1
                 AND a.SEL_CODE = 'ACTUAL'
         <if test="yyyymm != null and yyyymm != ''">

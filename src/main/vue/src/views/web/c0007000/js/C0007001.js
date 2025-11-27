@@ -9,7 +9,7 @@ const grid = {
     copy: { enabled: true, singleMode: false },
     display: { columnMovable: false, editItemMerging: true, fitStyle: 'fill', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
     edit: { editable: true, columnEditableFirst: true, commitByCell: true, commitWhenLeave: true },
-    footer: { visible: false },
+    footer: { visible: true },
     hideDeletedRows: true,
     paste: { enabled: true, checkReadOnly: true },
     rowIndicator: { visible: true },
@@ -143,8 +143,8 @@ const grid = {
     },
     { name: '계정과목', fieldName: '계정과목', width: '150', header: { text: '계정과목' }, autoFilter: true, editable: true, styleName: 'edit tl' },
     { name: '비용구분', fieldName: '비용구분', width: '120', header: { text: '비용구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: '차변금액', fieldName: '차변금액', width: '100', header: { text: '차변금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
-    { name: '대변금액', fieldName: '대변금액', width: '100', header: { text: '대변금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
+    { name: '차변금액', fieldName: '차변금액', width: '100', header: { text: '차변금액' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } }, 
+    { name: '대변금액', fieldName: '대변금액', width: '100', header: { text: '대변금액' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };
 
