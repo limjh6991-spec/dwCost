@@ -3,34 +3,12 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007003Mapper">
-	<select id="selectTab1GridData" resultType="CamelMap">
+	<select id="C0007003_Sch1" resultType="CamelMap">
 		select
-			YYYYMM,
-			SEL_CODE,
-			DW_SITE as SITE_ORG,
-			CASE WHEN DW_SITE='HQ' then '본사' WHEN DW_SITE='VN' then 'VINA' end as SITE,
-			구분 AS GUBUN,
-			구분_ord AS GUBUN_ORD,
-			도우코드 AS DW_CODE,
-			MODEL_N_TYPE,
-			도우모델 AS DW_MODEL,
-			작업구분 AS WORK_GUBUN,
-			org작업구분 AS ORG_WORK_GUBUN,
-			MODEL, 
-			INCH,
-			SITE AS OUT_SITE,
-			BOH_MONTH,
-			IN_MONTH,
-			BONUS_MONTH,
-			EOH_MONTH,
-			OUT_MONTH,
-			LOSS_MONTH,
-			NG_MONTH,
-			수율제외_MONTH AS EXCEPT_MONTH,
-			REWORK진행_MONTH AS REWORK_MONTH,
-			SHIPPING_PLAN_MONTH,
-			SHIPPING_ACTUAL_MONTH,
-			MATERIAL_LOSS
+			YYYYMM,SEL_CODE,
+			DW_SITE as DW_SITE_ORG,
+			CASE WHEN DW_SITE='HQ' then '본사' WHEN DW_SITE='VN' then 'VINA' end as DW_SITE,
+			구분,구분_ord,도우코드,MODEL_N_TYPE,도우모델,작업구분,org작업구분,model,Inch,Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss
 		from
 			DOI_PROD_SUBUL
 		where 1=1
@@ -40,7 +18,25 @@
 		<if test="site != null and site != ''">
 			and DW_SITE = #{site}
 		</if>
-		order BY DW_MODEL;
+		order BY 도우코드,MODEL_N_TYPE,도우모델,구분_ord;
+	</select>
+
+	<select id="C0007003_Sch2" resultType="CamelMap">
+		select
+		YYYYMM,SEL_CODE,
+		DW_SITE as DW_SITE_ORG,
+		CASE WHEN DW_SITE='HQ' then '본사' WHEN DW_SITE='VN' then 'VINA' end as DW_SITE,
+		구분,구분_ord,도우코드,MODEL_N_TYPE,도우모델,작업구분,org작업구분,model,Inch,Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss
+		from
+			DOI_RND_SUBUL
+		where 1=1
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
+		</if>
+		<if test="site != null and site != ''">
+			and DW_SITE = #{site}
+		</if>
+		order BY 도우코드,MODEL_N_TYPE,도우모델,구분_ord;
 	</select>
 
 	<select id="uploadProdSubul" resultType="CamelMap">

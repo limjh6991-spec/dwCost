@@ -44,16 +44,19 @@ public class C0007005ServiceImpl implements C0007005Service {
             }).collect(Collectors.toList());
 
             //check excel pk duplicate
-            List<Map<String, String>> list2 = ExcelUtils.readExcel(file, headerList, 1, true, true);
-            List<Map<String, String>> list3 = new ArrayList<>();
-            for (Map<String, String> item : list2) {
+            List<Map<String, String>> list3 = ExcelUtils.readExcel(file, headerList, 1, true, true);
+            List<Map<String, String>> list2 = new ArrayList<>();
+            for (Map<String, String> item : list3) {
                 Map<String, String> addItem = new HashMap<>();
+                addItem.put("field2", item.get("field2"));
+                addItem.put("field3", item.get("field3"));
+                addItem.put("field4", item.get("field4"));
                 addItem.put("field8", item.get("field8"));
-                list3.add(addItem);
+                list2.add(addItem);
             }
 
-            List<Map<String, String>> finalList2 = list3;
-            List<Map<String, String>> pkDuplicateList = list3.stream().filter(i -> Collections.frequency(finalList2, i) > 1).toList();
+            List<Map<String, String>> finalList2 = list2;
+            List<Map<String, String>> pkDuplicateList = list2.stream().filter(i -> Collections.frequency(finalList2, i) > 1).toList();
             pkDuplicateList = pkDuplicateList.stream().distinct().toList();
 
             List<Map<String, String>> duplicateOrgList = new ArrayList<>();

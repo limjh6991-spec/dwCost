@@ -23,6 +23,7 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <b-button class="second" @click="onClickCarryOver">이월 데이터</b-button>
           <b-button class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
           <b-button class="sub" @click="addBtnClick">추가</b-button>
@@ -42,7 +43,7 @@ import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0001000/js/TAB010001.js';
-import axios from 'axios';
+
 export default {
   components: {},
   props: {
@@ -73,9 +74,8 @@ export default {
         HQ: 'HQ',
         VN: 'VN',
       },
-      isProcessing: false,
       duplicateKey: ['yyyymm', 'selCode', 'site', 'acct'],
-      isValidteCellAcctGrid: false,
+      isValidateCellAcctGrid: false,
     };
   },
   computed: {
@@ -193,9 +193,9 @@ export default {
       }
       this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
 
-      this.isValidteCellAcctGrid = true;
+      this.isValidateCellAcctGrid = true;
       let rslt = this.gridView.validateCells(null, false);
-      this.isValidteCellAcctGrid = false;
+      this.isValidateCellAcctGrid = false;
 
       if (rslt === null) {
         this.$confirm('확인', '수정하신 내용을 저장 하시겠습니까?', async (confirm) => {
@@ -220,7 +220,7 @@ export default {
     },
     onValidateColumnAcctGrid(grid, column, inserting, value, itemIndex, dataRow) {
       let error = {};
-      if (!this.isValidteCellAcctGrid) return error;
+      if (!this.isValidateCellAcctGrid) return error;
 
       if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', 'acctClass', 'acct'], column.fieldName)) {
         if (_.isNil(value)) {
@@ -270,9 +270,76 @@ export default {
         fileName: '원가계정정보_template',
       });
     },
-    closePopup() {
+    // 이월 데이터 가져오기
+    getPrevYyyymm(yyyymm) {
+      const year = parseInt(yyyymm.substring(0, 4), 10);
+      const month = parseInt(yyyymm.substring(4, 6), 10);
+      let prevYear = year;
+      let prevMonth = month - 1;
+      if (prevMonth === 0) {
+        prevYear = year - 1;
+        prevMonth = 12;
+      }
+      return (
+        prevYear.toString() +
+        (prevMonth < 10 ? '0' + prevMonth.toString() : prevMonth.toString())
+      );
+    },
+
+    async onClickCarryOver() {
+      if (!this.params.yyyymm) {
+        this.$toast && this.$toast('error', '년월을 먼저 선택해주세요.');
+        return;
+      }
+
+      const curYyyymm = this.params.yyyymm.replaceAll('-', '');
+      const prevYyyymm = this.getPrevYyyymm(curYyyymm);
+      const site = this.siteMap[this.params.site] || this.params.site;
+
+      try {
+        const res = await this.$axios.get('/api/c0001000/c0001004/tab1/carryOver', {
+          params: { yyyymm: curYyyymm, prevYyyymm, site },
+        });
+
+        const { status, rows } = res.data || {};
+
+        if (status === 'CURRENT_EXISTS') {
+          this.$toast && this.$toast('info', '이미 해당월의 데이터가 존재합니다.');
+          return;
+        }
+
+        if (status === 'NO_PREV_DATA') {
+          this.$toast && this.$toast('info', '이월할 데이터가 없습니다.');
+          return;
+        }
+
+        if (status === 'OK') {
+
+          if (!this.gridDataProvider) return;
+
+          this.gridDataProvider.clearRows();
+          this.gridDataProvider.setRows(rows || []);
+
+          const rowCount = this.gridDataProvider.getRowCount();
+          for (let i = 0; i < rowCount; i++) {
+            this.gridDataProvider.setRowState(i, RowState.CREATED);
+          }
+
+          this.gridView && this.gridView.refresh();
+
+          this.$toast && this.$toast('info', '데이터 가져오기 성공. 저장 버튼을 눌러야 데이터가 저장됩니다.');
+          return;
+        }
+
+        this.$toast && this.$toast('error', '이월 처리 중 예기치 못한 응답입니다.');
+      } catch (e) {
+        console.error(e);
+        this.$toast && this.$toast('error', '이월 처리 중 오류가 발생했습니다.');
+      }
+    },
+  closePopup() {
       this.searchClick();
     },
-  },
+  }
 };
 </script>

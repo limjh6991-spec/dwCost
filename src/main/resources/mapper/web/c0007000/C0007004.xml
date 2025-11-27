@@ -3,7 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007004Mapper">
-	<select id="selectTab1GridData" resultType="CamelMap">
+	<select id="C0007004_Sch1" resultType="CamelMap">
 		select
 			YYYYMM,
 			SEL_CODE,
@@ -33,7 +33,7 @@
 		<if test="site != null and site != ''">
 			and site = #{site}
 		</if>
-		order BY MODEL;
+		order BY MODEL, MODEL_TYPE;
 	</select>
 
 	<select id="checkduplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
@@ -62,24 +62,7 @@
 
 		INSERT INTO #TempTable1
 		(
-		YYYYMM
-		, SEL_CODE
-		, SITE
-		, MODEL
-		, MODEL_TYPE
-		, STOCK
-		, BOH
-		, [INPUT]
-		, [OUT]
-		, EOH
-		, INPUT_ETC
-		, INPUT_MOVING
-		, INPUT_PROD
-		, OUT_SHEET
-		, OUT_RETURN
-		, OUT_INVOICE
-		, OUT_ETC
-		, OUT_MOVING
+		YYYYMM,SEL_CODE,SITE,MODEL,MODEL_TYPE,STOCK,BOH,[INPUT],[OUT],EOH,INPUT_ETC,INPUT_MOVING,INPUT_PROD,OUT_SHEET,OUT_RETURN,OUT_INVOICE,OUT_ETC,OUT_MOVING
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
@@ -102,7 +85,6 @@
 			, #{item.field17}
 			, #{item.field18}
 			, #{item.field19}
-			, #{item.field20}
 			)
 		</foreach>;
 
@@ -112,60 +94,45 @@
 			FROM DOI_STOCK b
 			WHERE 1=1
 			AND b.YYYYMM = a.YYYYMM
+			AND b.SEL_CODE = a.SEL_CODE
 			AND b.SITE = a.SITE
 			AND b.MODEL = a.MODEL
+			AND b.MODEL_TYPE = a.MODEL_TYPE
+			AND b.STOCK = a.STOCK
 		);
 	</select>
 
 	<insert id="uploadExcel" parameterType="java.util.List">
 		CREATE TABLE #TempTable (
-			YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			MODEL nvarchar(50) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			MODEL_TYPE nvarchar(50) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			STOCK nvarchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			BOH int NULL,
-			[INPUT] int NULL,
-			[OUT] int NULL,
-			EOH int NULL,
-			INPUT_ETC int NULL,
-			INPUT_MOVING int NULL,
-			INPUT_PROD int NULL,
-			OUT_SHEET int NULL,
-			OUT_RETURN int NULL,
-			OUT_INVOICE int NULL,
-			OUT_ETC int NULL,
-			OUT_MOVING int NULL
+		seq_no INT IDENTITY (1, 1) NOT NULL,
+		YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		MODEL nvarchar(50) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		MODEL_TYPE nvarchar(50) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		STOCK nvarchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		BOH int NULL,
+		[INPUT] int NULL,
+		[OUT] int NULL,
+		EOH int NULL,
+		INPUT_ETC int NULL,
+		INPUT_MOVING int NULL,
+		INPUT_PROD int NULL,
+		OUT_SHEET int NULL,
+		OUT_RETURN int NULL,
+		OUT_INVOICE int NULL,
+		OUT_ETC int NULL,
+		OUT_MOVING int NULL
 		);
 
 		INSERT INTO #TempTable
 		(
-		seq_no
-		,YYYYMM
-		, SEL_CODE
-		, SITE
-		, MODEL
-		, MODEL_TYPE
-		, STOCK
-		, BOH
-		, [INPUT]
-		, [OUT]
-		, EOH
-		, INPUT_ETC
-		, INPUT_MOVING
-		, INPUT_PROD
-		, OUT_SHEET
-		, OUT_RETURN
-		, OUT_INVOICE
-		, OUT_ETC
-		, OUT_MOVING
+		YYYYMM,SEL_CODE,SITE,MODEL,MODEL_TYPE,STOCK,BOH,[INPUT],[OUT],EOH,INPUT_ETC,INPUT_MOVING,INPUT_PROD,OUT_SHEET,OUT_RETURN,OUT_INVOICE,OUT_ETC,OUT_MOVING
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
 			(
-			#{item.field1}
-			, #{item.field2}
+			#{item.field2}
 			, #{item.field3}
 			, #{item.field4}
 			, #{item.field5}
@@ -183,14 +150,13 @@
 			, #{item.field17}
 			, #{item.field18}
 			, #{item.field19}
-			, #{item.field20}
 			)
 		</foreach>;
 
-		INSERT INTO DOI_STOCK (YYYYMM, SEL_CODE, SITE, MODEL, MODEL_TYPE, STOCK, BOH, [INPUT], [OUT], EOH, INPUT_ETC, INPUT_MOVING, INPUT_PROD, OUT_SHEET, OUT_RETURN, OUT_INVOICE, OUT_ETC, OUT_MOVING)
-		SELECT YYYYMM, SEL_CODE, SITE, MODEL, MODEL_TYPE, STOCK, BOH, [INPUT], [OUT], EOH, INPUT_ETC, INPUT_MOVING, INPUT_PROD, OUT_SHEET, OUT_RETURN, OUT_INVOICE, OUT_ETC, OUT_MOVING
+		INSERT INTO DOI_STOCK (YYYYMM,SEL_CODE,SITE,MODEL,MODEL_TYPE,STOCK,BOH,[INPUT],[OUT],EOH,INPUT_ETC,INPUT_MOVING,INPUT_PROD,OUT_SHEET,OUT_RETURN,OUT_INVOICE,OUT_ETC,OUT_MOVING )
+		SELECT YYYYMM,SEL_CODE,SITE,MODEL,MODEL_TYPE,STOCK,BOH,[INPUT],[OUT],EOH,INPUT_ETC,INPUT_MOVING,INPUT_PROD,OUT_SHEET,OUT_RETURN,OUT_INVOICE,OUT_ETC,OUT_MOVING
 		FROM (
-			SELECT *, MAX(seq_no) over (partition by YYYYMM, SITE, MODEL) max_seq_no FROM #TempTable
+			SELECT *, MAX(seq_no) over (partition by YYYYMM, SEL_CODE, SITE, MODEL, MODEL_TYPE, STOCK) max_seq_no FROM #TempTable
 		) A
 		WHERE 1=1
 		AND seq_no = max_seq_no
@@ -199,40 +165,26 @@
 			FROM DOI_STOCK b
 			WHERE 1=1
 			AND b.YYYYMM = a.YYYYMM
+			AND b.SEL_CODE = a.SEL_CODE
 			AND b.SITE = a.SITE
 			AND b.MODEL = a.MODEL
+			AND b.MODEL_TYPE = a.MODEL_TYPE
+			AND b.STOCK = a.STOCK
 		);
 
 		DROP TABLE #TempTable;
 	</insert>
 	
-	<insert id="insertTab1Data">
-		INSERT INTO DOI_MODEL_MAST
+	<insert id="C0007004_Insert1">
+		INSERT INTO DOI_STOCK
 		(
-		YYYYMM
-		, SEL_CODE
-		, SITE
-		, MODEL
-		, MODEL_TYPE
-		, STOCK
-		, BOH
-		, [INPUT]
-		, [OUT]
-		, EOH
-		, INPUT_ETC
-		, INPUT_MOVING
-		, INPUT_PROD
-		, OUT_SHEET
-		, OUT_RETURN
-		, OUT_INVOICE
-		, OUT_ETC
-		, OUT_MOVING
+		YYYYMM,SEL_CODE,SITE,MODEL,MODEL_TYPE,STOCK,BOH,[INPUT],[OUT],EOH,INPUT_ETC,INPUT_MOVING,INPUT_PROD,OUT_SHEET,OUT_RETURN,OUT_INVOICE,OUT_ETC,OUT_MOVING
 		)
 		VALUES
 		(
 		#{yyyymm}
 		, #{selCode}
-		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='베트남' then 'VN' else left(#{site},2) end
+		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='VINA' then 'VN' else left(#{site},2) end
 		, #{model}
 		, #{modelType}
 		, #{stock}
@@ -251,23 +203,20 @@
 		);
 	</insert>
 
-	<delete id="deleteTab1Data">
+	<delete id="C0007004_Delete1">
 		DELETE FROM DOI_STOCK
 		WHERE 1=1
 		and yyyymm = #{yyyymm}
 		and sel_code = #{selCode}
 		and site = #{siteOrg}
 		and model = #{model}
+		and MODEL_TYPE = #{modelType}
+		and STOCK = #{stock}
 	</delete>
 
-	<update id="updateTab1Data">
+	<update id="C0007004_Update1">
 		UPDATE DOI_STOCK
-		SET SEL_CODE = #{selCode}
-		,SITE = #{site}
-		,MODEL = #{model}
-		,MODEL_TYPE = #{modelType}
-		,STOCK = #{stock}
-		,BOH = #{boh}
+		SET BOH = #{boh}
 		,[INPUT] = #{input}
 		,[OUT] = #{out}
 		,EOH = #{eoh}
@@ -281,8 +230,11 @@
 		,OUT_MOVING = #{outMoving}
 		WHERE 1=1
 		and yyyymm = #{yyyymm}
+		and sel_code = #{selCode}
 		and site = #{siteOrg}
 		and model = #{model}
+		and MODEL_TYPE = #{modelType}
+		and STOCK = #{stock}
 		;
 	</update>
 </mapper>

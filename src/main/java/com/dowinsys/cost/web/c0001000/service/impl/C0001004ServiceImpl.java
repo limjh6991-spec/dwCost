@@ -15,6 +15,21 @@ public class C0001004ServiceImpl implements C0001004Service {
     @Autowired
     private C0001004Mapper mapper;
 
+    public String getPrevYyyymm(String yyyymm) {
+        int year = Integer.parseInt(yyyymm.substring(0, 4));
+        int month = Integer.parseInt(yyyymm.substring(4, 6));
+
+        int prevYear = year;
+        int prevMonth = month - 1;
+
+        if (prevMonth == 0) {
+            prevYear = year - 1;
+            prevMonth = 12;
+        }
+
+        return String.format("%04d%02d", prevYear, prevMonth);
+    }
+
     // Tab1
     @Override
     public Map<String, String> tab1UploadExcel(MultipartFile file, String headers) throws Exception {
@@ -122,7 +137,7 @@ public class C0001004ServiceImpl implements C0001004Service {
                     } else {
                         errorMessage.append(" ");
                     }
-                    errorMessage.append("계정코드는 동일년도 동일사업장에 이미 존재하는 데이터로 업로드 대상이 아닙니다.");
+                    errorMessage.append("계정코드는 동일년월 동일사업장에 이미 존재하는 데이터로 업로드 대상이 아닙니다.");
                     if (!duplicateList.isEmpty() || !pkDuplicateList.isEmpty()) {
                         errorMessage.append("\n");
                     }
@@ -172,6 +187,51 @@ public class C0001004ServiceImpl implements C0001004Service {
             throw e;
         }
     }
+    
+    @Override
+    public Map<String, Object> tab1CarryOver(String yyyymm, String prevYyyymm, String site) throws Exception {
+
+        Map<String, Object> result = new HashMap<>();
+
+        // 1. 현재월 데이터 존재 여부 체크
+        Map<String, Object> curParam = new HashMap<>();
+        curParam.put("yyyymm", yyyymm);
+        curParam.put("site", site);
+
+        int curCnt = mapper.countTab1ByYyyymmAndSite(curParam);
+        if (curCnt > 0) {
+            // 이미 데이터 있음
+            result.put("status", "CURRENT_EXISTS");
+            return result;
+        }
+
+        // 2. 전월 데이터 조회
+        Map<String, Object> prevParam = new HashMap<>();
+        prevParam.put("yyyymm", prevYyyymm);
+        prevParam.put("site", site);
+
+        List<Map<String, Object>> prevList = mapper.selectTab1ByYyyymmAndSite(prevParam);
+
+        if (prevList == null || prevList.isEmpty()) {
+            // 전월 데이터 없음
+            result.put("status", "NO_PREV_DATA");
+            return result;
+        }
+
+        // 3. 전월 데이터를 현재월로 복사
+        List<Map<String, Object>> newList = prevList.stream()
+                .map(row -> {
+                    Map<String, Object> copy = new HashMap<>(row);
+                    copy.put("yyyymm", yyyymm);
+                    return copy;
+                })
+                .collect(Collectors.toList());
+
+        result.put("status", "OK");
+        result.put("rows", newList);
+        return result;
+    }
+
 
     // Tab2
         @Override
@@ -319,6 +379,44 @@ public class C0001004ServiceImpl implements C0001004Service {
         } catch (Exception e) {
             throw e;
         }
+    }
+
+    @Override
+    public Map<String, Object> tab2CarryOver(String yyyymm, String prevYyyymm, String site) throws Exception {
+
+        Map<String, Object> result = new HashMap<>();
+
+        Map<String, Object> curParam = new HashMap<>();
+        curParam.put("yyyymm", yyyymm);
+        curParam.put("site", site);
+
+        int curCnt = mapper.countTab2ByYyyymmAndSite(curParam);
+        if (curCnt > 0) {
+            result.put("status", "CURRENT_EXISTS");
+            return result;
+        }
+
+        Map<String, Object> prevParam = new HashMap<>();
+        prevParam.put("yyyymm", prevYyyymm);
+        prevParam.put("site", site);
+
+        List<Map<String, Object>> prevList = mapper.selectTab2ByYyyymmAndSite(prevParam);
+        if (prevList == null || prevList.isEmpty()) {
+            result.put("status", "NO_PREV_DATA");
+            return result;
+        }
+
+        List<Map<String, Object>> newList = prevList.stream()
+                .map(row -> {
+                    Map<String, Object> copy = new HashMap<>(row);
+                    copy.put("yyyymm", yyyymm);
+                    return copy;
+                })
+                .collect(Collectors.toList());
+
+        result.put("status", "OK");
+        result.put("rows", newList);
+        return result;
     }
 
     // Tab3
@@ -497,6 +595,44 @@ public class C0001004ServiceImpl implements C0001004Service {
         }
     }
 
+    @Override
+    public Map<String, Object> tab3CarryOver(String yyyymm, String prevYyyymm, String site) throws Exception {
+
+        Map<String, Object> result = new HashMap<>();
+
+        Map<String, Object> curParam = new HashMap<>();
+        curParam.put("yyyymm", yyyymm);
+        curParam.put("site", site);
+
+        int curCnt = mapper.countTab3ByYyyymmAndSite(curParam);
+        if (curCnt > 0) {
+            result.put("status", "CURRENT_EXISTS");
+            return result;
+        }
+
+        Map<String, Object> prevParam = new HashMap<>();
+        prevParam.put("yyyymm", prevYyyymm);
+        prevParam.put("site", site);
+
+        List<Map<String, Object>> prevList = mapper.selectTab3ByYyyymmAndSite(prevParam);
+        if (prevList == null || prevList.isEmpty()) {
+            result.put("status", "NO_PREV_DATA");
+            return result;
+        }
+
+        List<Map<String, Object>> newList = prevList.stream()
+                .map(row -> {
+                    Map<String, Object> copy = new HashMap<>(row);
+                    copy.put("yyyymm", yyyymm);
+                    return copy;
+                })
+                .collect(Collectors.toList());
+
+        result.put("status", "OK");
+        result.put("rows", newList);
+        return result;
+    }
+
     // Tab5
         @Override
         public Map<String, String> tab5UploadExcel(MultipartFile file, String headers) throws Exception {
@@ -643,5 +779,43 @@ public class C0001004ServiceImpl implements C0001004Service {
         } catch (Exception e) {
             throw e;
         }
+    }
+
+    @Override
+    public Map<String, Object> tab5CarryOver(String yyyymm, String prevYyyymm, String site) throws Exception {
+
+        Map<String, Object> result = new HashMap<>();
+
+        Map<String, Object> curParam = new HashMap<>();
+        curParam.put("yyyymm", yyyymm);
+        curParam.put("site", site);
+
+        int curCnt = mapper.countTab5ByYyyymmAndSite(curParam);
+        if (curCnt > 0) {
+            result.put("status", "CURRENT_EXISTS");
+            return result;
+        }
+
+        Map<String, Object> prevParam = new HashMap<>();
+        prevParam.put("yyyymm", prevYyyymm);
+        prevParam.put("site", site);
+
+        List<Map<String, Object>> prevList = mapper.selectTab5ByYyyymmAndSite(prevParam);
+        if (prevList == null || prevList.isEmpty()) {
+            result.put("status", "NO_PREV_DATA");
+            return result;
+        }
+
+        List<Map<String, Object>> newList = prevList.stream()
+                .map(row -> {
+                    Map<String, Object> copy = new HashMap<>(row);
+                    copy.put("yyyymm", yyyymm);
+                    return copy;
+                })
+                .collect(Collectors.toList());
+
+        result.put("status", "OK");
+        result.put("rows", newList);
+        return result;
     }
 }    

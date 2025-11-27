@@ -3,7 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007001Mapper">
-	<select id="selectTab1GridData" resultType="CamelMap">
+	<select id="C0007001_Sch1" resultType="CamelMap">
 		select
 			YYYYMM,
 			SEL_CODE,
@@ -33,17 +33,17 @@
 		DROP TABLE IF EXISTS #TempTable1;
 
 		CREATE TABLE #TempTable1 (
-			YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
+			yyyymm varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			sel_code varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			site varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			코스트센터 nvarchar(15) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			코스트센터분류 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
 			코스트센터유형 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
 			계정코드 varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			계정과목 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
 			비용구분 nvarchar(8) COLLATE Korean_Wansung_CI_AS NULL,
-			차변금액 int NULL,
-			대변금액 int NULL
+			차변금액 bigint NULL,
+			대변금액 bigint NULL
 		);
 
 		INSERT INTO #TempTable1
@@ -82,8 +82,9 @@
 			SELECT 1
 			FROM DOI_DEPT_COST b
 			WHERE 1=1
-			AND b.YYYYMM = a.YYYYMM
-			AND b.SITE = a.SITE
+			AND b.yyyymm = a.yyyymm
+			AND b.sel_code = a.sel_code
+			AND b.site = a.site
 			AND b.코스트센터 = a.코스트센터
 			AND b.계정코드 = a.계정코드
 		);
@@ -91,25 +92,25 @@
 
 	<insert id="uploadExcel" parameterType="java.util.List">
 		CREATE TABLE #TempTable (
-			YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
+			seq_no INT IDENTITY (1, 1) NOT NULL,
+			yyyymm varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			sel_code varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			site varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			코스트센터 nvarchar(15) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			코스트센터분류 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
 			코스트센터유형 nvarchar(12) COLLATE Korean_Wansung_CI_AS NULL,
 			계정코드 varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			계정과목 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
 			비용구분 nvarchar(8) COLLATE Korean_Wansung_CI_AS NULL,
-			차변금액 int NULL,
-			대변금액 int NULL
+			차변금액 bigint NULL,
+			대변금액 bigint NULL
 		);
 
 		INSERT INTO #TempTable
 		(
-		seq_no
-		, YYYYMM
-		, SEL_CODE
-		, SITE
+		yyyymm
+		, sel_code
+		, site
 		, 코스트센터
 		, 코스트센터분류
 		, 코스트센터유형
@@ -122,8 +123,7 @@
 		VALUES
 		<foreach collection="list" item="item" separator=",">
 			(
-			#{item.field1}
-			, #{item.field2}
+			#{item.field2}
 			, #{item.field3}
 			, #{item.field4}
 			, #{item.field5}
@@ -137,19 +137,20 @@
 			)
 		</foreach>;
 
-		INSERT INTO DOI_DEPT_COST (YYYYMM, SEL_CODE, SITE, 코스트센터분류, 코스트센터유형, 계정코드, 계정과목, 비용구분, 차변금액, 대변금액)
-		SELECT YYYYMM, SEL_CODE, SITE, 코스트센터분류, 코스트센터유형, 계정코드, 계정과목, 비용구분, 차변금액, 대변금액
+		INSERT INTO DOI_DEPT_COST (yyyymm,sel_code,site,코스트센터,코스트센터분류,코스트센터유형,계정코드,계정과목,비용구분,차변금액,대변금액)
+		SELECT yyyymm,sel_code,site,코스트센터,코스트센터분류,코스트센터유형,계정코드,계정과목,비용구분,차변금액,대변금액
 		FROM (
-			SELECT *, MAX(seq_no) over (partition by YYYYMM, SITE, 코스트센터, 계정코드) max_seq_no FROM #TempTable
+			SELECT *, MAX(seq_no) over (partition by yyyymm,sel_code,site,코스트센터,계정코드) max_seq_no FROM #TempTable
 		) A
 		WHERE 1=1
 		AND seq_no = max_seq_no
 		AND NOT EXISTS (
 			SELECT 1
-			FROM DOI_ACCT_EXPEN b
+			FROM DOI_DEPT_COST b
 			WHERE 1=1
-			AND b.YYYYMM = a.YYYYMM
-			AND b.SITE = a.SITE
+			AND b.yyyymm = a.yyyymm
+			AND b.sel_code = a.sel_code
+			AND b.site = a.site
 			AND b.코스트센터 = a.코스트센터
 			AND b.계정코드 = a.계정코드
 		);
@@ -157,7 +158,7 @@
 		DROP TABLE #TempTable;
 	</insert>
 	
-	<insert id="insertTab1Data">
+	<insert id="C0007001_Insert1">
 		INSERT INTO DOI_DEPT_COST
 		(
 		YYYYMM
@@ -176,7 +177,7 @@
 		(
 		#{yyyymm}
 		, #{selCode}
-		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='베트남' then 'VN' else left(#{site},2) end
+		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='VINA' then 'VN' else left(#{site},2) end
 		, #{코스트센터}
 		, #{코스트센터분류}
 		, #{코스트센터유형}
@@ -188,7 +189,7 @@
 		);
 	</insert>
 
-	<delete id="deleteTab1Data">
+	<delete id="C0007001_Delete1">
 		DELETE FROM DOI_DEPT_COST
 		WHERE 1=1
 		and yyyymm = #{yyyymm}
@@ -198,10 +199,9 @@
 		and 계정코드 = #{계정코드}
 	</delete>
 
-	<update id="updateTab1Data">
+	<update id="C0007001_Update1">
 		UPDATE DOI_DEPT_COST
-		SET SEL_CODE = #{selCode}
-		, 코스트센터분류 = #{코스트센터분류}
+		SET 코스트센터분류 = #{코스트센터분류}
 		, 코스트센터유형 = #{코스트센터유형}
 		, 계정과목 = #{계정과목}
 		, 비용구분 = #{비용구분}
@@ -209,6 +209,7 @@
 		, 대변금액 = #{대변금액}
 		WHERE 1=1
 		and yyyymm = #{yyyymm}
+		and SEL_CODE = #{selCode}
 		and site = #{siteOrg}
 		and 코스트센터 = #{코스트센터}
 		and 계정코드 = #{계정코드}
