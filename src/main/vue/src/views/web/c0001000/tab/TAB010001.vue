@@ -23,6 +23,7 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <b-button class="second" @click="onClickCarryOver">이월 데이터</b-button>
           <b-button class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
           <b-button class="sub" @click="addBtnClick">추가</b-button>
@@ -269,9 +270,76 @@ export default {
         fileName: '원가계정정보_template',
       });
     },
-    closePopup() {
+    // 이월 데이터 가져오기
+    getPrevYyyymm(yyyymm) {
+      const year = parseInt(yyyymm.substring(0, 4), 10);
+      const month = parseInt(yyyymm.substring(4, 6), 10);
+      let prevYear = year;
+      let prevMonth = month - 1;
+      if (prevMonth === 0) {
+        prevYear = year - 1;
+        prevMonth = 12;
+      }
+      return (
+        prevYear.toString() +
+        (prevMonth < 10 ? '0' + prevMonth.toString() : prevMonth.toString())
+      );
+    },
+
+    async onClickCarryOver() {
+      if (!this.params.yyyymm) {
+        this.$toast && this.$toast('error', '년월을 먼저 선택해주세요.');
+        return;
+      }
+
+      const curYyyymm = this.params.yyyymm.replaceAll('-', '');
+      const prevYyyymm = this.getPrevYyyymm(curYyyymm);
+      const site = this.siteMap[this.params.site] || this.params.site;
+
+      try {
+        const res = await this.$axios.get('/api/c0001000/c0001004/tab1/carryOver', {
+          params: { yyyymm: curYyyymm, prevYyyymm, site },
+        });
+
+        const { status, rows } = res.data || {};
+
+        if (status === 'CURRENT_EXISTS') {
+          this.$toast && this.$toast('info', '이미 해당월의 데이터가 존재합니다.');
+          return;
+        }
+
+        if (status === 'NO_PREV_DATA') {
+          this.$toast && this.$toast('info', '이월할 데이터가 없습니다.');
+          return;
+        }
+
+        if (status === 'OK') {
+
+          if (!this.gridDataProvider) return;
+
+          this.gridDataProvider.clearRows();
+          this.gridDataProvider.setRows(rows || []);
+
+          const rowCount = this.gridDataProvider.getRowCount();
+          for (let i = 0; i < rowCount; i++) {
+            this.gridDataProvider.setRowState(i, RowState.CREATED);
+          }
+
+          this.gridView && this.gridView.refresh();
+
+          this.$toast && this.$toast('info', '데이터 가져오기 성공. 저장 버튼을 눌러야 데이터가 저장됩니다.');
+          return;
+        }
+
+        this.$toast && this.$toast('error', '이월 처리 중 예기치 못한 응답입니다.');
+      } catch (e) {
+        console.error(e);
+        this.$toast && this.$toast('error', '이월 처리 중 오류가 발생했습니다.');
+      }
+    },
+  closePopup() {
       this.searchClick();
     },
-  },
+  }
 };
 </script>
