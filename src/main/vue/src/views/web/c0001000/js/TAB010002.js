@@ -25,6 +25,7 @@ const grid = {
     { fieldName: 'dept', dataType: ValueType.TEXT },
     { fieldName: 'deptName', dataType: ValueType.TEXT },
     { fieldName: 'expenArea', dataType: ValueType.TEXT },
+    { fieldName: 'costDist', dataType: ValueType.TEXT },
   ],
   columns: [
     {

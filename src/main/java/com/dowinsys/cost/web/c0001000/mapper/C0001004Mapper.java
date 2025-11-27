@@ -13,6 +13,10 @@ import java.util.Map;
 @Repository("com.dowinsys.cost.web.c0001000.mapper.C0001004Mapper")
 @Mapper
 public interface C0001004Mapper {
+
+    Map<String, Object> checkCurrentMonthData(Map<String, Object> param);
+    Map<String, Object> checkPrevMonthData(Map<String, Object> param);
+
     //Tab1
     List<Map<String, String>> checkTab1DuplicateOrgList(List<Map<String, String>> list);
     int tab1UploadExcel(List<Map<String, String>> list);
@@ -28,4 +32,16 @@ public interface C0001004Mapper {
     // Tab5
     List<Map<String, String>> checkTab5DuplicateOrgList(List<Map<String, String>> list);
     int tab5UploadExcel(List<Map<String, String>> list);
+
+    // Tab1
+    int countTab1ByYyyymmAndSite(Map<String, Object> param);
+    List<Map<String, Object>> selectTab1ByYyyymmAndSite(Map<String, Object> param);
+
+    // Tab2
+    int countTab2ByYyyymmAndSite(Map<String, Object> param);
+    List<Map<String, Object>> selectTab2ByYyyymmAndSite(Map<String, Object> param);
+
+    // Tab3
+    int countTab3ByYyyymmAndSite(Map<String, Object> param);
+    List<Map<String, Object>> selectTab3ByYyyymmAndSite(Map<String, Object> param);
 }

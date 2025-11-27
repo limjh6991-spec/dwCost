@@ -21,6 +21,7 @@ public class C0001004Controller {
     @Autowired
     C0001004Service service;
 
+    // Tab1
     @PostMapping("/tab1Upload")
     public ResponseEntity<String> tab1UploadFile(
             @RequestParam("file") MultipartFile file,
@@ -42,6 +43,13 @@ public class C0001004Controller {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload failed");
         }
+    }
+    
+        @GetMapping("/tab1/carryOver")
+    public Map<String, Object> tab1CarryOver(@RequestParam("yyyymm") String yyyymm,
+                                             @RequestParam("prevYyyymm") String prevYyyymm,
+                                             @RequestParam("site") String site) throws Exception {
+        return service.tab1CarryOver(yyyymm, prevYyyymm, site);
     }
 
 
@@ -69,6 +77,13 @@ public class C0001004Controller {
         }
     }
 
+        @GetMapping("/tab2/carryOver")
+    public Map<String, Object> tab2CarryOver(@RequestParam("yyyymm") String yyyymm,
+                                             @RequestParam("prevYyyymm") String prevYyyymm,
+                                             @RequestParam("site") String site) throws Exception {
+        return service.tab2CarryOver(yyyymm, prevYyyymm, site);
+    }
+
     // Tab3
         @PostMapping("/tab3Upload")
     public ResponseEntity<String> tab3UploadFile(
@@ -92,6 +107,14 @@ public class C0001004Controller {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload failed");
         }
     }
+    
+        @GetMapping("/tab3/carryOver")
+    public Map<String, Object> tab3CarryOver(@RequestParam("yyyymm") String yyyymm,
+                                             @RequestParam("prevYyyymm") String prevYyyymm,
+                                             @RequestParam("site") String site) throws Exception {
+        return service.tab3CarryOver(yyyymm, prevYyyymm, site);
+    }
+
 
     // Tab5
         @PostMapping("/tab5Upload")

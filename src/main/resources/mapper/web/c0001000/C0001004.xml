@@ -258,6 +258,43 @@
 		DROP TABLE #TempTable;
 	</insert>
 
+	<!-- 현재월 데이터 개수 -->
+    <select id="countTab1ByYyyymmAndSite" parameterType="map" resultType="int">
+        SELECT COUNT(*) AS cnt
+        FROM DOI_ACCT
+        WHERE yyyymm = #{yyyymm}
+          AND site   = #{site}
+    </select>
+
+    <!-- 전월 데이터 조회 (이월 대상) -->
+    <select id="selectTab1ByYyyymmAndSite" parameterType="map" resultType="CamelMap">
+        SELECT
+            YYYYMM,
+            SEL_CODE,
+            SITE,
+            ACCT_CLASS,
+            계정과목내부코드,
+            전표기표여부,
+            ACCT,
+            ACCT_NAME,
+            차대,
+            계정대분류,
+            관리항목유형,
+            계정과목Lev,
+            상위계정과목,
+            경영계획과목,
+            상위계정과목내부코드,
+            소분류,
+            중분류,
+            대분류,
+            EXPEN_SEL,
+            EXPEN_SEL명,
+            특이사항
+        FROM DOI_ACCT
+        WHERE yyyymm = #{yyyymm}
+          AND site   = #{site}
+    </select>
+
 	<!-- Tab2: C0001002 (부서 관리) -->
 	<select id="selectTab2GridData" resultType="CamelMap">
 		select
@@ -267,7 +304,8 @@
 			CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then 'VINA' else site end as SITE,
 			DEPT,
 			DEPT_NAME,
-			EXPEN_AREA
+			EXPEN_AREA,
+			COST_DIST
 		FROM
 			doi_dept
 		where 1=1
@@ -288,6 +326,7 @@
 		, DEPT
 		, DEPT_NAME
 		, EXPEN_AREA
+		, COST_DIST
 		)
 		VALUES
 		(
@@ -297,6 +336,7 @@
 		, #{dept}
 		, #{deptName}
 		, #{expenArea}
+		, #{costDist}
 		);
 	</insert>
 
@@ -327,7 +367,8 @@
 			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			DEPT varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			DEPT_NAME nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
-			EXPEN_AREA nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL
+			EXPEN_AREA nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			COST_DIST nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL
 		);
 
 		INSERT INTO #TempTable1
@@ -354,6 +395,7 @@
 			AND b.YYYYMM = a.YYYYMM
 			AND b.SITE = a.SITE
 			AND b.DEPT = a.DEPT
+			AND b.COST_DIST = a.COST_DIST
 			);
 		</select>
 	<insert id="tab2UploadExcel" parameterType="java.util.List">
@@ -402,6 +444,28 @@
 		DROP TABLE #TempTable;
 	</insert>
 
+		<!-- 현재월 데이터 개수 -->
+    <select id="countTab2ByYyyymmAndSite" parameterType="map" resultType="int">
+        SELECT COUNT(*) AS cnt
+        FROM DOI_DEPT
+        WHERE yyyymm = #{yyyymm}
+          AND site   = #{site}
+    </select>
+
+    <!-- 전월 데이터 조회 (이월 대상) -->
+    <select id="selectTab2ByYyyymmAndSite" parameterType="map" resultType="CamelMap">
+        SELECT
+            YYYYMM,
+            SEL_CODE,
+            SITE,
+			DEPT,
+			DEPT_NAME,
+			EXPEN_AREA,
+			COST_DIST
+        FROM DOI_DEPT
+        WHERE yyyymm = #{yyyymm}
+          AND site   = #{site}
+    </select>
 
 	<!-- Tab3: C0001003 (자재코드 관리) -->
 	<select id="selectTab3GridData" resultType="CamelMap">
@@ -729,6 +793,49 @@
 		DROP TABLE #TempTable;
 	</insert>
 
+	<!-- 현재월 데이터 개수 -->
+    <select id="countTab3ByYyyymmAndSite" parameterType="map" resultType="int">
+        SELECT COUNT(*) AS cnt
+        FROM DOI_BOM_MAST
+        WHERE yyyymm = #{yyyymm}
+          AND site   = #{site}
+    </select>
+
+    <!-- 전월 데이터 조회 (이월 대상) -->
+    <select id="selectTab3ByYyyymmAndSite" parameterType="map" resultType="CamelMap">
+        SELECT
+            YYYYMM,
+            SITE,
+			제품명,
+			제품번호,
+			품목자산분류,
+			품목대분류,
+			품목중분류,
+			품목소분류,
+			공정차수,
+			공정,
+			공정품명,
+			공정품번호,
+			자재명,
+			자재번호,
+			자재자산분류,
+			자재대분류,
+			자재중분류,
+			자재소분류,
+			투입단위,
+			소요량,
+			내부Loss율,
+			외부Loss율,
+			조립위치,
+			특이사항,
+			최초작성일,
+			최초작성자,
+			최종수정일,
+			최종수정자
+        FROM DOI_BOM_MAST
+        WHERE yyyymm = #{yyyymm}
+          AND site   = #{site}
+    </select>
 
 	<!-- tab5: 면적기준 정보 관리 -->
 	<select id="selectTab5GridData" resultType="CamelMap">
