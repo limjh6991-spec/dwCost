@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0009000.mapper.C0009000Mapper">
+    
+    <!-- TAB090001: 월별 집계 (수량) -->
+    <select id="C0009001_Tab090001" resultType="CamelMap">
+        SELECT
+            구분,
+            도우코드 AS 코드,
+            Inch,
+            Site,
+            0 AS 계획,
+            ISNULL(OUT_MONTH, 0) AS 실적,
+            CASE 
+                WHEN 0 = 0 THEN 0
+                ELSE ROUND(CAST(OUT_MONTH AS FLOAT) / 0, 4)
+            END AS 달성률,
+            ISNULL(BOH_MONTH, 0) AS boh,
+            ISNULL(IN_MONTH, 0) AS inMonth,
+            ISNULL(OUT_MONTH, 0) AS outMonth,
+            ISNULL(LOSS_MONTH, 0) AS lossMonth,
+            ISNULL(EOH_MONTH, 0) AS eoh,
+            CASE 
+                WHEN ISNULL(OUT_MONTH, 0) = 0 THEN 0
+                ELSE ROUND(CAST(LOSS_MONTH AS FLOAT) / OUT_MONTH, 4)
+            END AS 불량률,
+            CASE 
+                WHEN ISNULL(IN_MONTH, 0) = 0 THEN 0
+                ELSE ROUND(CAST((IN_MONTH - LOSS_MONTH) AS FLOAT) / IN_MONTH, 4)
+            END AS 수율
+        FROM DOI_PROD_SUBUL
+        WHERE 1 = 1
+          AND SEL_CODE = 'ACTUAL'
+        <if test="yyyymm != null and yyyymm != ''">
+          AND YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+          AND DW_SITE = #{site}
+        </if>
+        ORDER BY 구분_ord, 도우코드, Inch
+    </select>
+
+    <!-- TAB090002: 월별, 기간별(누적) 조회 -->
+    <select id="C0009001_Tab090002" resultType="CamelMap">
+        SELECT
+            구분,
+            도우코드 AS 코드,
+            Inch,
+            Site,
+            0 AS 계획,
+            SUM(ISNULL(OUT_MONTH, 0)) AS 실적,
+            CASE 
+                WHEN 0 = 0 THEN 0
+                ELSE ROUND(CAST(SUM(OUT_MONTH) AS FLOAT) / 0, 4)
+            END AS 달성률,
+            SUM(ISNULL(BOH_MONTH, 0)) AS boh,
+            SUM(ISNULL(IN_MONTH, 0)) AS inMonth,
+            SUM(ISNULL(OUT_MONTH, 0)) AS outMonth,
+            SUM(ISNULL(LOSS_MONTH, 0)) AS lossMonth,
+            SUM(ISNULL(EOH_MONTH, 0)) AS eoh,
+            CASE 
+                WHEN SUM(ISNULL(OUT_MONTH, 0)) = 0 THEN 0
+                ELSE ROUND(CAST(SUM(LOSS_MONTH) AS FLOAT) / SUM(OUT_MONTH), 4)
+            END AS 불량률,
+            CASE 
+                WHEN SUM(ISNULL(IN_MONTH, 0)) = 0 THEN 0
+                ELSE ROUND(CAST((SUM(IN_MONTH) - SUM(LOSS_MONTH)) AS FLOAT) / SUM(IN_MONTH), 4)
+            END AS 수율
+        FROM DOI_PROD_SUBUL
+        WHERE 1 = 1
+          AND SEL_CODE = 'ACTUAL'
+        <if test="startYyyymm != null and startYyyymm != ''">
+          AND YYYYMM &gt;= #{startYyyymm}
+        </if>
+        <if test="endYyyymm != null and endYyyymm != ''">
+          AND YYYYMM &lt;= #{endYyyymm}
+        </if>
+        <if test="site != null and site != ''">
+          AND DW_SITE = #{site}
+        </if>
+        GROUP BY 구분, 구분_ord, 도우코드, Inch, Site
+        ORDER BY 구분_ord, 도우코드, Inch
+    </select>
+
+    <!-- TAB090003: 년간 전체 실적 집계 -->
+    <select id="C0009001_Tab090003" resultType="CamelMap">
+        SELECT
+            구분,
+            도우코드 AS 코드,
+            Inch,
+            Site,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '01' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m01,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '02' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m02,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '03' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m03,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '04' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m04,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '05' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m05,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '06' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m06,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '07' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m07,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '08' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m08,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '09' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m09,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '10' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m10,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '11' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m11,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '12' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m12,
+            SUM(ISNULL(OUT_MONTH, 0)) AS total
+        FROM DOI_PROD_SUBUL
+        WHERE 1 = 1
+          AND SEL_CODE = 'ACTUAL'
+        <if test="yyyy != null and yyyy != ''">
+          AND LEFT(YYYYMM, 4) = #{yyyy}
+        </if>
+        <if test="site != null and site != ''">
+          AND DW_SITE = #{site}
+        </if>
+        GROUP BY 구분, 구분_ord, 도우코드, Inch, Site
+        ORDER BY 구분_ord, 도우코드, Inch
+    </select>
+    
+    <!-- C0009011: 생산실적 월별/기간별(누적) 조회 (기존 쿼리 유지) -->
+    <select id="C0009011_Sch1" resultType="CamelMap">
+        SELECT
+            구분,
+            도우코드 AS 코드,
+            Inch,
+            Site,
+            -- 계획: 0으로 하드코딩
+            0 AS 계획,
+            -- 실적: OUT_MONTH 사용 (ACTUAL 기준)
+            ISNULL(OUT_MONTH, 0) AS 실적,
+            CASE 
+                WHEN 0 = 0 THEN 0
+                ELSE ROUND(CAST(OUT_MONTH AS FLOAT) / 0, 4)
+            END AS 달성률,
+            ISNULL(BOH_MONTH, 0) AS boh,
+            ISNULL(IN_MONTH, 0) AS inMonth,
+            ISNULL(OUT_MONTH, 0) AS outMonth,
+            ISNULL(LOSS_MONTH, 0) AS lossMonth,
+            ISNULL(EOH_MONTH, 0) AS eoh,
+            CASE 
+                WHEN ISNULL(OUT_MONTH, 0) = 0 THEN 0
+                ELSE ROUND(CAST(LOSS_MONTH AS FLOAT) / OUT_MONTH, 4)
+            END AS 불량률,
+            CASE 
+                WHEN ISNULL(IN_MONTH, 0) = 0 THEN 0
+                ELSE ROUND(CAST((IN_MONTH - LOSS_MONTH) AS FLOAT) / IN_MONTH, 4)
+            END AS 수율
+        FROM DOI_PROD_SUBUL
+        WHERE 1 = 1
+          AND SEL_CODE = 'ACTUAL'  -- 실적 데이터만 조회
+        <if test="yyyymm != null and yyyymm != ''">
+          AND YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+          AND DW_SITE = #{site}
+        </if>
+        ORDER BY 구분_ord, 도우코드, Inch
+    </select>
+
+    <!-- C0009012: 생산실적 2안(기존방식) _ 년간 전체 실적 집계 (기존 쿼리 유지) -->
+    <select id="C0009012_Sch1" resultType="CamelMap">
+        SELECT
+            구분,
+            도우코드 AS 코드,
+            Inch,
+            Site,
+            -- 1월~12월 데이터를 피벗하여 컬럼으로 표시
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '01' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m01,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '02' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m02,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '03' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m03,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '04' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m04,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '05' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m05,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '06' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m06,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '07' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m07,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '08' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m08,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '09' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m09,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '10' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m10,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '11' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m11,
+            SUM(CASE WHEN RIGHT(YYYYMM, 2) = '12' THEN ISNULL(OUT_MONTH, 0) ELSE 0 END) AS m12,
+            SUM(ISNULL(OUT_MONTH, 0)) AS total
+        FROM DOI_PROD_SUBUL
+        WHERE 1 = 1
+          AND SEL_CODE = 'ACTUAL'  -- 실적 데이터만 조회
+        <if test="yyyy != null and yyyy != ''">
+          AND LEFT(YYYYMM, 4) = #{yyyy}
+        </if>
+        <if test="site != null and site != ''">
+          AND DW_SITE = #{site}
+        </if>
+        GROUP BY 구분, 구분_ord, 도우코드, Inch, Site
+        ORDER BY 구분_ord, 도우코드, Inch
+    </select>
+    
+</mapper>

@@ -6,6 +6,7 @@ import c0001000Router from './c0001000Router';
 import c0007000Router from './c0007000Router';
 import c0003000Router from './c0003000Router';
 import c0008000Router from './c0008000Router';
+import c0009000Router from './c0009000Router';
 /*import m0001000Router from './m0001000Router';
 import m0002000Router from './m0002000Router';
 import m0003000Router from './m0003000Router';
@@ -65,6 +66,7 @@ const routes = [
   ...c0001000Router,
   ...c0007000Router,
   ...c0008000Router,
+  ...c0009000Router,
   ...c0003000Router,
 /*  ...m0001000Router,
   ...m0002000Router,
