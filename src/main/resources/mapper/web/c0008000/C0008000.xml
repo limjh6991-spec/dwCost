@@ -665,6 +665,10 @@
             거래명세서일,
             부서,
             담당자,
+            CASE
+             WHEN 통화 = 'KRW' THEN '국내'
+             ELSE '수출' 
+            END AS 구분,
             거래처,
             품명,
             품번,
@@ -673,9 +677,15 @@
             통화,
             환율,
             판매단가,
-            판매금액,
+            CASE
+                WHEN 통화 = 'KRW' THEN 판매금액
+                ELSE NULL
+            END AS 국내공급가액,
+            CASE 
+                WHEN 통화 = 'USD' THEN 판매금액
+                ELSE NULL       
+            END AS 수출판매금액,
             부가세액,
-            판매금액계,
             원화판매금액,
             원화부가세액,
             원화판매금액계,
@@ -696,6 +706,7 @@
             Invoice_Date,
             부서,
             담당자,
+            '수출' AS 구분,
             Buyer,
             품명,
             품번,
@@ -704,15 +715,15 @@
             통화,
             환율,
             판매단가,
-            판매금액,
-            null 부가세액,
-            null 판매금액계,
+            null AS 국내공급가액,
+            판매금액 AS 수출판매금액,
+            null AS 부가세액,
             원화판매금액,
-            null 원화부가세액,
-            원화판매금액 as 원화판매금액계,
+            null AS 원화부가세액,
+            원화판매금액 AS 원화판매금액계,
             수량 as 매출수량,
             매출금액계,
-            null 세금계산서금액계
+            null AS 세금계산서금액계
         from
             doi_invoice_resc
         where 1=1
