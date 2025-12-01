@@ -224,13 +224,13 @@
             and YYYYMM = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
-            and SITE = #{site}
+            and DW_SITE = #{site}
         </if>
         <if test="prodGubun != null and prodGubun != ''">
             and 구분 = #{prodGubun}
         </if>
         <if test="modelNType != null and modelNType != ''">
-            and 도우코드 = #{modelNType}
+            and MODEL_N_TYPE = #{modelNType}
         </if>
         order by lotrun_no;
     </select>
@@ -744,7 +744,7 @@
 		구분,
 		model,
 		면적,
-        DIST_IN AS DIST_VALUE,
+        면적*adj_qty AS DIST_VALUE,
 		dist_rate,
 		SUB_NAME,
 		ITEM_NAME,

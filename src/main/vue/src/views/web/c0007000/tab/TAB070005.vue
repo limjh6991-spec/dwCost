@@ -1,4 +1,4 @@
-<!-- 타시스템 > 입고수불 자체 체크 -->
+<!-- 타시스템 > 생산수불 자체 체크 -->
 <template>
   <div>
     <div class="search_box">
@@ -13,14 +13,14 @@
         </b-col>
         <b-col cols="2">
           <div class="form-floating">
-            <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" />
-            <label for="floating">SITE</label>
+            <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="displaySite" :disabled="true" />
+            <label for="floating">사업장</label>
           </div>
         </b-col>
         <b-col cols="2">
           <div class="form-floating">
-            <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="MODEL" v-model="params.model" />
-            <label for="floating">MODEL</label>
+            <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="DW_MODEL" v-model="params.dwModel" />
+            <label for="floating">도우모델</label>
           </div>
         </b-col>
       </b-row>
@@ -31,10 +31,10 @@
 
     <!-- 통계 요약 카드 -->
     <div class="statistics-section" style="display: flex; gap: 16px; margin-bottom: 16px;">
-      <!-- 탭1: 입고수불 밸런스 체크 통계 -->
+      <!-- 탭1: 생산 수량 밸런스 체크 통계 -->
       <div style="flex: 1; border: 2px solid #0d6efd; border-radius: 8px; padding: 16px; background: #f8f9fa;">
         <h6 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 8px;">
-          입고수불 밸런스 체크
+          생산 수량 밸런스 체크
         </h6>
         <div style="display: flex; gap: 8px;">
           <div class="stat-card" style="flex: 1; padding: 12px; background: white; border-radius: 6px; text-align: center; border: 1px solid #dee2e6;">
@@ -103,14 +103,14 @@
     <!-- 탭 메뉴 및 내용 -->
     <div class="grid_box">
       <b-tabs v-model="activeTab" class="custom-tabs">
-        <b-tab title="입고수불 밸런스 체크">
+        <b-tab title="생산 수량 밸런스 체크">
           <div class="left_box">
             <div class="btn_wrap ms-auto">
               <b-button class="second" @click="excelBtnClick">엑셀 다운로드</b-button>
             </div>
           </div>
           <div class="grid-border-none" style="height: 500px;">
-            <RealGrid ref="dataGrid" :uid="'dataGrid'" :step="'1'" :rows="dataGridRows" style="height: 100%" />
+            <RealGrid ref="dataGrid" :uid="'dataGrid'" :step="'1'" :rows="dataGridRows" @cellClicked="onCellClickedDataGrid" style="height: 100%" />
           </div>
         </b-tab>
         <b-tab title="기말/기초 체크">
@@ -125,18 +125,21 @@
         </b-tab>
       </b-tabs>
     </div>
+    <CmDialog1 ref="cmDialog1C00008003" />
   </div>
 </template>
 
 <script>
-import gridField from '@web/c0007000/js/C0007007.js';
-import gridField2 from '@web/c0007000/js/C0007007_Tab2.js';
+import { useUserAuthInfo } from '@store/auth/userAuthInfo';
+import gridField from '@web/c0007000/js/C0007006.js';
+import gridField2 from '@web/c0007000/js/C0007006_Tab2.js';
 
 export default {
-  name: 'C0007007',
+  name: 'C0007006',
   components: {},
   setup() {
-    return {};
+    const userAuthInfo = useUserAuthInfo();
+    return { userAuthInfo };
   },
   data() {
     return {
@@ -146,9 +149,13 @@ export default {
       dataGridRows: [],
       dataGrid2Rows: [],
       params: {
-        site: '',
+        site: 'HQ',
         yyyymm: null,
-        model: null,
+        dwModel: null,
+      },
+      siteMap: {
+        '본사': 'HQ',
+        'VINA': 'VN',
       },
       summary: {
         totalCount: 0,
@@ -170,6 +177,19 @@ export default {
       },
     };
   },
+  watch: {
+    userAuthInfo: {
+      handler(newVal) {
+        if (newVal && newVal.curProdCtg) {
+          this.params.site = newVal.curProdCtg === 'VN' ? 'VINA' : '본사';
+          console.log('[C0007006] site 변경:', this.params.site);
+          if (this.$refs.dataGrid != null) {
+            this.getDataList();
+          }
+        }
+      },
+    },
+  },
   computed: {
     gridView() {
       return this.$refs.dataGrid?.getGridView();
@@ -183,13 +203,18 @@ export default {
     gridDataProvider2() {
       return this.$refs.dataGrid2?.getGridDataProvider();
     },
+    displaySite() {
+      return this.params.site;
+    }
   },
   created() {
     const now = new Date();
     this.params.yyyymm = `${now.getFullYear()}-${("0" + (now.getMonth() + 1)).slice(-2)}`;
     this.initializeGrid();
   },
-  mounted() {},
+  mounted() {
+    this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
+  },
   beforeUnmount() {},
   methods: {
     initializeGrid() {
@@ -201,13 +226,13 @@ export default {
       let yyyymm = this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null;
       let params = {
         yyyymm: yyyymm,
-        site: this.params.site || null,
-        model: this.params.model || null,
+        site: this.siteMap[this.params.site],
+        dwModel: this.params.dwModel || null,
       };
 
       // 요약 정보 조회 - Tab1
       let summaryParam = {
-        menuId: 'c0007007',
+        menuId: 'c0007006',
         queryId: 'selectSummary',
         queryParams: params,
       };
@@ -229,7 +254,7 @@ export default {
 
       // 요약 정보 조회 - Tab2
       let summary2Param = {
-        menuId: 'c0007007',
+        menuId: 'c0007006',
         queryId: 'selectSummary2',
         queryParams: params,
       };
@@ -251,7 +276,7 @@ export default {
 
       // 탭1: 밸런스 체크 데이터 조회
       let param = {
-        menuId: 'c0007007',
+        menuId: 'c0007006',
         queryId: 'selectBalanceCheck',
         queryParams: params,
         target: this.dataGridRows,
@@ -260,7 +285,7 @@ export default {
 
       // 탭2: 기말/기초 체크 데이터 조회
       let param2 = {
-        menuId: 'c0007007',
+        menuId: 'c0007006',
         queryId: 'selectContinuityCheck',
         queryParams: params,
         target: this.dataGrid2Rows,
@@ -280,7 +305,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `입고수불_${tabName}_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `생산수불_${tabName}_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
@@ -297,6 +322,34 @@ export default {
       };
 
       grid.exportGrid(options);
+    },
+    async onCellClickedDataGrid(grid, clickData) {
+      if (clickData.cellType != 'data') return;
+        console.log('[C0007006] cellClicked', clickData);
+        console.log('[C0007006] dialog ref = ', this.$refs.cmDialog1C00008003);
+
+      if (clickData.column == 'modelNType') {
+        let queryParams = {
+          yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+          site: this.params.site != null ? this.siteMap[this.params.site] : null,
+          prodGubun: grid.getValue(clickData.itemIndex, '구분'),
+          modelNType: grid.getValue(clickData.itemIndex, 'modelNType'),
+        };
+
+        const params = {
+          dialogTitle: 'RUN LIST',
+          popUpSize: 'xl', //sm,lg,xl
+          height: 500,
+          gridJs: 'C0008003RunList.js',
+          search: {
+            menuId: 'c0008000',
+            queryId: 'C0008003_Sch2',
+            queryParams: queryParams,
+          },
+          btnConfirm: false,
+        };
+        this.$refs.cmDialog1C00008003.openDialog(params);
+      }
     },
   },
 };

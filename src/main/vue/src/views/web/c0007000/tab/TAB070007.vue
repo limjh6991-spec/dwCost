@@ -133,7 +133,7 @@ import gridField from '@web/c0007000/js/C0007008.js';
 import gridField2 from '@web/c0007000/js/C0007008_Tab2.js';
 
 export default {
-  name: 'C0007008',
+  name: 'C0007006',
   components: {},
   data() {
     return {
@@ -203,7 +203,7 @@ export default {
 
         // 요약 정보 조회 - Tab1
         let summary1Param = {
-          menuId: 'c0007008',
+          menuId: 'c0007006',
           queryId: 'selectSummary1',
           queryParams: params,
         };
@@ -227,8 +227,8 @@ export default {
 
       // 요약 정보 조회 - Tab2
       let summary2Param = {
-        menuId: 'c0007008',
-        queryId: 'selectSummary2',
+        menuId: 'c0007006',
+        queryId: 'selectSaleSummary2',
         queryParams: params,
       };
 
@@ -251,7 +251,7 @@ export default {
 
       // 탭1: 생산 <-> 입고 체크 데이터 조회
       let param1 = {
-        menuId: 'c0007008',
+        menuId: 'c0007006',
         queryId: 'selectProdToStock',
         queryParams: params,
         target: this.dataGridRows,
@@ -260,7 +260,7 @@ export default {
 
       // 탭2: 입고 <-> 판매 체크 데이터 조회
       let param2 = {
-        menuId: 'c0007008',
+        menuId: 'c0007006',
         queryId: 'selectStockToSale',
         queryParams: params,
         target: this.dataGrid2Rows,
