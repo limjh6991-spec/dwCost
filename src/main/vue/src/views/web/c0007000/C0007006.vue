@@ -110,7 +110,7 @@
             </div>
           </div>
           <div class="grid-border-none" style="height: 500px;">
-            <RealGrid ref="dataGrid" :uid="'dataGrid'" :step="'1'" :rows="dataGridRows" style="height: 100%" />
+            <RealGrid ref="dataGrid" :uid="'dataGrid'" :step="'1'" :rows="dataGridRows" @cellClicked="onCellClickedDataGrid" style="height: 100%" />
           </div>
         </b-tab>
         <b-tab title="기말/기초 체크">
@@ -125,6 +125,7 @@
         </b-tab>
       </b-tabs>
     </div>
+    <CmDialog1 ref="cmDialog1C00008003" />
   </div>
 </template>
 
@@ -321,6 +322,34 @@ export default {
       };
 
       grid.exportGrid(options);
+    },
+    async onCellClickedDataGrid(grid, clickData) {
+      if (clickData.cellType != 'data') return;
+        console.log('[C0007006] cellClicked', clickData);
+        console.log('[C0007006] dialog ref = ', this.$refs.cmDialog1C00008003);
+
+      if (clickData.column == 'modelNType') {
+        let queryParams = {
+          yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+          site: this.params.site != null ? this.siteMap[this.params.site] : null,
+          prodGubun: grid.getValue(clickData.itemIndex, '구분'),
+          modelNType: grid.getValue(clickData.itemIndex, 'modelNType'),
+        };
+
+        const params = {
+          dialogTitle: 'RUN LIST',
+          popUpSize: 'xl', //sm,lg,xl
+          height: 500,
+          gridJs: 'C0008003RunList.js',
+          search: {
+            menuId: 'c0008000',
+            queryId: 'C0008003_Sch2',
+            queryParams: queryParams,
+          },
+          btnConfirm: false,
+        };
+        this.$refs.cmDialog1C00008003.openDialog(params);
+      }
     },
   },
 };
