@@ -6,7 +6,7 @@ const { ValueType } = require('realgrid');
 const grid = {
   options: {
     checkBar: { visible: false },
-    copy: { enabled: true, singleMode: true },
+    copy: { enabled: true, singleMode: false },
     display: { columnMovable: false, editItemMerging: true, fitStyle: 'even', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
     edit: { editable: false },
     footer: { visible: true },
