@@ -183,11 +183,11 @@ export default {
     },
     async onCellClickedProdSubulGrid(grid, clickData) {
       if (clickData.cellType != 'data') return;
-
+console.log('컬럼:',clickData.itemIndex);
       if (clickData.column == 'modelNType') {
         let queryParams = {
-          yyyymm: grid.getValue(clickData.itemIndex, 'yyyymm'),
-          site: grid.getValue(clickData.itemIndex, 'site') != null ? this.siteMap[grid.getValue(clickData.itemIndex, 'site')] : null,
+          yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+          site: this.params.site != null ? this.siteMap[this.params.site] : null,
           prodGubun: grid.getValue(clickData.itemIndex, '구분'),
           modelNType: grid.getValue(clickData.itemIndex, 'modelNType'),
         };

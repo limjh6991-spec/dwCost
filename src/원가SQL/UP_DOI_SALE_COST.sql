@@ -295,106 +295,120 @@ FROM (
 		SET  @Message =  @Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 판매관리비배부(DOI_SMCE_COST) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 삭제 했습니다';
 
-      	WITH sale_data AS (
-    -- [1] 매출 데이터 및 비율 계산용 기초 데이터
-    SELECT
-        yyyymm,
-        품명 AS model,
-        SUM(원화판매금액) AS SALE_AMT
-    FROM DOI_SALE_RESC
-    WHERE yyyymm = @YYYYMM
-      AND site = @SITE
-    GROUP BY yyyymm, 품명
-),
-sale_total AS (
-    -- [2] 전체 매출 합계 (분모)
-    SELECT SUM(SALE_AMT) AS TOT_SALE_AMT 
-    FROM sale_data
-),
-expen_data AS (
-    -- [3] 비용 데이터 (배부 대상)
-    SELECT 
-        YYYYMM, 
-        SITE,
-        MAX(ACCT_NAME) AS SUB_NAME,
-        MAX(ITEM_NAME) AS ITEM_NAME,
-        EXPEN_SEL,
-        MIN(EXPEN_SEL명) AS EXPEN_SEL명,
-        SUM(ACCT_AMT) AS TOT_ACCT,       -- 개별 비용 항목의 금액
-        SUM(SUM(ACCT_AMT)) OVER() AS TOT_SMCE -- 전체 비용 합계 (참고용)
-    FROM DOI_ACCT_EXPEN
-    WHERE yyyymm = @YYYYMM
-      AND site = @SITE
-      AND acct_class = 'CC'
-    GROUP BY YYYYMM, SITE, EXPEN_SEL
-)
-INSERT INTO DOI_SMCE_COST
-SELECT
-    YYYYMM,
-    'ACTUAL' AS sel_code,
-    SITE,
-    '양산' AS 구분,
-    model,
-    EXPEN_SEL명,
-    SUB_NAME,
-    ITEM_NAME,
-    EXPEN_SEL,
-    TOT_ACCT,
-    SALE_AMT,
-    TOT_AMT,
-    TOT_SMCE,
-    DIST_RATE,
-    -- [최종 보정]
-    -- 1차 배부액 + (1위 모델에게 [원본비용 - 배부합계] 차이 반영)
-    Base_Dist_Amt + CASE 
-        WHEN RN = 1 THEN (TOT_ACCT - Grp_Sum_Amt) 
-        ELSE 0 
-    END AS DIST_AMT,
-    
-    DIST_AMT_ORI -- 참고용 원본 계산값
-FROM (
-    SELECT 
-        A.*,
-        -- [그룹별 배부액 합계] 비용항목(EXPEN_SEL)별로 배부된 금액의 합
-        SUM(Base_Dist_Amt) OVER (PARTITION BY EXPEN_SEL) AS Grp_Sum_Amt,
-        
-        -- [순위] 단수차를 몰아줄 대상 (매출액이 가장 큰 모델 순)
-        ROW_NUMBER() OVER (PARTITION BY EXPEN_SEL ORDER BY SALE_AMT DESC) AS RN
-    FROM (
-        SELECT
-            e.YYYYMM,
-            e.SITE,
-            s.model,
-            e.EXPEN_SEL명,
-            e.SUB_NAME,
-            e.ITEM_NAME,
-            e.EXPEN_SEL,
-            e.TOT_ACCT,  -- 이 비용을 배부해야 함
-            e.TOT_SMCE,
-            s.SALE_AMT,
-            t.TOT_SALE_AMT AS TOT_AMT,
-            
-            -- [비율 계산 수정] * 1.0을 추가하여 실수 연산 유도
-            CASE 
-                WHEN ISNULL(t.TOT_SALE_AMT, 0) = 0 THEN 0
-                ELSE CAST(s.SALE_AMT AS FLOAT) / t.TOT_SALE_AMT 
-            END AS DIST_RATE,
+		WITH sale_data AS (
+		    -- [1] 매출 데이터 및 비율 계산용 기초 데이터
+		    SELECT
+		        yyyymm,
+		        CASE WHEN RIGHT(품번,1)='D' THEN '개발' ELSE '양산' END as 구분,
+		        품명 AS model,
+		        SUM(원화판매금액계) AS SALE_AMT --select *
+		    FROM (
+					select YYYYMM, SITE, 품명, 품번, 원화판매금액계
+					from DOI_SALE_RESC
+					where 1=1 
+					  and YYYYMM = @YYYYMM
+		      		  and SITE 	 = @SITE
+			        union all
+			        select YYYYMM, SITE, 품명, 품번, 원화판매금액  --select *
+					from DOI_INVOICE_RESC
+					where 1=1 
+					  and YYYYMM = @YYYYMM
+		      		  and SITE 	 = @SITE
+		      		  --and Buyer != '도우VINA'
+		      		)a
+		    GROUP BY yyyymm, 품명,CASE WHEN RIGHT(품번,1)='D' THEN '개발' ELSE '양산' END
+		),
+		sale_total AS (
+		    -- [2] 전체 매출 합계 (분모)
+		    SELECT SUM(SALE_AMT) AS TOT_SALE_AMT 
+		    FROM sale_data
+		),
+		expen_data AS (
+		    -- [3] 비용 데이터 (배부 대상)
+		    SELECT 
+		        YYYYMM, 
+		        SITE,
+		        MAX(ACCT_NAME) AS SUB_NAME,
+		        MAX(ITEM_NAME) AS ITEM_NAME,
+		        EXPEN_SEL,
+		        MIN(EXPEN_SEL명) AS EXPEN_SEL명,
+		        SUM(ACCT_AMT) AS TOT_ACCT,       -- 개별 비용 항목의 금액
+		        SUM(SUM(ACCT_AMT)) OVER() AS TOT_SMCE -- 전체 비용 합계 (참고용)
+		    FROM DOI_ACCT_EXPEN
+		    WHERE yyyymm = @YYYYMM
+		      AND site = @SITE
+		      AND acct_class = 'CC'
+		    GROUP BY YYYYMM, SITE, EXPEN_SEL
+		)
+		INSERT INTO DOI_SMCE_COST
+		SELECT
+		    YYYYMM,
+		    'ACTUAL' AS sel_code,
+		    SITE,
+		    구분,
+		    model,
+		    EXPEN_SEL명,
+		    SUB_NAME,
+		    ITEM_NAME,
+		    EXPEN_SEL,
+		    TOT_ACCT,
+		    SALE_AMT,
+		    TOT_AMT,
+		    TOT_SMCE,
+		    DIST_RATE,
+		    -- [최종 보정]
+		    -- 1차 배부액 + (1위 모델에게 [원본비용 - 배부합계] 차이 반영)
+		    Base_Dist_Amt + CASE 
+		        WHEN RN = 1 THEN (TOT_ACCT - Grp_Sum_Amt) 
+		        ELSE 0 
+		    END AS DIST_AMT,
+		    
+		    DIST_AMT_ORI -- 참고용 원본 계산값
+		FROM (
+		    SELECT 
+		        A.*,
+		        -- [그룹별 배부액 합계] 비용항목(EXPEN_SEL)별로 배부된 금액의 합
+		        SUM(Base_Dist_Amt) OVER (PARTITION BY EXPEN_SEL) AS Grp_Sum_Amt,
+		        
+		        -- [순위] 단수차를 몰아줄 대상 (매출액이 가장 큰 모델 순)
+		        ROW_NUMBER() OVER (PARTITION BY EXPEN_SEL ORDER BY SALE_AMT DESC) AS RN
+		    FROM (
+		        SELECT
+		            e.YYYYMM,
+		            e.SITE,
+		            s.구분,
+		            s.model,
+		            e.EXPEN_SEL명,
+		            e.SUB_NAME,
+		            e.ITEM_NAME,
+		            e.EXPEN_SEL,
+		            e.TOT_ACCT,  -- 이 비용을 배부해야 함
+		            e.TOT_SMCE,
+		            s.SALE_AMT,
+		            t.TOT_SALE_AMT AS TOT_AMT,
+		            
+		            -- [비율 계산 수정] * 1.0을 추가하여 실수 연산 유도
+		            CASE 
+		                WHEN ISNULL(t.TOT_SALE_AMT, 0) = 0 THEN 0
+		                ELSE CAST(s.SALE_AMT AS FLOAT) / t.TOT_SALE_AMT 
+		            END AS DIST_RATE,
+		
+		            -- [1차 배부액] 반올림 처리
+		            CASE 
+		                WHEN ISNULL(t.TOT_SALE_AMT, 0) = 0 THEN 0
+		                ELSE ROUND(e.TOT_ACCT * (CAST(s.SALE_AMT AS FLOAT) / t.TOT_SALE_AMT), 0)
+		            END AS Base_Dist_Amt,
+		
+		            -- [참고용] 소수점 포함 원본 배부액
+		            e.TOT_ACCT * (CAST(s.SALE_AMT AS FLOAT) / NULLIF(t.TOT_SALE_AMT, 0)) AS DIST_AMT_ORI
+		
+		        FROM expen_data e
+		        CROSS JOIN sale_data s -- 모든 비용을 모든 모델에 배부 (1=1 조건과 동일)
+		        CROSS JOIN sale_total t
+		    ) A
+		) Final
+		ORDER BY model;
 
-            -- [1차 배부액] 반올림 처리
-            CASE 
-                WHEN ISNULL(t.TOT_SALE_AMT, 0) = 0 THEN 0
-                ELSE ROUND(e.TOT_ACCT * (CAST(s.SALE_AMT AS FLOAT) / t.TOT_SALE_AMT), 0)
-            END AS Base_Dist_Amt,
-
-            -- [참고용] 소수점 포함 원본 배부액
-            e.TOT_ACCT * (CAST(s.SALE_AMT AS FLOAT) / NULLIF(t.TOT_SALE_AMT, 0)) AS DIST_AMT_ORI
-
-        FROM expen_data e
-        CROSS JOIN sale_data s -- 모든 비용을 모든 모델에 배부 (1=1 조건과 동일)
-        CROSS JOIN sale_total t
-    ) A
-) Final
-ORDER BY model;  	
        SET @Message = @Message + CHAR(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + CHAR(9) 
             + '- 판매관리비(DOI_SMCE_COST) 데이터 ' + @YYYYMM + '월 ' + @SiteName + '원가 데이터 ' 
             + CAST(@@ROWCOUNT AS VARCHAR) + '건 상세 배부입니다';
