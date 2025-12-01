@@ -224,13 +224,13 @@
             and YYYYMM = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
-            and DW_SITE = #{site}
+            and SITE = #{site}
         </if>
         <if test="prodGubun != null and prodGubun != ''">
             and 구분 = #{prodGubun}
         </if>
         <if test="modelNType != null and modelNType != ''">
-            and MODEL_N_TYPE = #{modelNType}
+            and 도우코드 = #{modelNType}
         </if>
         order by lotrun_no;
     </select>
