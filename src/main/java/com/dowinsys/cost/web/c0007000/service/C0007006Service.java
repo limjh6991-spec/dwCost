@@ -24,4 +24,16 @@ public interface C0007006Service {
     List<Map<String, Object>> selectStockToSale(Map<String, Object> params);
     List<Map<String, Object>> selectSummary1(Map<String, Object> params);
     List<Map<String, Object>> selectSaleSummary2(Map<String, Object> params);
+
+    // 제품수불 체크
+    List<Map<String, Object>> selectST001Detail(Map<String, Object> params);
+    List<Map<String, Object>> selectST001Summary(Map<String, Object> params);
+    List<Map<String, Object>> selectST002Detail(Map<String, Object> params);
+    List<Map<String, Object>> selectST002Summary(Map<String, Object> params);
+    List<Map<String, Object>> selectST003Detail(Map<String, Object> params);
+    List<Map<String, Object>> selectST003Summary(Map<String, Object> params);
+    List<Map<String, Object>> selectST004Detail(Map<String, Object> params);
+    List<Map<String, Object>> selectST004Summary(Map<String, Object> params);
+    List<Map<String, Object>> selectST005Detail(Map<String, Object> params);
+    List<Map<String, Object>> selectST005Summary(Map<String, Object> params);
 }

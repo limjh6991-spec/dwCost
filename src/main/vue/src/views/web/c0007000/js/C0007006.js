@@ -15,11 +15,14 @@ const grid = {
       emptyMessage: '조회된 데이터가 없습니다.', 
       hscrollBar: true, 
       showEmptyMessage: true,
-      rowChangeCallback: function(grid, oldRow, newRow) {
-        // Row 전체 스타일 적용
-        const status = grid.getValue(newRow, '상태');
+      rowStyleCallback: function(grid, item, fixed) {
+        const status = grid.getValue(item.index, '상태');
         if (status === '오류') {
-          return { background: '#fff5f5' }; // 연한 빨간색 배경
+          return {
+            background: '#f8d7da',
+            foreground: '#842029',
+            fontBold: true
+          };
         }
         return null;
       }

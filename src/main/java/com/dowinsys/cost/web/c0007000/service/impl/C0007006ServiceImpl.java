@@ -1,5 +1,5 @@
 /**
- * 타시스템 > 생산/입고/판매 수불 체크 통합
+ * 타시스템 > 수불 체크
  */
 package com.dowinsys.cost.web.c0007000.service.impl;
 
@@ -75,5 +75,59 @@ public class C0007006ServiceImpl implements C0007006Service {
     @Override
     public List<Map<String, Object>> selectSaleSummary2(Map<String, Object> params) {
         return mapper.selectSaleSummary2(params);
+    }
+
+    // ST001: 수량수식 검증
+    @Override
+    public List<Map<String, Object>> selectST001Detail(Map<String, Object> params) {
+        return mapper.selectST001Detail(params);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectST001Summary(Map<String, Object> params) {
+        return mapper.selectST001Summary(params);
+    }
+
+    // ST002: 생산재고연결 검증
+    @Override
+    public List<Map<String, Object>> selectST002Detail(Map<String, Object> params)
+    {
+        return mapper.selectST002Detail(params);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectST002Summary(Map<String, Object> params) {
+        return mapper.selectST002Summary(params);
+    }
+
+    // ST003: 금액수식 검증
+    @Override
+    public List<Map<String, Object>> selectST003Detail(Map<String, Object> params) {
+        return mapper.selectST003Detail(params);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectST003Summary(Map<String, Object> params) {
+        return mapper.selectST003Summary(params);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectST004Detail(Map<String, Object> params) {
+        return mapper.selectST004Detail(params);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectST004Summary(Map<String, Object> params) {
+        return mapper.selectST004Summary(params);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectST005Detail(Map<String, Object> params) {
+        return mapper.selectST005Detail(params);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectST005Summary(Map<String, Object> params) {
+        return mapper.selectST005Summary(params);
     }
 }
