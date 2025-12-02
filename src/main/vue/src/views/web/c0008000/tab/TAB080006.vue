@@ -187,6 +187,7 @@ export default {
           // site: grid.getValue(clickData.itemIndex, 'site') != null ? this.siteMap[grid.getValue(clickData.itemIndex, 'site')] : null,
           yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
           site: this.params.site != null ? this.siteMap[this.params.site] : null,
+          gubun: grid.getValue(clickData.itemIndex, '구분'),
           model: grid.getValue(clickData.itemIndex, '도우모델'),
         };
 
