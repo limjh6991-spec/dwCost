@@ -67,30 +67,98 @@ const grid = {
   ],
 
   columns: [
+    // {
+    //   name: 'YYYYMM',
+    //   fieldName: 'yyyymm',
+    //   width: '80',
+    //   header: { text: '기준월' },
+    //   styleName: 'tc',
+    //   editable: false,
+    // },
+    // {
+    //   name: 'SEL_CODE',
+    //   fieldName: 'selCode',
+    //   width: '80',
+    //   header: { text: 'SEL_CODE' },
+    //   styleName: 'tc',
+    //   editable: false,
+    // },
+    // {
+    //   name: 'DW_SITE',
+    //   fieldName: 'dwSite',
+    //   width: '80',
+    //   header: { text: 'DW_SITE' },
+    //   styleName: 'tc',
+    //   editable: false,
+    // },
     {
-      name: 'YYYYMM',
-      fieldName: 'yyyymm',
+      name: '상태',
+      fieldName: '상태',
       width: '80',
-      header: { text: '기준월' },
+      header: { text: '상태' },
       styleName: 'tc',
       editable: false,
+      renderer: {
+        type: 'text',
+        showTooltip: true,
+      },
+      styleCallback: function (grid, dataCell) {
+        var ret = {};
+        var status = dataCell.value;
+        
+        if (status === '정상') {
+          ret.styleName = 'tc status-normal';
+          ret.renderer = { 
+            type: 'text',
+            styles: {
+              background: '#d1e7dd',
+              foreground: '#0f5132',
+              fontBold: true,
+            }
+          };
+        } else if (status === '오류') {
+          ret.styleName = 'tc status-error';
+          ret.renderer = { 
+            type: 'text',
+            styles: {
+              background: '#f8d7da',
+              foreground: '#842029',
+              fontBold: true,
+            }
+          };
+        }
+        
+        return ret;
+      },
     },
     {
-      name: 'SEL_CODE',
-      fieldName: 'selCode',
-      width: '80',
-      header: { text: 'SEL_CODE' },
-      styleName: 'tc',
+      name: '비고',
+      fieldName: '비고',
+      width: '200',
+      header: { text: '비고' },
+      styleName: 'tl',
       editable: false,
-    },
-    {
-      name: 'DW_SITE',
-      fieldName: 'dwSite',
-      width: '80',
-      header: { text: 'DW_SITE' },
-      styleName: 'tc',
-      editable: false,
-    },
+      renderer: {
+        type: 'text',
+        showTooltip: true,
+      },
+      styleCallback: function (grid, dataCell) {
+        var ret = {};
+        var remark = dataCell.value;
+        
+        if (remark && remark.indexOf('오류') >= 0) {
+          ret.renderer = { 
+            type: 'text',
+            styles: {
+              foreground: '#842029',
+              fontBold: true,
+            }
+          };
+        }
+        
+        return ret;
+      },
+    },    
     {
       name: 'GUBUN',
       fieldName: '구분',
@@ -107,19 +175,19 @@ const grid = {
       styleName: 'tc',
       editable: false,
     },
+    // {
+    //   name: 'DW_CODE',
+    //   fieldName: '도우코드',
+    //   width: '100',
+    //   header: { text: '도우코드' },
+    //   styleName: 'tc',
+    //   editable: false,
+    // },
     {
-      name: 'DW_CODE',
-      fieldName: '도우코드',
-      width: '100',
-      header: { text: '도우코드' },
-      styleName: 'tc',
-      editable: false,
-    },
-    {
-      name: 'MODEL_N_TYPE',
+      name: 'modelNType',
       fieldName: 'modelNType',
       width: '120',
-      header: { text: 'MODEL_N_TYPE' },
+      header: { text: '도우코드' },
       styleName: 'tc',
       editable: false,
     },
@@ -323,74 +391,6 @@ const grid = {
             styles: {
               background: '#fff3cd',
               foreground: '#dc3545',
-              fontBold: true,
-            }
-          };
-        }
-        
-        return ret;
-      },
-    },
-    {
-      name: '상태',
-      fieldName: '상태',
-      width: '80',
-      header: { text: '상태' },
-      styleName: 'tc',
-      editable: false,
-      renderer: {
-        type: 'text',
-        showTooltip: true,
-      },
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        var status = dataCell.value;
-        
-        if (status === '정상') {
-          ret.styleName = 'tc status-normal';
-          ret.renderer = { 
-            type: 'text',
-            styles: {
-              background: '#d1e7dd',
-              foreground: '#0f5132',
-              fontBold: true,
-            }
-          };
-        } else if (status === '오류') {
-          ret.styleName = 'tc status-error';
-          ret.renderer = { 
-            type: 'text',
-            styles: {
-              background: '#f8d7da',
-              foreground: '#842029',
-              fontBold: true,
-            }
-          };
-        }
-        
-        return ret;
-      },
-    },
-    {
-      name: '비고',
-      fieldName: '비고',
-      width: '200',
-      header: { text: '비고' },
-      styleName: 'tl',
-      editable: false,
-      renderer: {
-        type: 'text',
-        showTooltip: true,
-      },
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        var remark = dataCell.value;
-        
-        if (remark && remark.indexOf('오류') >= 0) {
-          ret.renderer = { 
-            type: 'text',
-            styles: {
-              foreground: '#842029',
               fontBold: true,
             }
           };

@@ -468,6 +468,7 @@
 			)a where rn1=1
 		)	
 		select
+        a.구분,
 		a.yyyymm,
 		a.sel_code,
 		CASE WHEN a.SITE='HQ' then '본사' WHEN a.site='VN' then 'VINA' end AS SITE,
@@ -495,7 +496,7 @@
         <if test="site != null and site != ''">
             and A.SITE = #{site}
         </if>
-     order by a.배부방식 desc,a.자재번호     
+     order by a.배부방식 desc,a.구분,a.자재번호     
     </select>
 
     <select id="C0008006_Sch2" resultType="CamelMap">
@@ -515,7 +516,7 @@
     </select>
 
     <select id="C0008007_Sch1" resultType="CamelMap">
-        select 도우모델,
+        select 구분,도우모델,
 			case when a.mat_class='원자재' then 'MDAX' else 'MIDX' end as expen_sel,
 			case when a.mat_class='원자재' then '직접재료비' else '간접재료비' end as expen_sel명,
 			--a.mat_class,
@@ -528,7 +529,7 @@
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
-        group by 도우모델,
+        group by 구분,도우모델,
 			case when a.mat_class='원자재' then 'MDAX' else 'MIDX' end,
 			case when a.mat_class='원자재' then '직접재료비' else '간접재료비' end
         order by 1,2;
@@ -561,6 +562,9 @@
         </if>
         <if test="model != null and model != ''">
             and 도우모델 = #{model}
+        </if>
+        <if test="gubun != null and gubun != ''">
+            and 구분 = #{gubun}
         </if>
         order by 1,2,3,4,5,6,7;
     </select>
