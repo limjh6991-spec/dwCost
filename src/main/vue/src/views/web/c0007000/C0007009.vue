@@ -86,6 +86,12 @@ export default {
         HQ: 'HQ',
         VN: 'VN',
       },
+      // 구분 드롭다운 목록 추가
+      categoryOptions: [
+        { value: '개발', label: '개발' },
+        { value: '양산', label: '양산' },
+      ],
+
       selectedModel: '',
       selectedModelInfo: null,
       selectedRowIndex: null,
@@ -128,6 +134,32 @@ export default {
   mounted() {
     this.params.yyyymm = this.srchInfo.yyyymm;
     this.params.site = this.srchInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
+
+    this.$nextTick(() => {
+      const gv = this.viewGridView;
+      if (!gv) return;
+
+        gv.setColumnProperty('구분', 'values', ['개발', '양산']);
+        gv.setColumnProperty('구분', 'labels', ['개발', '양산']);
+        gv.setColumnProperty('구분', 'lookupDisplay', true);
+        gv.setColumnProperty('구분', 'editor', {
+          type: 'dropdown',
+          textReadOnly: true,
+          dropDownWhenClick: true,
+          domainOnly: true,
+        });
+
+      gv.onEditBegin = (grid, index) => {
+        if (index.fieldName !== '구분') {
+        const provider = grid.getDataProvider();
+        const state = provider.getRowState(index.dataRow);
+
+        if (state === 'created') {
+          return false;
+          }
+        } 
+      };
+    });
   },
   activated() {
     this.reInitScreen();
@@ -145,8 +177,6 @@ export default {
 
       this.selectedModel = '';
       this.selectedRowIndex = null;
-
-      this.$nextTick(() => {});
     },
 
     onDateChange() {
@@ -175,6 +205,7 @@ export default {
         selCode: 'ACTUAL',
         siteOrg: siteCode,
         site: this.params.site,
+        구분: '개발',
         모델명: '',
         rmaIn: null,
         rmaOut: null,
@@ -184,14 +215,35 @@ export default {
 
       const dp = this.viewGridDataProvider;
       const rowIndex = dp.addRow(newRow);
+
+      dp.setRowState(rowIndex, 'created');
+
       this.viewGridRows = dp.getJsonRows(0, dp.getRowCount());
 
       const gv = this.viewGridView;
       if (gv) {
-        gv.setCurrent({ itemIndex: rowIndex, column: '모델명' });
-        gv.showEditor();
-      }
-    },
+        this.$nextTick(() => {
+          const dropdownConfig ={
+            type: 'dropdown',
+            textReadOnly: true,
+            dropDownWhenClick: true,
+            domainOnly: true,
+            items: [
+              { value: '개발', label: '개발' },
+              { value: '양산', label: '양산' },
+            ],
+          };
+
+          gv.setColumnProperty('구분', 'editor', dropdownConfig);
+          gv.setColumnProperty('구분', 'lookupDisplay', true);
+          gv.setColumnProperty('구분', 'editable', true);
+
+          gv.setCurrent({ itemIndex: rowIndex, column: '모델명' });
+          gv.showEditor();
+      });
+    }
+  },
+
 
     async getDataList() {
       const yyyymm = this.params.yyyymm
@@ -217,30 +269,67 @@ export default {
 
     async searchClick() {
       if (!this.params.yyyymm) {
-        this.$toast('error', '년월을 선택해 주세요.');
+        this.$toast('error', '년월을 선택해 주세요.');  
         return;
       }
     
       if (this.viewGridView) {
         this.viewGridView.commit();
+      } else {
+        return;
       }
 
       this.hasSearched = true;
       await this.getDataList();
+
+      const gv = this.viewGridView;
+      if (gv) {
+      }
     },
 
     onCellClickedViewGrid(grid, clickData) {
       if (clickData.cellType !== 'data') return;
 
-      if (clickData.fieldName === '모델명') {
-        const itemIndex = clickData.itemIndex;
-        if (itemIndex == null || itemIndex < 0) return;
+    const fieldName = clickData.fieldName;
+    const itemIndex = clickData.itemIndex;
+
+    // ✅ 구분 셀 클릭 : RealGrid에게 맡긴다 (드롭다운만 잘 뜨면 됨)
+    if (fieldName === '구분') {
+      return;
+    }
+
+    // ✅ 모델명 셀 클릭: 팝업 열기 전에 "반드시" 편집 종료
+    if (fieldName === '모델명') {
+      if (grid.isEditing()) {
+        try {
+          grid.commit(true);   // 에디터 있으면 종료 + 커밋
+        } catch (e) {
+          console.warn('⚠️ [onCellClickedViewGrid] commit 중 에러 → cancel()', e);
+          try {
+            grid.cancel();
+          } catch (e2) {
+            console.warn('⚠️ [onCellClickedViewGrid] cancel 도 실패', e2);
+          }
+        }
+      }
+
+      if (itemIndex == null || itemIndex < 0) return;      
 
         this.selectedRowIndex = itemIndex;
         const row = this.viewGridDataProvider.getJsonRow(itemIndex);
         this.selectedModel = row['모델명'] || '';
 
         this.openModelPopup();
+      }
+
+      if (clickData.fieldName === '구분') {
+        if (!grid.getColumnProperty('구분', 'editable')) {
+          return;
+        }
+
+        this.$nextTick(() => {
+          grid.showEditor();
+        });
       }
     },
 
@@ -433,18 +522,47 @@ export default {
             return;
           }
 
-          gridView.onCellDblClicked = (grid, clickData) => {
-            if (clickData.cellType !== 'data') return;
+      // ✅ 팝업 그리드 더블클릭 시: popup grid 편집 먼저 끝내고 값 적용
+      gridView.onCellDblClicked = (grid, clickData) => {
+        if (clickData.cellType !== 'data') return;
 
-            const row = dp.getJsonRow(clickData.dataRow);
-            if (!row) return;
+        if (grid.isEditing()) {
+          try {
+            grid.commit(true);
+          } catch (e) {
+            console.warn('⚠️ [Popup] commit 에러 → cancel()', e);
+            try {
+              grid.cancel();
+            } catch (e2) {
+              console.warn('⚠️ [Popup] cancel 도 실패', e2);
+            }
+          }
+        }
 
-            this.applyModelFromPopup(row);
+        const row = dp.getJsonRow(clickData.dataRow);
+        if (!row) return;
 
-            if (typeof dialog.closeDialog === 'function') dialog.closeDialog();
-            else if (typeof dialog.hide === 'function') dialog.hide();
-            else if (typeof dialog.close === 'function') dialog.close();
-            else console.warn('닫기 메소드 없음');
+        // ✅ 메인 그리드에도 동일하게 안전장치 (이중 안전벨트 느낌)
+        const mainGrid = this.viewGridView;
+        if (mainGrid && mainGrid.isEditing()) {
+          try {
+            mainGrid.commit(true);
+          } catch (e) {
+            console.warn('⚠️ [Popup] 메인 commit 에러 → cancel()', e);
+            try {
+              mainGrid.cancel();
+            } catch (e2) {
+              console.warn('⚠️ [Popup] 메인 cancel 도 실패', e2);
+            }
+          }
+        }
+
+        this.applyModelFromPopup(row);
+
+        if (typeof dialog.closeDialog === 'function') dialog.closeDialog();
+        else if (typeof dialog.hide === 'function') dialog.hide();
+        else if (typeof dialog.close === 'function') dialog.close();
+        else console.warn('닫기 메소드 없음');
           };
         }, 50);
       });
@@ -461,6 +579,20 @@ export default {
         return;
       }
 
+      // ✅ 팝업 그리드 편집 종료
+      if (gridView.isEditing()) {
+        try {
+          gridView.commit(true);
+        } catch (e) {
+          console.warn('⚠️ [handleModelConfirm] commit 에러 → cancel()', e);
+          try {
+            gridView.cancel();
+          } catch (e2) {
+            console.warn('⚠️ [handleModelConfirm] cancel 도 실패', e2);
+          }
+        }
+      }
+
       const checked = gridView.getCheckedRows(true);
       if (!checked || checked.length === 0) {
         this.$toast('info', '선택된 모델이 없습니다.');
@@ -468,6 +600,20 @@ export default {
       }
 
       const row = dp.getJsonRow(checked[0]);
+
+      const mainGrid = this.viewGridView;
+      if (mainGrid && mainGrid.isEditing()) {
+        try {
+          mainGrid.commit(true);
+        } catch (e) {
+          console.warn('⚠️ [handleModelConfirm] 메인 commit 에러 → cancel()', e);
+          try {
+            mainGrid.cancel();
+          } catch (e2) {
+            console.warn('⚠️ [handleModelConfirm] 메인 cancel 도 실패', e2);
+          }
+        }
+      }
 
       this.applyModelFromPopup(row);
     },

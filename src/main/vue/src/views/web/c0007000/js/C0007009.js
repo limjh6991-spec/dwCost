@@ -1,6 +1,7 @@
 /*
  * 타시스템 I/F&Upload > 불량반품 - 조회용 그리드
  */
+const { values } = require('lodash');
 const { ValueType } = require('realgrid');
 
 const fields = [
@@ -9,6 +10,7 @@ const fields = [
   { fieldName: 'selCode', dataType: ValueType.TEXT },
   { fieldName: 'siteOrg', dataType: ValueType.TEXT },
   { fieldName: 'site', dataType: ValueType.TEXT },
+  { fieldName: '구분', dataType: ValueType.TEXT },
   { fieldName: '모델명', dataType: ValueType.TEXT },
   { fieldName: 'rmaIn', dataType: ValueType.NUMBER },
   { fieldName: 'rmaOut', dataType: ValueType.NUMBER },
@@ -81,6 +83,22 @@ const viewGrid = {
       autoFilter: true, 
       styleName: 'tl',
       editable: false 
+    },
+    { 
+      name: '구분', 
+      fieldName: '구분', 
+      width: 80, 
+      header: { text: '구분' }, 
+      autoFilter: true, 
+      styleName: 'tl',
+      editable: true,
+      lookupDisplay: true,
+      editor: {
+        type: 'dropdown',
+        textReadOnly: true,
+        dropDownWhenClick: true,
+        domainOnly: true,
+      },
     },
     { 
       name: '모델명', 
