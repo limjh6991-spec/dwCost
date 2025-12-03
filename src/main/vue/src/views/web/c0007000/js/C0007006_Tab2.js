@@ -33,7 +33,7 @@ const grid = {
     rowIndicator: { visible: true },
     sorting: { enabled: true },
     stateBar: { visible: false },
-    fixed: { colBarWidth: 1, colCount: 3 },
+    // fixed: { colBarWidth: 1, colCount: 3 },
   },
   fields: [
     { fieldName: 'yyyymm', dataType: ValueType.TEXT },
@@ -42,7 +42,6 @@ const grid = {
     { fieldName: '구분', dataType: ValueType.TEXT },
     { fieldName: '구분Ord', dataType: ValueType.NUMBER },
     { fieldName: '도우코드', dataType: ValueType.TEXT },
-    { fieldName: 'modelNType', dataType: ValueType.TEXT },
     { fieldName: '도우모델', dataType: ValueType.TEXT },
     { fieldName: '작업구분', dataType: ValueType.TEXT },
     { fieldName: 'org작업구분', dataType: ValueType.TEXT },
@@ -56,30 +55,30 @@ const grid = {
   ],
 
   columns: [
-    {
-      name: 'YYYYMM',
-      fieldName: 'yyyymm',
-      width: '80',
-      header: { text: '기준월' },
-      styleName: 'tc',
-      editable: false,
-    },
-    {
-      name: 'SEL_CODE',
-      fieldName: 'selCode',
-      width: '80',
-      header: { text: 'SEL_CODE' },
-      styleName: 'tc',
-      editable: false,
-    },
-    {
-      name: 'DW_SITE',
-      fieldName: 'dwSite',
-      width: '80',
-      header: { text: 'DW_SITE' },
-      styleName: 'tc',
-      editable: false,
-    },
+    // {
+    //   name: 'YYYYMM',
+    //   fieldName: 'yyyymm',
+    //   width: '80',
+    //   header: { text: '기준월' },
+    //   styleName: 'tc',
+    //   editable: false,
+    // },
+    // {
+    //   name: 'SEL_CODE',
+    //   fieldName: 'selCode',
+    //   width: '80',
+    //   header: { text: 'SEL_CODE' },
+    //   styleName: 'tc',
+    //   editable: false,
+    // },
+    // {
+    //   name: 'DW_SITE',
+    //   fieldName: 'dwSite',
+    //   width: '80',
+    //   header: { text: 'DW_SITE' },
+    //   styleName: 'tc',
+    //   editable: false,
+    // },
     {
       name: '구분',
       fieldName: '구분',
@@ -101,14 +100,6 @@ const grid = {
       fieldName: '도우코드',
       width: '90',
       header: { text: '도우코드' },
-      styleName: 'tc',
-      editable: false,
-    },
-    {
-      name: 'MODEL_N_TYPE',
-      fieldName: 'modelNType',
-      width: '120',
-      header: { text: 'MODEL_N_TYPE' },
       styleName: 'tc',
       editable: false,
     },
@@ -167,7 +158,7 @@ const grid = {
       header: { text: 'BOH_MONTH\n(당월기초수량)' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'PREV_EOH_MONTH',
@@ -176,7 +167,7 @@ const grid = {
       header: { text: 'EOH_MONTH\n(전월기말수량)' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: '차이수량',
@@ -185,7 +176,7 @@ const grid = {
       header: { text: '차이수량' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
       styleCallback: function (grid, dataCell) {
         var ret = {};
         var value = dataCell.value;
