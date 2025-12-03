@@ -17,6 +17,10 @@
                 WHEN SITE = 'HQ' THEN '본사' 
                 WHEN SITE = 'VN' THEN 'VINA' 
             END AS SITE,
+            CASE 
+                WHEN 모델명 LIKE '%D' THEN '개발'
+                ELSE '양산'
+            END AS 구분,
             모델명,
             RMA_IN,
             RMA_OUT,
@@ -50,8 +54,7 @@
         (
             #{yyyymm},
             #{selCode},
-            CASE WHEN #{site} = '본사'  THEN 'HQ' WHEN #{site} = '베트남' THEN 'VN' ELSE LEFT(#{site}, 2)
-            END,
+            CASE WHEN #{site} = '본사' THEN 'HQ' WHEN #{site} = 'VINA' THEN 'VN' ELSE #{site} END,
             #{모델명},
             #{rmaIn},
             #{rmaOut},
@@ -86,7 +89,7 @@
 
     <!-- 3-1) 불량반품 데이터 삭제 -->
     <delete id="deleteRmaData">
-        ;WITH T AS (
+        WITH T AS (
             SELECT
                 ROW_NUMBER() OVER (
                     PARTITION BY YYYYMM, SEL_CODE, SITE, 모델명
