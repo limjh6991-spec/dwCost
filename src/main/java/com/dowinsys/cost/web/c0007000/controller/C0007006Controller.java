@@ -128,4 +128,70 @@ public class C0007006Controller {
         List<Map<String, Object>> result = service.selectSaleSummary2(params);
         return ResponseEntity.ok(result);
     }
+
+    /**
+     * 제품수불 체크
+     */
+    // ST001: 수량수식 검증
+    @PostMapping("/selectST001Detail")
+    public ResponseEntity<List<Map<String, Object>>> selectST001Detail(@RequestBody Map<String, Object> params) {
+        List<Map<String, Object>> result = service.selectST001Detail(params);
+        return ResponseEntity.ok(result);
+    }
+    @PostMapping("/selectST001Summary")
+    public ResponseEntity<List<Map<String, Object>>> selectST001Summary(@RequestBody Map<String, Object> params) {
+        List<Map<String, Object>> result = service.selectST001Summary(params);
+        return ResponseEntity.ok(result);
+    }
+
+    // ST002: 생산재고연결 검증    
+    @PostMapping("/selectST002Detail")
+    public ResponseEntity<List<Map<String, Object>>> selectST002Detail(@RequestBody Map<String, Object> params) {
+        List<Map<String, Object>> result = service.selectST002Detail(params);
+        return ResponseEntity.ok(result);
+    }
+    @PostMapping("/selectST002Summary")
+    public ResponseEntity<List<Map<String, Object>>> selectST002Summary(@RequestBody Map<String, Object> params) {
+        List<Map<String, Object>> result = service.selectST002Summary(params);
+        return ResponseEntity.ok(result);
+    }
+
+    // ST003: 금액수식 검증
+    @PostMapping("/selectST003Detail")
+    public ResponseEntity<List<Map<String, Object>>> selectST003Detail(@RequestBody Map<String, Object> params) {
+        List<Map<String, Object>> result = service.selectST003Detail(params);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/selectST003Summary")
+    public ResponseEntity<List<Map<String, Object>>> selectST003Summary(@RequestBody Map<String, Object> params) {
+        List<Map<String, Object>> result = service.selectST003Summary(params);
+        return ResponseEntity.ok(result);
+    }
+
+    // ST004: 원가항목 정합성 검증
+    @PostMapping("/selectST004Detail")
+    public ResponseEntity<List<Map<String, Object>>> selectST004Detail(@RequestBody Map<String, Object> params) {
+        List<Map<String, Object>> result = service.selectST004Detail(params);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/selectST004Summary")
+    public ResponseEntity<List<Map<String, Object>>> selectST004Summary(@RequestBody Map<String, Object> params) {
+        List<Map<String, Object>> result = service.selectST004Summary(params);
+        return ResponseEntity.ok(result);
+    }
+
+    // ST005: 음수재고 검증
+    @PostMapping("/selectST005Detail")
+    public ResponseEntity<List<Map<String, Object>>> selectST005Detail(@RequestBody Map<String, Object> params) {
+        List<Map<String, Object>> result = service.selectST005Detail(params);
+        return ResponseEntity.ok(result);
+    }
+    
+    @PostMapping("/selectST005Summary")
+    public ResponseEntity<List<Map<String, Object>>> selectST005Summary(@RequestBody Map<String, Object> params) {
+        List<Map<String, Object>> result = service.selectST005Summary(params);
+        return ResponseEntity.ok(result);
+    }
 }

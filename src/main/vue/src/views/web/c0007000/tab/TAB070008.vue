@@ -200,14 +200,13 @@
 </template>
 
 <script>
-import st001Grid from '@web/c0003000/js/C0003010_ST001.js';
-import st002Grid from '@web/c0003000/js/C0003010_ST002.js';
-import st003Grid from '@web/c0003000/js/C0003010_ST003.js';
-import st004Grid from '@web/c0003000/js/C0003010_ST004.js';
-import st005Grid from '@web/c0003000/js/C0003010_ST005.js';
-
+import st001Grid from '@web/c0007000/js/C0007010_ST001.js';
+import st002Grid from '@web/c0007000/js/C0007010_ST002.js';
+import st003Grid from '@web/c0007000/js/C0007010_ST003.js';
+import st004Grid from '@web/c0007000/js/C0007010_ST004.js';
+import st005Grid from '@web/c0007000/js/C0007010_ST005.js';
 export default {
-  name: 'C0003010',
+  name: 'C0007006',
   components: {},
   data() {
     return {
@@ -289,7 +288,7 @@ export default {
 
         // ST001: 수량수식 검증
         let st001SummaryParam = {
-          menuId: 'c0003010',
+          menuId: 'c0007006',
           queryId: 'selectST001Summary',
           queryParams: params,
         };
@@ -302,7 +301,7 @@ export default {
         }
 
         let st001Param = {
-          menuId: 'c0003010',
+          menuId: 'c0007006',
           queryId: 'selectST001Detail',
           queryParams: params,
         };
@@ -312,7 +311,7 @@ export default {
 
         // ST002: 생산재고연결 검증
         let st002SummaryParam = {
-          menuId: 'c0003010',
+          menuId: 'c0007006',
           queryId: 'selectST002Summary',
           queryParams: params,
         };
@@ -325,7 +324,7 @@ export default {
         }
 
         let st002Param = {
-          menuId: 'c0003010',
+          menuId: 'c0007006',
           queryId: 'selectST002Detail',
           queryParams: params,
         };
@@ -334,7 +333,7 @@ export default {
 
         // ST003: 금액수식 검증
         let st003SummaryParam = {
-          menuId: 'c0003010',
+          menuId: 'c0007006',
           queryId: 'selectST003Summary',
           queryParams: params,
         };
@@ -347,7 +346,7 @@ export default {
         }
 
         let st003Param = {
-          menuId: 'c0003010',
+          menuId: 'c0007006',
           queryId: 'selectST003Detail',
           queryParams: params,
         };
@@ -357,7 +356,7 @@ export default {
 
         // ST004: 원가항목 검증
         let st004SummaryParam = {
-          menuId: 'c0003010',
+          menuId: 'c0007006',
           queryId: 'selectST004Summary',
           queryParams: params,
         };
@@ -370,7 +369,7 @@ export default {
         }
 
         let st004Param = {
-          menuId: 'c0003010',
+          menuId: 'c0007006',
           queryId: 'selectST004Detail',
           queryParams: params,
         };
@@ -379,7 +378,7 @@ export default {
 
         // ST005: 음수재고 검증
         let st005SummaryParam = {
-          menuId: 'c0003010',
+          menuId: 'c0007006',
           queryId: 'selectST005Summary',
           queryParams: params,
         };
@@ -392,7 +391,7 @@ export default {
         }
 
         let st005Param = {
-          menuId: 'c0003010',
+          menuId: 'c0007006',
           queryId: 'selectST005Detail',
           queryParams: params,
         };

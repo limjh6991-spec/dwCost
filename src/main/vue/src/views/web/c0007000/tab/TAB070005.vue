@@ -328,12 +328,12 @@ export default {
         console.log('[C0007006] cellClicked', clickData);
         console.log('[C0007006] dialog ref = ', this.$refs.cmDialog1C00008003);
 
-      if (clickData.column == 'modelNType') {
+      if (clickData.column == '도우코드') {
         let queryParams = {
           yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
           site: this.params.site != null ? this.siteMap[this.params.site] : null,
           prodGubun: grid.getValue(clickData.itemIndex, '구분'),
-          modelNType: grid.getValue(clickData.itemIndex, 'modelNType'),
+          modelNType: grid.getValue(clickData.itemIndex, '도우코드'),
         };
 
         const params = {

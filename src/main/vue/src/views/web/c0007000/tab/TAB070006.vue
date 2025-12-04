@@ -110,7 +110,7 @@
             </div>
           </div>
           <div class="grid-border-none" style="height: 500px;">
-            <RealGrid ref="dataGrid" :uid="'dataGrid'" :step="'1'" :rows="dataGridRows" style="height: 100%" />
+            <RealGrid ref="dataGrid" :uid="'dataGrid'" :step="'1'" :rows="dataGridRows" style="height: 100%" :fitLayoutWidthEnable="false"/>
           </div>
         </b-tab>
         <b-tab title="기말/기초 체크">

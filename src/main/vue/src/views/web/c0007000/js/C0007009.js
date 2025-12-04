@@ -1,6 +1,7 @@
 /*
  * 타시스템 I/F&Upload > 불량반품 - 조회용 그리드
  */
+const { values } = require('lodash');
 const { ValueType } = require('realgrid');
 
 const fields = [
@@ -9,9 +10,11 @@ const fields = [
   { fieldName: 'selCode', dataType: ValueType.TEXT },
   { fieldName: 'siteOrg', dataType: ValueType.TEXT },
   { fieldName: 'site', dataType: ValueType.TEXT },
-  { fieldName: '모델명', dataType: ValueType.TEXT },
+  { fieldName: '구분', dataType: ValueType.TEXT },
+  { fieldName: '도우코드', dataType: ValueType.TEXT },
   { fieldName: 'rmaIn', dataType: ValueType.NUMBER },
   { fieldName: 'rmaOut', dataType: ValueType.NUMBER },
+  { fieldName: 'outMonth', dataType: ValueType.NUMBER },
 ];
 
 const viewGrid = {
@@ -29,7 +32,7 @@ const viewGrid = {
       showEmptyRows: true,
     },
     edit: { editable: true, insertable: false, appendable: false },
-    footer: { visible: true, height: 25 },
+    footer: { visible: true, height: 30 },
     header: { height: 25 },
     hideDeletedRows: true,
     paste: { enabled: false },
@@ -83,10 +86,26 @@ const viewGrid = {
       editable: false 
     },
     { 
-      name: '모델명', 
-      fieldName: '모델명', 
+      name: '구분', 
+      fieldName: '구분', 
+      width: 80, 
+      header: { text: '구분' }, 
+      autoFilter: true, 
+      styleName: 'tl',
+      editable: true,
+      lookupDisplay: true,
+      editor: {
+        type: 'dropdown',
+        textReadOnly: true,
+        dropDownWhenClick: true,
+        domainOnly: true,
+      },
+    },
+    { 
+      name: '도우코드', 
+      fieldName: '도우코드', 
       width: 150, 
-      header: { text: '모델명' }, 
+      header: { text: '도우코드' }, 
       autoFilter: true, 
       styleName: 'tl cursor-pointer',
       editable: false 
@@ -100,7 +119,8 @@ const viewGrid = {
       styleName: 'tr',
       editable: true,
       editor: { type: 'number' },
-      numberFormat: '#,##0'
+      numberFormat: '#,##0',
+      footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' }
     },
     { 
       name: 'rmaOut', 
@@ -111,8 +131,18 @@ const viewGrid = {
       styleName: 'tr',
       editable: true,
       editor: { type: 'number' },
-      numberFormat: '#,##0'
+      numberFormat: '#,##0',
+      footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' }
     },
+    {
+    name: 'outMonth',
+    fieldName: 'outMonth',
+    width: 0,
+    visible: false,
+    header: { text: 'OUT_MONTH' },
+    styleName: 'tr',
+    editable: false,
+    }
   ],
 };
 

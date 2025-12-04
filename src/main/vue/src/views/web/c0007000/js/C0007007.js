@@ -31,7 +31,7 @@ const grid = {
     rowIndicator: { visible: true },
     sorting: { enabled: true },
     stateBar: { visible: false },
-    fixed: { colBarWidth: 1, colCount: 3 },
+    // fixed: { colBarWidth: 1, colCount: 3 },
   },
 
   fields: [
@@ -59,30 +59,30 @@ const grid = {
   ],
 
   columns: [
-    {
-      name: 'YYYYMM',
-      fieldName: 'yyyymm',
-      width: '80',
-      header: { text: '기준월' },
-      styleName: 'tc',
-      editable: false,
-    },
-    {
-      name: 'SEL_CODE',
-      fieldName: 'selCode',
-      width: '100',
-      header: { text: 'SEL_CODE' },
-      styleName: 'tc',
-      editable: false,
-    },
-    {
-      name: 'SITE',
-      fieldName: 'site',
-      width: '80',
-      header: { text: 'SITE' },
-      styleName: 'tc',
-      editable: false,
-    },
+    // {
+    //   name: 'YYYYMM',
+    //   fieldName: 'yyyymm',
+    //   width: '80',
+    //   header: { text: '기준월' },
+    //   styleName: 'tc',
+    //   editable: false,
+    // },
+    // {
+    //   name: 'SEL_CODE',
+    //   fieldName: 'selCode',
+    //   width: '100',
+    //   header: { text: 'SEL_CODE' },
+    //   styleName: 'tc',
+    //   editable: false,
+    // },
+    // {
+    //   name: 'SITE',
+    //   fieldName: 'site',
+    //   width: '80',
+    //   header: { text: 'SITE' },
+    //   styleName: 'tc',
+    //   editable: false,
+    // },
     {
       name: 'MODEL',
       fieldName: 'model',
@@ -114,7 +114,7 @@ const grid = {
       header: { text: 'BOH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'INPUT',
@@ -123,7 +123,7 @@ const grid = {
       header: { text: 'INPUT' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'OUT',
@@ -132,7 +132,7 @@ const grid = {
       header: { text: 'OUT' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'EOH',
@@ -141,7 +141,7 @@ const grid = {
       header: { text: 'EOH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'INPUT_ETC',
@@ -150,7 +150,7 @@ const grid = {
       header: { text: 'INPUT_ETC' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'INPUT_MOVING',
@@ -159,7 +159,7 @@ const grid = {
       header: { text: 'INPUT_MOVING' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'INPUT_PROD',
@@ -168,7 +168,7 @@ const grid = {
       header: { text: 'INPUT_PROD' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'OUT_SHEET',
@@ -177,7 +177,7 @@ const grid = {
       header: { text: 'OUT_SHEET' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'OUT_RETURN',
@@ -186,7 +186,7 @@ const grid = {
       header: { text: 'OUT_RETURN' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'OUT_INVOICE',
@@ -195,7 +195,7 @@ const grid = {
       header: { text: 'OUT_INVOICE' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'OUT_ETC',
@@ -204,7 +204,7 @@ const grid = {
       header: { text: 'OUT_ETC' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'OUT_MOVING',
@@ -213,7 +213,7 @@ const grid = {
       header: { text: 'OUT_MOVING' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'IN_OUT_체크',
@@ -222,7 +222,7 @@ const grid = {
       header: { text: 'IN-OUT 체크' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
       styleCallback: function (grid, dataCell) {
         var ret = {};
         var value = dataCell.value;

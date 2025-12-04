@@ -12,7 +12,7 @@
 			구분,
 			구분_ORD,
 			도우코드,
-			MODEL_N_TYPE,
+			--MODEL_N_TYPE,
 			[도우모델],
 			작업구분,
 			ORG작업구분,
@@ -87,7 +87,7 @@
 				구분,
 				구분_ORD,
 				도우코드,
-				MODEL_N_TYPE,
+				--MODEL_N_TYPE,
 				[도우모델],
 				작업구분,
 				ORG작업구분,
@@ -123,7 +123,7 @@
 				구분,
 				구분_ORD,
 				도우코드,
-				MODEL_N_TYPE,
+				--MODEL_N_TYPE,
 				[도우모델],
 				작업구분,
 				ORG작업구분,
@@ -151,7 +151,7 @@
 			구분,
 			구분_ORD,
 			도우코드,
-			MODEL_N_TYPE,
+			--MODEL_N_TYPE,
 			[도우모델],
 			작업구분,
 			ORG작업구분,
@@ -167,7 +167,7 @@
 				ELSE '정상'
 			END AS 상태
 		FROM UnionData
-		GROUP BY YYYYMM, SEL_CODE, DW_SITE, 구분, 구분_ORD, 도우코드, MODEL_N_TYPE, [도우모델], 
+		GROUP BY YYYYMM, SEL_CODE, DW_SITE, 구분, 구분_ORD, 도우코드, [도우모델], 
 				 작업구분, ORG작업구분, [model], [Inch], SITE
 		ORDER BY [도우모델], YYYYMM
 	</select>
@@ -741,5 +741,232 @@
 			SUM(CASE WHEN STATUS = '불일치' THEN 1 ELSE 0 END) AS mismatchCount,
 			SUM(CASE WHEN STATUS IN ('입고 데이터 없음', '판매 데이터 없음') THEN 1 ELSE 0 END) AS noDataCount
 		FROM DATA_CHECK
+	</select>
+
+	<!-- ========== 제품수불 체크 (Tab 4) ========== -->
+	<select id="selectST001Detail" resultType="CamelMap">
+	SELECT TOP 100
+	MODEL,
+	STOCK,
+	BOH,
+	[INPUT],
+	[OUT],
+	EOH,
+	(BOH + [INPUT] - [OUT]) AS CALC_EOH,
+	EOH - (BOH + [INPUT] - [OUT]) AS DIFF
+	FROM DOI_STOCK
+	WHERE 1=1
+	<if test="yyyymm != null and yyyymm != ''">
+	AND YYYYMM = #{yyyymm}
+	</if>
+	<if test="site != null and site != ''">
+	AND SITE = #{site}
+	</if>
+	<if test="model != null and model != ''">
+	AND MODEL LIKE '%' + #{model} + '%'
+	</if>
+	<!-- 임시로 주석: 실제 데이터가 있는지 확인 -->
+	<!-- AND ABS(EOH - (BOH + [INPUT] - [OUT])) &gt; 0.01 -->
+	ORDER BY ABS(EOH - (BOH + [INPUT] - [OUT])) DESC, MODEL, STOCK
+	</select>
+
+	<!-- ST001: 수량수식 검증 요약 -->
+	<select id="selectST001Summary" resultType="CamelMap">
+	SELECT 
+	COUNT(*) AS TOTAL_COUNT,
+	SUM(CASE WHEN ABS(EOH - (BOH + [INPUT] - [OUT])) &lt;= 0.01 THEN 1 ELSE 0 END) AS NORMAL_COUNT,
+	SUM(CASE WHEN ABS(EOH - (BOH + [INPUT] - [OUT])) &gt; 0.01 THEN 1 ELSE 0 END) AS ERROR_COUNT
+	FROM DOI_STOCK
+	WHERE 1=1
+	<if test="yyyymm != null and yyyymm != ''">
+	AND YYYYMM = #{yyyymm}
+	</if>
+	<if test="site != null and site != ''">
+	AND SITE = #{site}
+	</if>
+	<if test="model != null and model != ''">
+	AND MODEL LIKE '%' + #{model} + '%'
+	</if>
+	</select>
+
+	<!-- ST002: 생산재고연결 검증 상세 (간소화) -->
+	<select id="selectST002Detail" resultType="CamelMap">
+		WITH FAB AS (
+			SELECT 구분,MODEL,expen_sel,expen_sel명,sum([out]) as FAB_OUT_AMT --select *
+			FROM DOI_COST
+			WHERE 1=1
+			<if test="yyyymm != null and yyyymm != ''">
+			AND YYYYMM = #{yyyymm}
+			</if>
+			<if test="site != null and site != ''">
+			AND SITE = #{site}
+			</if>
+			group by  구분,MODEL,expen_sel,expen_sel명 
+			having sum([out])  != 0
+		), STOCK AS(
+			select 구분,MODEL,expen_sel,expen_sel명,sum([in_amt]) as STOCK_IN_AMT  
+			from DOI_STCO 
+			WHERE 1=1
+			<if test="yyyymm != null and yyyymm != ''">
+			AND YYYYMM = #{yyyymm}
+			</if>
+			<if test="site != null and site != ''">
+			AND SITE = #{site}
+			</if>
+			group by  구분,MODEL,expen_sel,expen_sel명 
+			having sum([in_amt])  != 0
+		)SELECT
+			a.구분 as gubun,
+			a.MODEL,
+			a.expen_sel,
+			a.expen_sel명 as expen_sel_name,
+			FAB_OUT_AMT,
+			STOCK_IN_AMT,
+			FAB_OUT_AMT - STOCK_IN_AMT as DIFF_AMT,
+		CASE WHEN FAB_OUT_AMT  IS NULL THEN 'FAB OUT 없음'
+			 WHEN STOCK_IN_AMT IS NULL THEN '창고  IN 없음'
+			 WHEN FAB_OUT_AMT - STOCK_IN_AMT != 0 THEN '금액 차이'
+			 ELSE '정상'
+		END as error_Type
+		FROM
+			FAB A
+		FULL JOIN STOCK B ON
+			(A.구분 = b.구분
+				and a.model = b.model
+				and a.expen_sel = b.expen_sel);
+	</select>
+
+	<!-- ST002: 생산재고연결 검증 요약 -->
+	<select id="selectST002Summary" resultType="CamelMap">
+	SELECT 
+	0 AS TOTAL_COUNT,
+	0 AS NORMAL_COUNT,
+	0 AS ERROR_COUNT
+	</select>
+
+	<!-- ST003: 금액수식 검증 상세 -->
+	<select id="selectST003Detail" resultType="CamelMap">
+	SELECT TOP 100
+	MODEL,
+	구분 AS GUBUN,
+	EXPEN_SEL,
+	BOH_AMT,
+	IN_AMT,
+	EOH_AMT,
+	OUT_AMT,
+	(BOH_AMT + IN_AMT - EOH_AMT) AS CALC_OUT_AMT,
+	OUT_AMT - (BOH_AMT + IN_AMT - EOH_AMT) AS DIFF
+	FROM DOI_STCO
+	WHERE 1=1
+	<if test="yyyymm != null and yyyymm != ''">
+	AND YYYYMM = #{yyyymm}
+	</if>
+	<if test="site != null and site != ''">
+	AND SITE = #{site}
+	</if>
+	<if test="model != null and model != ''">
+	AND MODEL LIKE '%' + #{model} + '%'
+	</if>
+	<!-- 임시로 주석: 실제 데이터가 있는지 확인 -->
+	<!-- AND ABS(OUT_AMT - (BOH_AMT + IN_AMT - EOH_AMT)) &gt; 0.01 -->
+	ORDER BY ABS(OUT_AMT - (BOH_AMT + IN_AMT - EOH_AMT)) DESC, MODEL, GUBUN, EXPEN_SEL
+	</select>
+
+	<!-- ST003: 금액수식 검증 요약 -->
+	<select id="selectST003Summary" resultType="CamelMap">
+	SELECT 
+	COUNT(*) AS TOTAL_COUNT,
+	SUM(CASE WHEN ABS(OUT_AMT - (BOH_AMT + IN_AMT - EOH_AMT)) &lt;= 0.01 THEN 1 ELSE 0 END) AS NORMAL_COUNT,
+	SUM(CASE WHEN ABS(OUT_AMT - (BOH_AMT + IN_AMT - EOH_AMT)) &gt; 0.01 THEN 1 ELSE 0 END) AS ERROR_COUNT
+	FROM DOI_STCO
+	WHERE 1=1
+	<if test="yyyymm != null and yyyymm != ''">
+	AND YYYYMM = #{yyyymm}
+	</if>
+	<if test="site != null and site != ''">
+	AND SITE = #{site}
+	</if>
+	<if test="model != null and model != ''">
+	AND MODEL LIKE '%' + #{model} + '%'
+	</if>
+	</select>
+
+	<!-- ST004: 원가항목 정합성 검증 상세 (간소화) -->
+	<select id="selectST004Detail" resultType="CamelMap">
+	SELECT 
+	'임시' AS TABLE_NAME,
+	'임시' AS MODEL,
+	'임시' AS GUBUN,
+	'NULL' AS EXPEN_SEL,
+	'구현 예정' AS ERROR_TYPE,
+	'구현 예정' AS REMARK
+	WHERE 1=0
+	</select>
+
+	<!-- ST004: 원가항목 정합성 검증 요약 -->
+	<select id="selectST004Summary" resultType="CamelMap">
+	SELECT 
+	0 AS TOTAL_COUNT,
+	0 AS NORMAL_COUNT,
+	0 AS ERROR_COUNT
+	</select>
+
+	<!-- ST005: 음수재고 검증 상세 -->
+	<select id="selectST005Detail" resultType="CamelMap">
+	SELECT TOP 100
+	MODEL,
+	STOCK,
+	BOH,
+	EOH,
+	CASE
+	WHEN BOH &lt; 0 AND EOH &lt; 0 THEN '둘 다 음수'
+	WHEN BOH &lt; 0 THEN 'BOH 음수'
+	WHEN EOH &lt; 0 THEN 'EOH 음수'
+	ELSE '정상'
+	END AS ERROR_TYPE,
+	CASE
+	WHEN BOH &lt; 0 AND EOH &lt; 0 THEN '기초재고와 기말재고 모두 음수입니다.'
+	WHEN BOH &lt; 0 THEN '기초재고가 음수입니다.'
+	WHEN EOH &lt; 0 THEN '기말재고가 음수입니다.'
+	ELSE ''
+	END AS REMARK
+	FROM DOI_STOCK
+	WHERE 1=1
+	<if test="yyyymm != null and yyyymm != ''">
+	AND YYYYMM = #{yyyymm}
+	</if>
+	<if test="site != null and site != ''">
+	AND SITE = #{site}
+	</if>
+	<if test="model != null and model != ''">
+	AND MODEL LIKE '%' + #{model} + '%'
+	</if>
+	AND (BOH &lt; 0 OR EOH &lt; 0)
+	ORDER BY 
+	CASE 
+	WHEN BOH &lt; 0 AND EOH &lt; 0 THEN 1
+	WHEN BOH &lt; 0 THEN 2
+	WHEN EOH &lt; 0 THEN 3
+	ELSE 4
+	END, MODEL, STOCK
+	</select>
+
+	<!-- ST005: 음수재고 검증 요약 -->
+	<select id="selectST005Summary" resultType="CamelMap">
+	SELECT 
+	COUNT(*) AS TOTAL_COUNT,
+	SUM(CASE WHEN BOH &gt;= 0 AND EOH &gt;= 0 THEN 1 ELSE 0 END) AS NORMAL_COUNT,
+	SUM(CASE WHEN BOH &lt; 0 OR EOH &lt; 0 THEN 1 ELSE 0 END) AS ERROR_COUNT
+	FROM DOI_STOCK
+	WHERE 1=1
+	<if test="yyyymm != null and yyyymm != ''">
+	AND YYYYMM = #{yyyymm}
+	</if>
+	<if test="site != null and site != ''">
+	AND SITE = #{site}
+	</if>
+	<if test="model != null and model != ''">
+	AND MODEL LIKE '%' + #{model} + '%'
+	</if>
 	</select>
 </mapper>

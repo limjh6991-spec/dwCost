@@ -23,20 +23,26 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <b-button class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
+          <b-button class="sub" @click="addBtnClick">추가</b-button>
+          <b-button @click="delBtnClick">삭제</b-button>
+          <b-button class="main" @click="saveBtnClick">저장</b-button>
         </div>
       </div>
       <div class="grid-border-none">
         <RealGrid ref="rndSubGrid" :uid="'rndSubGrid'" :step="'1'" :rows="rndSubGridRows" style="height: 100%" />
       </div>
     </div>
+    <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
   </div>
 </template>
 
 <script>
+import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0007000/js/C0007003.js';
+import gridField from '@web/c0007000/js/C0007003TAB2.js';
 
 export default {
   props: {},
@@ -63,6 +69,8 @@ export default {
         HQ: 'HQ',
         VN: 'VN',
       },
+      duplicateKey: ['yyyymm', 'selCode', 'dwSite', '도우코드', 'modelNType'],
+      isValidateCellRndSubGrid: false,
     };
   },
   watch: {
@@ -110,7 +118,6 @@ export default {
       this.searchClick();
     });
   },
-  beforeUnmount() {},
   methods: {
     initializeGrid() {
       this.rndSubGrid = _.cloneDeep(gridField);
@@ -119,7 +126,10 @@ export default {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     async getDataList() {
+      if (!this.gridView) return;
+
       this.gridView.commit();
+
       let params = {
         yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
         site: this.siteMap[this.params.site],
@@ -139,6 +149,87 @@ export default {
         return;
       }
       this.getDataList();
+    },
+    addBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
+
+      this.gridView.commit();
+      this.gridDataProvider.addRow({ yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, dwSite: this.params.site });
+      let itemIndex = this.gridView.getItemCount() - 1;
+      this.gridView.setCurrent({ itemIndex: itemIndex });
+    },
+    delBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
+
+      this.gridView.commit();
+      const checkedRows = this.gridView.getCheckedRows();
+      if (checkedRows.length === 0) {
+        this.$toast('info', '삭제할 행을 선택하세요');
+      } else {
+        let delItems = [];
+        checkedRows.forEach((itemIndex) => {
+          if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
+            delItems.push(itemIndex);
+          } else {
+            this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
+          }
+        });
+        this.gridDataProvider.removeRows(delItems);
+      }
+    },
+    async saveBtnClick() {
+      if (!this.gridView || !this.gridDataProvider) return;
+      this.gridView.commit();
+
+      let saveData = this.$refs.rndSubGrid.getSaveData();
+      if (saveData.count <= 0) {
+        this.$toast('info', '변경된 내용이 없습니다.');
+        return;
+      }
+      this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
+
+      this.isValidateCellRndSubGrid = true;
+      let rslt = this.gridView.validateCells(null, false);
+      this.isValidateCellRndSubGrid = false;
+
+      if (rslt === null) {
+        this.$confirm('확인', '수정하신 내용을 저장 하시겠습니까?', async (confirm) => {
+          if (confirm) {
+            let param = {
+              menuId: 'c0007003',
+              delete: [{ queryId: 'C0007003_Delete2', data: saveData.delete }],
+              insert: [{ queryId: 'C0007003_Insert2', data: saveData.insert }],
+              update: [{ queryId: 'C0007003_Update2', data: saveData.update }],
+            };
+
+            try {
+              let resp = await this.$axios.api.saveData(param);
+              this.$toast('info', '저장완료');
+              this.searchClick();
+            } catch {
+              this.$toast('info', '에러발생. 다시 작업해주세요.');
+            }
+          }
+        });
+      }
+    },
+    onValidateColumnRndSubGrid(grid, column, inserting, value, itemIndex, dataRow) {
+      let error = {};
+      if (!this.isValidateCellRndSubGrid) return error;
+
+      if (this.$utils.containsValue(['yyyymm', 'selCode', 'dwSite', '구분', '구분Ord', '도우코드', 'modelNType', 'model', 'inch', 'site', 'bohMonth', 'bonusMonth', 'eohMonth', 'shippingPlanMonth', 'shippingActualMonth', 'materialLoss'], column.fieldName)) {
+        if (_.isNil(value)) {
+          error.level = 'error';
+          error.message = '필수 입력입니다.';
+        }
+      }
+
+      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'selCode', 'dwSite', '도우코드', 'modelNType'], column.fieldName)) {
+        error.level = 'warning';
+        error.message = '중복 입력입니다.';
+      }
+
+      return error;
     },
     async excelBtnClick() {
       const grid = this.gridView;
@@ -160,6 +251,20 @@ export default {
       };
 
       grid.exportGrid(options);
+    },
+    uploadClick() {
+      let excelGrid = _.cloneDeep(gridField);
+      excelGrid.options.display.fitStyle = 'none'; // 엑셀다운로드시 none 아니면 width 0이 됨.
+      this.$refs.uploadPopup1.openDialog({
+        dialogTitle: '업로드 팝업',
+        uploadApi: '/api/c0007000/c0007003/tab2Upload',
+        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10', 'field11', 'field12', 'field13', 'field14', 'field15', 'field16', 'field17', 'field18', 'field19', 'field20', 'field21', 'field22', 'field23', 'field24', 'field25', 'field26'],
+        excelGrid,
+        fileName: '부서별_계정별_비용_template',
+      });
+    },
+    closePopup() {
+      this.searchClick();
     },
   },
 };

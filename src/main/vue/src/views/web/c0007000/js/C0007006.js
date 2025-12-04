@@ -15,11 +15,14 @@ const grid = {
       emptyMessage: '조회된 데이터가 없습니다.', 
       hscrollBar: true, 
       showEmptyMessage: true,
-      rowChangeCallback: function(grid, oldRow, newRow) {
-        // Row 전체 스타일 적용
-        const status = grid.getValue(newRow, '상태');
+      rowStyleCallback: function(grid, item, fixed) {
+        const status = grid.getValue(item.index, '상태');
         if (status === '오류') {
-          return { background: '#fff5f5' }; // 연한 빨간색 배경
+          return {
+            background: '#f8d7da',
+            foreground: '#842029',
+            fontBold: true
+          };
         }
         return null;
       }
@@ -184,8 +187,8 @@ const grid = {
     //   editable: false,
     // },
     {
-      name: 'modelNType',
-      fieldName: 'modelNType',
+      name: '도우코드',
+      fieldName: '도우코드',
       width: '120',
       header: { text: '도우코드' },
       styleName: 'tc',
@@ -246,7 +249,7 @@ const grid = {
       header: { text: 'BOH_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'IN_MONTH',
@@ -255,7 +258,7 @@ const grid = {
       header: { text: 'IN_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'BONUS_MONTH',
@@ -264,7 +267,7 @@ const grid = {
       header: { text: 'BONUS_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'EOH_MONTH',
@@ -273,7 +276,7 @@ const grid = {
       header: { text: 'EOH_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'OUT_MONTH',
@@ -282,7 +285,7 @@ const grid = {
       header: { text: 'OUT_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'LOSS_MONTH',
@@ -291,7 +294,7 @@ const grid = {
       header: { text: 'LOSS_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'NG_MONTH',
@@ -300,7 +303,7 @@ const grid = {
       header: { text: 'NG_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: '수율제외_MONTH',
@@ -309,7 +312,7 @@ const grid = {
       header: { text: '수율제외_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'REWORK진행_MONTH',
@@ -318,7 +321,7 @@ const grid = {
       header: { text: 'REWORK진행_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'SHIPPING_PLAN_MONTH',
@@ -327,7 +330,7 @@ const grid = {
       header: { text: 'SHIPPING_PLAN_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'SHIPPING_ACTUAL_MONTH',
@@ -336,7 +339,7 @@ const grid = {
       header: { text: 'SHIPPING_ACTUAL_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'MATERIAL_LOSS',
@@ -345,7 +348,7 @@ const grid = {
       header: { text: 'MATERIAL_LOSS' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'IN_OUT_체크',
@@ -354,7 +357,7 @@ const grid = {
       header: { text: 'IN-OUT 체크' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
       styleCallback: function (grid, dataCell) {
         var ret = {};
         var value = dataCell.value;
@@ -380,7 +383,7 @@ const grid = {
       header: { text: 'LOSS 체크' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
       styleCallback: function (grid, dataCell) {
         var ret = {};
         var value = dataCell.value;

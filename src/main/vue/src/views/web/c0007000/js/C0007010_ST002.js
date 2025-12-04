@@ -35,20 +35,20 @@ const grid = {
   ],
   columns: [
     {
-      name: 'model',
-      fieldName: 'model',
-      type: 'data',
-      width: 150,
-      header: { text: '모델' },
-      styleName: 'left-column',
-    },
-    {
       name: 'gubun',
       fieldName: 'gubun',
       type: 'data',
       width: 100,
       header: { text: '구분' },
       styleName: 'center-column',
+    },
+    {
+      name: 'model',
+      fieldName: 'model',
+      type: 'data',
+      width: 150,
+      header: { text: '모델' },
+      styleName: 'left-column',
     },
     {
       name: 'expenSel',
@@ -64,7 +64,7 @@ const grid = {
       type: 'data',
       width: 150,
       header: { text: '원가항목명' },
-      styleName: 'left-column',
+      styleName: 'tl',
     },
     {
       name: 'fabOutAmt',
@@ -73,7 +73,7 @@ const grid = {
       width: 140,
       header: { text: '생산OUT' },
       numberFormat: '#,##0',
-      styleName: 'right-column',
+      styleName: 'tr',
     },
     {
       name: 'stockInAmt',
@@ -82,7 +82,7 @@ const grid = {
       width: 140,
       header: { text: '재고IN' },
       numberFormat: '#,##0',
-      styleName: 'right-column',
+      styleName: 'tr',
     },
     {
       name: 'diffAmt',
@@ -91,7 +91,7 @@ const grid = {
       width: 140,
       header: { text: '차이금액' },
       numberFormat: '#,##0',
-      styleName: 'right-column',
+      styleName: 'tr',
       styleCallback: function (grid, dataCell) {
         const value = dataCell.value;
         if (Math.abs(value) > 0.01) {

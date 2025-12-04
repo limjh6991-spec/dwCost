@@ -45,12 +45,7 @@ import gridField from '@web/c0007000/js/C0007001.js';
 
 export default {
   components: {},
-  props: {
-    yearList: {
-      type: Array,
-      default: () => [],
-    },
-  },
+  props: {},
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -76,17 +71,6 @@ export default {
       duplicateKey: ['yyyymm', 'selCode', 'site', '코스트센터', '계정코드'],
       isValidateCellModelGrid: false,
     };
-  },
-    computed: {
-    gridView() {
-      return this.$refs.modelGrid && this.$refs.modelGrid.getGridView();
-    },
-    gridDataProvider() {
-      return this.$refs.modelGrid && this.$refs.modelGrid.getGridDataProvider();
-    },
-    prodCtg() {
-      return this.userAuthInfo.curProdCtg;
-    }
   },
   watch: {
     'params.yyyymm': function (newVal) {

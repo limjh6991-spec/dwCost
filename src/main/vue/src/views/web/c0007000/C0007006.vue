@@ -13,6 +13,10 @@
     <template #tab-content-TAB070007>
       <TAB070007 tabId="TAB070007" />
     </template>
+    <!-- Tab 8 제품수불 체크 -->
+    <template #tab-content-TAB070008>
+      <TAB070008 tabId="TAB070008" />
+    </template>
   </auth-tabs>
 </template>
 
@@ -20,6 +24,7 @@
 import TAB070005 from './tab/TAB070005.vue';
 import TAB070006 from './tab/TAB070006.vue';
 import TAB070007 from './tab/TAB070007.vue';
+import TAB070008 from './tab/TAB070008.vue';
 
 export default {
   name: 'DOI_C0007006',
@@ -28,6 +33,7 @@ export default {
     TAB070005,
     TAB070006,
     TAB070007,
+    TAB070008,
   },
   watch: {},
   data() {

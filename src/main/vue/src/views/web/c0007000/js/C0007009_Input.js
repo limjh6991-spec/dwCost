@@ -33,9 +33,9 @@ export const inputGridColumns = [
     styleName: 'text-center bg-light'
   },
   {
-    name: '모델명',
-    fieldName: '모델명',
-    header: { text: '모델명' },
+    name: '도우코드',
+    fieldName: '도우코드',
+    header: { text: '도우코드' },
     width: 150,
     editable: false,
     styleName: 'text-left cursor-pointer',
@@ -69,7 +69,7 @@ export const inputGridFields = [
   { fieldName: 'selCode', dataType: 'text' },
   { fieldName: 'siteOrg', dataType: 'text' },
   { fieldName: 'site', dataType: 'text' },
-  { fieldName: '모델명', dataType: 'text' },
+  { fieldName: '도우코드', dataType: 'text' },
   { fieldName: 'rmaIn', dataType: 'number' },
   { fieldName: 'rmaOut', dataType: 'number' },
 ];
