@@ -24,7 +24,7 @@ const grid = {
     // { fieldName: 'site', dataType: ValueType.TEXT },
     { fieldName: '구분', dataType: ValueType.TEXT },
     { fieldName: 'model', dataType: ValueType.TEXT },
-    { fieldName: 'modelNType', dataType: ValueType.TEXT },
+    { fieldName: '도우코드', dataType: ValueType.TEXT },
     { fieldName: 'bohMonth', dataType: ValueType.NUMBER },
     { fieldName: 'inMonth', dataType: ValueType.NUMBER },
     { fieldName: 'bonusMonth', dataType: ValueType.NUMBER },
@@ -35,6 +35,7 @@ const grid = {
     { fieldName: '수율제외Month', dataType: ValueType.NUMBER },
     { fieldName: 'rework진행Month', dataType: ValueType.NUMBER },
     { fieldName: 'materialLoss', dataType: ValueType.NUMBER },
+    { fieldName: 'rmaIn', dataType: ValueType.NUMBER },
   ],
 
   columns: [
@@ -43,7 +44,7 @@ const grid = {
     // { name: 'site', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true, styleName: 'tl' },
     { name: '구분', fieldName: '구분', width: '80', header: { text: '구분' }, autoFilter: true, styleName: 'tl' },
     { name: 'model', fieldName: 'model', width: '80', header: { text: '모델명' }, autoFilter: true, styleName: 'tl' },
-    { name: 'modelNType', fieldName: 'modelNType', width: '80', header: { text: '작업구분' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
+    { name: '도우코드', fieldName: '도우코드', width: '80', header: { text: '도우코드' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
     { name: 'bohMonth', fieldName: 'bohMonth', width: '80', header: { text: '기초재공' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'inMonth', fieldName: 'inMonth', width: '80', header: { text: '투입수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'bonusMonth', fieldName: 'bonusMonth', width: '80', header: { text: 'BONUS수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
@@ -54,6 +55,7 @@ const grid = {
     { name: '수율제외Month', fieldName: '수율제외Month', width: '80', header: { text: '수율제외수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'rework진행Month', fieldName: 'rework진행Month', width: '80', header: { text: 'REWORK수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'materialLoss', fieldName: 'materialLoss', width: '80', header: { text: '원장불량수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'rmaIn', fieldName: 'rmaIn', width: '80', header: { text: 'RMA IN' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };
 
