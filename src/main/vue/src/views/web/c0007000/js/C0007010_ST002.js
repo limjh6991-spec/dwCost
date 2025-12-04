@@ -39,7 +39,7 @@ const grid = {
       fieldName: 'gubun',
       type: 'data',
       width: 100,
-      header: { text: '구분' },
+      header: { text: '구분' }, autoFilter: true,
       styleName: 'center-column',
     },
     {
@@ -47,7 +47,7 @@ const grid = {
       fieldName: 'model',
       type: 'data',
       width: 150,
-      header: { text: '모델' },
+      header: { text: '모델' }, autoFilter: true,
       styleName: 'left-column',
     },
     {
@@ -55,7 +55,7 @@ const grid = {
       fieldName: 'expenSel',
       type: 'data',
       width: 120,
-      header: { text: '원가항목' },
+      header: { text: '원가항목' }, autoFilter: true,
       styleName: 'center-column',
     },
     {
@@ -63,7 +63,7 @@ const grid = {
       fieldName: 'expenSelName',
       type: 'data',
       width: 150,
-      header: { text: '원가항목명' },
+      header: { text: '원가항목명' }, autoFilter: true,
       styleName: 'tl',
     },
     {
