@@ -8,33 +8,39 @@
     <select id="selectRmaData" resultType="CamelMap">
         SELECT
             ROW_NUMBER() OVER (
-            PARTITION BY YYYYMM, SEL_CODE, SITE, 모델명
-            ORDER BY 생성시각 ) AS ROW_SEQ,
-            YYYYMM,
-            SEL_CODE,
-            SITE AS SITE_ORG,
+            PARTITION BY A.YYYYMM, A.SEL_CODE, A.SITE, A.도우코드
+            ORDER BY A.생성시각 ) AS ROW_SEQ,
+            A.YYYYMM,
+            A.SEL_CODE,
+            A.SITE AS SITE_ORG,
             CASE 
-                WHEN SITE = 'HQ' THEN '본사' 
-                WHEN SITE = 'VN' THEN 'VINA' 
+                WHEN A.SITE = 'HQ' THEN '본사' 
+                WHEN A.SITE = 'VN' THEN 'VINA' 
             END AS SITE,
             CASE 
-                WHEN 모델명 LIKE '%D' THEN '개발'
-                ELSE '양산'
+                WHEN A.도우코드 LIKE '%D' THEN '개발'
+                WHEN A.도우코드 IS NOT NULL AND A.도우코드 != '' THEN '양산'
+                ELSE NULL
             END AS 구분,
-            모델명,
-            RMA_IN,
-            RMA_OUT,
-            생성자,
-            생성시각
-        FROM DOI_RMA_INOUT
+            A.도우코드,
+            A.RMA_IN,
+            A.RMA_OUT,
+            A.생성자,
+            A.생성시각,
+            B.OUT_MONTH
+        FROM DOI_RMA_INOUT A
+        LEFT JOIN DOI_PROD_SUBUL B
+            ON A.도우코드 = B.도우코드
+            AND A.YYYYMM = B.YYYYMM
+            AND A.SITE = B.DW_SITE
         WHERE 1=1
         <if test="yyyymm != null and yyyymm != ''">
-            AND YYYYMM = #{yyyymm}
+            AND A.YYYYMM = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
-            AND SITE = #{site}
+            AND A.SITE = #{site}
         </if>
-        ORDER BY 모델명
+        ORDER BY A.도우코드
     </select>
 
     <!-- 2) 불량반품 데이터 입력 -->
@@ -44,7 +50,7 @@
             YYYYMM,
             SEL_CODE,
             SITE,
-            모델명,
+            도우코드,
             RMA_IN,
             RMA_OUT,
             생성자,
@@ -54,8 +60,8 @@
         (
             #{yyyymm},
             #{selCode},
-            CASE WHEN #{site} = '본사' THEN 'HQ' WHEN #{site} = 'VINA' THEN 'VN' ELSE #{site} END,
-            #{모델명},
+            #{site},
+            #{도우코드},
             #{rmaIn},
             #{rmaOut},
             #{생성자},
@@ -68,7 +74,7 @@
      ;WITH T AS (
         SELECT
             ROW_NUMBER() OVER (
-                PARTITION BY YYYYMM, SEL_CODE, SITE, 모델명
+                PARTITION BY YYYYMM, SEL_CODE, SITE, 도우코드
                 ORDER BY 생성시각
             ) AS ROW_SEQ,
             *
@@ -76,7 +82,7 @@
         WHERE YYYYMM = #{yyyymm}
           AND SEL_CODE = #{selCode}
           AND SITE = #{siteOrg}
-          AND 모델명 = #{모델명}
+          AND 도우코드 = #{도우코드}
         )
         UPDATE T
         SET 
@@ -92,7 +98,7 @@
         WITH T AS (
             SELECT
                 ROW_NUMBER() OVER (
-                    PARTITION BY YYYYMM, SEL_CODE, SITE, 모델명
+                    PARTITION BY YYYYMM, SEL_CODE, SITE, 도우코드
                     ORDER BY 생성시각
                 ) AS ROW_SEQ,
                 *
@@ -100,27 +106,33 @@
             WHERE YYYYMM = #{yyyymm}
             AND SEL_CODE = #{selCode}
             AND SITE = #{siteOrg}
-            AND 모델명 = #{모델명}
+            AND 도우코드 = #{도우코드}
         )
         DELETE FROM T
         WHERE ROW_SEQ = #{rowSeq}
     </delete>
 
-    <!-- 4) 팝업용 모델 리스트 (DOI_MODEL_MAST) -->
+    <!-- 4) 팝업용 모델 리스트 (DOI_PROD_SUBUL) -->
     <select id="selectModelPopup" resultType="CamelMap">
         SELECT
-            MODEL,
-            SPEC,
-            INCH
-        FROM DOI_MODEL_MAST
+            도우코드,
+            MODEL AS 세부모델,
+            INCH,
+            SITE AS 거래처,
+            OUT_MONTH,
+            DW_SITE AS SITE
+        FROM DOI_PROD_SUBUL
         WHERE 1=1
-        AND YYYYMM = '202507'
+        AND OUT_MONTH > 0
+        <if test="yyyymm != null and yyyymm != ''">
+        AND YYYYMM = #{yyyymm}
+        </if>
         <if test="site != null and site != ''">
-            AND SITE = #{site}
+            AND DW_SITE = #{site}
         </if>
         <if test="model != null and model != ''">
             AND MODEL = #{model}
         </if>
-        ORDER BY MODEL
+        ORDER BY 도우코드
     </select>
 </mapper>

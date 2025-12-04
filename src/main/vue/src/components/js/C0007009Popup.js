@@ -1,5 +1,5 @@
 /*
- * 타시스템 > 불량반품 (DOI_MODEL_MAST) > 팝업
+ * 타시스템 > 불량반품 (DOI_PROD_SUBUL) > 팝업
  */
 const { ValueType, GridFitStyle } = require('realgrid');
 
@@ -29,28 +29,27 @@ const grid = {
     levels: 0,
   },
 
-  // 🔹 데이터 필드 정의 (백엔드 컬럼명과 매핑)
   fields: [
-    { fieldName: 'model', dataType: ValueType.TEXT },
-    { fieldName: 'spec',  dataType: ValueType.TEXT },
+    { fieldName: '도우코드', dataType: ValueType.TEXT },
+    { fieldName: '세부모델', dataType: ValueType.TEXT },
     { fieldName: 'inch',  dataType: ValueType.TEXT },
+    { fieldName: 'outMonth', dataType: ValueType.NUMBER },
   ],
 
-  // 🔹 컬럼 정의 (화면에 보이는 컬럼)
   columns: [
     {
-      name: 'model',
-      fieldName: 'model',
+      name: '도우코드',
+      fieldName: '도우코드',
       width: 100,
-      header: { text: '모델명' },
+      header: { text: '도우코드' },
       styleName: 'tc',
       autoFilter: true,
     },
-    {
-      name: 'spec',
-      fieldName: 'spec',
-      width: 200,
-      header: { text: '규격' },
+        {
+      name: '세부모델',
+      fieldName: '세부모델',
+      width: 100,
+      header: { text: '세부모델' },
       styleName: 'tc',
       autoFilter: true,
     },
@@ -61,6 +60,15 @@ const grid = {
       header: { text: '인치' },
       styleName: 'tc',
       autoFilter: true,
+    },
+    {
+      name: 'outMonth',
+      fieldName: 'outMonth',
+      width: 80,
+      header: { text: 'OUT_MONTH' },
+      styleName: 'tr',
+      autoFilter: true,
+      numberFormat: '#,##0',
     },
   ],
 };
