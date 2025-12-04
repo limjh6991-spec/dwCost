@@ -23,8 +23,8 @@ public class C0007003Controller {
     @Autowired
     C0007003Service service;
 
-    @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(
+    @PostMapping("/tab2Upload")
+    public ResponseEntity<String> tab2UploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("headers") String headers
     ) {
@@ -32,7 +32,7 @@ public class C0007003Controller {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File is empty");
         }
         try {
-            Map<String, String> ret = service.uploadExcel(file, headers);
+            Map<String, String> ret = service.tab2UploadExcel(file, headers);
             if (Objects.equals(ret.get("status"), "success")) {
                 return ResponseEntity.ok("File uploaded successfully");
             } else if (Objects.equals(ret.get("status"), "error") && !ret.get("errorMessage").isEmpty()) {

@@ -8,5 +8,5 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Map;
 
 public interface C0007003Service {
-    Map<String, String> uploadExcel(MultipartFile file, String headers) throws Exception;
+    Map<String, String> tab2UploadExcel(MultipartFile file, String headers) throws Exception;
 }
