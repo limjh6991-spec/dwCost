@@ -183,36 +183,38 @@
 	</select>
 	
     <select id="C0008003_Sch1" resultType="CamelMap">
-       	select
-        YYYYMM,
-        SEL_CODE,
-        DW_SITE as SITE,
-        구분,
-        도우모델 as MODEL,
-        MODEL_N_TYPE,
-        sum(BOH_MONTH) as BOH_MONTH,
-        sum(IN_MONTH) as IN_MONTH,
-        sum(BONUS_MONTH) as BONUS_MONTH,
-        sum(EOH_MONTH) as EOH_MONTH,
-        sum(OUT_MONTH) as OUT_MONTH,
-        sum(LOSS_MONTH) as LOSS_MONTH,
-        sum(NG_MONTH) as NG_MONTH,
-        sum(수율제외_MONTH) as 수율제외_MONTH,
-        sum(REWORK진행_MONTH) as REWORK진행_MONTH,
-        sum(material_loss) as material_loss
-        from DOI_PROD_SUBUL
+ 	select
+        A.YYYYMM,
+        A.SEL_CODE,
+        A.SITE as SITE,
+        A.구분,
+        A.도우모델 as MODEL,
+        A.도우코드,
+        sum(A.BOH_MONTH) as BOH_MONTH,
+        sum(A.IN_MONTH) as IN_MONTH,
+        sum(A.BONUS_MONTH) as BONUS_MONTH,
+        sum(A.EOH_MONTH) as EOH_MONTH,
+        sum(A.OUT_MONTH) as OUT_MONTH,
+        sum(A.LOSS_MONTH) as LOSS_MONTH,
+        sum(A.NG_MONTH) as NG_MONTH,
+        sum(A.수율제외_MONTH) as 수율제외_MONTH,
+        sum(A.REWORK진행_MONTH) as REWORK진행_MONTH,
+        sum(A.material_loss) as material_loss,
+        sum(COALESCE(B.RMA_OUT,0)) AS RMA_IN
+        from V_DOI_PROD_SUBUL A
+        LEFT JOIN DOI_RMA_INOUT B ON (A.YYYYMM=B.YYYYMM and A.SITE=B.SITE and a.도우코드=b.도우코드)
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
-            and YYYYMM = #{yyyymm}
+            and A.YYYYMM = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
-            and DW_SITE = #{site}
+            and A.SITE = #{site}
         </if>
         <if test="prodGubun != null and prodGubun != '' and prodGubun != '전체'">
             and 구분 = #{prodGubun}
         </if>
-        group by YYYYMM,SEL_CODE,DW_SITE,구분,도우모델,MODEL_N_TYPE
-        order by 1,2,3,model, MODEL_N_TYPE;
+        group by A.YYYYMM,A.SEL_CODE,A.SITE,A.구분,A.도우모델,A.도우코드
+        order by 4,5,6;
     </select>
 
     <select id="C0008003_Sch2" resultType="CamelMap">
@@ -570,7 +572,7 @@
     </select>
 
     <select id="C0008008_Sch1" resultType="CamelMap">
-        select
+ 	select
         YYYYMM,
         SEL_CODE,
         CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end SITE,
@@ -578,56 +580,60 @@
         MODEL,
         EXPEN_SEL,
         EXPEN_SEL명,
-        --ACCT_NAME,
-        --SUB_NAME,
-        --ITEM_NAME,
+        AVG(BOH_QTY) BOH_QTY,
+        AVG(IN_QTY) IN_QTY,
+        AVG(EOH_QTY) EOH_QTY,
+        AVG(OUT_QTY) OUT_QTY,
+        AVG(LOSS_QTY) LOSS_QTY,
+        AVG(coalesce(RMAIN_QTY,0)) RMAIN_QTY,
+        AVG(ADJ_QTY) ADJ_QTY,
         SUM(BOH) BOH,
         SUM([IN]) INPUT_AMT,
         SUM(EOH) EOH,
         SUM([OUT]) OUT_AMT,
-        SUM(LOSS) LOSS
-        from doi_cost
-        where 1=1
-        <if test="yyyymm != null and yyyymm != ''">
-            and YYYYMM = #{yyyymm}
-        </if>
-        <if test="site != null and site != ''">
-            and SITE = #{site}
-        </if>
-        <if test="acctName != null and acctName != '' and acctName != '전체'">
-            and SUB_NAME LIKE '%' + #{acctName}
-        </if>
-        GROUP BY YYYYMM,SEL_CODE,
-        CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end,
-        구분,MODEL,EXPEN_SEL,EXPEN_SEL명--,ACCT_NAME,ITEM_NAME
-        order BY 1 desc,2 desc,3,4,5,6,7,8;
+        SUM(LOSS) LOSS,
+        SUM(coalesce(RMAIN_AMT,0)) RMA_IN
+    from doi_cost
+    where 1=1
+    <if test="yyyymm != null and yyyymm != ''">
+        and YYYYMM = #{yyyymm}
+    </if>
+    <if test="site != null and site != ''">
+        and SITE = #{site}
+    </if>
+    <if test="acctName != null and acctName != '' and acctName != '전체'">
+        and SUB_NAME LIKE '%' + #{acctName}
+    </if>
+    GROUP BY YYYYMM,SEL_CODE,
+    CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end,
+    구분,MODEL,EXPEN_SEL,EXPEN_SEL명--,ACCT_NAME,ITEM_NAME
+    order BY 1 desc,2 desc,3,4,5,6,7,8;
     </select>
 
     <select id="C0008009_Sch1" resultType="CamelMap">
-        select
-        YYYYMM,
-        SEL_CODE,
-        CASE WHEN SITE='HQ' then '본사' WHEN SITE ='VN' then 'VINA' else SITE end SITE,
-        MODEL,
-        STOCK,
-        SUM(BOH) BOH,
-        SUM([INPUT]) IN_QTY,
-        SUM([OUT]) OUT_QTY,
-        SUM(EOH) EOH
-        from doi_stock
+	select
+        A.YYYYMM,
+        A.SEL_CODE,
+        CASE WHEN A.SITE='HQ' then '본사' WHEN A.SITE ='VN' then 'VINA' else A.SITE end SITE,
+        CASE WHEN RIGHT(A.MODEL_TYPE,1)='D' THEN '개발' ELSE '양산' END as 구분,
+        A.MODEL_TYPE as 도우코드,
+        A.MODEL,
+        A.STOCK,
+        A.BOH,
+        A.[INPUT] IN_QTY,
+        [OUT] OUT_QTY,
+        A.EOH,
+        COALESCE(B.RMA_OUT,0) as RMA_OUT 
+        from doi_stock a 
+        left join doi_rma_inout b ON(A.YYYYMM=B.YYYYMM and A.SITE=B.SITE and a.MODEL_TYPE=b.모델명)
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
-            and YYYYMM = #{yyyymm}
+            and a.YYYYMM = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
-            and SITE = #{site}
+            and a.SITE = #{site}
         </if>
-        GROUP BY YYYYMM,
-        SEL_CODE,
-        CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end,
-        MODEL,
-        STOCK
-        ORDER BY 1,2,3,4
+        ORDER BY 1,2,3,4,5
     </select>
 
     <select id="C0008011_Sch1" resultType="CamelMap">
