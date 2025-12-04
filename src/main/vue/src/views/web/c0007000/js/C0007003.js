@@ -1,5 +1,5 @@
 /*
- * 타시스템 > 생산정보
+ * 타시스템 > 생산정보 > 생산수불
  */
 const { ValueType } = require('realgrid');
 
@@ -25,7 +25,6 @@ const grid = {
     { fieldName: '구분', dataType: ValueType.TEXT },
     { fieldName: '구분Ord', dataType: ValueType.TEXT },
     { fieldName: '도우코드', dataType: ValueType.TEXT },
-    { fieldName: 'modelNType', dataType: ValueType.TEXT },
     { fieldName: '도우모델', dataType: ValueType.TEXT },
     { fieldName: '작업구분', dataType: ValueType.TEXT },
     { fieldName: 'org작업구분', dataType: ValueType.TEXT },
@@ -44,6 +43,7 @@ const grid = {
     { fieldName: 'shippingPlanMonth', dataType: ValueType.NUMBER },
     { fieldName: 'shippingActualMonth', dataType: ValueType.NUMBER },
     { fieldName: 'materialLoss', dataType: ValueType.NUMBER },
+    { fieldName: 'recallLoss', dataType: ValueType.NUMBER },
   ],
 
   columns: [
@@ -54,7 +54,6 @@ const grid = {
     { name: '구분', fieldName: '구분', width: '80', header: { text: '구분' }, autoFilter: true, styleName: 'tl' },
     { name: '구분Ord', fieldName: '구분Ord', width: '100', header: { text: '구분_ORD' }, autoFilter: true, styleName: 'tl' },
     { name: '도우코드', fieldName: '도우코드', width: '120', header: { text: '도우코드' }, autoFilter: true, styleName: 'tl' },
-    { name: 'modelNType', fieldName: 'modelNType', width: '120', header: { text: 'MODEL_N_TYPE' }, autoFilter: true, styleName: 'tl' },
     { name: '도우모델', fieldName: '도우모델', width: '120', header: { text: '도우모델' }, autoFilter: true, styleName: 'tl' },
     { name: '작업구분', fieldName: '작업구분', width: '120', header: { text: '작업구분' }, autoFilter: true, styleName: 'tl' },
     { name: 'org작업구분', fieldName: 'org작업구분', width: '150', header: { text: 'ORG작업구분' }, autoFilter: true, styleName: 'tl' },
@@ -73,6 +72,7 @@ const grid = {
     { name: 'shippingPlanMonth', fieldName: 'shippingPlanMonth', width: '190', header: { text: 'SHIPPING_PLAN_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'shippingActualMonth', fieldName: 'shippingActualMonth', width: '210', header: { text: 'SHIPPING_ACTUAL_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'materialLoss', fieldName: 'materialLoss', width: '130', header: { text: 'MATERIAL_LOSS' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'recallLoss', fieldName: 'recallLoss', width: '130', header: { text: 'RECALL_LOSS' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
   ],
 };
 

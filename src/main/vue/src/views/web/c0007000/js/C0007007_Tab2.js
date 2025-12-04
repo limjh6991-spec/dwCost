@@ -104,7 +104,7 @@ const grid = {
       header: { text: 'BOH (당월기초수량)' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'PREV_EOH',
@@ -113,7 +113,7 @@ const grid = {
       header: { text: 'PREV_EOH (전월기말수량)' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: '차이수량',
@@ -122,7 +122,7 @@ const grid = {
       header: { text: '차이수량' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
       styleCallback: function (grid, dataCell) {
         var ret = {};
         var value = dataCell.value;

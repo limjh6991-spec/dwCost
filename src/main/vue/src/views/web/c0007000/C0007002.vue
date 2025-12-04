@@ -46,12 +46,7 @@ import gridField from '@web/c0007000/js/C0007002.js';
 
 export default {
   components: {},
-  props: {
-    yearList: {
-      type: Array,
-      default: () => [],
-    },
-  },
+  props: {},
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -77,17 +72,6 @@ export default {
       duplicateKey: ['yyyymm', 'selCode', 'site', 'matCode', 'model', 'modelNType'],
       isValidateCellMaterialGrid: false,
     };
-  },
-  computed: {
-    gridView() {
-      return this.$refs.materialGrid && this.$refs.materialGrid.getGridView();
-    },
-    gridDataProvider() {
-      return this.$refs.materialGrid && this.$refs.materialGrid.getGridDataProvider();
-    },
-    prodCtg() {
-      return this.userAuthInfo.curProdCtg; // '본사' 또는 'VINA' 표시
-    }
   },
   watch: {
     'params.yyyymm': function (newVal) {

@@ -187,8 +187,8 @@ const grid = {
     //   editable: false,
     // },
     {
-      name: 'modelNType',
-      fieldName: 'modelNType',
+      name: '도우코드',
+      fieldName: '도우코드',
       width: '120',
       header: { text: '도우코드' },
       styleName: 'tc',
@@ -249,7 +249,7 @@ const grid = {
       header: { text: 'BOH_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'IN_MONTH',
@@ -258,7 +258,7 @@ const grid = {
       header: { text: 'IN_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'BONUS_MONTH',
@@ -267,7 +267,7 @@ const grid = {
       header: { text: 'BONUS_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'EOH_MONTH',
@@ -276,7 +276,7 @@ const grid = {
       header: { text: 'EOH_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'OUT_MONTH',
@@ -285,7 +285,7 @@ const grid = {
       header: { text: 'OUT_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'LOSS_MONTH',
@@ -294,7 +294,7 @@ const grid = {
       header: { text: 'LOSS_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'NG_MONTH',
@@ -303,7 +303,7 @@ const grid = {
       header: { text: 'NG_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: '수율제외_MONTH',
@@ -312,7 +312,7 @@ const grid = {
       header: { text: '수율제외_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'REWORK진행_MONTH',
@@ -321,7 +321,7 @@ const grid = {
       header: { text: 'REWORK진행_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'SHIPPING_PLAN_MONTH',
@@ -330,7 +330,7 @@ const grid = {
       header: { text: 'SHIPPING_PLAN_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'SHIPPING_ACTUAL_MONTH',
@@ -339,7 +339,7 @@ const grid = {
       header: { text: 'SHIPPING_ACTUAL_MONTH' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'MATERIAL_LOSS',
@@ -348,7 +348,7 @@ const grid = {
       header: { text: 'MATERIAL_LOSS' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
     },
     {
       name: 'IN_OUT_체크',
@@ -357,7 +357,7 @@ const grid = {
       header: { text: 'IN-OUT 체크' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
       styleCallback: function (grid, dataCell) {
         var ret = {};
         var value = dataCell.value;
@@ -383,7 +383,7 @@ const grid = {
       header: { text: 'LOSS 체크' },
       styleName: 'number',
       editable: false,
-      numberFormat: '#,##0.00',
+      numberFormat: '#,##0',
       styleCallback: function (grid, dataCell) {
         var ret = {};
         var value = dataCell.value;
