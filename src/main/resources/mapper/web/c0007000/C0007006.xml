@@ -8,7 +8,7 @@
 			-- 테이블 전체 컬럼
 			YYYYMM,
 			SEL_CODE,
-			DW_SITE,
+			SITE,
 			구분,
 			구분_ORD,
 			도우코드,
@@ -63,13 +63,13 @@
 				THEN 'LOSS 수량 오류'
 				ELSE ''
 			END AS 비고
-		FROM DOI_PROD_SUBUL
+		FROM V_DOI_PROD_SUBUL
 		WHERE 1=1
 		<if test="yyyymm != null and yyyymm != ''">
 			AND YYYYMM = #{yyyymm}
 		</if>
 		<if test="site != null and site != ''">
-			AND DW_SITE = #{site}
+			AND SITE = #{site}
 		</if>
 		<if test="dwModel != null and dwModel != ''">
 			AND [도우모델] LIKE '%' + #{dwModel} + '%'
@@ -83,7 +83,7 @@
 			SELECT 
 				FORMAT(DATEADD(MONTH, 1, CAST(YYYYMM + '01' AS DATE)), 'yyyyMM') AS YYYYMM,
 				SEL_CODE,
-				DW_SITE,
+				SITE,
 				구분,
 				구분_ORD,
 				도우코드,
@@ -96,7 +96,7 @@
 				SITE,
 				0 AS BOH_MONTH,
 				ISNULL(EOH_MONTH, 0) AS EOH_MONTH
-			FROM DOI_PROD_SUBUL
+			FROM V_DOI_PROD_SUBUL
 			WHERE FORMAT(DATEADD(MONTH, 1, CAST(YYYYMM + '01' AS DATE)), 'yyyyMM') = 
 			<choose>
 				<when test="yyyymm != null and yyyymm != ''">
@@ -107,7 +107,7 @@
 				</otherwise>
 			</choose>
 			<if test="site != null and site != ''">
-				AND DW_SITE = #{site}
+				AND SITE = #{site}
 			</if>
 			<if test="dwModel != null and dwModel != ''">
 				AND [도우모델] LIKE '%' + #{dwModel} + '%'
@@ -119,7 +119,7 @@
 			SELECT 
 				YYYYMM,
 				SEL_CODE,
-				DW_SITE,
+				SITE,
 				구분,
 				구분_ORD,
 				도우코드,
@@ -132,13 +132,13 @@
 				SITE,
 				ISNULL(BOH_MONTH, 0) AS BOH_MONTH,
 				0 AS EOH_MONTH
-			FROM DOI_PROD_SUBUL
+			FROM V_DOI_PROD_SUBUL
 			WHERE 1=1
 			<if test="yyyymm != null and yyyymm != ''">
 				AND YYYYMM = #{yyyymm}
 			</if>
 			<if test="site != null and site != ''">
-				AND DW_SITE = #{site}
+				AND SITE = #{site}
 			</if>
 			<if test="dwModel != null and dwModel != ''">
 				AND [도우모델] LIKE '%' + #{dwModel} + '%'
@@ -147,7 +147,7 @@
 		SELECT 
 			YYYYMM,
 			SEL_CODE,
-			DW_SITE,
+			SITE,
 			구분,
 			구분_ORD,
 			도우코드,
@@ -167,7 +167,7 @@
 				ELSE '정상'
 			END AS 상태
 		FROM UnionData
-		GROUP BY YYYYMM, SEL_CODE, DW_SITE, 구분, 구분_ORD, 도우코드, [도우모델], 
+		GROUP BY YYYYMM, SEL_CODE, SITE, 구분, 구분_ORD, 도우코드, [도우모델], 
 				 작업구분, ORG작업구분, [model], [Inch], SITE
 		ORDER BY [도우모델], YYYYMM
 	</select>
@@ -186,13 +186,13 @@
 				OR ABS(ISNULL(LOSS_MONTH, 0) - (ISNULL(NG_MONTH, 0) + ISNULL(수율제외_MONTH, 0) + ISNULL(REWORK진행_MONTH, 0))) &gt; 0.01
 				THEN 1 ELSE 0 END) AS ERROR_COUNT,
 			0 AS WARNING_COUNT
-		FROM DOI_PROD_SUBUL
+		FROM V_DOI_PROD_SUBUL
 		WHERE 1=1
 		<if test="yyyymm != null and yyyymm != ''">
 			AND YYYYMM = #{yyyymm}
 		</if>
 		<if test="site != null and site != ''">
-			AND DW_SITE = #{site}
+			AND SITE = #{site}
 		</if>
 	</select>
 
@@ -201,12 +201,12 @@
 			-- 전월 기말 (EOH)
 			SELECT 
 				FORMAT(DATEADD(MONTH, 1, CAST(YYYYMM + '01' AS DATE)), 'yyyyMM') AS YYYYMM,
-				DW_SITE,
+				SITE,
 				구분,
 				[도우모델],
 				0 AS BOH_MONTH,
 				ISNULL(EOH_MONTH, 0) AS EOH_MONTH
-			FROM DOI_PROD_SUBUL
+			FROM V_DOI_PROD_SUBUL
 			WHERE FORMAT(DATEADD(MONTH, 1, CAST(YYYYMM + '01' AS DATE)), 'yyyyMM') = 
 			<choose>
 				<when test="yyyymm != null and yyyymm != ''">
@@ -217,7 +217,7 @@
 				</otherwise>
 			</choose>
 			<if test="site != null and site != ''">
-				AND DW_SITE = #{site}
+				AND SITE = #{site}
 			</if>
 			<if test="dwModel != null and dwModel != ''">
 				AND [도우모델] LIKE '%' + #{dwModel} + '%'
@@ -228,18 +228,18 @@
 			-- 당월 기초 (BOH)
 			SELECT 
 				YYYYMM,
-				DW_SITE,
+				SITE,
 				구분,
 				[도우모델],
 				ISNULL(BOH_MONTH, 0) AS BOH_MONTH,
 				0 AS EOH_MONTH
-			FROM DOI_PROD_SUBUL
+			FROM V_DOI_PROD_SUBUL
 			WHERE 1=1
 			<if test="yyyymm != null and yyyymm != ''">
 				AND YYYYMM = #{yyyymm}
 			</if>
 			<if test="site != null and site != ''">
-				AND DW_SITE = #{site}
+				AND SITE = #{site}
 			</if>
 			<if test="dwModel != null and dwModel != ''">
 				AND [도우모델] LIKE '%' + #{dwModel} + '%'
@@ -256,7 +256,7 @@
 					ELSE '정상'
 				END AS 상태
 			FROM UnionData
-			GROUP BY YYYYMM, DW_SITE, 구분, [도우모델]
+			GROUP BY YYYYMM, SITE, 구분, [도우모델]
 		)
 		SELECT 
 			COUNT(*) AS TOTAL_COUNT,
@@ -522,7 +522,7 @@
 				도우모델 AS MODEL,
 				도우코드 AS MODEL_TYPE,
 				SUM(OUT_MONTH) AS OUT_QTY
-			FROM DOI_PROD_SUBUL
+			FROM V_DOI_PROD_SUBUL
 			<where>
 				<if test="yyyymm != null and yyyymm != ''">
 					AND YYYYMM = #{yyyymm}
@@ -651,7 +651,7 @@
 				END AS STATUS
 			FROM (
 				SELECT YYYYMM, SEL_CODE, SITE, 도우모델 AS MODEL, 도우코드 AS MODEL_TYPE, SUM(OUT_MONTH) AS OUT_QTY
-				FROM DOI_PROD_SUBUL
+				FROM V_DOI_PROD_SUBUL
 				<where>
 					<if test="yyyymm != null and yyyymm != ''">
 						AND YYYYMM = #{yyyymm}
@@ -838,10 +838,40 @@
 
 	<!-- ST002: 생산재고연결 검증 요약 -->
 	<select id="selectST002Summary" resultType="CamelMap">
-	SELECT 
-	0 AS TOTAL_COUNT,
-	0 AS NORMAL_COUNT,
-	0 AS ERROR_COUNT
+	WITH FAB AS (
+		SELECT 구분,MODEL,expen_sel,expen_sel명,sum([out]) as FAB_OUT_AMT --select *
+		FROM DOI_COST
+		WHERE 1=1
+		<if test="yyyymm != null and yyyymm != ''">
+		AND YYYYMM = #{yyyymm}
+		</if>
+		<if test="site != null and site != ''">
+		AND SITE = #{site}
+		</if>
+		group by  구분,MODEL,expen_sel,expen_sel명 
+		having sum([out])  != 0
+	), STOCK AS(
+		select 구분,MODEL,expen_sel,expen_sel명,sum([in_amt]) as STOCK_IN_AMT  
+		from DOI_STCO 
+		WHERE 1=1
+		<if test="yyyymm != null and yyyymm != ''">
+		AND YYYYMM = #{yyyymm}
+		</if>
+		<if test="site != null and site != ''">
+		AND SITE = #{site}
+		</if>
+		group by  구분,MODEL,expen_sel,expen_sel명 
+		having sum([in_amt])  != 0
+	)SELECT
+		count(*) as TOTAL_COUNT,
+		sum(CASE WHEN FAB_OUT_AMT  IS NULL or STOCK_IN_AMT IS NULL or FAB_OUT_AMT - STOCK_IN_AMT != 0 then 0 else 1 END) as NORMAL_COUNT,
+		count(CASE WHEN FAB_OUT_AMT  IS NULL or STOCK_IN_AMT IS NULL or FAB_OUT_AMT - STOCK_IN_AMT != 0 then 1 END) as ERROR_COUNT	 
+	FROM
+		FAB A
+	FULL JOIN STOCK B ON
+		(A.구분 = b.구분
+			and a.model = b.model
+			and a.expen_sel = b.expen_sel);
 	</select>
 
 	<!-- ST003: 금액수식 검증 상세 -->

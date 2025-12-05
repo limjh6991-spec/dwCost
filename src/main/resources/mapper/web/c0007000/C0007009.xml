@@ -120,7 +120,7 @@
             INCH,
             SITE AS 거래처,
             OUT_MONTH,
-            DW_SITE AS SITE
+            SITE
         FROM DOI_PROD_SUBUL
         WHERE 1=1
         AND OUT_MONTH > 0
@@ -128,7 +128,7 @@
         AND YYYYMM = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
-            AND DW_SITE = #{site}
+            AND SITE = #{site}
         </if>
         <if test="model != null and model != ''">
             AND MODEL = #{model}
