@@ -6,9 +6,9 @@
 	<select id="C0007003_Sch1" resultType="CamelMap">
 		select
 		YYYYMM,SEL_CODE
-		,SITE as DW_SITE_ORG
-		,CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' end as SITE
-		,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,Dw_Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss,recall_loss
+		,DW_SITE as DW_SITE_ORG
+		,CASE WHEN DW_SITE='HQ' then '본사' WHEN DW_SITE='VN' then 'VINA' end as DW_SITE
+		,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss,recall_loss
 		from
 			DOI_PROD_SUBUL
 		where 1=1
@@ -16,7 +16,7 @@
 			and yyyymm = #{yyyymm}
 		</if>
 		<if test="site != null and site != ''">
-			and SITE = #{site}
+			and DW_SITE = #{site}
 		</if>
 		order BY 도우코드,도우모델,구분_ord;
 	</select>
@@ -24,9 +24,9 @@
 	<select id="C0007003_Sch2" resultType="CamelMap">
 		select
 		YYYYMM,SEL_CODE,
-		SITE as DW_SITE_ORG,
-		CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' end as SITE,
-		구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss
+		DW_SITE as DW_SITE_ORG,
+		CASE WHEN DW_SITE='HQ' then '본사' WHEN DW_SITE='VN' then 'VINA' end as DW_SITE,
+		구분,구분_ord,도우코드,MODEL_N_TYPE,도우모델,작업구분,org작업구분,model,Inch,Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss
 		from
 			DOI_RND_SUBUL
 		where 1=1
@@ -34,9 +34,9 @@
 			and yyyymm = #{yyyymm}
 		</if>
 		<if test="site != null and site != ''">
-			and SITE = #{site}
+			and DW_SITE = #{site}
 		</if>
-		order BY 도우코드,도우모델,구분_ord;
+		order BY 도우코드,MODEL_N_TYPE,도우모델,구분_ord;
 	</select>
 
 	<select id="uploadProdSubul" resultType="CamelMap">
@@ -49,16 +49,17 @@
 		CREATE TABLE #TempTable1 (
 			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			SITE varchar(5) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			DW_SITE varchar(5) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			구분 varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			구분_ord varchar(1) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			도우코드 varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			MODEL_N_TYPE varchar(18) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			도우모델 varchar(8) COLLATE Korean_Wansung_CI_AS NULL,
 			작업구분 varchar(2) COLLATE Korean_Wansung_CI_AS NULL,
 			org작업구분 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			model varchar(30) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			Inch varchar(30) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			Dw_Site varchar(50) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			Site varchar(50) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			BOH_MONTH float NULL,
 			IN_MONTH int NULL,
 			BONUS_MONTH int NOT NULL,
@@ -75,31 +76,7 @@
 
 		INSERT INTO #TempTable1
 		(
-		YYYYMM,SEL_CODE,SITE,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,Dw_Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss
-			
-																			
-				   
-						   
-						   
-				
-							
-							  
-									 
-		  
-		
-					
-			 
-			
-			   
-			 
-			 
-			  
-			
-									  
-									  
-					   
-						 
-				
+		YYYYMM,SEL_CODE,DW_SITE,구분,구분_ord,도우코드,MODEL_N_TYPE,도우모델,작업구분,org작업구분,model,Inch,Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
@@ -128,6 +105,7 @@
 			, #{item.field23}
 			, #{item.field24}
 			, #{item.field25}
+			, #{item.field26}
 			)
 		</foreach>;
 
@@ -138,8 +116,9 @@
 		WHERE 1=1
 		AND b.YYYYMM = a.YYYYMM
 		AND b.SEL_CODE = a.SEL_CODE
-		AND b.SITE = a.SITE
+		AND b.DW_SITE = a.DW_SITE
 		AND b.도우코드 = a.도우코드
+		AND b.MODEL_N_TYPE = a.MODEL_N_TYPE
 		);
 	</select>
 
@@ -148,16 +127,17 @@
 			seq_no INT IDENTITY (1, 1) NOT NULL,
 			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			SITE varchar(5) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			DW_SITE varchar(5) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			구분 varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			구분_ord varchar(1) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			도우코드 varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			MODEL_N_TYPE varchar(18) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			도우모델 varchar(8) COLLATE Korean_Wansung_CI_AS NULL,
 			작업구분 varchar(2) COLLATE Korean_Wansung_CI_AS NULL,
 			org작업구분 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			model varchar(30) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			Inch varchar(30) COLLATE Korean_Wansung_CI_AS NOT NULL,
-			Dw_Site varchar(50) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			Site varchar(50) COLLATE Korean_Wansung_CI_AS NOT NULL,
 			BOH_MONTH float NULL,
 			IN_MONTH int NULL,
 			BONUS_MONTH int NOT NULL,
@@ -174,38 +154,12 @@
 
 		INSERT INTO #TempTable
 		(
-			YYYYMM,SEL_CODE,SITE,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,Dw_Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss
-		  
-			
-																			
-				   
-						   
-						   
-				
-							
-							  
-									 
-		  
-		
-					
-			 
-			
-			   
-			 
-			 
-			  
-			
-									  
-									  
-					   
-						 
-				
+			YYYYMM,SEL_CODE,DW_SITE,구분,구분_ord,도우코드,MODEL_N_TYPE,도우모델,작업구분,org작업구분,model,Inch,Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
 			(
 			#{item.field2}
-				   
 			, #{item.field3}
 			, #{item.field4}
 			, #{item.field5}
@@ -229,13 +183,14 @@
 			, #{item.field23}
 			, #{item.field24}
 			, #{item.field25}
+			, #{item.field26}
 			)
 		</foreach>;
 
-		INSERT INTO DOI_RND_SUBUL (YYYYMM,SEL_CODE,SITE,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,Dw_Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss)
-		SELECT YYYYMM,SEL_CODE,SITE,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,Dw_Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss
+		INSERT INTO DOI_RND_SUBUL (YYYYMM,SEL_CODE,DW_SITE,구분,구분_ord,도우코드,MODEL_N_TYPE,도우모델,작업구분,org작업구분,model,Inch,Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss)
+		SELECT YYYYMM,SEL_CODE,DW_SITE,구분,구분_ord,도우코드,MODEL_N_TYPE,도우모델,작업구분,org작업구분,model,Inch,Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss
 		FROM (
-		SELECT *, MAX(seq_no) over (partition by YYYYMM, SEL_CODE, SITE, 도우코드) max_seq_no FROM #TempTable
+		SELECT *, MAX(seq_no) over (partition by YYYYMM, SEL_CODE, DW_SITE, 도우코드, MODEL_N_TYPE) max_seq_no FROM #TempTable
 		) A
 		WHERE 1=1
 		AND seq_no = max_seq_no
@@ -245,8 +200,9 @@
 			WHERE 1=1
 			AND b.YYYYMM = a.YYYYMM
 			AND b.SEL_CODE = a.SEL_CODE
-			AND b.SITE = a.SITE
+			AND b.DW_SITE = a.DW_SITE
 			AND b.도우코드 = a.도우코드
+			AND b.MODEL_N_TYPE = a.MODEL_N_TYPE
 		);
 
 		DROP TABLE #TempTable;
@@ -255,45 +211,23 @@
 	<insert id="C0007003_Insert2">
 		INSERT INTO DOI_RND_SUBUL
 		(
-			YYYYMM,SEL_CODE,SITE,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,Dw_Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss
-			
-				   
-						   
-						   
-				
-							
-							  
-									 
-		  
-		
-					
-			 
-			
-			   
-			 
-			 
-			  
-			
-									  
-									  
-					   
-						 
-				
+			YYYYMM,SEL_CODE,DW_SITE,구분,구분_ord,도우코드,MODEL_N_TYPE,도우모델,작업구분,org작업구분,model,Inch,Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss
 		)
 		VALUES
 		(
 		#{yyyymm}
 		, #{selCode}
-		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='VINA' then 'VN' else left(#{site},2) end
+		, CASE WHEN #{dwSite}='본사' Then 'HQ'  WHEN #{dwSite}='VINA' then 'VN' else left(#{dwSite},2) end
 		, #{구분}
 		, #{구분Ord}
 		, #{도우코드}
+		, #{modelNType}
 		, #{도우모델}
 		, #{작업구분}
 		, #{org작업구분}
 		, #{model}
 		, #{inch}
-		, #{dwSite}
+		, #{site}
 		, #{bohMonth}
 		, #{inMonth}
 		, #{bonusMonth}
@@ -314,22 +248,21 @@
 		WHERE 1=1
 		and YYYYMM = #{yyyymm}
 		and SEL_CODE = #{selCode}
-		and SITE = #{dwSiteOrg}
+		and DW_SITE = #{dwSiteOrg}
 		and 도우코드 = #{도우코드}
+		and MODEL_N_TYPE = #{modelNType}
 	</delete>
 
 	<update id="C0007003_Update2">
 		UPDATE DOI_RND_SUBUL
 		SET 구분 = #{구분}
-					
 		,구분_ord = #{구분Ord}
 		,도우모델 = #{도우모델}
 		,작업구분 = #{작업구분}
 		,org작업구분 = #{org작업구분}
 		,model = #{model}
-									
 		,Inch = #{inch}
-		,dw_Site = #{dwSite}
+		,Site = #{site}
 		,BOH_MONTH = #{bohMonth}
 		,IN_MONTH = #{inMonth}
 		,BONUS_MONTH = #{bonusMonth}
@@ -345,8 +278,9 @@
 		WHERE 1=1
 		and YYYYMM = #{yyyymm}
 		and SEL_CODE = #{selCode}
-		and SITE = #{dwSiteOrg}
+		and DW_SITE = #{dwSiteOrg}
 		and 도우코드 = #{도우코드}
+		and MODEL_N_TYPE = #{modelNType}
 		;
 	</update>
 
