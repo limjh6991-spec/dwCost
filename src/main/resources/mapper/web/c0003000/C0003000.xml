@@ -200,4 +200,10 @@
         </if>
         ORDER BY a.YYYYMM, a.SITE, a.거래처, a.MODEL, a.expen_sel
     </select>
+    
+    <select id="C0003010_Sch1" resultType="CamelMap">
+	EXEC UP_DOI_SCOF 
+		#{yyyymm},
+		#{site}
+    </select>
 </mapper>
