@@ -22,6 +22,7 @@ const grid = {
     { fieldName: '자재명', dataType: ValueType.TEXT },
     { fieldName: '자재번호', dataType: ValueType.TEXT },
     { fieldName: 'size', dataType: ValueType.TEXT },
+    { fieldName: 'z합계', dataType: ValueType.NUMBER },
   ],
   columns: [
     { name: '자재분류', fieldName: '자재분류', width: '80', header: { text: '자재분류' }, autoFilter: true, styleName: 'tl' },
@@ -30,6 +31,7 @@ const grid = {
     { name: '자재명', fieldName: '자재명', width: '80', header: { text: '품명' }, autoFilter: true, styleName: 'tl' },
     { name: '자재번호', fieldName: '자재번호', width: '80', header: { text: '품번' }, autoFilter: true, styleName: 'tl' },
     { name: 'size', fieldName: 'size', width: '80', header: { text: '규격' }, autoFilter: true, styleName: 'tl' },
+    { name: 'z합계', fieldName: 'z합계', width: '80', header: { text: '제조경비 합계' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0' },
   ],
 };
 
