@@ -5,7 +5,7 @@
       <b-row class="search_area">
         <b-col cols="1" class="period">
           <div class="form-floating me-1">
-            <date-picker label="기준월" mode="month" v-model="params.yyyymm" @change="onDateInput" />
+            <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
             <label for="floatingSelect" class="select">기준월</label>
           </div>
         </b-col>
@@ -114,9 +114,6 @@ export default {
     initializeGrid() {
       this.grid = _.cloneDeep(require(`@web/c0009000/js/TAB090004.js`));
     },
-    onDateInput() {
-      // date-picker의 @change 이벤트 핸들러
-    },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
@@ -139,14 +136,14 @@ export default {
       const gridField1 = _.cloneDeep(require(`@web/c0009000/js/TAB090004.js`));
       result1.forEach((item) => {
         gridField1.fields.push({
-          fieldName: item.colname,
+          fieldName: item.deptName.toLowerCase(),
           valueType: 'number',
           dataType: 'number',
         });
 
         gridField1.columns.push({
-          name: item.colname,
-          fieldName: item.colname,
+          name: item.deptName.toLowerCase(),
+          fieldName: item.deptName.toLowerCase(),
           width: 80,
           header: {
             text: item.deptName,

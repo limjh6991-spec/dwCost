@@ -192,8 +192,10 @@
     </select>
 
     <select id="C0009005_Tab090004_Col" resultType="CamelMap">
-        select dept, dept_name, trim('col' + CAST(rn as char)) as colName from (
-            select A.*, B.dept, ROW_NUMBER() OVER(ORDER BY  B.dept) as rn from (
+        SELECT TOP 500 dept_name
+        FROM (
+            select dept, dept_name from (
+                select A.*, B.dept from (
                 select distinct 코스트센터 dept_name from doi_dept_cost
                 where 1=1
                 <if test="yyyymm != null and yyyymm != ''">
@@ -210,7 +212,7 @@
             ) A
             left join (
                 select distinct dept, dept_name from doi_dept
-                    where 1=1
+                where 1=1
                 <if test="yyyymm != null and yyyymm != ''">
                     AND YYYYMM = #{yyyymm}
                 </if>
@@ -219,12 +221,40 @@
                 </if>
             ) B
             on A.dept_name = B.dept_name
-        ) A
-        order by dept
+            ) A
+        )A
+        ORDER BY dept
     </select>
 
     <select id="C0009005_Tab090004" resultType="CamelMap">
         EXEC DOI_ManufacturingExpenseByDept @YYYYMM=#{yyyymm}, @SITE=#{site};
     </select>
 
+    <select id="C0009005_Tab090005_Col" resultType="CamelMap">
+        SELECT DISTINCT TOP 500 model
+        FROM (
+            SELECT DISTINCT 도우모델 as model from doi_mat_cost
+            where 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                AND YYYYMM = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                AND SITE = #{site}
+            </if>
+            UNION ALL
+            SELECT model from doi_expen_matl
+            where 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                AND YYYYMM = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                AND SITE = #{site}
+            </if>
+        )A
+        ORDER BY 1
+    </select>
+
+    <select id="C0009005_Tab090005" resultType="CamelMap">
+        EXEC DOI_ManufacturingExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
 </mapper>
