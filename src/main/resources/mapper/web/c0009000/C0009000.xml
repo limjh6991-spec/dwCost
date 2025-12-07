@@ -257,4 +257,20 @@
     <select id="C0009005_Tab090005" resultType="CamelMap">
         EXEC DOI_ManufacturingExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
     </select>
+
+    <select id="C0009006_Sch1_Col" resultType="CamelMap">
+        SELECT DISTINCT TOP 500 도우모델 as  model from DOI_MAT_COST
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            AND YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            AND SITE = #{site}
+        </if>
+        ORDER BY 1
+    </select>
+
+    <select id="C0009006_Sch1" resultType="CamelMap">
+        exec DOI_DsitributeMatCostByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
 </mapper>

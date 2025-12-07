@@ -1,5 +1,4 @@
-/** * 원부자재 배부표 */
-/** * 자재수불부 */
+/** * 원부자재 배부표 (제품별) */
 <template>
   <div>
     <div class="search_box">
@@ -28,7 +27,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :rows="prodSubulGridRows" style="height: 100%" />
+        <RealGrid ref="dMatCostGrid" :uid="'dMatCostGrid'" :step="'1'" :rows="dMatCostGridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -37,23 +36,22 @@
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0009000/js/C0009006.js';
 
 export default {
   props: {},
   components: {},
-    setup() {
+  setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { 
+    return {
       srchInfo,
-      userAuthInfo 
+      userAuthInfo,
     };
   },
   data() {
     return {
-      prodSubulGrid: null,
-      prodSubulGridRows: [],
+      dMatCostGrid: null,
+      dMatCostGridRows: [],
       params: {
         yyyymm: null,
         site: 'HQ',
@@ -67,7 +65,7 @@ export default {
     };
   },
   watch: {
-        'params.yyyymm': function(newVal) {
+    'params.yyyymm': function (newVal) {
       if (newVal) {
         this.onDateChange();
       }
@@ -76,15 +74,14 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.yyyymm = newVal;
-          console.log('[C0009006] yyyymm 변경:', this.params.yyyymm);
         }
-      }
-     },
+      },
+    },
     prodCtg: {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.prodSubulGrid != null) {
+          if (this.$refs.dMatCostGrid != null) {
             this.initialize();
             this.searchClick();
           }
@@ -93,11 +90,11 @@ export default {
     },
   },
   computed: {
-        gridView() {
-      return this.$refs.prodSubulGrid.getGridView();
+    gridView() {
+      return this.$refs.dMatCostGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.prodSubulGrid.getGridDataProvider();
+      return this.$refs.dMatCostGrid.getGridDataProvider();
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
@@ -109,12 +106,13 @@ export default {
   },
   mounted() {},
   beforeUnmount() {},
-  methods: {    initialize() {
+  methods: {
+    initialize() {
       this.params.yyyymm = this.srchInfo.yyyymm;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
-      this.prodSubulGrid = _.cloneDeep(gridField);
+      this.dMatCostGrid = _.cloneDeep(require(`@web/c0009000/js/C0009006.js`));
     },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
@@ -127,11 +125,43 @@ export default {
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
 
+      let searchParam = {
+        menuId: 'c0009000',
+        queryId: 'C0009006_Sch1_Col',
+        queryParams: params,
+        target: null,
+      };
+
+      let result1 = await this.$axios.api.search(searchParam);
+      const gridField1 = _.cloneDeep(require(`@web/c0009000/js/C0009006.js`));
+      result1.forEach((item) => {
+        gridField1.fields.push({
+          fieldName: item.model.toLowerCase(),
+          valueType: 'number',
+          dataType: 'number',
+        });
+
+        gridField1.columns.push({
+          name: item.model.toLowerCase(),
+          fieldName: item.model.toLowerCase(),
+          width: 80,
+          header: {
+            text: item.model,
+          },
+          autoFilter: false,
+          numberFormat: '#,##0',
+          styleName: 'tr',
+        });
+      });
+
+      this.gridDataProvider.setFields(gridField1.fields);
+      this.gridView.setColumns(gridField1.columns);
+
       let param = {
         menuId: 'c0009000',
         queryId: 'C0009006_Sch1',
         queryParams: params,
-        target: this.prodSubulGridRows,
+        target: this.dMatCostGridRows,
       };
       let resp = await this.$axios.api.search(param);
     },
@@ -147,7 +177,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `원부자재 배부표_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `원부자재 배부표(제품별)_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
@@ -164,4 +194,3 @@ export default {
   },
 };
 </script>
-
