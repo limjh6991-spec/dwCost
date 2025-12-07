@@ -1,6 +1,7 @@
 /*
- * 생산실적 > 생산실적 월별/기간별(누적) 조회
+ * 제품별 손익계산서
  */
+
 const { ValueType } = require('realgrid');
 
 const grid = {
@@ -23,12 +24,10 @@ const grid = {
     stateBar: { visible: false },
     filtering: { enabled: true },
   },
-
   fields: [
   ],
-
   columns: [
-  ],
+  ]
 };
 
 module.exports = grid;
