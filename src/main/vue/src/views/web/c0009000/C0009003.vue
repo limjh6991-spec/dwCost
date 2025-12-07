@@ -36,7 +36,7 @@
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0009000/js/C0009011.js';
+import gridField from '@web/c0009000/js/C0009003.js';
 
 export default {
   props: {},

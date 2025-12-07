@@ -36,7 +36,7 @@
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0009000/js/C0009011.js';
+import gridField from '@web/c0009000/js/C0009002.js';
 
 export default {
   props: {},
@@ -75,7 +75,7 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.yyyymm = newVal;
-          console.log('[C0009011] yyyymm 변경:', this.params.yyyymm);
+          console.log('[C0009002] yyyymm 변경:', this.params.yyyymm);
         }
       }
      },

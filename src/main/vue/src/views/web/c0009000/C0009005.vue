@@ -2,12 +2,12 @@
 <template>
   <auth-tabs>
     <!-- Tab 1 부서별 집계표 -->
-    <template #tab-content-TAB090001>
-      <TAB090001 />
+    <template #tab-content-TAB090004>
+      <TAB090004 />
     </template>
     <!-- Tab 2 제품별 집계표 -->
-    <template #tab-content-TAB090002>
-      <TAB090002 />
+    <template #tab-content-TAB090005>
+      <TAB090005 />
     </template>
   </auth-tabs>
 </template>

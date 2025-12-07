@@ -1,11 +1,11 @@
-/** * TAB090005 - 제품별 제조경비 집계표 */
+/** * 제조 경비 집계표 > 제품별 집계표 */
 <template>
   <div>
     <div class="search_box">
       <b-row class="search_area">
         <b-col cols="1" class="period">
           <div class="form-floating me-1">
-            <date-picker label="기준월" mode="month" v-model="params.yyyymm" @change="onDateInput" />
+            <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
             <label for="floatingSelect" class="select">기준월</label>
           </div>
         </b-col>
@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :rows="prodSubulGridRows" style="height: 100%" />
+        <RealGrid ref="t2Grid" :uid="'t2Grid'" :step="'1'" :rows="t2GridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -36,7 +36,6 @@
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0009000/js/TAB090005.js';
 
 export default {
   props: {},
@@ -44,15 +43,15 @@ export default {
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { 
+    return {
       srchInfo,
-      userAuthInfo 
+      userAuthInfo,
     };
   },
   data() {
     return {
-      prodSubulGrid: null,
-      prodSubulGridRows: [],
+      t2Grid: null,
+      t2GridRows: [],
       params: {
         yyyymm: null,
         site: 'HQ',
@@ -66,7 +65,7 @@ export default {
     };
   },
   watch: {
-    'params.yyyymm': function(newVal) {
+    'params.yyyymm': function (newVal) {
       if (newVal) {
         this.onDateChange();
       }
@@ -75,15 +74,14 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.yyyymm = newVal;
-          console.log('[Tab090005] yyyymm 변경:', this.params.yyyymm);
         }
-      }
-     },
+      },
+    },
     prodCtg: {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.prodSubulGrid != null) {
+          if (this.$refs.t2Grid != null) {
             this.initialize();
             this.searchClick();
           }
@@ -93,10 +91,10 @@ export default {
   },
   computed: {
     gridView() {
-      return this.$refs.prodSubulGrid.getGridView();
+      return this.$refs.t2Grid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.prodSubulGrid.getGridDataProvider();
+      return this.$refs.t2Grid.getGridDataProvider();
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
@@ -114,10 +112,7 @@ export default {
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
-      this.prodSubulGrid = _.cloneDeep(gridField);
-    },
-    onDateInput() {
-      // date-picker의 @change 이벤트 핸들러
+      this.t2Grid = _.cloneDeep(require(`@web/c0009000/js/TAB090005.js`));
     },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
@@ -130,11 +125,43 @@ export default {
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
 
+      let searchParam = {
+        menuId: 'c0009000',
+        queryId: 'C0009005_Tab090005_Col',
+        queryParams: params,
+        target: null,
+      };
+
+      let result1 = await this.$axios.api.search(searchParam);
+      const gridField1 = _.cloneDeep(require(`@web/c0009000/js/TAB090005.js`));
+      result1.forEach((item) => {
+        gridField1.fields.push({
+          fieldName: item.model.toLowerCase(),
+          valueType: 'number',
+          dataType: 'number',
+        });
+
+        gridField1.columns.push({
+          name: item.model.toLowerCase(),
+          fieldName: item.model.toLowerCase(),
+          width: 80,
+          header: {
+            text: item.model,
+          },
+          autoFilter: false,
+          numberFormat: '#,##0',
+          styleName: 'tr',
+        });
+      });
+
+      this.gridDataProvider.setFields(gridField1.fields);
+      this.gridView.setColumns(gridField1.columns);
+
       let param = {
         menuId: 'c0009000',
-        queryId: 'C0009001_Tab090005',
+        queryId: 'C0009005_Tab090005',
         queryParams: params,
-        target: this.prodSubulGridRows,
+        target: this.t2GridRows,
       };
       let resp = await this.$axios.api.search(param);
     },
@@ -150,7 +177,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `제품별_제조경비_집계표_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `제조경비_제품별_집계표_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
@@ -163,6 +190,27 @@ export default {
       };
 
       grid.exportGrid(options);
+    },
+    setCellStyleCallbackT2Grid(grid, dataCell) {
+      var ret = {};
+      if (dataCell.dataColumn.name != 'gubun') {
+        return ret;
+      }
+      var gubun = dataCell.value;
+      if (this.$utils.containsValue(['  I. 재료비', '  II. 노무비', '  III. 경비', '  IV. 당기총제조원가'], gubun)) {
+        ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF' };
+      } else {
+        ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
+      }
+      return ret;
+    },
+    setRowStyleCallbackT2Grid(grid, item, fixed) {
+      var ret = {};
+      var gubun = grid.getValue(item.index, 'gubun');
+      if (this.$utils.containsValue(['  I. 재료비', '  II. 노무비', '  III. 경비', '  IV. 당기총제조원가'], gubun)) {
+        ret.style = { background: '#BFBFBF' };
+      }
+      return ret;
     },
   },
 };

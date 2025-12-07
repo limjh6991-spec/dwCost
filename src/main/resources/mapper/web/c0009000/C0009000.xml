@@ -190,5 +190,87 @@
         GROUP BY 구분, 구분_ord, 도우코드, Inch, Site
         ORDER BY 구분_ord, 도우코드, Inch
     </select>
-    
+
+    <select id="C0009005_Tab090004_Col" resultType="CamelMap">
+        SELECT TOP 500 dept_name
+        FROM (
+            select dept, dept_name from (
+                select A.*, B.dept from (
+                select distinct 코스트센터 dept_name from doi_dept_cost
+                where 1=1
+                <if test="yyyymm != null and yyyymm != ''">
+                    AND YYYYMM = #{yyyymm}
+                </if>
+                <if test="site != null and site != ''">
+                    AND SITE = #{site}
+                </if>
+                and 비용구분 = '제조'
+                union
+                select '제조공통' dept_name
+                union
+                select '카세트팀' dept_name
+            ) A
+            left join (
+                select distinct dept, dept_name from doi_dept
+                where 1=1
+                <if test="yyyymm != null and yyyymm != ''">
+                    AND YYYYMM = #{yyyymm}
+                </if>
+                <if test="site != null and site != ''">
+                    AND SITE = #{site}
+                </if>
+            ) B
+            on A.dept_name = B.dept_name
+            ) A
+        )A
+        ORDER BY dept
+    </select>
+
+    <select id="C0009005_Tab090004" resultType="CamelMap">
+        EXEC DOI_ManufacturingExpenseByDept @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
+
+    <select id="C0009005_Tab090005_Col" resultType="CamelMap">
+        SELECT DISTINCT TOP 500 model
+        FROM (
+            SELECT DISTINCT 도우모델 as model from doi_mat_cost
+            where 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                AND YYYYMM = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                AND SITE = #{site}
+            </if>
+            UNION ALL
+            SELECT model from doi_expen_matl
+            where 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                AND YYYYMM = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                AND SITE = #{site}
+            </if>
+        )A
+        ORDER BY 1
+    </select>
+
+    <select id="C0009005_Tab090005" resultType="CamelMap">
+        EXEC DOI_ManufacturingExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
+
+    <select id="C0009006_Sch1_Col" resultType="CamelMap">
+        SELECT DISTINCT TOP 500 도우모델 as  model from DOI_MAT_COST
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            AND YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            AND SITE = #{site}
+        </if>
+        ORDER BY 1
+    </select>
+
+    <select id="C0009006_Sch1" resultType="CamelMap">
+        exec DOI_DsitributeMatCostByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
 </mapper>
