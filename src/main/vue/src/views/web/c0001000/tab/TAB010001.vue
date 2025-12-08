@@ -43,7 +43,6 @@ import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0001000/js/TAB010001.js';
-
 export default {
   components: {},
   props: {

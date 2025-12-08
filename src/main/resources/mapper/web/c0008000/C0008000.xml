@@ -754,7 +754,7 @@
 		구분,
 		model,
 		면적,
-        DIST_IN AS DIST_VALUE,
+        면적*adj_qty AS DIST_VALUE,
 		dist_rate,
 		SUB_NAME,
 		ITEM_NAME,
