@@ -1,3 +1,5 @@
+/** 총 원가 */
+
 const { ValueType } = require('realgrid');
 
 const grid = {

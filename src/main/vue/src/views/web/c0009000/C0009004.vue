@@ -75,7 +75,7 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.yyyymm = newVal;
-          console.log('[C0009003] yyyymm 변경:', this.params.yyyymm);
+          console.log('[C0009004] yyyymm 변경:', this.params.yyyymm);
         }
       }
      },
@@ -128,7 +128,7 @@ export default {
 
       let param = {
         menuId: 'c0009000',
-        queryId: 'C0009003_Sch1',
+        queryId: 'C0009004_Sch1',
         queryParams: params,
         target: this.prodSubulGridRows,
       };

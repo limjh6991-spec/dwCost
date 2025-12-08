@@ -273,4 +273,8 @@
     <select id="C0009006_Sch1" resultType="CamelMap">
         exec DOI_DsitributeMatCostByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
     </select>
+
+    <select id="C0009002_Sch1" resultType="CamelMap">
+        exec DOI_StockExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
 </mapper>
