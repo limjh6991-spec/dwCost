@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :rows="prodSubulGridRows" style="height: 100%" />
+        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :grid="prodSubulGrid" :layout="prodSubulGrid.columnLayout" :rows="prodSubulGridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -36,7 +36,7 @@
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0009000/js/C0009011.js';
+import gridField from '@web/c0009000/js/C0009002.js';
 
 export default {
   props: {},
@@ -75,7 +75,7 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.yyyymm = newVal;
-          console.log('[C0009011] yyyymm 변경:', this.params.yyyymm);
+          console.log('[C0009002] yyyymm 변경:', this.params.yyyymm);
         }
       }
      },
@@ -106,7 +106,14 @@ export default {
     this.initialize();
     this.initializeGrid();
   },
-  mounted() {},
+  mounted() {
+      const gv = this.gridView;
+        if (this.prodSubulGrid.columnLayout) {
+          gv.setColumnLayout(this.prodSubulGrid.columnLayout);
+    }
+      gv.setCellStyleCallback(this.setCellStyleCallbackProd);
+      gv.setRowStyleCallback(this.setRowStyleCallbackProd);
+  },
   beforeUnmount() {},
   methods: {    initialize() {
       this.params.yyyymm = this.srchInfo.yyyymm;
@@ -133,6 +140,46 @@ export default {
         target: this.prodSubulGridRows,
       };
       let resp = await this.$axios.api.search(param);
+
+        const rows = this.prodSubulGridRows || [];
+
+        const amountRows = rows.filter(r => Number(r.순서) === 1); // 금액행
+        const qtyRows    = rows.filter(r => Number(r.순서) === 2); // 수량행
+
+        const sumField = (list, field) =>
+          list.reduce((acc, row) => acc + (Number(row[field]) || 0), 0);
+
+        // 금액 합계
+        const amountTotalRow = {
+          순서: 1,
+          구분: '금액 합계',
+          코드: '',
+          inch: '',
+          dwSite: '',
+          boh:   sumField(amountRows, 'boh'),
+          input: sumField(amountRows, 'input'),
+          inEtc: sumField(amountRows, 'inEtc'),
+          output: sumField(amountRows, 'output'),
+          outEtc: sumField(amountRows, 'outEtc'),
+          eoh:   sumField(amountRows, 'eoh'),
+        };
+
+        // 수량 합계
+        const qtyTotalRow = {
+          순서: 2,
+          구분: '수량 합계',
+          코드: '',
+          inch: '',
+          dwSite: '',
+          boh:   sumField(qtyRows, 'boh'),
+          input: sumField(qtyRows, 'input'),
+          inEtc: sumField(qtyRows, 'inEtc'),
+          output: sumField(qtyRows, 'output'),
+          outEtc: sumField(qtyRows, 'outEtc'),
+          eoh:   sumField(qtyRows, 'eoh'),
+        };
+
+        this.prodSubulGridRows.push(amountTotalRow, qtyTotalRow);  
     },
     searchClick() {
       this.getDataList();
@@ -159,6 +206,49 @@ export default {
       };
 
       grid.exportGrid(options);
+    },
+    setCellStyleCallbackProd(grid, dataCell) {
+      const ret = {};
+      
+      const row = dataCell.index.dataRow;
+      if (row < 0) {
+        return ret;
+      }
+      const colName = dataCell.dataColumn.name;
+      const amountColumns = ['BOH', 'INPUT', 'IN_ETC', 'OUTPUT', 'OUT_ETC', 'EOH'];
+      if (!amountColumns.includes(colName)) return ret;
+
+      const gubun = grid.getValue(row, '구분');
+      const seq   = grid.getValue(row, '순서');
+
+      if (typeof gubun === 'string' && gubun.includes('합계')) {
+        return ret;
+      }
+
+      // 🟡 일반 금액 행 (순서 = 1)만 노랑 배경
+      if (Number(seq) === 1) {
+        ret.style = {
+          background: '#fff9e6',
+        };
+      }
+
+      return ret;
+    },
+    setRowStyleCallbackProd(grid, item, fixed) {
+      const ret = {};
+      const row = item.dataRow;
+      if (row < 0) return ret;
+
+      const gubun = grid.getValue(row, '구분');
+
+      if (typeof gubun === 'string' && gubun.includes('합계')) {
+        ret.style = {
+          background: '#BFBFBF',
+          fontWeight: 'bold',
+        };
+      }
+
+      return ret;
     },
   },
 };

@@ -1,3 +1,6 @@
+/** * 자재 수불부 */
+
+
 const { ValueType } = require('realgrid');
 
 const grid = {
@@ -25,3 +28,5 @@ const grid = {
   columns: [
   ]
 };
+
+module.exports = grid;

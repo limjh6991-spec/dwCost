@@ -1,11 +1,11 @@
 /** * 판매관리비 집계표 (TAB 구조) */
 <template>
   <auth-tabs>
-    <!-- Tab 1 부서별 집계표 -->
+    <!-- Tab 1 판매관리비 -->
     <template #tab-content-TAB090008>
       <TAB090008 />
     </template>
-    <!-- Tab 2 제품별 집계표 -->
+    <!-- Tab 2 제품별 손익계산서 -->
     <template #tab-content-TAB090009>
       <TAB090009 />
     </template>

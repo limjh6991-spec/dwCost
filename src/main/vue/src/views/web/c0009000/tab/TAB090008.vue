@@ -1,11 +1,11 @@
-/** * 판매관리비 집계표 > 부서별 집계표 */
+/** * TAB090008 - 부서별 판매관리비 집계표 */
 <template>
   <div>
     <div class="search_box">
       <b-row class="search_area">
         <b-col cols="1" class="period">
           <div class="form-floating me-1">
-            <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
+            <date-picker label="기준월" mode="month" v-model="params.yyyymm" @change="onDateInput" />
             <label for="floatingSelect" class="select">기준월</label>
           </div>
         </b-col>
@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="sgaGrid" :uid="'sgaGrid'" :step="'1'" :rows="sgaGridRows" style="height: 100%" />
+        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :rows="prodSubulGridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -36,6 +36,7 @@
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
+import gridField from '@web/c0009000/js/TAB090008.js';
 
 export default {
   props: {},
@@ -43,17 +44,17 @@ export default {
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return {
+    return { 
       srchInfo,
-      userAuthInfo,
+      userAuthInfo 
     };
   },
   data() {
     return {
-      sgaGrid: null,
-      sgaGridRows: [],
+      prodSubulGrid: null,
+      prodSubulGridRows: [],
       params: {
-        yyyymm: null,
+        yyyy: null,
         site: 'HQ',
       },
       siteMap: {
@@ -65,23 +66,25 @@ export default {
     };
   },
   watch: {
-    'params.yyyymm': function (newVal) {
+    'params.yyyy': function(newVal) {
       if (newVal) {
         this.onDateChange();
       }
     },
     'srchInfo.yyyymm': {
       handler(newVal) {
-        if (newVal) {
-          this.params.yyyymm = newVal;
+        if (newVal && !this.params.yyyy) {
+          // YYYYMM에서 YYYY만 추출
+          this.params.yyyy = newVal.substring(0, 4);
+          console.log('[Tab090007] yyyy 변경:', this.params.yyyy);
         }
-      },
-    },
+      }
+     },
     prodCtg: {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.sgaGrid != null) {
+          if (this.$refs.prodSubulGrid != null) {
             this.initialize();
             this.searchClick();
           }
@@ -91,10 +94,10 @@ export default {
   },
   computed: {
     gridView() {
-      return this.$refs.sgaGrid.getGridView();
+      return this.$refs.prodSubulGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.sgaGrid.getGridDataProvider();
+      return this.$refs.prodSubulGrid.getGridDataProvider();
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
@@ -108,60 +111,29 @@ export default {
   beforeUnmount() {},
   methods: {
     initialize() {
-      this.params.yyyymm = this.srchInfo.yyyymm;
+      const curMonth = this.srchInfo.yyyymm;
+      this.params.yyyy = curMonth ? curMonth.substring(0, 4) : new Date().getFullYear().toString();
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
-      this.sgaGrid = _.cloneDeep(require(`@web/c0009000/js/TAB090008.js`));
+      this.prodSubulGrid = _.cloneDeep(gridField);
     },
     onDateChange() {
-      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
+      // 년도 변경시 별도 처리 불필요
     },
     async getDataList() {
       this.gridView.commit();
 
       let params = {
-        yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+        yyyy: this.params.yyyy,
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
-
-      let searchParam = {
-        menuId: 'c0009000',
-        queryId: 'C0009008_Tab090008_Col',
-        queryParams: params,
-        target: null,
-      };
-
-      let result1 = await this.$axios.api.search(searchParam);
-      const gridField1 = _.cloneDeep(require(`@web/c0009000/js/TAB090008.js`));
-      result1.forEach((item) => {
-        gridField1.fields.push({
-          fieldName: item.deptName.toLowerCase(),
-          valueType: 'number',
-          dataType: 'number',
-        });
-
-        gridField1.columns.push({
-          name: item.deptName.toLowerCase(),
-          fieldName: item.deptName.toLowerCase(),
-          width: 80,
-          header: {
-            text: item.deptName,
-          },
-          autoFilter: false,
-          numberFormat: '#,##0',
-          styleName: 'tr',
-        });
-      });
-
-      this.gridDataProvider.setFields(gridField1.fields);
-      this.gridView.setColumns(gridField1.columns);
 
       let param = {
         menuId: 'c0009000',
         queryId: 'C0009008_Tab090008',
         queryParams: params,
-        target: this.sgaGridRows,
+        target: this.prodSubulGridRows,
       };
       let resp = await this.$axios.api.search(param);
     },
@@ -177,7 +149,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `판매관리비_부서별_집계표_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `부서별_판매관리비_집계표_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
@@ -191,7 +163,6 @@ export default {
 
       grid.exportGrid(options);
     },
-    
   },
 };
 </script>

@@ -274,34 +274,7 @@
         exec DOI_DsitributeMatCostByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
     </select>
 
-    <select id="C0009008_Tab090008_Col" resultType="CamelMap">
-        SELECT DISTINCT TOP 500 b.dept,코스트센터 dept_name
-        from (
-            select yyyymm, site, 코스트센터 from doi_dept_cost
-            where 1=1
-            <if test="yyyymm != null and yyyymm != ''">
-                AND YYYYMM = #{yyyymm}
-            </if>
-            <if test="site != null and site != ''">
-                AND SITE = #{site}
-            </if>
-        ) a
-        left join(
-            select yyyymm, site, dept, dept_name from doi_dept
-            where 1=1
-            <if test="yyyymm != null and yyyymm != ''">
-                AND YYYYMM = #{yyyymm}
-            </if>
-            <if test="site != null and site != ''">
-                AND SITE = #{site}
-            </if>
-        )b
-        on (a.yyyymm=b.yyyymm and a.site=b.site and a.코스트센터 = b.dept_name)
-        ORDER BY dept
+    <select id="C0009002_Sch1" resultType="CamelMap">
+        exec DOI_StockExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
     </select>
-
-    <select id="C0009008_Tab090008" resultType="CamelMap">
-        EXEC DOI_SalesAdminByDept @YYYYMM=#{yyyymm}, @SITE=#{site};
-    </select>
-
 </mapper>
