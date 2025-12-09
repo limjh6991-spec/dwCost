@@ -1,12 +1,13 @@
-/** * TAB090007 - 매출원가(제품) */
+/** * 재공,제품 원가 - 매출원가(제품) */
+
 <template>
   <div>
     <div class="search_box">
       <b-row class="search_area">
-        <b-col cols="1" class="period">
-          <div class="form-floating me-1">
-            <date-picker label="기준월" mode="month" v-model="params.yyyymm" @change="onDateInput" />
-            <label for="floatingSelect" class="select">기준월</label>
+        <b-col cols="2">
+          <div class="form-floating">
+            <date-picker v-model="params.yyyymm" mode="year" />
+            <label for="floatingSelect" class="select">년도</label>
           </div>
         </b-col>
         <b-col cols="2" class="ms-3">
@@ -27,7 +28,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :rows="prodSubulGridRows" style="height: 100%" />
+        <RealGrid ref="prodCogsGrid" :uid="'prodCogsGrid'" :grid="prodCogsGrid" :layout="prodCogsGrid.columnLayout" :step="'1'" :rows="prodCogsGridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -51,10 +52,10 @@ export default {
   },
   data() {
     return {
-      prodSubulGrid: null,
-      prodSubulGridRows: [],
+      prodCogsGrid: null,
+      prodCogsGridRows: [],
       params: {
-        yyyy: null,
+        yyyymm: null,
         site: 'HQ',
       },
       siteMap: {
@@ -66,25 +67,23 @@ export default {
     };
   },
   watch: {
-    'params.yyyy': function(newVal) {
+    'params.yyyymm': function(newVal) {
       if (newVal) {
         this.onDateChange();
       }
     },
     'srchInfo.yyyymm': {
       handler(newVal) {
-        if (newVal && !this.params.yyyy) {
-          // YYYYMM에서 YYYY만 추출
-          this.params.yyyy = newVal.substring(0, 4);
-          console.log('[Tab090007] yyyy 변경:', this.params.yyyy);
+        if (newVal) {
+          this.params.yyyymm = newVal;
         }
-      }
-     },
+      },
+    },
     prodCtg: {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.prodSubulGrid != null) {
+          if (this.$refs.prodCogsGrid != null) {
             this.initialize();
             this.searchClick();
           }
@@ -94,10 +93,10 @@ export default {
   },
   computed: {
     gridView() {
-      return this.$refs.prodSubulGrid.getGridView();
+      return this.$refs.prodCogsGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.prodSubulGrid.getGridDataProvider();
+      return this.$refs.prodCogsGrid.getGridDataProvider();
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
@@ -107,25 +106,50 @@ export default {
     this.initialize();
     this.initializeGrid();
   },
-  mounted() {},
+  mounted() {
+    const gv = this.gridView;
+
+    if (this.prodCogsGrid.columnLayout) {
+      gv.setColumnLayout(this.prodCogsGrid.columnLayout);
+    }
+
+    gv.displayOptions.rowStyleCallback = (grid, item) => {
+      const gubun = grid.getValue(item.index, '월');
+      const month = grid.getValue(item.index, '판매처');
+
+    if (gubun.startsWith('소계')) {
+      return {
+        fontBold: true,
+        background: '#f5f7ff',
+      };
+    }
+
+    if (gubun === '판매처별') {
+      return {
+        fontBold: true,
+        background: '#fff3cd',
+      };
+    }
+      return null;
+    };
+  },
   beforeUnmount() {},
   methods: {
     initialize() {
-      const curMonth = this.srchInfo.yyyymm;
-      this.params.yyyy = curMonth ? curMonth.substring(0, 4) : new Date().getFullYear().toString();
+      this.params.yyyymm = this.srchInfo.yyyymm;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
-      this.prodSubulGrid = _.cloneDeep(gridField);
+      this.prodCogsGrid = _.cloneDeep(gridField);
     },
     onDateChange() {
-      // 년도 변경시 별도 처리 불필요
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     async getDataList() {
       this.gridView.commit();
 
       let params = {
-        yyyy: this.params.yyyy,
+        yyyy: this.params.yyyymm.substring(0, 4),
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
 
@@ -133,9 +157,140 @@ export default {
         menuId: 'c0009000',
         queryId: 'C0009007_Tab090007',
         queryParams: params,
-        target: this.prodSubulGridRows,
+        target: this.prodCogsGridRows,
       };
       let resp = await this.$axios.api.search(param);
+
+      let rows = [];
+      if (resp && resp.data) {
+        rows = Array.isArray(resp.data) ? resp.data : resp.data.rows || [];
+      } else if (Array.isArray(resp)) {
+        rows = resp;
+      }
+
+      this.prodCogsGridRows = this.buildProdCogsRows(rows);
+    },
+    buildProdCogsRows(rows) {
+      if (!Array.isArray(rows) || rows.length === 0) return [];
+
+      const result = [];
+      const numberCols = [
+        'bohQty','bohAmt',
+        'inQty','inAmt',
+        'outQty','outAmt',
+        'eohQty','eohAmt',
+        'inMatQty','inMatAmt',
+        'inEtcQty','inEtcAmt',
+        'inRmaQty','inRmaAmt',
+        'outGoodQty','outGoodAmt',
+        'outEtcQty','outEtcAmt',
+      ];
+      const groupMap = {};
+
+      rows.forEach(r => {
+        const gubun = r['구분'] || '기타';
+        if (!groupMap[gubun]) groupMap[gubun] = [];
+        groupMap[gubun].push(r);
+      });
+
+      const orderedGubuns = [];
+      if (groupMap['개발']) orderedGubuns.push('개발');
+      if (groupMap['양산']) orderedGubuns.push('양산');
+      Object.keys(groupMap).forEach(g => {
+        if (!orderedGubuns.includes(g)) orderedGubuns.push(g);
+      });
+
+      orderedGubuns.forEach(g => {
+        const list = groupMap[g];
+        if (!list || list.length === 0) return;
+
+        const subtotalRow = this.createEmptySubtotalRowByGroup(g, list[0]);
+
+        list.forEach(r => {
+          result.push(r);
+          this.accumulateRow(subtotalRow, r, numberCols);
+        });
+
+        result.push(this.makeSubtotalRowByGroup(subtotalRow, g));
+      });
+
+      const first = rows[0] || {};
+      const siteField =
+        '판매처' in first ? '판매처'
+        : 'site';
+
+      const siteTotalsMap = {};
+
+      rows.forEach(r => {
+        const key = r[siteField];
+        if (!key) return;
+
+        if (!siteTotalsMap[key]) {
+          siteTotalsMap[key] = this.createEmptySubtotalRowByGroup(key, r);
+        }
+        this.accumulateRow(siteTotalsMap[key], r, numberCols);
+      });
+
+      Object.keys(siteTotalsMap).forEach(key => {
+        const totalRow = siteTotalsMap[key];
+        result.push(this.makeTotalRow(totalRow, siteField, key));
+      });
+
+      return result;
+    },
+    createEmptySubtotalRowByGroup(groupName, baseRow = {}) {
+      return {
+        구분: groupName,
+        모델: '',
+        inch: '',
+        site: baseRow['site'] ?? '',
+        dwSite: baseRow['판매처'] ?? '',
+        월: '',
+
+        bohQty: 0, bohAmt: 0,
+        inQty: 0, inAmt: 0,
+        outQty: 0, outAmt: 0,
+        eohQty: 0, eohAmt: 0,
+        inMatQty: 0, inMatAmt: 0,
+        inEtcQty: 0, inEtcAmt: 0,
+        inRmaQty: 0, inRmaAmt: 0,
+        outGoodQty: 0, outGoodAmt: 0,
+        outEtcQty: 0, outEtcAmt: 0,
+      };
+    },
+
+    // 숫자 컬럼 누적
+    accumulateRow(target, source, numberCols) {
+      numberCols.forEach(col => {
+        const v = Number(source[col]) || 0;
+        target[col] += v;
+      });
+    },
+
+    // 개발 전체 / 양산 전체용 소계 행 (구분 블록 바로 아래)
+    makeSubtotalRowByGroup(row, groupName) {
+      return {
+        ...row,
+        구분: '', // 예: 소계(개발), 소계(양산)
+        모델: '',
+        inch: '',
+        site: row.site ?? '',
+        판매처: row.판매처 ?? '',
+        월: `소계(${groupName})`,
+      };
+    },
+
+    // DW_SITE(or site)별 합계 행 (맨 하단)
+    makeTotalRow(row, siteField, siteKey) {
+      return {
+        ...row,
+        구분: '',
+        모델: '',
+        inch: '',
+        site: siteField === 'site' ? siteKey : '',
+        판매처: '판매처별',
+        월: siteKey,
+      };
     },
     searchClick() {
       this.getDataList();

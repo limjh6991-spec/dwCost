@@ -3,10 +3,10 @@
   <div>
     <div class="search_box">
       <b-row class="search_area">
-        <b-col cols="1" class="period">
+        <b-col cols="2">
           <div class="form-floating me-1">
-            <date-picker label="기준년도" mode="year" v-model="params.yyyy" style="text-align: center;" />
-            <label for="floatingSelect" class="select">기준년도</label>
+            <date-picker label="연도" mode="year" v-model="params.yyyymm" />
+            <label for="floatingSelect" class="select">년도</label>
           </div>
         </b-col>
         <b-col cols="2" class="ms-3">
@@ -54,7 +54,7 @@ export default {
       salesDataGrid: null,
       salesDataGridRows: [],
       params: {
-        yyyy: null,
+        yyyymm: null,
         site: 'HQ',
       },
       siteMap: {
@@ -66,20 +66,18 @@ export default {
     };
   },
   watch: {
-    'params.yyyy': function(newVal) {
+    'params.yyyymm': function(newVal) {
       if (newVal) {
         this.onDateChange();
       }
     },
     'srchInfo.yyyymm': {
       handler(newVal) {
-        if (newVal && !this.params.yyyy) {
-          // YYYYMM에서 YYYY만 추출
-          this.params.yyyy = newVal.substring(0, 4);
-          console.log('[C0009003] yyyy 변경:', this.params.yyyy);
+        if (newVal) {
+          this.params.yyyymm = newVal;
         }
-      }
-     },
+      },
+    },
     prodCtg: {
       handler(newVal) {
         if (newVal) {
@@ -118,21 +116,20 @@ export default {
   beforeUnmount() {},
   methods: {
     initialize() {
-      const curMonth = this.srchInfo.yyyymm;
-      this.params.yyyy = curMonth ? curMonth.substring(0, 4) : new Date().getFullYear().toString();
+      this.params.yyyymm = this.srchInfo.yyyymm;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
       this.salesDataGrid = _.cloneDeep(gridField);
     },
     onDateChange() {
-      // 년도 변경시 별도 처리 불필요
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     async getDataList() {
       this.gridView.commit();
 
       let params = {
-        yyyy: this.params.yyyy,
+        yyyy: this.params.yyyymm.substring(0, 4),
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
 

@@ -312,4 +312,8 @@
         EXEC DOI_AnnualReportBySale @YYYY=#{yyyy}, @SITE=#{site};
     </select>
 
+    <select id="C0009007_Tab090007" resultType="CamelMap">
+        EXEC DOI_ProductCOGS @YYYY=#{yyyy}, @SITE=#{site};
+    </select>
+
 </mapper>
