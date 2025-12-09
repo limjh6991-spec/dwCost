@@ -5,8 +5,8 @@
       <b-row class="search_area">
         <b-col cols="1" class="period">
           <div class="form-floating me-1">
-            <date-picker label="기준월" mode="month" v-model="params.yyyymm" />
-            <label for="floatingSelect" class="select">기준월</label>
+            <date-picker label="기준년도" mode="year" v-model="params.yyyy" style="text-align: center;" />
+            <label for="floatingSelect" class="select">기준년도</label>
           </div>
         </b-col>
         <b-col cols="2" class="ms-3">
@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :rows="prodSubulGridRows" style="height: 100%" />
+        <RealGrid ref="salesDataGrid" :uid="'salesDataGrid'" :grid="salesDataGrid" :layout="salesDataGrid.columnLayout" :step="'1'" :rows="salesDataGridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -41,7 +41,7 @@ import gridField from '@web/c0009000/js/C0009003.js';
 export default {
   props: {},
   components: {},
-    setup() {
+  setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
     return { 
@@ -51,10 +51,10 @@ export default {
   },
   data() {
     return {
-      prodSubulGrid: null,
-      prodSubulGridRows: [],
+      salesDataGrid: null,
+      salesDataGridRows: [],
       params: {
-        yyyymm: null,
+        yyyy: null,
         site: 'HQ',
       },
       siteMap: {
@@ -66,16 +66,17 @@ export default {
     };
   },
   watch: {
-        'params.yyyymm': function(newVal) {
+    'params.yyyy': function(newVal) {
       if (newVal) {
         this.onDateChange();
       }
     },
     'srchInfo.yyyymm': {
       handler(newVal) {
-        if (newVal) {
-          this.params.yyyymm = newVal;
-          console.log('[C0009003] yyyymm 변경:', this.params.yyyymm);
+        if (newVal && !this.params.yyyy) {
+          // YYYYMM에서 YYYY만 추출
+          this.params.yyyy = newVal.substring(0, 4);
+          console.log('[C0009003] yyyy 변경:', this.params.yyyy);
         }
       }
      },
@@ -83,7 +84,7 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.prodSubulGrid != null) {
+          if (this.$refs.salesDataGrid != null) {
             this.initialize();
             this.searchClick();
           }
@@ -92,11 +93,11 @@ export default {
     },
   },
   computed: {
-        gridView() {
-      return this.$refs.prodSubulGrid.getGridView();
+    gridView() {
+      return this.$refs.salesDataGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.prodSubulGrid.getGridDataProvider();
+      return this.$refs.salesDataGrid.getGridDataProvider();
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
@@ -106,23 +107,32 @@ export default {
     this.initialize();
     this.initializeGrid();
   },
-  mounted() {},
+  mounted() {
+    const gv = this.gridView;
+
+    // 🔹 columnLayout 실제 적용
+    if (this.salesDataGrid.columnLayout) {
+      gv.setColumnLayout(this.salesDataGrid.columnLayout);
+    }
+  },
   beforeUnmount() {},
-  methods: {    initialize() {
-      this.params.yyyymm = this.srchInfo.yyyymm;
+  methods: {
+    initialize() {
+      const curMonth = this.srchInfo.yyyymm;
+      this.params.yyyy = curMonth ? curMonth.substring(0, 4) : new Date().getFullYear().toString();
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
-      this.prodSubulGrid = _.cloneDeep(gridField);
+      this.salesDataGrid = _.cloneDeep(gridField);
     },
     onDateChange() {
-      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
+      // 년도 변경시 별도 처리 불필요
     },
     async getDataList() {
       this.gridView.commit();
 
       let params = {
-        yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+        yyyy: this.params.yyyy,
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
 
@@ -130,9 +140,18 @@ export default {
         menuId: 'c0009000',
         queryId: 'C0009003_Sch1',
         queryParams: params,
-        target: this.prodSubulGridRows,
+        target: this.salesDataGridRows,
       };
       let resp = await this.$axios.api.search(param);
+
+      console.log('[DEBUG] 첫 행', this.salesDataGridRows?.[0]);
+      
+      // 응답 데이터 처리
+      if (resp && resp.data) {
+        this.salesDataGridRows = Array.isArray(resp.data) ? resp.data : resp.data.rows || [];
+      } else if (Array.isArray(resp)) {
+        this.salesDataGridRows = resp;
+      }
     },
     searchClick() {
       this.getDataList();
