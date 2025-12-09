@@ -191,7 +191,63 @@ export default {
 
       grid.exportGrid(options);
     },
-    
+    setCellStyleCallbackSgaGrid(grid, dataCell) {
+      var ret = {};
+      if (dataCell.dataColumn.name != 'gubun') {
+        return ret;
+      }
+      var gubun = dataCell.value;
+      if (this.$utils.containsValue(['합계'], gubun)) {
+        ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF', textAlign: 'center' };
+      } else if (
+        this.$utils.containsValue(
+          [
+            '    (1) 판)임원급여',
+            '    (2) 판)직원급여',
+            '    (3) 판)상여금',
+            '    (4) 판)제수당',
+            '    (5) 판)퇴직급여',
+            '    (6) 판)복리후생비',
+            '    (7) 판)여비교통비',
+            '    (8) 판)접대비',
+            '    (9) 판)통신비',
+            '    (10) 판)수도광열비',
+            '    (11) 판)세금과공과',
+            '    (12) 판)감가상각비',
+            '    (13) 판)지급임차료',
+            '    (14) 판)수선비',
+            '    (15) 판)보험료',
+            '    (16) 판)차량유지비',
+            '    (17) 판)경상연구개발비',
+            '    (18) 판)운반비',
+            '    (19) 판)교육훈련비',
+            '    (20) 판)도서인쇄비',
+            '    (21) 판)소모품비',
+            '    (22) 판)지급수수료',
+            '    (23) 판)광고선전비',
+            '    (24) 판)무형자산상각비',
+            '    (25) 판)견본비',
+            '    (26) 판)사용권자산감가상각비',
+            '    (27) 판)주식보상비용',
+            '    (28) 판)해외시장개척비',
+          ],
+          gubun
+        )
+      ) {
+        ret.style = { fontWeight: 'bold', whiteSpace: 'pre' };
+      } else {
+        ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
+      }
+      return ret;
+    },
+    setRowStyleCallbackSgaGrid(grid, item, fixed) {
+      var ret = {};
+      var gubun = grid.getValue(item.index, 'gubun');
+      if (this.$utils.containsValue(['합계'], gubun)) {
+        ret.style = { background: '#BFBFBF' };
+      }
+      return ret;
+    },
   },
 };
 </script>
