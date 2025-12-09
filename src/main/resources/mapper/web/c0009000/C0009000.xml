@@ -303,6 +303,10 @@
     <select id="C0009008_Tab090008" resultType="CamelMap">
         EXEC DOI_SalesAdminByDept @YYYYMM=#{yyyymm}, @SITE=#{site};
     </select>
+    
+    <select id="C0009008_Tab090009" resultType="CamelMap">
+        EXEC DOI_SalesAdminByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
 
     <select id="C0009002_Sch1" resultType="CamelMap">
         EXEC DOI_StockExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site};

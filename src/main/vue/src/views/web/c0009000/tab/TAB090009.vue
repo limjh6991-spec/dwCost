@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :rows="prodSubulGridRows" style="height: 100%" />
+        <RealGrid ref="sga2Grid" :uid="'sga2Grid'" :step="'1'" :rows="sga2GridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -36,7 +36,6 @@
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0009000/js/TAB090009.js';
 
 export default {
   props: {},
@@ -51,8 +50,8 @@ export default {
   },
   data() {
     return {
-      prodSubulGrid: null,
-      prodSubulGridRows: [],
+      sga2Grid: null,
+      sga2GridRows: [],
       params: {
         yyyy: null,
         site: 'HQ',
@@ -66,25 +65,23 @@ export default {
     };
   },
   watch: {
-    'params.yyyy': function(newVal) {
+    'params.yyyymm': function (newVal) {
       if (newVal) {
         this.onDateChange();
       }
     },
     'srchInfo.yyyymm': {
       handler(newVal) {
-        if (newVal && !this.params.yyyy) {
-          // YYYYMM에서 YYYY만 추출
-          this.params.yyyy = newVal.substring(0, 4);
-          console.log('[Tab090007] yyyy 변경:', this.params.yyyy);
+        if (newVal) {
+          this.params.yyyymm = newVal;
         }
-      }
+      },
      },
     prodCtg: {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.prodSubulGrid != null) {
+          if (this.$refs.sga2Grid != null) {
             this.initialize();
             this.searchClick();
           }
@@ -94,10 +91,10 @@ export default {
   },
   computed: {
     gridView() {
-      return this.$refs.prodSubulGrid.getGridView();
+      return this.$refs.sga2Grid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.prodSubulGrid.getGridDataProvider();
+      return this.$refs.sga2Grid.getGridDataProvider();
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
@@ -111,12 +108,11 @@ export default {
   beforeUnmount() {},
   methods: {
     initialize() {
-      const curMonth = this.srchInfo.yyyymm;
-      this.params.yyyy = curMonth ? curMonth.substring(0, 4) : new Date().getFullYear().toString();
+      this.params.yyyymm = this.srchInfo.yyyymm;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
-      this.prodSubulGrid = _.cloneDeep(gridField);
+      this.sga2Grid = _.cloneDeep(require(`@web/c0009000/js/TAB090009.js`));
     },
     onDateChange() {
       // 년도 변경시 별도 처리 불필요
@@ -125,15 +121,47 @@ export default {
       this.gridView.commit();
 
       let params = {
-        yyyy: this.params.yyyy,
+        yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
+
+      let searchParam = {
+        menuId: 'c0009000',
+        queryId: 'C0009005_Tab090005_Col',
+        queryParams: params,
+        target: null,
+      };
+
+      let result1 = await this.$axios.api.search(searchParam);
+      const gridField1 = _.cloneDeep(require(`@web/c0009000/js/TAB090009.js`));
+      result1.forEach((item) => {
+        gridField1.fields.push({
+          fieldName: item.model.toLowerCase(),
+          valueType: 'number',
+          dataType: 'number',
+        });
+
+        gridField1.columns.push({
+          name: item.model.toLowerCase(),
+          fieldName: item.model.toLowerCase(),
+          width: 80,
+          header: {
+            text: item.model,
+          },
+          autoFilter: false,
+          numberFormat: '#,##0',
+          styleName: 'tr',
+        });
+      });
+
+      this.gridDataProvider.setFields(gridField1.fields);
+      this.gridView.setColumns(gridField1.columns);
 
       let param = {
         menuId: 'c0009000',
         queryId: 'C0009008_Tab090009',
         queryParams: params,
-        target: this.prodSubulGridRows,
+        target: this.sga2GridRows,
       };
       let resp = await this.$axios.api.search(param);
     },
@@ -162,6 +190,29 @@ export default {
       };
 
       grid.exportGrid(options);
+    },
+    setCellStyleCallbackSga2Grid(grid, dataCell) {
+      var ret = {};
+      if (dataCell.dataColumn.name != 'gubun') {
+        return ret;
+      }
+      var gubun = dataCell.value;
+      // 헤더 라벨 판별: 앞에 '(숫자)' 패턴이 오는 경우 헤더로 처리
+      if (/^\s*\(\d+\)/.test(gubun)) {
+        ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF' };
+      } else {
+        ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
+      }
+      return ret;
+    },
+    setRowStyleCallbackSga2Grid(grid, item, fixed) {
+      var ret = {};
+      var gubun = grid.getValue(item.index, 'gubun');
+      // 헤더 라벨 판별: 앞에 '(숫자)' 패턴이 오는 경우 헤더로 처리
+      if (/^\s*\(\d+\)/.test(gubun)) {
+        ret.style = { background: '#BFBFBF' };
+      }
+      return ret;
     },
   },
 };
