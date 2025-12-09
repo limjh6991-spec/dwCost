@@ -16,7 +16,7 @@ const grid = {
     sorting: { enabled: true },
     stateBar: { visible: false },
     filtering: { enabled: true },
-    fixed: { colBarWidth: 1, colCount: 1 },
+    fixed: { colBarWidth: 1, colCount: 3 },
   },
   fields: [
     { fieldName: 'gubun', dataType: ValueType.TEXT },
