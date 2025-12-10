@@ -1,12 +1,12 @@
-/** * TAB090006 - 제조원가(재공) 집계표 */
+/** * 재공,제품 원가 - 제조원가(재공) 집계표 */
 <template>
   <div>
     <div class="search_box">
       <b-row class="search_area">
-        <b-col cols="1" class="period">
-          <div class="form-floating me-1">
-            <date-picker label="기준월" mode="month" v-model="params.yyyymm" @change="onDateInput" />
-            <label for="floatingSelect" class="select">기준월</label>
+        <b-col cols="2">
+          <div class="form-floating">
+            <date-picker v-model="params.yyyymm" mode="year" />
+            <label for="floatingSelect" class="select">년도</label>
           </div>
         </b-col>
         <b-col cols="2" class="ms-3">
@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :rows="prodSubulGridRows" style="height: 100%" />
+        <RealGrid ref="prodCogsGrid" :uid="'prodCogsGrid'" :grid="prodCogsGrid" :layout="prodCogsGrid.columnLayout" :step="'1'" :rows="prodCogsGridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -66,17 +66,15 @@ export default {
     };
   },
   watch: {
-    'params.yyyy': function(newVal) {
+    'params.yyyymm': function(newVal) {
       if (newVal) {
         this.onDateChange();
       }
     },
     'srchInfo.yyyymm': {
       handler(newVal) {
-        if (newVal && !this.params.yyyy) {
-          // YYYYMM에서 YYYY만 추출
-          this.params.yyyy = newVal.substring(0, 4);
-          console.log('[Tab090006] yyyy 변경:', this.params.yyyy);
+        if (newVal) {
+          this.params.yyyymm = newVal;
         }
       }
      },
@@ -119,13 +117,13 @@ export default {
       this.prodSubulGrid = _.cloneDeep(gridField);
     },
     onDateChange() {
-      // 년도 변경시 별도 처리 불필요
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     async getDataList() {
       this.gridView.commit();
 
       let params = {
-        yyyy: this.params.yyyy,
+        yyyy: this.params.yyyymm.substring,
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
 

@@ -3,6 +3,8 @@
  */
 
 const { ValueType } = require('realgrid');
+const gubunMergeCriteria = "values['mergeKeyGubun']";
+const commonMergeCriteria = "values['mergeKey']";
 
 const tab090007GridField = {
   options: {
@@ -24,7 +26,10 @@ const tab090007GridField = {
   { fieldName: '모델', dataType: ValueType.TEXT },
   { fieldName: 'inch', dataType: ValueType.TEXT },
   { fieldName: '판매처', dataType: ValueType.TEXT },
+  { fieldName: 'rowType', dataType: ValueType.TEXT },
   { fieldName: '월', dataType: ValueType.TEXT },
+  { fieldName: 'mergeKey', dataType: ValueType.TEXT },
+  { fieldName: 'mergeKeyGubun', dataType: ValueType.TEXT },
   { fieldName: 'bohQty', dataType: ValueType.NUMBER },
   { fieldName: 'bohAmt', dataType: ValueType.NUMBER },
   { fieldName: 'inQty', dataType: ValueType.NUMBER },
@@ -73,7 +78,7 @@ const tab090007GridField = {
             { column: 'inAmt' }
           ],
         }, 
-                {
+        {
           name: 'grpOUT',
           header: { text: '출고(OUT)' },
           direction: 'horizontal',
@@ -82,7 +87,7 @@ const tab090007GridField = {
             { column: 'outAmt' }
           ],
         }, 
-                {
+        {
           name: 'grpEOH',
           header: { text: '재고(EOH)' },
           direction: 'horizontal',
@@ -154,10 +159,47 @@ const tab090007GridField = {
     },
   ],
   columns: [
-  { name: '구분', fieldName: '구분', width: 80, header: { text: '구분' }, styleName: 'tc', mergeRule:{ criteria: "values['모델']" } },
-  { name: '모델', fieldName: '모델', width: 100, header: { text: '모델' }, styleName: 'tc', mergeRule:{ criteria: 'value' } },
-  { name: 'inch', fieldName: 'inch', width: 60, header: { text: '인치' }, styleName: 'tc', mergeRule:{ criteria: "values['모델']" } },
-  { name: '판매처', fieldName: '판매처', width: 60, header: { text: '판매처' }, styleName: 'tc', mergeRule:{ criteria: "values['모델']" } },
+  { 
+    name: '구분',
+    fieldName: '구분',
+    width: 80,
+    header: { text: '구분' },
+    styleName: 'tc',
+    mergeRule: { 
+      criteria: gubunMergeCriteria,
+    } 
+  },
+  { 
+    name: '모델',
+    fieldName: '모델',
+    width: 100,
+    header: { text: '모델' },
+    styleName: 'tc',
+    mergeRule: { 
+      criteria: commonMergeCriteria,
+    } 
+  },
+  { 
+    name: 'inch',
+    fieldName: 'inch', 
+    width: 60, 
+    header: { text: '인치' }, 
+    styleName: 'tc', 
+    mergeRule: {
+      criteria: commonMergeCriteria,
+    } 
+  },
+  { 
+    name: '판매처', 
+    fieldName: '판매처', 
+    width: 60, 
+    header: { text: '판매처' }, 
+    styleName: 'tc', 
+    mergeRule: { 
+      criteria: commonMergeCriteria,
+    } 
+  },
+  { name: 'rowType', fieldName: 'rowType', visible: false },
   { name: '월', fieldName: '월', width: 60, header: { text: '' }, styleName: 'tc' },
   { name: 'bohQty', fieldName: 'bohQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'bohAmt', fieldName: 'bohAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },

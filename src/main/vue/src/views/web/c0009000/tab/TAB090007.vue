@@ -113,25 +113,56 @@ export default {
       gv.setColumnLayout(this.prodCogsGrid.columnLayout);
     }
 
-    gv.displayOptions.rowStyleCallback = (grid, item) => {
-      const gubun = grid.getValue(item.index, '월');
-      const month = grid.getValue(item.index, '판매처');
+    gv.setRowStyleCallback((grid, item) => {
+      const row = item.dataRow ?? item.index;
+      if (row == null || row < 0) return null;
 
-    if (gubun.startsWith('소계')) {
-      return {
-        fontBold: true,
-        background: '#f5f7ff',
-      };
-    }
+      const rowType = (grid.getValue(row, 'rowType') || '').toString();
+      console.log('rowStyleCallback:', row, rowType);
 
-    if (gubun === '판매처별') {
-      return {
-        fontBold: true,
-        background: '#fff3cd',
-      };
-    }
+      if (rowType === 'SUBTOTAL') {
+        return {
+          background: '#f5f7ff',
+          fontBold: true,
+        };
+      }
+
+      if (rowType === 'TOTAL') {
+        return {
+          background: '#fff3cd',
+          fontBold: true,
+        };
+      }
+
       return null;
-    };
+    });
+
+    const layoutGubun = gv.layoutByColumn('구분');
+    if (layoutGubun) {
+      layoutGubun.spanCallback = (grid, layout, itemIndex) => {
+        const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
+
+        if (rowType === 'SUBTOTAL') {
+          return 5;
+        }
+        if (rowType === 'TOTAL') {
+          return 2;
+        }
+        return 1;
+      };
+    }
+
+    const layoutInch = gv.layoutByColumn('inch');
+    if (layoutInch) {
+      layoutInch.spanCallback = (grid, layout, itemIndex) => {
+        const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
+
+        if (rowType === 'TOTAL') {
+          return 3;
+        }
+        return 1;
+      };
+    }
   },
   beforeUnmount() {},
   methods: {
@@ -200,14 +231,42 @@ export default {
         if (!orderedGubuns.includes(g)) orderedGubuns.push(g);
       });
 
+      let mergeGroupSeq = 0;
+
       orderedGubuns.forEach(g => {
         const list = groupMap[g];
         if (!list || list.length === 0) return;
 
         const subtotalRow = this.createEmptySubtotalRowByGroup(g, list[0]);
+        
+        let lastKey = null;
 
-        list.forEach(r => {
-          result.push(r);
+    list.forEach(r => {
+      const prodKey = [
+        r['구분'] || '',
+        r['모델'] || r['model'] || '',
+        r['inch'] || '',
+        r['판매처'] || r['DW_SITE'] || r['dwSite'] || '',
+      ].join('|');
+
+      if (prodKey !== lastKey) {
+        mergeGroupSeq++;
+        lastKey = prodKey;
+      }
+
+      const mergeKey =
+        prodKey.replace(/\|/g, '') === ''
+          ? `ROW|${mergeGroupSeq}`
+          : `DATA|${mergeGroupSeq}`; 
+
+      const mergeKeyGubun = mergeKey;
+
+          result.push({
+            ...r,
+            rowType: 'DATA',
+            mergeKey,
+            mergeKeyGubun,
+          });
           this.accumulateRow(subtotalRow, r, numberCols);
         });
 
@@ -215,14 +274,20 @@ export default {
       });
 
       const first = rows[0] || {};
-      const siteField =
-        '판매처' in first ? '판매처'
-        : 'site';
+      const dwSiteField = 
+        '판매처' in first ? '판매처' : 
+        'DW_SITE' in first ? 'DW_SITE' : 
+        'dwSite' in first ? 'dwSite' :
+        null;
+
+      if (!dwSiteField) {
+        return result;
+      }
 
       const siteTotalsMap = {};
 
       rows.forEach(r => {
-        const key = r[siteField];
+        const key = r[dwSiteField];
         if (!key) return;
 
         if (!siteTotalsMap[key]) {
@@ -231,22 +296,22 @@ export default {
         this.accumulateRow(siteTotalsMap[key], r, numberCols);
       });
 
-      Object.keys(siteTotalsMap).forEach(key => {
+      Object.keys(siteTotalsMap).forEach((key, idx) => {
         const totalRow = siteTotalsMap[key];
-        result.push(this.makeTotalRow(totalRow, siteField, key));
+        result.push({
+        ...this.makeTotalRow(totalRow, dwSiteField, key),
+      mergeKey: `TOTAL|${key}`,
+      mergeKeyGubun: 'TOTAL',
+        });
       });
 
       return result;
     },
     createEmptySubtotalRowByGroup(groupName, baseRow = {}) {
       return {
-        구분: groupName,
-        모델: '',
-        inch: '',
-        site: baseRow['site'] ?? '',
-        dwSite: baseRow['판매처'] ?? '',
+        rowType: 'SUBTOTAL',
+        구분: `소계(${groupName})`,
         월: '',
-
         bohQty: 0, bohAmt: 0,
         inQty: 0, inAmt: 0,
         outQty: 0, outAmt: 0,
@@ -259,7 +324,6 @@ export default {
       };
     },
 
-    // 숫자 컬럼 누적
     accumulateRow(target, source, numberCols) {
       numberCols.forEach(col => {
         const v = Number(source[col]) || 0;
@@ -267,29 +331,25 @@ export default {
       });
     },
 
-    // 개발 전체 / 양산 전체용 소계 행 (구분 블록 바로 아래)
     makeSubtotalRowByGroup(row, groupName) {
       return {
         ...row,
-        구분: '', // 예: 소계(개발), 소계(양산)
-        모델: '',
-        inch: '',
-        site: row.site ?? '',
-        판매처: row.판매처 ?? '',
-        월: `소계(${groupName})`,
+        rowType: 'SUBTOTAL',
+        구분: `소계(${groupName})`,
+        월: '',
+        mergeKeyGubun: `SUBTOTAL|${groupName}`,
       };
     },
 
-    // DW_SITE(or site)별 합계 행 (맨 하단)
-    makeTotalRow(row, siteField, siteKey) {
+    makeTotalRow(row, dwSiteField, siteKey) {
       return {
         ...row,
-        구분: '',
+        rowType: 'TOTAL',
+        구분: '판매처별',
         모델: '',
-        inch: '',
-        site: siteField === 'site' ? siteKey : '',
-        판매처: '판매처별',
-        월: siteKey,
+        inch: siteKey,
+        판매처: '',
+        월: '',
       };
     },
     searchClick() {
