@@ -305,12 +305,27 @@
         ORDER BY dept
     </select>
 
-    <select id="C0009008_Tab090008" resultType="CamelMap">
+    <select id="C0009008_Tab090008" resultType="Map">
         EXEC DOI_SalesAdminByDept @YYYYMM=#{yyyymm}, @SITE=#{site};
     </select>
     
-    <select id="C0009008_Tab090009" resultType="CamelMap">
+    <select id="C0009008_Tab090009" resultType="Map">
         EXEC DOI_SalesAdminByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
+    
+    <select id="C0009008_Tab090009_Col" resultType="CamelMap">
+        SELECT DISTINCT TOP 500 model
+        FROM (
+            SELECT DISTINCT model from doi_smce_cost
+            where 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                AND YYYYMM = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                AND SITE = #{site}
+            </if>
+        )A
+        ORDER BY 1
     </select>
 
     <select id="C0009002_Sch1" resultType="CamelMap">

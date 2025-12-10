@@ -127,7 +127,7 @@ export default {
 
       let searchParam = {
         menuId: 'c0009000',
-        queryId: 'C0009005_Tab090005_Col',
+        queryId: 'C0009008_Tab090009_Col',
         queryParams: params,
         target: null,
       };
@@ -136,14 +136,14 @@ export default {
       const gridField1 = _.cloneDeep(require(`@web/c0009000/js/TAB090009.js`));
       result1.forEach((item) => {
         gridField1.fields.push({
-          fieldName: item.model.toLowerCase(),
+          fieldName: item.model,
           valueType: 'number',
           dataType: 'number',
         });
 
         gridField1.columns.push({
-          name: item.model.toLowerCase(),
-          fieldName: item.model.toLowerCase(),
+          name: item.model,
+          fieldName: item.model,
           width: 80,
           header: {
             text: item.model,
