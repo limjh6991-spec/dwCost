@@ -21,12 +21,12 @@ const grid = {
   fields: [
     { fieldName: 'gubun', dataType: ValueType.TEXT },
     { fieldName: '제조경비계획', dataType: ValueType.NUMBER },
-    { fieldName: 'z합계', dataType: ValueType.NUMBER },
+    { fieldName: 'Z합계', dataType: ValueType.NUMBER },
   ],
   columns: [
     { name: 'gubun', fieldName: 'gubun', width: '80', header: { text: '구분' }, autoFilter: true, styleName: 'tl' },
     { name: '판매관리비계획', fieldName: '판매관리비계획', width: '80', header: { text: '판매관리비 계획' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0' },
-    { name: 'z합계', fieldName: 'z합계', width: '80', header: { text: '판매관리비 합계' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'Z합계', fieldName: 'Z합계', width: '80', header: { text: '판매관리비 합계' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0' },
   ],
 };
 

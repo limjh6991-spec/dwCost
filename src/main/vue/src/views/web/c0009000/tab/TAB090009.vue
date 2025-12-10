@@ -184,6 +184,7 @@ export default {
         target: 'local',
         fileName: fileName,
         progressMessage: '엑셀 Export중입니다.',
+        applyDynamicStyles: true,
         done: function () {
           alert('엑셀 내보내기가 완료되었습니다!');
         },
@@ -192,28 +193,34 @@ export default {
       grid.exportGrid(options);
     },
     setCellStyleCallbackSga2Grid(grid, dataCell) {
-      var ret = {};
-      if(dataCell.dataColumn.name == 'gubun'){
-        var gubun = dataCell.value;
-  
-        if(gubun.substr(4,3)==='판관비'){
-          ret.style = { fontWeight: 'bold', background: '#BFBFBF', whiteSpace: 'pre' };
-        }
-        else if (/^\s*\(\d+\)/.test(gubun)) {
-          ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF' };
-        } else {
-          ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
-        }
+      const ret = {};
+      const isGubunCol = dataCell.dataColumn.name === 'gubun';
+
+      // 안전하게 gubun 값 획득
+      let gubun;
+      if (isGubunCol) {
+      gubun = dataCell.value ?? '';
+      } else {
+      const dataProvider = this.$refs.sga2Grid.getGridDataProvider();
+      gubun = (dataProvider.getValue(dataCell.index.dataRow, 'gubun') ?? '');
       }
-      else{
-        var dataProvider= this.$refs.sga2Grid.getGridDataProvider()
-        var gubun= dataProvider.getValue(dataCell.index.dataRow,"gubun");
-        if(gubun.substr(4,3)=='판관비'){
-          ret.style = { fontWeight: 'bold', background: '#BFBFBF' };
-          ret.numberFormat= '#,##0.00';
-          ret.suffix= "%";
-        }
+
+      // 길이 체크 포함한 판관비 판별
+      const isSgapan = gubun.length >= 7 && gubun.substr(4, 3) === '판관비';
+      const isParentHead = /^\s*\(\d+\)/.test(gubun);
+
+      // 공통 스타일 결정
+      if (isSgapan||isParentHead) {
+      ret.style = { fontWeight: 'bold', background: '#BFBFBF', whiteSpace: 'pre' };
+      } else {
+      ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
       }
+
+      // 숫자 포맷은 gubun 컬럼 외에만 적용
+      if (!isGubunCol && isSgapan) {
+      ret.numberFormat = '#,##0.##';
+      }
+
       return ret;
     },
     setRowStyleCallbackSga2Grid(grid, item, fixed) {
