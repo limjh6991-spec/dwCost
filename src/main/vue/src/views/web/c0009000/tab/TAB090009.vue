@@ -193,23 +193,37 @@ export default {
     },
     setCellStyleCallbackSga2Grid(grid, dataCell) {
       var ret = {};
-      if (dataCell.dataColumn.name != 'gubun') {
-        return ret;
+      if(dataCell.dataColumn.name == 'gubun'){
+        var gubun = dataCell.value;
+  
+        if(gubun.substr(4,3)==='판관비'){
+          ret.style = { fontWeight: 'bold', background: '#BFBFBF', whiteSpace: 'pre' };
+        }
+        else if (/^\s*\(\d+\)/.test(gubun)) {
+          ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF' };
+        } else {
+          ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
+        }
       }
-      var gubun = dataCell.value;
-      // 헤더 라벨 판별: 앞에 '(숫자)' 패턴이 오는 경우 헤더로 처리
-      if (/^\s*\(\d+\)/.test(gubun)) {
-        ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF' };
-      } else {
-        ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
+      else{
+        var dataProvider= this.$refs.sga2Grid.getGridDataProvider()
+        var gubun= dataProvider.getValue(dataCell.index.dataRow,"gubun");
+        if(gubun.substr(4,3)=='판관비'){
+          ret.style = { fontWeight: 'bold', background: '#BFBFBF' };
+          ret.numberFormat= '#,##0.00';
+          ret.suffix= "%";
+        }
       }
       return ret;
     },
     setRowStyleCallbackSga2Grid(grid, item, fixed) {
       var ret = {};
-      var gubun = grid.getValue(item.index, 'gubun');
-      // 헤더 라벨 판별: 앞에 '(숫자)' 패턴이 오는 경우 헤더로 처리
-      if (/^\s*\(\d+\)/.test(gubun)) {
+      var gubun = grid.getValue(item.index, 'gubun'); 
+
+      if(gubun.substr(4,3)==='판관비'){
+        ret.style = { fontWeight: 'bold', background: '#BFBFBF' };
+      }
+      else if (/^\s*\(\d+\)/.test(gubun)) {
         ret.style = { background: '#BFBFBF' };
       }
       return ret;
