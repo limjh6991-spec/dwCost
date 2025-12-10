@@ -113,8 +113,8 @@ export default {
       gv.setColumnLayout(this.prodCogsGrid.columnLayout);
     }
 
-    gv.setRowStyleCallback((grid, item) => {
-      const row = item.dataRow ?? item.index;
+    gv.setRowStyleCallback((grid, item, fixed) => {
+      const row = item.dataRow;
       if (row == null || row < 0) return null;
 
       const rowType = (grid.getValue(row, 'rowType') || '').toString();
@@ -122,15 +122,19 @@ export default {
 
       if (rowType === 'SUBTOTAL') {
         return {
-          background: '#f5f7ff',
-          fontBold: true,
+          style: {
+            background: '#f5f7ff',
+            fontWeight: 'bold',
+          },
         };
       }
 
       if (rowType === 'TOTAL') {
         return {
-          background: '#fff3cd',
-          fontBold: true,
+          style: {
+            background: '#fff3cd',
+            fontWeight: 'bold',
+          },
         };
       }
 
