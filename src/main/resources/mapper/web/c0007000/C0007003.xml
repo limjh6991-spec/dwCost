@@ -16,7 +16,7 @@
 			and yyyymm = #{yyyymm}
 		</if>
 		<if test="site != null and site != ''">
-			and DW_SITE = #{site}
+			and SITE = #{site}
 		</if>
 		order BY 도우코드,도우모델,구분_ord;
 	</select>
