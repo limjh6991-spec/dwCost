@@ -340,4 +340,8 @@
         EXEC DOI_ProductCOGS @YYYY=#{yyyy}, @SITE=#{site};
     </select>
 
+    <select id="C0009007_Tab090006" resultType="CamelMap">
+        EXEC DOI_ManufacturingCostOfWIP @YYYY=#{yyyy}, @SITE=#{site};
+    </select>
+
 </mapper>

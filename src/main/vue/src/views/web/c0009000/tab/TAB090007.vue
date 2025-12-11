@@ -216,7 +216,7 @@ export default {
         'eohQty','eohAmt',
         'inMatQty','inMatAmt',
         'inEtcQty','inEtcAmt',
-        'inRmaQty','inRmaAmt',
+        'rmaInQty','rmaInAmt',
         'outGoodQty','outGoodAmt',
         'outEtcQty','outEtcAmt',
       ];
