@@ -205,9 +205,16 @@ import st002Grid from '@web/c0007000/js/C0007010_ST002.js';
 import st003Grid from '@web/c0007000/js/C0007010_ST003.js';
 import st004Grid from '@web/c0007000/js/C0007010_ST004.js';
 import st005Grid from '@web/c0007000/js/C0007010_ST005.js';
+import { useC0001001 } from '@web/store/C0001001.js';
 export default {
   name: 'C0007006',
   components: {},
+  setup() {
+    const srchInfo = useC0001001();
+    return {
+      srchInfo,
+    };
+  },
   data() {
     return {
       activeTab: 0,
@@ -253,6 +260,20 @@ export default {
       },
     };
   },
+  watch: {
+    'params.yyyymm': function (newVal) {
+      if (newVal) {
+        this.onDateChange();
+      }
+    },
+    'srchInfo.yyyymm': {
+      handler(newVal) {
+        if (newVal) {
+          this.params.yyyymm = newVal;
+        }
+      },
+    },
+  },
   computed: {
     st001GridView() {
       return this.$refs.st001Grid?.getGridView();
@@ -277,6 +298,9 @@ export default {
   mounted() {},
   beforeUnmount() {},
   methods: {
+    onDateChange() {
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
+    },
     async getDataList() {
       try {
         let yyyymm = this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null;

@@ -29,6 +29,8 @@ const grid = {
     { fieldName: 'acctName', dataType: ValueType.TEXT },
     // { fieldName: 'itemName', dataType: ValueType.TEXT },
     { fieldName: 'acctAmt', dataType: ValueType.NUMBER },
+    { fieldName: 'dbtAmt', dataType: ValueType.NUMBER },
+    { fieldName: 'crtAmt', dataType: ValueType.NUMBER },
     { fieldName: 'expenSel', dataType: ValueType.TEXT },
     { fieldName: 'expenSel명', dataType: ValueType.TEXT },
   ],
@@ -46,6 +48,8 @@ const grid = {
     { name: 'expenSel명', fieldName: 'expenSel명', width: '80', header: { text: '원가항목명' }, autoFilter: true, styleName: 'tl' },
     // { name: 'itemName', fieldName: 'itemName', width: '80', header: { text: '세목목코드' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
     { name: 'acctAmt', fieldName: 'acctAmt', width: '80', header: { text: '금액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'dbtAmt', fieldName: 'dbtAmt', width: '80', header: { text: '차변금액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'crtAmt', fieldName: 'crtAmt', width: '80', header: { text: '대변금액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };
 

@@ -13,7 +13,9 @@
             a.EXPEN_SEL명,
             a.ACCT_NAME,
             a.ITEM_NAME,
-            sum(a.ACCT_AMT) ACCT_AMT
+            sum(a.ACCT_AMT) ACCT_AMT,
+            sum(a.DBT_AMT) as DBT_AMT,
+            sum(a.CRT_AMT) as CRT_AMT
         from doi_acct_expen a
         left join (select distinct dept,dept_name from doi_dept where yyyymm=#{yyyymm} and site = #{site}) b on (b.dept=a.dept)
         where 1=1
@@ -60,7 +62,7 @@
 			CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end,
             '재료비',
             CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end,
-			sum(IN_AMT) 금액
+			sum(IN_AMT) 금액,sum(IN_AMT) CBT_AMT,0
 		from
 			doi_material_resc
         where 1=1
@@ -132,10 +134,10 @@
 	        b.DEPT_NAME,
 	        EXPEN_SEL,
 	        EXPEN_SEL명,
-	        SUB_NAME,
+	        ACCT_NAME,
 	        ITEM_NAME,
 	        SUM(ACCT_AMT) ACCT_AMT
-	        from DOI_ACCT_EXPEN a inner join doi_dept b on(a.dept=b.dept)
+	        from DOI_ACCT_EXPEN a inner join doi_dept b on(a.YYYYMM =b.yyyymm and a.site=b.site and a.dept=b.dept)
 	        where 1=1
 	        <if test="yyyymm != null and yyyymm != ''">
 	            and a.YYYYMM = #{yyyymm}
@@ -146,11 +148,14 @@
 	        <if test="expenSel != null and expenSel != ''">
 	            and a.EXPEN_SEL = #{expenSel}
 	  	    </if>
+	        <if test="acctName != null and acctName != ''">
+	            and a.ACCT_NAME = #{acctName}
+	  	    </if>
 	        group by a.YYYYMM,
 	        a.SEL_CODE,
 	        CASE WHEN a.SITE='HQ' then '본사' WHEN a.site='VN' then 'VINA' else a.SITE end,
 	        CASE WHEN a.ACCT_CLASS='AA' then '가공비' WHEN a.ACCT_CLASS='CC' then '판매관리비' WHEN a.ACCT_CLASS='BB' then '개발비' else a.ACCT_CLASS end,
-	        b.DEPT_NAME,SUB_NAME,ITEM_NAME,EXPEN_SEL,EXPEN_SEL명
+	        b.DEPT_NAME,ACCT_NAME,ITEM_NAME,EXPEN_SEL,EXPEN_SEL명
 	        order by EXPEN_SEL;
 	    </if>
 	    <if test="expenSel == 'MDAX' or expenSel == 'MIAX'">
@@ -625,7 +630,7 @@
         A.EOH,
         COALESCE(B.RMA_OUT,0) as RMA_OUT 
         from doi_stock a 
-        left join doi_rma_inout b ON(A.YYYYMM=B.YYYYMM and A.SITE=B.SITE and a.MODEL_TYPE=b.모델명)
+        left join doi_rma_inout b ON(A.YYYYMM=B.YYYYMM and A.SITE=B.SITE and a.MODEL_TYPE=b.도우코드)
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
             and a.YYYYMM = #{yyyymm}
@@ -748,24 +753,21 @@
     
     <select id="C0008015_Sch1" resultType="CamelMap">
     select
-		YYYYMM,
-		sel_code,
-		CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' end AS SITE,
 		구분,
 		model,
 		면적,
         DIST_IN AS DIST_VALUE,
 		dist_rate,
 		SUB_NAME,
-		ITEM_NAME,
 		EXPEN_SEL,
 		EXPEN_SEL명,
 		adj_qty,
 		in_qty,
 		out_qty,
 		loss_qty,
-		unit_cost,
-		[in] as input_Amt
+--		unit_cost,
+		max(disp_seq) as disp_seq,
+		sum([in]) as input_Amt
 	from
 		doi_expen_matl
         where 1=1
@@ -776,7 +778,19 @@
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
-        order by YYYYMM,SEL_CODE,SITE,MODEL,DISP_SEQ,EXPEN_SEL;
+        group by 구분,
+		model,
+		면적,
+        DIST_IN,
+		dist_rate,
+		SUB_NAME,
+		EXPEN_SEL,
+		EXPEN_SEL명,
+		adj_qty,
+		in_qty,
+		out_qty,
+		loss_qty    
+        order by 구분,MODEL,DISP_SEQ,EXPEN_SEL;
     </select>
 
     <select id="C0008013_Sch1" resultType="CamelMap">

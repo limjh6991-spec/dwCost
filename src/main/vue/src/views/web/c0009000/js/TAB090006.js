@@ -19,6 +19,7 @@ const tab090006GridField = {
       headerDepth: 2,
      },
     footer: { visible: false },
+    filtering: { enabled: true },
     // fixed: { colBarWidth: 1, colCount: 4 },
   },
   fields: [
@@ -51,7 +52,7 @@ const tab090006GridField = {
     { column: '모델' },
     { column: 'inch' },
     { column: '판매처' },
-    { column: '월' },
+    { column: '월'},
     {
       name: 'grpBOH',
       header: { text: '기초재공품재고(BOH)' },
@@ -159,7 +160,7 @@ const tab090006GridField = {
     } 
   },
   { name: 'rowType', fieldName: 'rowType', visible: false },
-  { name: '월', fieldName: '월', width: 60, header: { text: '' }, styleName: 'tc' },
+  { name: '월', fieldName: '월', width: 60, header: { text: '' }, autoFilter: true, styleName: 'tc' },
   { name: 'bohQty', fieldName: 'bohQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'bohAmt', fieldName: 'bohAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'inQty', fieldName: 'inQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },

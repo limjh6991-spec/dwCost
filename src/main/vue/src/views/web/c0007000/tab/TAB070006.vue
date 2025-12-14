@@ -130,13 +130,17 @@
 
 <script>
 import gridField from '@web/c0007000/js/C0007007.js';
+import { useC0001001 } from '@web/store/C0001001.js';
 import gridField2 from '@web/c0007000/js/C0007007_Tab2.js';
 
 export default {
   name: 'C0007006',
   components: {},
   setup() {
-    return {};
+    const srchInfo = useC0001001();
+    return {
+      srchInfo,
+    };
   },
   data() {
     return {
@@ -170,6 +174,20 @@ export default {
       },
     };
   },
+  watch: {
+    'params.yyyymm': function (newVal) {
+      if (newVal) {
+        this.onDateChange();
+      }
+    },
+    'srchInfo.yyyymm': {
+      handler(newVal) {
+        if (newVal) {
+          this.params.yyyymm = newVal;
+        }
+      },
+    },
+  },
   computed: {
     gridView() {
       return this.$refs.dataGrid?.getGridView();
@@ -189,12 +207,17 @@ export default {
     this.params.yyyymm = `${now.getFullYear()}-${("0" + (now.getMonth() + 1)).slice(-2)}`;
     this.initializeGrid();
   },
-  mounted() {},
+  mounted() {
+    this.params.yyyymm = this.srchInfo.yyyymm;
+  },
   beforeUnmount() {},
   methods: {
     initializeGrid() {
       this.dataGrid = _.cloneDeep(gridField);
       this.dataGrid2 = _.cloneDeep(gridField2);
+    },
+    onDateChange() {
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     async getDataList() {
       this.gridView.commit();

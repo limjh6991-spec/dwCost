@@ -25,7 +25,6 @@ const grid = {
     { fieldName: '구분', dataType: ValueType.TEXT },
     { fieldName: '구분Ord', dataType: ValueType.TEXT },
     { fieldName: '도우코드', dataType: ValueType.TEXT },
-    { fieldName: 'modelNType', dataType: ValueType.TEXT },
     { fieldName: '도우모델', dataType: ValueType.TEXT },
     { fieldName: '작업구분', dataType: ValueType.TEXT },
     { fieldName: 'org작업구분', dataType: ValueType.TEXT },
@@ -130,26 +129,26 @@ const grid = {
         return ret;
       },
     },
-    {
-      name: 'modelNType',
-      fieldName: 'modelNType',
-      width: '120',
-      header: { text: 'MODEL_N_TYPE' },
-      autoFilter: true,
-      editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-        return ret;
-      },
-    },
+    // {
+    //   name: 'modelNType',
+    //   fieldName: 'modelNType',
+    //   width: '120',
+    //   header: { text: 'MODEL_N_TYPE' },
+    //   autoFilter: true,
+    //   editable: false,
+    //   styleName: 'tl',
+    //   styleCallback: function (grid, dataCell) {
+    //     var ret = {};
+    //     if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
+    //       ret.editable = true;
+    //       ret.styleName = 'edit tl';
+    //     } else {
+    //       ret.editable = false;
+    //       ret.styleName = 'tl';
+    //     }
+    //     return ret;
+    //   },
+    // },
     { name: '도우모델', fieldName: '도우모델', width: '120', header: { text: '도우모델' }, autoFilter: true, editable: true, styleName: 'edit tl' },
     { name: '작업구분', fieldName: '작업구분', width: '120', header: { text: '작업구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },
     { name: 'org작업구분', fieldName: 'org작업구분', width: '150', header: { text: 'ORG작업구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },

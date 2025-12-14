@@ -131,6 +131,7 @@
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
+import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007006.js';
 import gridField2 from '@web/c0007000/js/C0007006_Tab2.js';
 
@@ -138,8 +139,12 @@ export default {
   name: 'C0007006',
   components: {},
   setup() {
+    const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { userAuthInfo };
+    return {
+      srchInfo,
+      userAuthInfo,
+    };
   },
   data() {
     return {
@@ -189,6 +194,18 @@ export default {
         }
       },
     },
+    'params.yyyymm': function (newVal) {
+      if (newVal) {
+        this.onDateChange();
+      }
+    },
+    'srchInfo.yyyymm': {
+      handler(newVal) {
+        if (newVal) {
+          this.params.yyyymm = newVal;
+        }
+      },
+    },
   },
   computed: {
     gridView() {
@@ -213,6 +230,7 @@ export default {
     this.initializeGrid();
   },
   mounted() {
+    this.params.yyyymm = this.srchInfo.yyyymm;
     this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
   },
   beforeUnmount() {},
@@ -220,6 +238,9 @@ export default {
     initializeGrid() {
       this.dataGrid = _.cloneDeep(gridField);
       this.dataGrid2 = _.cloneDeep(gridField2);
+    },
+    onDateChange() {
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     async getDataList() {
       this.gridView.commit();
