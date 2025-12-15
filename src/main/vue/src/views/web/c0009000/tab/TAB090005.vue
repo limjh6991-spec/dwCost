@@ -184,6 +184,7 @@ export default {
         target: 'local',
         fileName: fileName,
         progressMessage: '엑셀 Export중입니다.',
+        applyDynamicStyles: true,
         done: function () {
           alert('엑셀 내보내기가 완료되었습니다!');
         },
@@ -196,8 +197,8 @@ export default {
       if (dataCell.dataColumn.name != 'gubun') {
         return ret;
       }
-      var gubun = dataCell.value;
-      if (this.$utils.containsValue(['  I. 재료비', '  II. 노무비', '  III. 경비', '  IV. 당기총제조원가'], gubun)) {
+      var gubun = dataCell.value.trim();
+      if (/^(IX|IV|V?I{0,3})\./.test(gubun)) {
         ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF' };
       } else {
         ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
@@ -206,8 +207,8 @@ export default {
     },
     setRowStyleCallbackT2Grid(grid, item, fixed) {
       var ret = {};
-      var gubun = grid.getValue(item.index, 'gubun');
-      if (this.$utils.containsValue(['  I. 재료비', '  II. 노무비', '  III. 경비', '  IV. 당기총제조원가'], gubun)) {
+      var gubun = grid.getValue(item.index, 'gubun').trim();
+      if (/^(IX|IV|V?I{0,3})\./.test(gubun)) {
         ret.style = { background: '#BFBFBF' };
       }
       return ret;
