@@ -8,6 +8,7 @@ const commonMergeCriteria = "values['mergeKey']";
 
 const tab090007GridField = {
   options: {
+    checkBar: { visible: false },      
     edit: { editable: false },
     display: {
       columnMovable: false, 
@@ -18,7 +19,13 @@ const tab090007GridField = {
       showEmptyMessage: true,
       headerDepth: 3,
      },
+    edit: { editable: false },
     footer: { visible: false },
+    paste: { enabled: false },
+    rowIndicator: { visible: true },
+    sorting: { enabled: true },
+    stateBar: { visible: false },
+    filtering: { enabled: true },
     // fixed: { colBarWidth: 1, colCount: 4 },
   },
   fields: [

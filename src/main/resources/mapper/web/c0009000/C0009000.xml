@@ -344,4 +344,88 @@
         EXEC DOI_ManufacturingCostOfWIP @YYYY=#{yyyy}, @SITE=#{site};
     </select>
 
+    <select id="C0009009_Sch1" resultType="CamelMap">
+        EXEC DOI_PL_ByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
+
+    <select id="C0009009_Col" resultType="CamelMap">
+    SELECT TOP 500
+        X.model,
+        X.gubun
+    FROM (
+        SELECT DISTINCT
+            H.model,
+            H.gubun,
+            CASE WHEN H.gubun = N'양산' THEN 1 ELSE 2 END AS sortKey
+        FROM (
+            SELECT
+                LTRIM(RTRIM(품명)) AS model,
+                CASE WHEN RIGHT(LTRIM(RTRIM(품번)), 1) = 'D'
+                    THEN N'개발' ELSE N'양산' END AS gubun
+            FROM doi_sale_resc
+            WHERE 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                AND yyyymm = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                AND site = #{site}
+            </if>
+
+            UNION ALL
+
+            SELECT
+                LTRIM(RTRIM(품명)) AS model,
+                CASE WHEN RIGHT(LTRIM(RTRIM(품번)), 1) = 'D'
+                    THEN N'개발' ELSE N'양산' END AS gubun
+            FROM doi_invoice_resc
+            WHERE 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                AND yyyymm = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                AND site = #{site}
+            </if>
+        ) H
+        WHERE ISNULL(H.model,'') != ''
+    ) X
+    ORDER BY X.sortKey, X.model
+    </select>
+
+    <select id="C0009009_Qty" resultType="CamelMap">
+        SELECT
+            구분,
+            model,
+            SUM(qty) AS qty
+        FROM (
+            SELECT
+                IIF(RIGHT(품번,1)='D', N'개발', N'양산') AS 구분,
+                품명 AS model,
+                ISNULL(수량,0) AS qty
+            FROM doi_sale_resc
+            WHERE 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                AND yyyymm = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                AND site = #{site}
+            </if>
+
+            UNION ALL
+
+            SELECT
+                IIF(RIGHT(품번,1)='D', N'개발', N'양산') AS 구분,
+                품명 AS model,
+                ISNULL(수량,0) AS qty
+            FROM doi_invoice_resc
+            WHERE 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+                AND yyyymm = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                AND site = #{site}
+            </if>
+        ) A
+        GROUP BY 구분, model
+        ORDER BY 구분 DESC, model
+    </select>
 </mapper>
