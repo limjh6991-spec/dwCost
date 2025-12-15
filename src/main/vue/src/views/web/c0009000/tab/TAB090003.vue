@@ -1,4 +1,4 @@
-/** * TAB090003 - 년간 전체 실적 집계 */
+/** * 생산실적 > 년간 전체 실적 집계 */
 <template>
   <div>
     <div class="search_box">
@@ -44,9 +44,9 @@ export default {
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { 
+    return {
       srchInfo,
-      userAuthInfo 
+      userAuthInfo,
     };
   },
   data() {
@@ -66,7 +66,7 @@ export default {
     };
   },
   watch: {
-    'params.yyyy': function(newVal) {
+    'params.yyyy': function (newVal) {
       if (newVal) {
         this.onDateChange();
       }
@@ -76,10 +76,9 @@ export default {
         if (newVal && !this.params.yyyy) {
           // YYYYMM에서 YYYY만 추출
           this.params.yyyy = newVal.substring(0, 4);
-          console.log('[Tab090003] yyyy 변경:', this.params.yyyy);
         }
-      }
-     },
+      },
+    },
     prodCtg: {
       handler(newVal) {
         if (newVal) {
@@ -129,6 +128,123 @@ export default {
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
 
+      const gridField1 = _.cloneDeep(require(`@web/c0009000/js/TAB090003.js`));
+      const yy = this.params.yyyy.substring(2, 4) + '년';
+
+      var headerSummaryCallback = [
+        {
+          valueCallback: function (grid, column, childIndex, summary, value) {
+            var sum = 0;
+            let dataProvider = grid.getDataSource();
+            for (var i = 0; i < dataProvider.getRowCount(); i++) {
+              if (dataProvider.getValue(i, 'gubun') == '기초(BOH)') {
+                sum += dataProvider.getValue(i, summary.column.fieldName);
+              }
+            }
+            return sum;
+          },
+          numberFormat: '#,##0.##',
+        },
+        {
+          valueCallback: function (grid, column, childIndex, summary, value) {
+            var sum = 0;
+            let dataProvider = grid.getDataSource();
+            for (var i = 0; i < dataProvider.getRowCount(); i++) {
+              if (dataProvider.getValue(i, 'gubun') == '투입(IN)') {
+                sum += dataProvider.getValue(i, summary.column.fieldName);
+              }
+            }
+            return sum;
+          },
+          numberFormat: '#,##0.##',
+        },
+        {
+          valueCallback: function (grid, column, childIndex, summary, value) {
+            var sum = 0;
+            let dataProvider = grid.getDataSource();
+            for (var i = 0; i < dataProvider.getRowCount(); i++) {
+              if (dataProvider.getValue(i, 'gubun') == '출고(OUT)') {
+                sum += dataProvider.getValue(i, summary.column.fieldName);
+              }
+            }
+            return sum;
+          },
+          numberFormat: '#,##0.##',
+        },
+        {
+          valueCallback: function (grid, column, childIndex, summary, value) {
+            var sum = 0;
+            let dataProvider = grid.getDataSource();
+            for (var i = 0; i < dataProvider.getRowCount(); i++) {
+              if (dataProvider.getValue(i, 'gubun') == '재고(EOH)') {
+                sum += dataProvider.getValue(i, summary.column.fieldName);
+              }
+            }
+            return sum;
+          },
+          numberFormat: '#,##0.##',
+        },
+        {
+          valueCallback: function (grid, column, childIndex, summary, value) {
+            var sum = 0;
+            let dataProvider = grid.getDataSource();
+            for (var i = 0; i < dataProvider.getRowCount(); i++) {
+              if (dataProvider.getValue(i, 'gubun') == '기타(LOSS)') {
+                sum += dataProvider.getValue(i, summary.column.fieldName);
+              }
+            }
+            return sum;
+          },
+          numberFormat: '#,##0.##',
+        },
+        {
+          valueCallback: function (grid, column, childIndex, summary, value) {
+            var sum1 = 0;
+            var sum2 = 0;
+            var sum3 = 0;
+            let dataProvider = grid.getDataSource();
+            for (var i = 0; i < dataProvider.getRowCount(); i++) {
+              if (dataProvider.getValue(i, 'gubun') == '기초(BOH)') {
+                sum1 += dataProvider.getValue(i, summary.column.fieldName);
+              }
+              if (dataProvider.getValue(i, 'gubun') == '투입(IN)') {
+                sum2 += dataProvider.getValue(i, summary.column.fieldName);
+              }
+              if (dataProvider.getValue(i, 'gubun') == '기타(LOSS)') {
+                sum3 += dataProvider.getValue(i, summary.column.fieldName);
+              }
+            }
+            return sum3 == 0 ? 0 : ((sum1 + sum2) / sum3).toFixed(2);
+          },
+          numberFormat: '#,##0.##',
+        },
+      ];
+
+      gridField1.fields.push({
+        fieldName: yy,
+        valueType: 'number',
+        dataType: 'number',
+      });
+
+      gridField1.columns.push({
+        name: yy,
+        fieldName: yy,
+        width: 80,
+        header: {
+          text: yy + '누계',
+        },
+        autoFilter: false,
+        numberFormat: '#,##0.##',
+        styleName: 'tr',
+        headerSummary: headerSummaryCallback,
+      });
+
+      gridField1.layout.push(yy);
+
+      this.gridDataProvider.setFields(gridField1.fields);
+      this.gridView.setColumns(gridField1.columns);
+      this.gridView.setColumnLayout(gridField1.layout);
+
       let param = {
         menuId: 'c0009000',
         queryId: 'C0009001_Tab090003',
@@ -136,6 +252,12 @@ export default {
         target: this.prodSubulGridRows,
       };
       let resp = await this.$axios.api.search(param);
+
+      if (this.gridDataProvider.getRowCount() > 0) {
+        this.gridView.setHeaderSummaries({ visible: true });
+      } else {
+        this.gridView.setHeaderSummaries({ visible: false });
+      }
     },
     searchClick() {
       this.getDataList();
@@ -149,13 +271,14 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `생산실적_년간실적_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `생산실적_년간전체실적집계_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
         target: 'local',
         fileName: fileName,
         progressMessage: '엑셀 Export중입니다.',
+        applyDynamicStyles: true,
         done: function () {
           alert('엑셀 내보내기가 완료되었습니다!');
         },

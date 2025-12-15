@@ -1,236 +1,186 @@
-/**
- * Tab090003 - 년간 전체 실적 집계
- * RealGrid Definition - 12개월 컬럼 표시
- */
+/** * 생산실적 > 년간 전체 실적 집계 */
+const { ValueType } = require('realgrid');
 
-const tab090003GridField = {
+var headerSummaryCallback = [
+  {
+    valueCallback: function (grid, column, childIndex, summary, value) {
+      var sum = 0;
+      let dataProvider = grid.getDataSource();
+      for (var i = 0; i < dataProvider.getRowCount(); i++) {
+        if (dataProvider.getValue(i, 'gubun') == '기초(BOH)') {
+          sum += dataProvider.getValue(i, summary.column.fieldName);
+        }
+      }
+      return sum;
+    },
+    numberFormat: '#,##0.##',
+  },
+  {
+    valueCallback: function (grid, column, childIndex, summary, value) {
+      var sum = 0;
+      let dataProvider = grid.getDataSource();
+      for (var i = 0; i < dataProvider.getRowCount(); i++) {
+        if (dataProvider.getValue(i, 'gubun') == '투입(IN)') {
+          sum += dataProvider.getValue(i, summary.column.fieldName);
+        }
+      }
+      return sum;
+    },
+    numberFormat: '#,##0.##',
+  },
+  {
+    valueCallback: function (grid, column, childIndex, summary, value) {
+      var sum = 0;
+      let dataProvider = grid.getDataSource();
+      for (var i = 0; i < dataProvider.getRowCount(); i++) {
+        if (dataProvider.getValue(i, 'gubun') == '출고(OUT)') {
+          sum += dataProvider.getValue(i, summary.column.fieldName);
+        }
+      }
+      return sum;
+    },
+    numberFormat: '#,##0.##',
+  },
+  {
+    valueCallback: function (grid, column, childIndex, summary, value) {
+      var sum = 0;
+      let dataProvider = grid.getDataSource();
+      for (var i = 0; i < dataProvider.getRowCount(); i++) {
+        if (dataProvider.getValue(i, 'gubun') == '재고(EOH)') {
+          sum += dataProvider.getValue(i, summary.column.fieldName);
+        }
+      }
+      return sum;
+    },
+    numberFormat: '#,##0.##',
+  },
+  {
+    valueCallback: function (grid, column, childIndex, summary, value) {
+      var sum = 0;
+      let dataProvider = grid.getDataSource();
+      for (var i = 0; i < dataProvider.getRowCount(); i++) {
+        if (dataProvider.getValue(i, 'gubun') == '기타(LOSS)') {
+          sum += dataProvider.getValue(i, summary.column.fieldName);
+        }
+      }
+      return sum;
+    },
+    numberFormat: '#,##0.##',
+  },
+  {
+    valueCallback: function (grid, column, childIndex, summary, value) {
+      var sum1 = 0;
+      var sum2 = 0;
+      var sum3 = 0;
+      let dataProvider = grid.getDataSource();
+      for (var i = 0; i < dataProvider.getRowCount(); i++) {
+        if (dataProvider.getValue(i, 'gubun') == '기초(BOH)') {
+          sum1 += dataProvider.getValue(i, summary.column.fieldName);
+        }
+        if (dataProvider.getValue(i, 'gubun') == '투입(IN)') {
+          sum2 += dataProvider.getValue(i, summary.column.fieldName);
+        }
+        if (dataProvider.getValue(i, 'gubun') == '기타(LOSS)') {
+          sum3 += dataProvider.getValue(i, summary.column.fieldName);
+        }
+      }
+      return sum3 == 0 ? 0 : ((sum1 + sum2) / sum3).toFixed(2);
+    },
+    numberFormat: '#,##0.##',
+  },
+];
+
+const grid = {
+  options: {
+    checkBar: { visible: false },
+    copy: { enabled: true, singleMode: true },
+    display: { columnMovable: false, editItemMerging: true, fitStyle: 'even', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
+    edit: { editable: false },
+    footer: { visible: false },
+    paste: { enabled: false },
+    rowIndicator: { visible: true },
+    sorting: { enabled: true },
+    stateBar: { visible: false },
+    filtering: { enabled: true },
+    headerSummaries: {
+      visible: false,
+      items: [{ height: 25 }, { height: 25 }, { height: 25 }, { height: 25 }, { height: 25 }, { height: 25 } /*,{ height: 25 }*/],
+    },
+  },
   fields: [
-    { fieldName: '구분', dataType: 'text' },
-    { fieldName: '코드', dataType: 'text' },
-    { fieldName: 'inch', dataType: 'text' },
-    { fieldName: 'site', dataType: 'text' },
-    { fieldName: 'm01', dataType: 'number' },
-    { fieldName: 'm02', dataType: 'number' },
-    { fieldName: 'm03', dataType: 'number' },
-    { fieldName: 'm04', dataType: 'number' },
-    { fieldName: 'm05', dataType: 'number' },
-    { fieldName: 'm06', dataType: 'number' },
-    { fieldName: 'm07', dataType: 'number' },
-    { fieldName: 'm08', dataType: 'number' },
-    { fieldName: 'm09', dataType: 'number' },
-    { fieldName: 'm10', dataType: 'number' },
-    { fieldName: 'm11', dataType: 'number' },
-    { fieldName: 'm12', dataType: 'number' },
-    { fieldName: 'total', dataType: 'number' },
+    { fieldName: 'model', dataType: ValueType.TEXT },
+    { fieldName: '구분', dataType: ValueType.TEXT },
+    { fieldName: 'dwSite', dataType: ValueType.TEXT },
+    { fieldName: '도우모델', dataType: ValueType.TEXT },
+    { fieldName: 'inch', dataType: ValueType.TEXT },
+    { fieldName: 'gubun', dataType: ValueType.TEXT },
+    { fieldName: '1월', dataType: ValueType.NUMBER },
+    { fieldName: '2월', dataType: ValueType.NUMBER },
+    { fieldName: '3월', dataType: ValueType.NUMBER },
+    { fieldName: '4월', dataType: ValueType.NUMBER },
+    { fieldName: '5월', dataType: ValueType.NUMBER },
+    { fieldName: '6월', dataType: ValueType.NUMBER },
+    { fieldName: '7월', dataType: ValueType.NUMBER },
+    { fieldName: '8월', dataType: ValueType.NUMBER },
+    { fieldName: '9월', dataType: ValueType.NUMBER },
+    { fieldName: '10월', dataType: ValueType.NUMBER },
+    { fieldName: '11월', dataType: ValueType.NUMBER },
+    { fieldName: '12월', dataType: ValueType.NUMBER },
   ],
   columns: [
+    { name: 'model', fieldName: 'model', width: '80', header: { text: '모델명' }, mergeRule: { criteria: "value['model']+value['구분']+value['dwSite']+value['도우모델']+value['inch']" }, autoFilter: true, styleName: 'tl', headerSummary: [{ text: '총 생산실적', styleName: 'tc' }] },
+    { name: '구분', fieldName: '구분', width: '80', header: { text: '구분' }, mergeRule: { criteria: "value['model']+value['구분']+value['dwSite']+value['도우모델']+value['inch']" }, autoFilter: true, styleName: 'tl' },
+    { name: 'dwSite', fieldName: 'dwSite', width: '80', header: { text: 'SITE' }, mergeRule: { criteria: "value['model']+value['구분']+value['dwSite']+value['도우모델']+value['inch']" }, autoFilter: true, styleName: 'tl' },
+    { name: '도우모델', fieldName: '도우모델', width: '120', header: { text: '자사코드' }, mergeRule: { criteria: "value['model']+value['구분']+value['dwSite']+value['도우모델']+value['inch']" }, autoFilter: true, styleName: 'tl' },
+    { name: 'inch', fieldName: 'inch', width: '80', header: { text: 'Inch' }, mergeRule: { criteria: "value['model']+value['구분']+value['dwSite']+value['도우모델']+value['inch']" }, autoFilter: true, styleName: 'tl' },
     {
-      name: '구분',
-      fieldName: '구분',
-      type: 'data',
-      width: '120',
+      name: 'gubun',
+      fieldName: 'gubun',
+      width: '80',
       header: { text: '구분' },
-      styleName: 'left-column',
+      autoFilter: true,
+      styleName: 'tl',
+      headerSummary: [
+        { text: '기초(BOH)', styleName: 'tl' },
+        { text: '투입(IN)', styleName: 'tl' },
+        { text: '출고(OUT)', styleName: 'tl' },
+        { text: '재고(EOH)', styleName: 'tl' },
+        { text: '기타(LOSS)', styleName: 'tl' },
+        { text: 'LOSS율', styleName: 'tl' } /*, { text: '가동율' }*/,
+      ],
     },
+    { name: '1월', fieldName: '1월', width: '80', header: { text: '1월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
+    { name: '2월', fieldName: '2월', width: '80', header: { text: '2월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
+    { name: '3월', fieldName: '3월', width: '80', header: { text: '3월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
+    { name: '4월', fieldName: '4월', width: '80', header: { text: '4월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
+    { name: '5월', fieldName: '5월', width: '80', header: { text: '5월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
+    { name: '6월', fieldName: '6월', width: '80', header: { text: '6월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
+    { name: '7월', fieldName: '7월', width: '80', header: { text: '7월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
+    { name: '8월', fieldName: '8월', width: '80', header: { text: '8월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
+    { name: '9월', fieldName: '9월', width: '80', header: { text: '9월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
+    { name: '10월', fieldName: '10월', width: '80', header: { text: '10월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
+    { name: '11월', fieldName: '11월', width: '80', header: { text: '11월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
+    { name: '12월', fieldName: '12월', width: '80', header: { text: '12월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
+  ],
+  layout: [
     {
-      name: '코드',
-      fieldName: '코드',
-      type: 'data',
-      width: '100',
-      header: { text: '코드' },
-      styleName: 'center-column',
+      column: 'model',
+      summaryUserSpans: [{ rowspan: 6, colspan: 5 }],
     },
+    '구분',
+    'dwSite',
+    '도우모델',
+    'inch',
+    'gubun',
     {
-      name: 'inch',
-      fieldName: 'inch',
-      type: 'data',
-      width: '80',
-      header: { text: 'Inch' },
-      styleName: 'center-column',
-    },
-    {
-      name: 'site',
-      fieldName: 'site',
-      type: 'data',
-      width: '80',
-      header: { text: 'SITE' },
-      styleName: 'center-column',
-    },
-    {
-      name: 'm01',
-      fieldName: 'm01',
-      type: 'data',
-      width: '90',
-      header: { text: '1월' },
-      styleName: 'right-column',
-      numberFormat: '#,##0',
-      footer: {
-        expression: 'sum',
-        numberFormat: '#,##0',
-      },
-    },
-    {
-      name: 'm02',
-      fieldName: 'm02',
-      type: 'data',
-      width: '90',
-      header: { text: '2월' },
-      styleName: 'right-column',
-      numberFormat: '#,##0',
-      footer: {
-        expression: 'sum',
-        numberFormat: '#,##0',
-      },
-    },
-    {
-      name: 'm03',
-      fieldName: 'm03',
-      type: 'data',
-      width: '90',
-      header: { text: '3월' },
-      styleName: 'right-column',
-      numberFormat: '#,##0',
-      footer: {
-        expression: 'sum',
-        numberFormat: '#,##0',
-      },
-    },
-    {
-      name: 'm04',
-      fieldName: 'm04',
-      type: 'data',
-      width: '90',
-      header: { text: '4월' },
-      styleName: 'right-column',
-      numberFormat: '#,##0',
-      footer: {
-        expression: 'sum',
-        numberFormat: '#,##0',
-      },
-    },
-    {
-      name: 'm05',
-      fieldName: 'm05',
-      type: 'data',
-      width: '90',
-      header: { text: '5월' },
-      styleName: 'right-column',
-      numberFormat: '#,##0',
-      footer: {
-        expression: 'sum',
-        numberFormat: '#,##0',
-      },
-    },
-    {
-      name: 'm06',
-      fieldName: 'm06',
-      type: 'data',
-      width: '90',
-      header: { text: '6월' },
-      styleName: 'right-column',
-      numberFormat: '#,##0',
-      footer: {
-        expression: 'sum',
-        numberFormat: '#,##0',
-      },
-    },
-    {
-      name: 'm07',
-      fieldName: 'm07',
-      type: 'data',
-      width: '90',
-      header: { text: '7월' },
-      styleName: 'right-column',
-      numberFormat: '#,##0',
-      footer: {
-        expression: 'sum',
-        numberFormat: '#,##0',
-      },
-    },
-    {
-      name: 'm08',
-      fieldName: 'm08',
-      type: 'data',
-      width: '90',
-      header: { text: '8월' },
-      styleName: 'right-column',
-      numberFormat: '#,##0',
-      footer: {
-        expression: 'sum',
-        numberFormat: '#,##0',
-      },
-    },
-    {
-      name: 'm09',
-      fieldName: 'm09',
-      type: 'data',
-      width: '90',
-      header: { text: '9월' },
-      styleName: 'right-column',
-      numberFormat: '#,##0',
-      footer: {
-        expression: 'sum',
-        numberFormat: '#,##0',
-      },
-    },
-    {
-      name: 'm10',
-      fieldName: 'm10',
-      type: 'data',
-      width: '90',
-      header: { text: '10월' },
-      styleName: 'right-column',
-      numberFormat: '#,##0',
-      footer: {
-        expression: 'sum',
-        numberFormat: '#,##0',
-      },
-    },
-    {
-      name: 'm11',
-      fieldName: 'm11',
-      type: 'data',
-      width: '90',
-      header: { text: '11월' },
-      styleName: 'right-column',
-      numberFormat: '#,##0',
-      footer: {
-        expression: 'sum',
-        numberFormat: '#,##0',
-      },
-    },
-    {
-      name: 'm12',
-      fieldName: 'm12',
-      type: 'data',
-      width: '90',
-      header: { text: '12월' },
-      styleName: 'right-column',
-      numberFormat: '#,##0',
-      footer: {
-        expression: 'sum',
-        numberFormat: '#,##0',
-      },
-    },
-    {
-      name: 'total',
-      fieldName: 'total',
-      type: 'data',
-      width: '120',
-      header: { text: '합계' },
-      styleName: 'right-column',
-      numberFormat: '#,##0',
-      footer: {
-        expression: 'sum',
-        numberFormat: '#,##0',
+      name: 'monthGroup',
+      direction: 'horizontal',
+      items: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+      header: {
+        text: ' ',
       },
     },
   ],
-  options: {
-    edit: { editable: false },
-    display: { fitStyle: 'evenFill' },
-    footer: { visible: true },
-  },
 };
 
-export default tab090003GridField;
+module.exports = grid;
