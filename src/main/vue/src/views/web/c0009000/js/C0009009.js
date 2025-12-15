@@ -15,6 +15,7 @@ const grid = {
       hscrollBar: true,
       showEmptyMessage: true,
       headerDepth: 2,
+      headerHeight: 40,
     },
     edit: { editable: false },
     footer: { visible: false },

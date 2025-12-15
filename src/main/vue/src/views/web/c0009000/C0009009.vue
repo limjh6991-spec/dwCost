@@ -309,6 +309,9 @@ export default {
 
       this.gridView.setColumnLayout(layout);
 
+      this.gridView.setCellStyleCallback(this.setCellStyleCallbackGrid.bind(this));
+      this.gridView.setRowStyleCallback(this.setRowStyleCallbackGrid.bind(this));
+
       const amountResp = await this.$axios.api.search({
         menuId: 'c0009000',
         queryId: 'C0009009_Sch1',
@@ -361,6 +364,31 @@ export default {
           alert('엑셀 내보내기가 완료되었습니다!');
         },
       });
+    },
+    setCellStyleCallbackGrid(grid, dataCell) {
+      var ret = {};
+      if (dataCell.dataColumn.name != 'gubun') {
+        return ret;
+      }
+      var gubun = dataCell.value;
+      if (this.$utils.containsValue(['  I. 매출액', '  II. 매출원가', '  III. 매출총이익', '  IV. 판매비와관리비', '  IV. 영업이익'], gubun)) {
+        ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF' };
+      } else if (gubun === '매출수량') {
+        ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#fff3cd' };
+      } else {
+        ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
+      }
+      return ret;
+    },
+    setRowStyleCallbackGrid(grid, item, fixed) {
+      var ret = {};
+      var gubun = grid.getValue(item.index, 'gubun');
+      if (this.$utils.containsValue(['  I. 매출액', '  II. 매출원가', '  III. 매출총이익', '  IV. 판매비와관리비', '  IV. 영업이익'], gubun)) {
+        ret.style = { background: '#BFBFBF' };
+      } else if (gubun === '매출수량') {
+        ret.style = { background: '#fff3cd', fontWeight: 'bold' };
+      }
+      return ret;
     },
   },
 };
