@@ -371,7 +371,7 @@ export default {
         return ret;
       }
       var gubun = dataCell.value;
-      if (this.$utils.containsValue(['  I. 매출액', '  II. 매출원가', '  III. 매출총이익', '  IV. 판매비와관리비', '  IV. 영업이익'], gubun)) {
+      if (this.$utils.containsValue(['  I. 매출액', '  II. 매출원가', '  III. 매출총이익', '  IV. 판매비와관리비', '  V. 영업이익'], gubun)) {
         ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF' };
       } else if (gubun === '매출수량') {
         ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#fff3cd' };
@@ -383,7 +383,7 @@ export default {
     setRowStyleCallbackGrid(grid, item, fixed) {
       var ret = {};
       var gubun = grid.getValue(item.index, 'gubun');
-      if (this.$utils.containsValue(['  I. 매출액', '  II. 매출원가', '  III. 매출총이익', '  IV. 판매비와관리비', '  IV. 영업이익'], gubun)) {
+      if (this.$utils.containsValue(['  I. 매출액', '  II. 매출원가', '  III. 매출총이익', '  IV. 판매비와관리비', '  V. 영업이익'], gubun)) {
         ret.style = { background: '#BFBFBF' };
       } else if (gubun === '매출수량') {
         ret.style = { background: '#fff3cd', fontWeight: 'bold' };
