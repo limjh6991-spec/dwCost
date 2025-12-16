@@ -118,7 +118,6 @@ export default {
       this.prodSubulGrid = _.cloneDeep(gridField);
     },
     onDateChange() {
-      // 년도 변경시 별도 처리 불필요
     },
     async getDataList() {
       this.gridView.commit();
@@ -128,122 +127,7 @@ export default {
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
 
-      const gridField1 = _.cloneDeep(require(`@web/c0009000/js/TAB090003.js`));
-      const yy = this.params.yyyy.substring(2, 4) + '년';
-
-      var headerSummaryCallback = [
-        {
-          valueCallback: function (grid, column, childIndex, summary, value) {
-            var sum = 0;
-            let dataProvider = grid.getDataSource();
-            for (var i = 0; i < dataProvider.getRowCount(); i++) {
-              if (dataProvider.getValue(i, 'gubun') == '기초(BOH)') {
-                sum += dataProvider.getValue(i, summary.column.fieldName);
-              }
-            }
-            return sum;
-          },
-          numberFormat: '#,##0.##',
-        },
-        {
-          valueCallback: function (grid, column, childIndex, summary, value) {
-            var sum = 0;
-            let dataProvider = grid.getDataSource();
-            for (var i = 0; i < dataProvider.getRowCount(); i++) {
-              if (dataProvider.getValue(i, 'gubun') == '투입(IN)') {
-                sum += dataProvider.getValue(i, summary.column.fieldName);
-              }
-            }
-            return sum;
-          },
-          numberFormat: '#,##0.##',
-        },
-        {
-          valueCallback: function (grid, column, childIndex, summary, value) {
-            var sum = 0;
-            let dataProvider = grid.getDataSource();
-            for (var i = 0; i < dataProvider.getRowCount(); i++) {
-              if (dataProvider.getValue(i, 'gubun') == '출고(OUT)') {
-                sum += dataProvider.getValue(i, summary.column.fieldName);
-              }
-            }
-            return sum;
-          },
-          numberFormat: '#,##0.##',
-        },
-        {
-          valueCallback: function (grid, column, childIndex, summary, value) {
-            var sum = 0;
-            let dataProvider = grid.getDataSource();
-            for (var i = 0; i < dataProvider.getRowCount(); i++) {
-              if (dataProvider.getValue(i, 'gubun') == '재고(EOH)') {
-                sum += dataProvider.getValue(i, summary.column.fieldName);
-              }
-            }
-            return sum;
-          },
-          numberFormat: '#,##0.##',
-        },
-        {
-          valueCallback: function (grid, column, childIndex, summary, value) {
-            var sum = 0;
-            let dataProvider = grid.getDataSource();
-            for (var i = 0; i < dataProvider.getRowCount(); i++) {
-              if (dataProvider.getValue(i, 'gubun') == '기타(LOSS)') {
-                sum += dataProvider.getValue(i, summary.column.fieldName);
-              }
-            }
-            return sum;
-          },
-          numberFormat: '#,##0.##',
-        },
-        {
-          valueCallback: function (grid, column, childIndex, summary, value) {
-            var sum1 = 0;
-            var sum2 = 0;
-            var sum3 = 0;
-            let dataProvider = grid.getDataSource();
-            for (var i = 0; i < dataProvider.getRowCount(); i++) {
-              if (dataProvider.getValue(i, 'gubun') == '기초(BOH)') {
-                sum1 += dataProvider.getValue(i, summary.column.fieldName);
-              }
-              if (dataProvider.getValue(i, 'gubun') == '투입(IN)') {
-                sum2 += dataProvider.getValue(i, summary.column.fieldName);
-              }
-              if (dataProvider.getValue(i, 'gubun') == '기타(LOSS)') {
-                sum3 += dataProvider.getValue(i, summary.column.fieldName);
-              }
-            }
-            return sum3 == 0 ? 0 : ((sum1 + sum2) / sum3).toFixed(2);
-          },
-          numberFormat: '#,##0.##',
-        },
-      ];
-
-      gridField1.fields.push({
-        fieldName: yy,
-        valueType: 'number',
-        dataType: 'number',
-      });
-
-      gridField1.columns.push({
-        name: yy,
-        fieldName: yy,
-        width: 80,
-        header: {
-          text: yy + '누계',
-        },
-        autoFilter: false,
-        numberFormat: '#,##0.##',
-        styleName: 'tr',
-        headerSummary: headerSummaryCallback,
-      });
-
-      gridField1.layout.push(yy);
-
-      this.gridDataProvider.setFields(gridField1.fields);
-      this.gridView.setColumns(gridField1.columns);
-      this.gridView.setColumnLayout(gridField1.layout);
+      this.gridView.columnByName('합계').header.text = this.params.yyyy?.substring(2, 4) + '년 누계';
 
       let param = {
         menuId: 'c0009000',

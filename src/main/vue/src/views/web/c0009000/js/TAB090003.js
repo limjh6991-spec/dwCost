@@ -126,6 +126,7 @@ const grid = {
     { fieldName: '10월', dataType: ValueType.NUMBER },
     { fieldName: '11월', dataType: ValueType.NUMBER },
     { fieldName: '12월', dataType: ValueType.NUMBER },
+    { fieldName: '합계', dataType: ValueType.NUMBER },
   ],
   columns: [
     { name: 'model', fieldName: 'model', width: '80', header: { text: '모델명' }, mergeRule: { criteria: "value['model']+value['구분']+value['dwSite']+value['도우모델']+value['inch']" }, autoFilter: true, styleName: 'tl', headerSummary: [{ text: '총 생산실적', styleName: 'tc' }] },
@@ -161,6 +162,7 @@ const grid = {
     { name: '10월', fieldName: '10월', width: '80', header: { text: '10월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
     { name: '11월', fieldName: '11월', width: '80', header: { text: '11월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
     { name: '12월', fieldName: '12월', width: '80', header: { text: '12월' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
+    { name: '합계', fieldName: '합계', width: '80', header: { text: '년 누계' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0.##', headerSummary: headerSummaryCallback },
   ],
   layout: [
     {
@@ -180,6 +182,7 @@ const grid = {
         text: ' ',
       },
     },
+    '합계'
   ],
 };
 
