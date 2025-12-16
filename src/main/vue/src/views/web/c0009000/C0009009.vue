@@ -115,116 +115,146 @@ export default {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
 
-    convertModelToFieldId(model) {
-      if (!model) return model;
+    makeProcModelKey(model) {
+      const m = String(model ?? '').trim();
+      if (!m) return '';
 
-      const s = String(model).trim();
+      const cleaned = m.replace(/[^\w\sㄱ-힣]/g, ' ').trim();
+      if (!cleaned) return '';
 
-      const safe = s.replace(/[^\w\sㄱ-힣]/g, '').toLowerCase();
+      const parts = cleaned.split(/\s+/).filter(Boolean);
+      if (!parts.length) return '';
 
-      let result = '';
-      let makeUpper = false;
+      const first = parts[0].toLowerCase();
+      const rest = parts.slice(1).map(p => {
+        const low = p.toLowerCase();
+        return low ? low[0].toUpperCase() + low.slice(1) : '';
+      });
 
-      for (const ch of safe) {
-        if (ch === ' ' || ch === '_') {
-          makeUpper = true;
-          continue;
-        }
-        if (makeUpper) {
-          result += ch.toUpperCase();
-          makeUpper = false;
-        } else {
-          result += ch;
-        }
-      }
-      return result;
+      return first + rest.join('');
     },
 
-    ensureFieldAndColumn(baseGrid, { fieldName, colName, headerText, width = 110 }) {
-      if (!baseGrid.fields.some(f => f.fieldName === fieldName)) {
-        baseGrid.fields.push({ fieldName, dataType: 'number', valueType: 'number' });
+    makeFieldId(pivotKey) {
+      const s = String(pivotKey ?? '').trim();
+      if (!s) return '';
+      return (
+        'COL_' +
+        s
+          .replace(/\s+/g, '_')
+          .replace(/[^\wㄱ-힣]/g, '_')
+      );
+    },
+
+    ensureField(gridDef, fieldName, dataType = 'number') {
+      if (!gridDef.fields) gridDef.fields = [];
+      if (!gridDef.fields.some(f => f.fieldName === fieldName)) {
+        gridDef.fields.push({ fieldName, dataType, valueType: dataType });
       }
-      if (!baseGrid.columns.some(c => c.name === colName)) {
-        baseGrid.columns.push({
-          name: colName,
-          fieldName,
-          width,
-          header: { text: headerText },
-          autoFilter: false,
-          styleName: 'tr',
-          numberFormat: '#,##0',
+    },
+    ensureColumn(gridDef, col) {
+      if (!gridDef.columns) gridDef.columns = [];
+      if (!gridDef.columns.some(c => c.name === col.name)) {
+        gridDef.columns.push(col);
+      }
+    },
+
+    buildDisplayMapFromQty(qtyRows) {
+      const map = {};
+      (qtyRows || []).forEach(r => {
+        const modelRaw = r.model ?? r.MODEL ?? r['MODEL'];
+        const model = String(modelRaw ?? '').trim();
+        if (!model) return;
+
+        const procKey = this.makeProcModelKey(model);
+        if (!procKey) return;
+
+        if (!map[procKey] || String(map[procKey]).length < model.length) {
+          map[procKey] = model;
+        }
+      });
+      return map;
+    },
+
+    formatDisplayModel(model) {
+      const s = String(model ?? '').trim().replace(/\s+/g, ' ');
+      return s.toUpperCase();
+    },
+
+    buildHeaderMetaFromSch1(amountRows, displayMap) {
+      const first = amountRows?.[0];
+      if (!first) return [];
+
+      const ignore = new Set([
+        'rn', 'gubun',
+        'z합계', 'zTotal',
+        '개발z합계개발', 'z합계개발', 'zDevTotal',
+        '양산z합계양산', 'z합계양산', 'zMassTotal',
+      ]);
+
+      return Object.keys(first)
+        .filter(k => !ignore.has(k))
+        .map(pivotKey => {
+          const gubun = pivotKey.startsWith('개발') ? '개발' : '양산';
+          const procModelKey = pivotKey.replace(/^개발|^양산/, '');
+          const raw = displayMap?.[procModelKey] ?? procModelKey;
+          const displayModel = this.formatDisplayModel(raw);
+
+          return {
+            pivotKey,
+            gubun,
+            procModelKey,
+            model: displayModel,
+            fieldId: this.makeFieldId(pivotKey),
+          };
         });
-      }
     },
 
     buildQtyRow(headerMeta, qtyRespRows) {
       const qtyMap = {};
       (qtyRespRows || []).forEach(r => {
+        const gubunRaw = r.구분 ?? r.gubun ?? r['gubun'] ?? r['구분'];
         const modelRaw = r.model ?? r.MODEL ?? r['MODEL'];
-        const key = this.convertModelToFieldId(modelRaw);
-        qtyMap[key] = Number(r.qty || 0);
+
+        const gubun = String(gubunRaw ?? '').trim();
+        const model = String(modelRaw ?? '').trim();
+
+        const procKey = this.makeProcModelKey(model);
+        if (!gubun || !procKey) return;
+
+        const pivotKey = `${gubun}${procKey}`;
+        qtyMap[pivotKey] = Number(r.qty || 0);
       });
 
       const row = { gubun: '매출수량' };
-
       headerMeta.forEach(m => {
-        row[m.fieldId] = qtyMap[m.fieldId] ?? 0;
+        row[m.fieldId] = qtyMap[m.pivotKey] ?? 0;
       });
 
-      const yangsan = headerMeta.filter(x => String(x.gubun).trim() === '양산');
-      const gaebal = headerMeta.filter(x => String(x.gubun).trim() === '개발');
+      const sum = g =>
+        headerMeta
+          .filter(x => x.gubun === g)
+          .reduce((acc, m) => acc + Number(row[m.fieldId] || 0), 0);
 
-      const sum = arr => arr.reduce((acc, m) => acc + Number(row[m.fieldId] || 0), 0);
-
-      row.zMassTotal = sum(yangsan);
-      row.zDevTotal = sum(gaebal);
+      row.zMassTotal = sum('양산');
+      row.zDevTotal = sum('개발');
       row.zTotal = row.zMassTotal + row.zDevTotal;
 
       return row;
     },
 
-    remapAmountRows(rows, headerMeta) {
-      return (rows || []).map(r => {
-        const out = { ...r };
+    remapAmountRows(amountRows, headerMeta) {
+      return (amountRows || []).map(r => {
+        const o = { ...r };
 
         headerMeta.forEach(m => {
-          const rawKey = m.model;
-          out[m.fieldId] = Number(r[rawKey] ?? 0);
+          o[m.fieldId] = Number(r[m.pivotKey] ?? 0);
         });
 
-        out.zTotal = Number(r['Z합계'] ?? r['z합계'] ?? r['zTotal'] ?? 0);
-        out.zDevTotal = Number(r['Z합계개발'] ?? r['z합계개발'] ?? r['zDevTotal'] ?? 0);
-        out.zMassTotal = Number(r['Z합계양산'] ?? r['z합계양산'] ?? r['zMassTotal'] ?? 0);
+        o.zTotal = Number(r['z합계'] ?? r['Z합계'] ?? 0);
+        o.zDevTotal = Number(r['개발z합계개발'] ?? r['Z합계개발'] ?? 0);
+        o.zMassTotal = Number(r['양산z합계양산'] ?? r['Z합계양산'] ?? 0);
 
-        return out;
-      });
-    },
-
-    normalizeAmountRows(rows, headerMeta) {
-      const sumByGroup = (r, arr) =>
-        arr.reduce((acc, m) => acc + Number(r[m.fieldId] || 0), 0);
-
-      const yangsan = headerMeta.filter(x => x.gubun === '양산');
-      const gaebal = headerMeta.filter(x => x.gubun === '개발');
-
-      return (rows || []).map(r => {
-        const out = { ...r };
-
-        out.zTotal = Number(out.zTotal ?? 0);
-        out.zMassTotal = Number(out.zMassTotal ?? 0);
-        out.zDevTotal = Number(out.zDevTotal ?? 0);
-
-        if ((!out.zMassTotal || isNaN(out.zMassTotal)) && yangsan.length) {
-          out.zMassTotal = sumByGroup(out, yangsan);
-        }
-        if ((!out.zDevTotal || isNaN(out.zDevTotal)) && gaebal.length) {
-          out.zDevTotal = sumByGroup(out, gaebal);
-        }
-        if ((!out.zTotal || isNaN(out.zTotal))) {
-          out.zTotal = Number(out.zMassTotal || 0) + Number(out.zDevTotal || 0);
-        }
-
-        return out;
+        return o;
       });
     },
 
@@ -232,62 +262,56 @@ export default {
       this.gridView.commit();
 
       const params = {
-        yyyymm: this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : null,
-        site: this.params.site ? this.siteMap[this.params.site] : null,
+        yyyymm: this.params.yyyymm?.replaceAll('-',''),
+        site: this.siteMap[this.params.site]
       };
 
-      const headerResp = await this.$axios.api.search({
+      const amountResp = await this.$axios.api.search({
         menuId: 'c0009000',
-        queryId: 'C0009009_Col',
+        queryId: 'C0009009_Sch1',
         queryParams: params,
         target: null,
       });
 
-      const headerMetaRaw = (headerResp || []).map(item => {
-        const modelRaw = item.model ?? item.MODEL ?? item['MODEL'];
-        const gubunRaw = item.gubun ?? item['gubun'] ?? item.구분 ?? item['구분'];
-        const model = String(modelRaw ?? '').trim();
-        const gubun = String(gubunRaw ?? '').trim();
-        const fieldId = this.convertModelToFieldId(model);
-        return { model, gubun, fieldId };
+      const qtyResp = await this.$axios.api.search({
+        menuId: 'c0009000',
+        queryId: 'C0009009_Qty',
+        queryParams: params,
+        target: null,
       });
 
-      const seen = new Set();
-      const headerMeta = [];
-      for (const m of headerMetaRaw) {
-        if (!m.fieldId) continue;
-        if (seen.has(m.fieldId)) continue;
-        seen.add(m.fieldId);
-        headerMeta.push(m);
-      }
-
+      const displayMap = this.buildDisplayMapFromQty(qtyResp);
+      const headerMeta = this.buildHeaderMetaFromSch1(amountResp, displayMap);
       const baseGrid = _.cloneDeep(require(`@web/c0009000/js/C0009009.js`));
-
-      this.ensureFieldAndColumn(baseGrid, { fieldName: 'zTotal', colName: 'zTotal', headerText: '총합계' });
-      this.ensureFieldAndColumn(baseGrid, { fieldName: 'zMassTotal', colName: 'zMassTotal', headerText: '양산합계' });
-      this.ensureFieldAndColumn(baseGrid, { fieldName: 'zDevTotal', colName: 'zDevTotal', headerText: '개발합계' });
+      [
+        { k:'zTotal',     text:'총합계' },
+        { k:'zMassTotal', text:'양산합계' },
+        { k:'zDevTotal',  text:'개발합계' },
+      ].forEach(({k,text}) => {
+        this.ensureField(baseGrid, k, 'number');
+        this.ensureColumn(baseGrid, {
+          name: k,
+          fieldName: k,
+          header: { text },
+          numberFormat: '#,##0',
+          width: 110,
+          styleName: 'tr',
+        });
+      });
 
       headerMeta.forEach(m => {
-        if (!baseGrid.fields.some(f => f.fieldName === m.fieldId)) {
-          baseGrid.fields.push({ fieldName: m.fieldId, dataType: 'number', valueType: 'number' });
-        }
-        if (!baseGrid.columns.some(c => c.name === m.fieldId)) {
-          baseGrid.columns.push({
-            name: m.fieldId,
-            fieldName: m.fieldId,
-            width: 85,
-            header: { text: m.model },
-            autoFilter: false,
-            styleName: 'tr',
-            numberFormat: '#,##0',
-          });
-        }
+        this.ensureField(baseGrid, m.fieldId, 'number');
+        this.ensureColumn(baseGrid, {
+          name: m.fieldId,
+          fieldName: m.fieldId,
+          header: { text: m.model },
+          numberFormat: '#,##0',
+          width: 85,
+          styleName: 'tr',
+        });
       });
 
       this.gridDataProvider.setFields(baseGrid.fields);
-
-      try { this.gridView.clearColumnLayout(); } catch (e) {}
-      try { this.gridView.setColumnLayout([]); } catch (e) {}
       this.gridView.setColumns(baseGrid.columns);
 
       const yangsanModels = headerMeta.filter(x => x.gubun === '양산');
@@ -307,36 +331,18 @@ export default {
         { header: { text: '개발' }, items: gaebalModels.map(m => ({ column: m.fieldId })) },
       ];
 
-      this.gridView.setColumnLayout(layout);
+      this.gridView.setColumnLayout(layout);      
 
       this.gridView.setCellStyleCallback(this.setCellStyleCallbackGrid.bind(this));
       this.gridView.setRowStyleCallback(this.setRowStyleCallbackGrid.bind(this));
 
-      const amountResp = await this.$axios.api.search({
-        menuId: 'c0009000',
-        queryId: 'C0009009_Sch1',
-        queryParams: params,
-        target: null,
-      });
-
-      const qtyResp = await this.$axios.api.search({
-        menuId: 'c0009000',
-        queryId: 'C0009009_Qty',
-        queryParams: params,
-        target: null,
-      });
-
       const qtyRow = this.buildQtyRow(headerMeta, qtyResp);
-
-      const amountResp2 = this.remapAmountRows(amountResp, headerMeta);
-      const amountRows = this.normalizeAmountRows(amountResp2, headerMeta);
+      const amountRows = this.remapAmountRows(amountResp, headerMeta);
 
       const finalRows = [qtyRow, ...amountRows];
 
       this.modelPlGridRows = finalRows;
       this.gridDataProvider.setRows(finalRows);
-
-      console.log('amountResp', amountResp);
     },
 
     searchClick() {
