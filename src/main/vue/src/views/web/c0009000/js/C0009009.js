@@ -1,5 +1,5 @@
 /*
- * 결산증빙 자료 > 제품별 손익계산서
+ * 제품별 손익계산서
  */
 const { ValueType } = require('realgrid');
 

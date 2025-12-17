@@ -357,4 +357,8 @@
     GROUP BY 구분, LTRIM(RTRIM(model))
     ORDER BY 구분 DESC, model
     </select>
+
+    <select id="C0009010_Sch1" resultType="CamelMap">
+        EXEC DOI_TotalCost @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
 </mapper>
