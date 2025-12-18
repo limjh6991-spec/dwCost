@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="modelPlGrid" :uid="'modelPlGrid'" :step="'1'" :rows="modelPlGridRows" :grid="modelPlGrid" style="height: 100%" />
+        <RealGrid ref="modelPlGrid" :uid="'modelPlGrid'" :step="'1'" :rows="modelPlGridRows" :grid="modelPlGrid" style="height: 100%" :fitLayoutWidthEnable="true" />
       </div>
     </div>
   </div>

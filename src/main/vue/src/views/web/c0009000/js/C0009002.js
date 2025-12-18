@@ -16,6 +16,7 @@ const grid = {
       hscrollBar: true, 
       showEmptyMessage: true,
       headerDepth: 2,
+      mergePolicy: 'auto',  // 병합 정책 추가
     },
     edit: { editable: false },
     footer: { visible: true },
@@ -28,8 +29,8 @@ const grid = {
 
   fields: [
     { fieldName: '순서', dataType: ValueType.NUMBER },   // 1 = 금액, 2 = 수량
-    { fieldName: '구분', dataType: ValueType.TEXT },
-    { fieldName: '코드', dataType: ValueType.TEXT },
+    { fieldName: '구분', dataType: ValueType.TEXT }, 
+    { fieldName: '코드', dataType: ValueType.TEXT }, 
     { fieldName: 'inch', dataType: ValueType.TEXT },
     { fieldName: 'dwSite', dataType: ValueType.TEXT },
     { fieldName: 'boh',      dataType: ValueType.NUMBER },
@@ -41,11 +42,11 @@ const grid = {
   ],
 
   columnLayout: [
-    { column: '순서' },
-    { column: '구분' },
-    { column: '코드' },
-    { column: 'Inch' },
-    { column: 'DW_SITE' },
+    { column: '순서'  },
+    { column: '구분' , mergeRule: "values['코드']  + value" },
+    { column: '코드' , mergeRule: "values['구분'] + value"},
+    { column: 'Inch', mergeRule: "values['코드'] + values['구분']"},
+    { column: 'DW_SITE', mergeRule: "values['코드'] + values['구분']"},
 
     {
       name: 'grpBOH',
@@ -105,7 +106,7 @@ const grid = {
       name: '코드',
       fieldName: '코드',
       width: 80,
-      header: { text: '코드' },
+      header: { text: 'MODEL' },
       autoFilter: true,
       styleName: 'tc',
     },
@@ -121,7 +122,7 @@ const grid = {
       name: 'DW_SITE',
       fieldName: 'dwSite',
       width: 80,
-      header: { text: 'DW_SITE' },
+      header: { text: '거래처' },
       autoFilter: true,
       styleName: 'tc',
     },

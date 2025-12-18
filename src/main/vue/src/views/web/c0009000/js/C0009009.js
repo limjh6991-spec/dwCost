@@ -35,7 +35,7 @@ const grid = {
   ],
 
   columns: [
-    { name: 'gubun', fieldName: 'gubun', width: 160, header: { text: '제품명' }, styleName: 'tl' },
+    { name: 'gubun', fieldName: 'gubun', width: 180, header: { text: '제품명' }, styleName: 'tl' },
     { name: 'zTotal', fieldName: 'zTotal', width: 110, header: { text: '총합계' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'zMassTotal', fieldName: 'zMassTotal', width: 110, header: { text: '양산' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'zDevTotal', fieldName: 'zDevTotal', width: 110, header: { text: '개발' }, styleName: 'tr', numberFormat: '#,##0' },
