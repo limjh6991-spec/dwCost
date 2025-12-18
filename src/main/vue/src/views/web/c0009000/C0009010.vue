@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="totalCostGrid" :uid="'totalCostGrid'" :step="'1'" :rows="totalCostGridRows" :grid="totalCostGrid" style="height: 100%" />
+        <RealGrid ref="totalCostGrid" :uid="'totalCostGrid'" :step="'1'" :rows="totalCostGridRows" :grid="totalCostGrid" style="height: 100%" :fitLayoutWidthEnable="false" />
       </div>
     </div>
   </div>
@@ -226,7 +226,7 @@ export default {
         this.ensureColumn(baseGrid, {
           name: fieldId,
           fieldName: fieldId,
-          width: 110,
+          width: 130,
           numberFormat: '#,##0',
           styleName: 'tr',
           // 여기 header.text는 layout에서 덮이지만, 안전장치로 둠
