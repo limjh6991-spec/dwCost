@@ -361,4 +361,52 @@
     <select id="C0009010_Sch1" resultType="CamelMap">
         EXEC DOI_TotalCost @YYYYMM=#{yyyymm}, @SITE=#{site};
     </select>
+
+    <select id="C0009004_Sch1" resultType="CamelMap">
+    select
+        YYYYMM,
+        SEL_CODE,            
+        SITE as SITE_ORG,
+        CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then 'VINA' else site end as SITE,
+        품목자산분류, 
+        재고자산종류, 
+        매출원가계정, 
+        대분류, 
+        중분류, 
+        소분류, 
+        품목기타분류, 
+        품명, 
+        품번, 
+        규격, 
+        단위,
+        기초수량, 
+        기초금액, 
+        입고수량, 
+        입고금액, 
+        출고수량,
+        출고금액,
+        재고수량, 
+        재고금액, 
+        재고단가, 
+        최종결산월재고단가, 
+        구매수량, 
+        구매금액, 
+        기타입고수량, 
+        기타입고금액, 
+        판매수량, 
+        판매원가, 
+        투입수량, 
+        투입금액, 
+        기타출고수량, 
+        기타출고금액
+    FROM doi_mat_subul
+    where 1=1
+    <if test="yyyymm != null and yyyymm != ''">
+        and yyyymm = #{yyyymm}
+    </if>
+    <if test="site != null and site != ''">
+        and site = #{site}
+    </if>
+    order BY 품명, 품번 ;
+</select>
 </mapper>

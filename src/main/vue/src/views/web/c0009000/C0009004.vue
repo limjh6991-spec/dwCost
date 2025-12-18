@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :rows="prodSubulGridRows" style="height: 100%" />
+        <RealGrid ref="matSubulGrid" :uid="'matSubulGrid'" :step="'1'" :rows="matSubulGridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -51,8 +51,8 @@ export default {
   },
   data() {
     return {
-      prodSubulGrid: null,
-      prodSubulGridRows: [],
+      matSubulGrid: null,
+      matSubulGridRows: [],
       params: {
         yyyymm: null,
         site: 'HQ',
@@ -75,7 +75,6 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.yyyymm = newVal;
-          console.log('[C0009004] yyyymm 변경:', this.params.yyyymm);
         }
       }
      },
@@ -83,7 +82,7 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
-          if (this.$refs.prodSubulGrid != null) {
+          if (this.$refs.matSubulGrid != null) {
             this.initialize();
             this.searchClick();
           }
@@ -92,11 +91,11 @@ export default {
     },
   },
   computed: {
-        gridView() {
-      return this.$refs.prodSubulGrid.getGridView();
+    gridView() {
+      return this.$refs.matSubulGrid.getGridView();
     },
     gridDataProvider() {
-      return this.$refs.prodSubulGrid.getGridDataProvider();
+      return this.$refs.matSubulGrid.getGridDataProvider();
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
@@ -113,7 +112,7 @@ export default {
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
-      this.prodSubulGrid = _.cloneDeep(gridField);
+      this.matSubulGrid = _.cloneDeep(gridField);
     },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
@@ -130,7 +129,7 @@ export default {
         menuId: 'c0009000',
         queryId: 'C0009004_Sch1',
         queryParams: params,
-        target: this.prodSubulGridRows,
+        target: this.matSubulGridRows,
       };
       let resp = await this.$axios.api.search(param);
     },
@@ -146,7 +145,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `판매 실적 집계_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `자재수불부_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
