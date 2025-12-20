@@ -153,6 +153,7 @@ export default {
             "model",
             "expenSel",
             "expenSel명",
+            "acctNname",
             {
               name: "BOH",
               direction: "horizontal", 

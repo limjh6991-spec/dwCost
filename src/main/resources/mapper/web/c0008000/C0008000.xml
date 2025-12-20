@@ -650,6 +650,7 @@
         MODEL,
         EXPEN_SEL,
         EXPEN_SEL명,
+        ACCT_NAME,
         BOH AS BOH_QTY,
         BOH_AMT,
         INPUT AS IN_QTY,
