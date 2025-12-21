@@ -31,7 +31,7 @@ const grid = {
     { name: '자재명', fieldName: '자재명', width: '80', header: { text: '품명' }, autoFilter: true, styleName: 'tl' },
     { name: '자재번호', fieldName: '자재번호', width: '80', header: { text: '품번' }, autoFilter: true, styleName: 'tl' },
     { name: 'size', fieldName: 'size', width: '80', header: { text: '규격' }, autoFilter: true, styleName: 'tl' },
-    { name: 'z합계', fieldName: 'z합계', width: '80', header: { text: '제조경비 합계' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'z합계', fieldName: 'z합계', width: '80', header: { text: '제조경비 합계' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };
 

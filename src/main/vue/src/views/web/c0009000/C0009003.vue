@@ -3,7 +3,7 @@
   <div>
     <div class="search_box">
       <b-row class="search_area">
-        <b-col cols="2">
+        <b-col cols="1" class="period">
           <div class="form-floating me-1">
             <date-picker label="연도" mode="year" v-model="params.yyyymm" />
             <label for="floatingSelect" class="select">년도</label>
@@ -108,7 +108,6 @@ export default {
   mounted() {
     const gv = this.gridView;
 
-    // 🔹 columnLayout 실제 적용
     if (this.salesDataGrid.columnLayout) {
       gv.setColumnLayout(this.salesDataGrid.columnLayout);
     }
@@ -142,8 +141,7 @@ export default {
       let resp = await this.$axios.api.search(param);
 
       console.log('[DEBUG] 첫 행', this.salesDataGridRows?.[0]);
-      
-      // 응답 데이터 처리
+
       if (resp && resp.data) {
         this.salesDataGridRows = Array.isArray(resp.data) ? resp.data : resp.data.rows || [];
       } else if (Array.isArray(resp)) {

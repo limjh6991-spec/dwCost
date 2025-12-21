@@ -213,7 +213,7 @@ export default {
           fieldName: k,
           header: { text },
           numberFormat: '#,##0',
-          width: 110,
+          width: 90,
           styleName: 'tr',
         });
       });
