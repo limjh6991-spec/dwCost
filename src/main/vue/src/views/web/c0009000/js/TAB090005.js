@@ -25,6 +25,11 @@ const grid = {
     { name: '제조경비계획', fieldName: '제조경비계획', width: '80', header: { text: '제조경비 계획' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'z합계', fieldName: 'z합계', width: '80', header: { text: '제조경비 합계' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0' },
   ],
+  layout: [
+    'gubun',
+    '제조경비계획',
+    'z합계',
+  ]
 };
 
 module.exports = grid;

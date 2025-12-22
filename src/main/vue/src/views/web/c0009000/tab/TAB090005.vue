@@ -134,28 +134,46 @@ export default {
 
       let result1 = await this.$axios.api.search(searchParam);
       const gridField1 = _.cloneDeep(require(`@web/c0009000/js/TAB090005.js`));
+      
+      let preGroupName = '';
+
       result1.forEach((item) => {
         gridField1.fields.push({
-          fieldName: item.model.toLowerCase(),
+          fieldName: item.colName.toLowerCase(),
           valueType: 'number',
           dataType: 'number',
         });
 
         gridField1.columns.push({
-          name: item.model.toLowerCase(),
-          fieldName: item.model.toLowerCase(),
+          name: item.colName.toLowerCase(),
+          fieldName: item.colName.toLowerCase(),
           width: 80,
           header: {
-            text: item.model,
+            text: item.displayName,
           },
           autoFilter: false,
           numberFormat: '#,##0',
           styleName: 'tr',
         });
+
+        if (preGroupName !== item.groupName) {
+          gridField1.layout.push({
+            name: item.groupName + 'Group',
+            direction: 'horizontal',
+            items: [],
+            header: {
+              text: item.groupName,
+            },
+          });
+          preGroupName = item.groupName;
+        }
+        const lastLayout = gridField1.layout[gridField1.layout.length - 1];
+        lastLayout.items.push(item.colName.toLowerCase());
       });
 
       this.gridDataProvider.setFields(gridField1.fields);
       this.gridView.setColumns(gridField1.columns);
+      this.gridView.setColumnLayout(gridField1.layout);
 
       let param = {
         menuId: 'c0009000',
