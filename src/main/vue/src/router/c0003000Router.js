@@ -1,7 +1,7 @@
 const c0003000Router = [
 {
    path: '/c0003001',
-   name: '제료비집계',
+   name: '제조원가 집계',
    component: () => import('../views/web/c0003000/C0003001.vue'),
    meta: {
      upperSysResourceId:'C0003000',
@@ -11,7 +11,7 @@ const c0003000Router = [
  },
 {
   path: '/c0003002',
-  name: '제료비배부',
+  name: '매출원가 집계',
   component: () => import('../views/web/c0003000/C0003002.vue'),
   meta: {
     upperSysResourceId:'C0003000',
@@ -19,36 +19,37 @@ const c0003000Router = [
     requiresAuth: true,
   }
 },
-{
-  path: '/c0003003',
-  name: '경비/재료비 집계',
-  component: () => import('../views/web/c0003000/C0003003.vue'),
-  meta: {
-    upperSysResourceId:'C0003000',
-    sysResourceId:"C0003003",
-    requiresAuth: true,
-  }
-},
- {
-    path: '/c0003005',
-    name: '가공바배부',
-    component: () => import('../views/web/c0003000/C0003005.vue'),
-    meta: {
-      upperSysResourceId:'C0003000',
-      sysResourceId:"C0003005",
-      requiresAuth: true,
-    }
-  }, 
- {
-    path: '/c0003009',
-    name: 'FRONT',
-    component: () => import('../views/web/c0003000/C0003009.vue'),
-    meta: {
-      upperSysResourceId:'C0003000',
-      sysResourceId:"C0003005",
-      requiresAuth: true,
-    }
-  }, /*
+// {
+//   path: '/c0003003',
+//   name: '경비/재료비 집계',
+//   component: () => import('../views/web/c0003000/C0003003.vue'),
+//   meta: {
+//     upperSysResourceId:'C0003000',
+//     sysResourceId:"C0003003",
+//     requiresAuth: true,
+//   }
+// },
+//  {
+//     path: '/c0003005',
+//     name: '가공바배부',
+//     component: () => import('../views/web/c0003000/C0003005.vue'),
+//     meta: {
+//       upperSysResourceId:'C0003000',
+//       sysResourceId:"C0003005",
+//       requiresAuth: true,
+//     }
+//   }, 
+//  {
+//     path: '/c0003009',
+//     name: 'FRONT',
+//     component: () => import('../views/web/c0003000/C0003009.vue'),
+//     meta: {
+//       upperSysResourceId:'C0003000',
+//       sysResourceId:"C0003005",
+//       requiresAuth: true,
+//     }
+//   }, 
+  /*
   {
     path: '/m0003001',
     name: 'Back#1',
