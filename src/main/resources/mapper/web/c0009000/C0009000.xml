@@ -203,27 +203,56 @@
     </select>
 
     <select id="C0009005_Tab090005_Col" resultType="CamelMap">
-        SELECT DISTINCT TOP 500 model
+        SELECT TOP 500 case when 구분 = 'Z' then '합계' else 구분 end group_name
+        , model display_name, CASE WHEN 구분 = 'Z' THEN CONCAT(구분, model, '합계') else CONCAT(구분, model) end col_name
         FROM (
-            SELECT DISTINCT 도우모델 as model from doi_mat_cost
-            where 1=1
-            <if test="yyyymm != null and yyyymm != ''">
-                AND YYYYMM = #{yyyymm}
-            </if>
-            <if test="site != null and site != ''">
-                AND SITE = #{site}
-            </if>
-            UNION ALL
-            SELECT model from doi_expen_matl
-            where 1=1
-            <if test="yyyymm != null and yyyymm != ''">
-                AND YYYYMM = #{yyyymm}
-            </if>
-            <if test="site != null and site != ''">
-                AND SITE = #{site}
-            </if>
-        )A
-        ORDER BY 1
+            SELECT DISTINCT 구분, model
+            FROM (
+                SELECT DISTINCT 구분, 도우모델 as model FROM doi_mat_cost
+                where 1=1
+                <if test="yyyymm != null and yyyymm != ''">
+                    AND YYYYMM = #{yyyymm}
+                </if>
+                <if test="site != null and site != ''">
+                    AND SITE = #{site}
+                </if>
+                group by 구분, 도우모델
+                UNION
+                SELECT 구분, model from doi_expen_matl
+                where 1=1
+                <if test="yyyymm != null and yyyymm != ''">
+                    AND YYYYMM = #{yyyymm}
+                </if>
+                <if test="site != null and site != ''">
+                    AND SITE = #{site}
+                </if>
+                group by 구분, model
+                UNION
+                SELECT 'Z' 구분, 구분 model FROM (
+                    SELECT DISTINCT 구분 from doi_mat_cost
+                    where 1=1
+                    <if test="yyyymm != null and yyyymm != ''">
+                        AND YYYYMM = #{yyyymm}
+                    </if>
+                    <if test="site != null and site != ''">
+                        AND SITE = #{site}
+                    </if>
+                    group by 구분
+                    UNION
+                    SELECT 구분 FROM doi_expen_matl
+                    where 1=1
+                    <if test="yyyymm != null and yyyymm != ''">
+                        AND YYYYMM = #{yyyymm}
+                    </if>
+                    <if test="site != null and site != ''">
+                        AND SITE = #{site}
+                    </if>
+                    group by 구분
+                )A
+            ) A
+        ) A
+        ORDER BY CASE WHEN 구분 = 'Z' THEN 1 WHEN 구분 = '양산' THEN 2 ELSE 3 END, 구분
+                ,CASE WHEN model like '양산%' THEN 1 ELSE 2 END, model
     </select>
 
     <select id="C0009005_Tab090005" resultType="CamelMap">
