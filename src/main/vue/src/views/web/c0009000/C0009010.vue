@@ -63,6 +63,7 @@ export default {
         HQ: 'HQ',
         VN: 'VN',
       },
+      STRUCT_ORDER: ['UTG', 'ITG', 'HTG', 'Coated', '카세트'],
     };
   },
   watch: {
@@ -121,31 +122,45 @@ export default {
     },
 
     getModelMetaFromField(fieldId) {
-      // fieldId 예: '양산ABC123', '개발XYZ9D', 'VNX100'
-      let raw = String(fieldId || '').trim();
+      const raw = String(fieldId || '').trim();
 
-      // 1) prefix 제거 후 "진짜 모델명"만
-      let model = raw.replace(/^양산/, '').replace(/^개발/, '').toUpperCase();
+      // ✅ prefix(양산/개발/카세트)가 여러 번 붙는 케이스까지 반복 제거
+      let s = raw;
+      const prefixes = [/^양산/, /^개발/, /^카세트/];
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const p of prefixes) {
+          const next = s.replace(p, '');
+          if (next !== s) {
+            s = next;
+            changed = true;
+          }
+        }
+      }
 
-      // 2) 사업구분(3가지) - 카세트가 최우선!
+      // 이제 s가 "진짜 모델명 후보"
+      let model = String(s).toUpperCase();
+
+      // ✅ 사업구분: raw에 카세트가 있으면 무조건 카세트로
+      // (품명에 '카세트'가 들어가거나 pivot_key가 꼬여도 안전)
       let bizGubun = '양산';
-      if (model.startsWith('VN')) bizGubun = '카세트';
-      else if (raw.startsWith('개발')) bizGubun = '개발';
+      if (raw.includes('카세트') || model.includes('카세트')) bizGubun = '카세트';
+      else if (raw.includes('개발')) bizGubun = '개발';
 
-      // 3) 제품구분(제품구조)
+      // ✅ displayModel에서도 카세트 텍스트 제거(헤더 깔끔하게)
+      model = model.replace(/^카세트+/, '');
+
+      // ✅ 제품구분
       let structure = 'UTG';
-      if (model.startsWith('VN')) structure = '카세트';
+      if (bizGubun === '카세트') structure = '카세트';
       else if (model.startsWith('I')) structure = 'ITG';
       else if (model.startsWith('H')) structure = 'HTG';
       else if (model.startsWith('C')) structure = 'Coated';
 
-      return {
-        bizGubun,          // ✅ 양산/개발/카세트 (3가지)
-        structure,         // ✅ UTG/ITG/HTG/Coated/카세트
-        displayModel: model,
-      };
+      return { bizGubun, structure, displayModel: model };
     },
-
+    
     ensureField(gridDef, fieldName, dataType = 'number') {
       if (!gridDef.fields) gridDef.fields = [];
       if (!gridDef.fields.some(f => f.fieldName === fieldName)) {
@@ -218,9 +233,36 @@ export default {
         });
       });
 
+      // =====================================================
+      // ✅ 3뎁스 레이아웃: 사업구분(양산/개발/카세트) > 제품구분(제품구조) > 모델명
+      // =====================================================
+      const headerMeta = modelKeys.map(fieldId => {
+        const m = this.getModelMetaFromField(fieldId);
+        return { fieldId, ...m,    
+        sortNumeric: /^[0-9]/.test(m.displayModel) ? 0 : 1,
+        // 구조 정렬
+        sortStructure:
+          m.structure === 'UTG' ? 1 :
+          m.structure === 'ITG' ? 2 :
+          m.structure === 'HTG' ? 3 :
+          m.structure === 'Coated' ? 4 :
+          m.structure === '카세트' ? 9 : 9, };
+      });
+
+      const BIZ_ORDER = { '양산': 1, '개발': 2, '카세트': 3 };
+
+      headerMeta.sort((a, b) => {
+        const bo = (BIZ_ORDER[a.bizGubun] ?? 9) - (BIZ_ORDER[b.bizGubun] ?? 9);
+        if (bo !== 0) return bo;
+
+        if (a.sortStructure !== b.sortStructure) return a.sortStructure - b.sortStructure;
+        if (a.sortNumeric !== b.sortNumeric) return a.sortNumeric - b.sortNumeric;
+        return a.displayModel.localeCompare(b.displayModel);
+      });
+
       // ✅ 모델 컬럼들 추가
-      modelKeys.forEach(fieldId => {
-        const meta = this.getModelMetaFromField(fieldId); // bizGubun/structure/displayModel
+      headerMeta.forEach(m => {
+        const fieldId = m.fieldId;
 
         this.ensureField(baseGrid, fieldId, 'number');
         this.ensureColumn(baseGrid, {
@@ -229,8 +271,7 @@ export default {
           width: 130,
           numberFormat: '#,##0',
           styleName: 'tr',
-          // 여기 header.text는 layout에서 덮이지만, 안전장치로 둠
-          header: { text: meta.displayModel },
+          header: { text: m.displayModel },
         });
       });
 
@@ -238,27 +279,28 @@ export default {
       this.gridDataProvider.setFields(baseGrid.fields);
       this.gridView.setColumns(baseGrid.columns);
 
-      // =====================================================
-      // ✅ 3뎁스 레이아웃: 사업구분(양산/개발/카세트) > 제품구분(제품구조) > 모델명
-      // =====================================================
-      const headerMeta = modelKeys.map(fieldId => {
-        const m = this.getModelMetaFromField(fieldId);
-        return { fieldId, ...m };
-      });
-
       const make2Depth = (biz) => {
         const list = headerMeta.filter(x => x.bizGubun === biz);
-        const groups = this.groupBy(list, 'structure');
 
-        return Object.entries(groups).map(([structure, models]) => ({
-          header: { text: structure }, // ✅ 제품구분(제품구조)
-          items: models.map(m => ({
-            column: m.fieldId,
-            header: { text: m.displayModel }, // ✅ 모델명(대문자 모델만)
-          })),
-        }));
+        return this.STRUCT_ORDER
+          .filter(structure => list.some(x => x.structure === structure))
+          .map(structure => {
+            const models = list
+              .filter(x => x.structure === structure)
+              .sort((a, b) => {
+                if (a.sortNumeric !== b.sortNumeric) return a.sortNumeric - b.sortNumeric;
+                return a.displayModel.localeCompare(b.displayModel);
+              });
+
+            return {
+              header: { text: structure },
+              items: models.map(m => ({
+                column: m.fieldId,
+                header: { text: m.displayModel },
+              })),
+            };
+          });
       };
-
       const layout = [
         {
           header: { text: '사업구분' },
