@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007010Mapper">
+    <select id="C0007010_Sch1" resultType="CamelMap">
+        select * from doi_cost_boh
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            AND YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            AND SITE = #{site}
+        </if>
+        order BY 1,2,3,4,5,6,7,8,9,10;
+    </select>
+
+    <select id="C0007010_Exec1" resultType="CamelMap">
+        exec DOI_MAKE_COST_BOH @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
+
+    <insert id="C0007010_Insert1">
+        INSERT INTO doi_cost_boh
+        (
+            YYYYMM,SEL_CODE,SITE,구분,MODEL,expen_sel명,ACCT_NAME,ITEM_NAME,EXPEN_SEL,ADJ_YN,BOH_QTY,BOH
+        )
+        VALUES
+        (
+        #{yyyymm}
+        , #{selCode}
+        ,#{site}
+        , #{구분}
+        , #{model}
+        , #{expenSel명}
+        , #{acctName}
+        , #{itemName}
+        , #{expenSel}
+        , #{adjYn}
+        , #{bohQty}
+        , #{boh}
+        );
+    </insert>
+
+    <delete id="C0007010_Delete1">
+        DELETE FROM doi_cost_boh
+        WHERE 1=1
+        and YYYYMM = #{yyyymm}
+        and SEL_CODE = #{selCode}
+        and SITE = #{site}
+        and 구분 = #{구분}
+        and MODEL = #{model}
+        and ACCT_NAME=#{acctName}
+        and ITEM_NAME=#{itemName}
+        and EXPEN_SEL = #{expenSel}
+        and ADJ_YN = #{adjYn}
+    </delete>
+
+    <update id="C0007010_Update1">
+        UPDATE doi_cost_boh
+        SET expen_sel명 = #{expenSel명}
+        ,BOH_QTY = #{bohQty}
+        ,BOH = #{boh}
+        WHERE 1=1
+        and YYYYMM = #{yyyymm}
+        and SEL_CODE = #{selCode}
+        and SITE = #{site}
+        and 구분 = #{구분}
+        and MODEL = #{model}
+        and ACCT_NAME=#{acctName}
+        and ITEM_NAME=#{itemName}
+        and EXPEN_SEL = #{expenSel}
+        and ADJ_YN = #{adjYn}
+        ;
+    </update>
+
+    <select id="C0007010_Sch2" resultType="CamelMap">
+        select * from doi_stco_boh
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            AND YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            AND SITE = #{site}
+        </if>
+        order BY 1,2,3,4,5,6,7,8,9,10;
+    </select>
+
+    <select id="C0007010_Exec2" resultType="CamelMap">
+        exec DOI_MAKE_STCO_BOH @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
+
+    <insert id="C0007010_Insert2">
+        INSERT INTO doi_stco_boh
+        (
+            YYYYMM,SITE,SEL_CODE,구분,MODEL,expen_sel,expen_sel명,ACCT_NAME,BOH_QTY,BOH_AMT
+        )
+        VALUES
+        (
+        #{yyyymm}
+        ,#{site}
+        , #{selCode}
+        , #{구분}
+        , #{model}
+        , #{expenSel}
+        , #{expenSel명}
+        , #{acctName}
+        , #{bohQty}
+        , #{bohAmt}
+        );
+    </insert>
+
+    <delete id="C0007010_Delete2">
+        DELETE FROM doi_stco_boh
+        WHERE 1=1
+        and YYYYMM = #{yyyymm}
+        and SITE = #{site}
+        and SEL_CODE = #{selCode}
+        and 구분 = #{구분}
+        and MODEL = #{model}
+        and expen_sel = #{expenSel}
+        and ACCT_NAME=#{acctName}
+    </delete>
+
+    <update id="C0007010_Update2">
+        UPDATE doi_stco_boh
+        SET expen_sel명 = #{expenSel명}
+        ,BOH_QTY = #{bohQty}
+        ,BOH_AMT = #{bohAmt}
+        WHERE 1=1
+        and YYYYMM = #{yyyymm}
+        and SITE = #{site}
+        and SEL_CODE = #{selCode}
+        and 구분 = #{구분}
+        and MODEL = #{model}
+        and expen_sel = #{expenSel}
+        and ACCT_NAME=#{acctName}
+        ;
+    </update>
+
+</mapper>
