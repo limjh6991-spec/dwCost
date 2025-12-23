@@ -78,7 +78,7 @@ const c0007000Router = [
       requiresAuth: true,
     },
   },
-    {
+  {
     path: '/c0007009',
     name: '불량반품',
     component: () => import('../views/web/c0007000/C0007009.vue'),
@@ -86,6 +86,16 @@ const c0007000Router = [
       upperSysResourceId: 'C0007000',
       sysResourceId: 'C0007009',
       requiresAuth: false,
+    },
+  },
+  {
+    path: '/c0007010',
+    name: '재공/재고기초금액 이월',
+    component: () => import('../views/web/c0007000/C0007010.vue'),
+    meta: {
+      upperSysResourceId: 'C0007000',
+      sysResourceId: 'C0007010',
+      requiresAuth: true,
     },
   },
 ];
