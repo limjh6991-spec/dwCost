@@ -633,9 +633,9 @@ public class C0001004ServiceImpl implements C0001004Service {
         return result;
     }
 
-    // Tab5
+    // Tab4
         @Override
-        public Map<String, String> tab5UploadExcel(MultipartFile file, String headers) throws Exception {
+        public Map<String, String> tab4UploadExcel(MultipartFile file, String headers) throws Exception {
         List<String> headerList = Arrays.asList(headers.split(","));
         Map<String, String> ret = new HashMap<>();
 
@@ -685,10 +685,10 @@ public class C0001004ServiceImpl implements C0001004Service {
                     cnt++;
                 }
 
-                List<Map<String, String>> retList = mapper.checkTab5DuplicateOrgList(splitList);
+                List<Map<String, String>> retList = mapper.checkTab4DuplicateOrgList(splitList);
                 if (retList != null) duplicateOrgList.addAll(retList);
 
-                retCnt += mapper.tab5UploadExcel(splitList);
+                retCnt += mapper.tab4UploadExcel(splitList);
             }
 
             if (remain > 0) {
@@ -698,10 +698,10 @@ public class C0001004ServiceImpl implements C0001004Service {
                     cnt++;
                 }
 
-                List<Map<String, String>> retList = mapper.checkTab5DuplicateOrgList(splitList);
+                List<Map<String, String>> retList = mapper.checkTab4DuplicateOrgList(splitList);
                 if (retList != null) duplicateOrgList.addAll(retList);
 
-                retCnt += mapper.tab5UploadExcel(splitList);
+                retCnt += mapper.tab4UploadExcel(splitList);
             }
 
             if (!duplicateOrgList.isEmpty() || !duplicateList.isEmpty() || !pkDuplicateList.isEmpty()) {

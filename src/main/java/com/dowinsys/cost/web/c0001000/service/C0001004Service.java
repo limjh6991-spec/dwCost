@@ -8,7 +8,7 @@ public interface C0001004Service {
     Map<String, String> tab1UploadExcel(MultipartFile file, String headers) throws Exception;
     Map<String, String> tab2UploadExcel(MultipartFile file, String headers) throws Exception;
     Map<String, String> tab3UploadExcel(MultipartFile file, String headers) throws Exception;
-    Map<String, String> tab5UploadExcel(MultipartFile file, String headers) throws Exception;
+    Map<String, String> tab4UploadExcel(MultipartFile file, String headers) throws Exception;
 
     // 이월 데이터
     Map<String, Object> tab1CarryOver(String yyyymm, String prevYyyymm, String site) throws Exception;

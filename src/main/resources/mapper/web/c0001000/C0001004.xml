@@ -837,8 +837,8 @@
           AND site   = #{site}
     </select>
 
-	<!-- tab5: 면적기준 정보 관리 -->
-	<select id="selectTab5GridData" resultType="CamelMap">
+	<!-- tab4: 면적기준 정보 관리 -->
+	<select id="selectTab4GridData" resultType="CamelMap">
 		select
 			YYYYMM,
 			SEL_CODE,
@@ -867,7 +867,7 @@
 		order BY MODEL;
 	</select>
 
-	<insert id="insertTab5Data">
+	<insert id="insertTab4Data">
 		INSERT INTO DOI_MODEL_MAST
 		(
 		YYYYMM
@@ -904,8 +904,8 @@
 		);
 	</insert>
 
-	<!-- tab5: 면적기준 정보 관리 update/delete -->
-	<update id="updateTab5Data">
+	<!-- tab4: 면적기준 정보 관리 update/delete -->
+	<update id="updateTab4Data">
 		UPDATE DOI_MODEL_MAST
 		SET SEL_CODE = #{selCode}
 		,MODEL = #{model}
@@ -926,7 +926,7 @@
 		;
 	</update>
 
-	<delete id="deleteTab5Data">
+	<delete id="deleteTab4Data">
 		DELETE FROM DOI_MODEL_MAST
 		WHERE 1=1
 		and yyyymm = #{yyyymm}
@@ -934,7 +934,7 @@
 		and site = #{siteOrg}
 		and model = #{model}
 	</delete>
-	<select id="checkTab5DuplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
+	<select id="checkTab4DuplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
 		DROP TABLE IF EXISTS #TempTable1;
 
 		CREATE TABLE #TempTable1 (
@@ -988,7 +988,7 @@
 			AND b.MODEL = a.MODEL
 			);
 		</select>
-	<insert id="tab5UploadExcel" parameterType="java.util.List">
+	<insert id="tab4UploadExcel" parameterType="java.util.List">
 		CREATE TABLE #TempTable (
 		seq_no INT IDENTITY (1, 1) NOT NULL,
 		YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
@@ -1049,4 +1049,9 @@
 
 		DROP TABLE #TempTable;
 	</insert>
+
+	<!-- Tab5 : 데이터 이월 -->
+	<select id="TAB010005_Sch1" resultType="CamelMap">
+	EXEC UP_DOI_CarryOver @YYYYMM=#{yyyymm}, @SITE=#{site}, @PREV_YYYYMM=#{prevYyyymm}
+	</select>
 </mapper>

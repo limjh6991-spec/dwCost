@@ -29,9 +29,9 @@ public interface C0001004Mapper {
     List<Map<String, String>> checkTab3DuplicateOrgList(List<Map<String, String>> list);
     int tab3UploadExcel(List<Map<String, String>> list);
 
-    // Tab5
-    List<Map<String, String>> checkTab5DuplicateOrgList(List<Map<String, String>> list);
-    int tab5UploadExcel(List<Map<String, String>> list);
+    // Tab4
+    List<Map<String, String>> checkTab4DuplicateOrgList(List<Map<String, String>> list);
+    int tab4UploadExcel(List<Map<String, String>> list);
 
     // Tab1
     int countTab1ByYyyymmAndSite(Map<String, Object> param);

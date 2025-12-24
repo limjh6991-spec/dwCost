@@ -116,9 +116,9 @@ public class C0001004Controller {
     }
 
 
-    // Tab5
-        @PostMapping("/tab5Upload")
-    public ResponseEntity<String> tab5UploadFile(
+    // Tab4
+        @PostMapping("/tab4Upload")
+    public ResponseEntity<String> tab4UploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("headers") String headers
     ) {
@@ -126,7 +126,7 @@ public class C0001004Controller {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File is empty");
         }
         try {
-            Map<String, String> ret = service.tab5UploadExcel(file, headers);
+            Map<String, String> ret = service.tab4UploadExcel(file, headers);
             if (Objects.equals(ret.get("status"), "success")) {
                 return ResponseEntity.ok("File uploaded successfully");
             } else if (Objects.equals(ret.get("status"), "error") && !ret.get("errorMessage").isEmpty()) {

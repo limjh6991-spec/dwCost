@@ -1,6 +1,5 @@
 /*
- * 복사본: C0001005.js
- * 구조 참고: TAB012000.js
+ * 기준정보 > 면적기준정보 (TAB010004)
  */
 const { ValueType } = require('realgrid');
 

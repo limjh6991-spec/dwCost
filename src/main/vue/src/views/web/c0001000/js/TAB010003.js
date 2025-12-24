@@ -1,6 +1,5 @@
 /*
- * 복사본: C0001003.js
- * 구조 참고: TAB012000.js
+ * 기준정보 > 자재코드 (TAB010003)
  */
 const { ValueType } = require('realgrid');
 
