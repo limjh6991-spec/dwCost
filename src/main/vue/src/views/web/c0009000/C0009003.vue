@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="salesDataGrid" :uid="'salesDataGrid'" :grid="salesDataGrid" :layout="salesDataGrid.columnLayout" :step="'1'" :rows="salesDataGridRows" style="height: 100%" :fitLayoutWidthEnable="false" />
+        <RealGrid ref="salesDataGrid" :uid="'salesDataGrid'" :grid="salesDataGrid" :layout="salesDataGrid.columnLayout" :step="'1'" :rows="salesDataGridRows" style="height: 100%" />
       </div>
     </div>
   </div>

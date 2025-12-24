@@ -24,6 +24,7 @@ const grid = {
     sorting: { enabled: true },
     stateBar: { visible: false },
     filtering: { enabled: true },
+    fixed: { colBarWidth: 1, colCount: 8 },
   },
   fields: [
     { fieldName: '구분', dataType: ValueType.TEXT },
@@ -145,7 +146,7 @@ const grid = {
     { name: '구분', fieldName: '구분', width:60, header: { text: '구분' }, autoFilter: true, styleName: 'tc' },
     { name: '모델명', fieldName: '모델명', width: 80, header: { text: '모델명' }, autoFilter: true, styleName: 'tc' },
     { name: 'set업체', fieldName: 'set업체', width: 80, header: { text: 'SET업체' }, autoFilter: true, styleName: 'tc' },
-    { name: '고객코드', fieldName: '고객코드', width: 100, header: { text: '고객코드' }, autoFilter: true, styleName: 'tc' },
+    { name: '고객코드', fieldName: '고객코드', width: 140, header: { text: '고객코드' }, autoFilter: true, styleName: 'tc', minWidth: 140, maxWidth: 140, },
     { name: '도우코드',      fieldName: '도우코드',      width: 140, header: { text: '도우코드' }, autoFilter: true, styleName: 'tc' },
     { name: '두께',    fieldName: '두께',    width: 100, header: { text: '두께' }, autoFilter: true, styleName: 'tr' },
     { name: 'inch',   fieldName: 'inch',   width: 80, header: { text: 'inch' }, autoFilter: true, styleName: 'tr' },
