@@ -205,36 +205,53 @@ export default {
       gubun = (dataProvider.getValue(dataCell.index.dataRow, 'gubun') ?? '');
       }
 
-      // 길이 체크 포함한 판관비 판별
-      const isSgapan = gubun.length >= 7 && gubun.substr(4, 3) === '판관비';
-      const isParentHead = /^\s*\(\d+\)/.test(gubun);
+        const isRateRow = gubun === '    판관비 배부율 (제품별 매출비중)';
+        const isSumRow  = gubun === '    (29) 합계';
+        const isGrayRow = isRateRow || isSumRow;
 
-      // 공통 스타일 결정
-      if (isSgapan||isParentHead) {
-      ret.style = { fontWeight: 'bold', background: '#BFBFBF', whiteSpace: 'pre' };
+      if (isGubunCol) {
+        ret.style = {
+          fontWeight: 'bold',
+          whiteSpace: 'pre',
+          ...(isGrayRow ? { background: '#BFBFBF' } : {}),
+        };
       } else {
-      ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
+        ret.style = {
+          whiteSpace: 'pre',
+          ...(isGrayRow ? { background: '#BFBFBF' } : {}),
+        };
       }
 
+      // // 길이 체크 포함한 판관비 판별
+      // const isSgapan = gubun.length >= 7 && gubun.substr(4, 3) === '판관비';
+      // const isParentHead = /^\s*\(\d+\)/.test(gubun);
+
+      // // 공통 스타일 결정
+      // if (isSgapan||isParentHead) {
+      // ret.style = { fontWeight: 'bold', background: '#BFBFBF', whiteSpace: 'pre' };
+      // } else {
+      // ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
+      // }
+
       // 숫자 포맷은 gubun 컬럼 외에만 적용
-      if (!isGubunCol && isSgapan) {
+      if (!isGubunCol && isRateRow) {
       ret.numberFormat = '#,##0.##';
       }
 
       return ret;
     },
-    setRowStyleCallbackSga2Grid(grid, item, fixed) {
-      var ret = {};
-      var gubun = grid.getValue(item.index, 'gubun'); 
+    // setRowStyleCallbackSga2Grid(grid, item, fixed) {
+    //   var ret = {};
+    //   var gubun = grid.getValue(item.index, 'gubun'); 
 
-      if(gubun.substr(4,3)==='판관비'){
-        ret.style = { fontWeight: 'bold', background: '#BFBFBF' };
-      }
-      else if (/^\s*\(\d+\)/.test(gubun)) {
-        ret.style = { background: '#BFBFBF' };
-      }
-      return ret;
-    },
+    //   if(gubun.substr(4,3)==='판관비'){
+    //     ret.style = { fontWeight: 'bold', background: '#BFBFBF' };
+    //   }
+    //   else if (/^\s*\(\d+\)/.test(gubun)) {
+    //     ret.style = { background: '#BFBFBF' };
+    //   }
+    //   return ret;
+    // },
   },
 };
 </script>
