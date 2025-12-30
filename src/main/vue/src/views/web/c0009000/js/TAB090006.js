@@ -35,14 +35,14 @@ const tab090006GridField = {
   { fieldName: 'bohAmt', dataType: ValueType.NUMBER },
   { fieldName: 'inQty', dataType: ValueType.NUMBER },
   { fieldName: 'inAmt', dataType: ValueType.NUMBER },
-  { fieldName: 'rmaInQty', dataType: ValueType.NUMBER },
-  { fieldName: 'rmaInAmt', dataType: ValueType.NUMBER },  
   { fieldName: 'outQty', dataType: ValueType.NUMBER },
   { fieldName: 'outAmt', dataType: ValueType.NUMBER },
-  { fieldName: 'rmaOutQty', dataType: ValueType.NUMBER },
-  { fieldName: 'rmaOutAmt', dataType: ValueType.NUMBER },  
   { fieldName: 'lossQty', dataType: ValueType.NUMBER },
   { fieldName: 'lossAmt', dataType: ValueType.NUMBER },
+  { fieldName: 'rmaInQty', dataType: ValueType.NUMBER },
+  { fieldName: 'rmaInAmt', dataType: ValueType.NUMBER }, 
+  { fieldName: 'rmaOutQty', dataType: ValueType.NUMBER },
+  { fieldName: 'rmaOutAmt', dataType: ValueType.NUMBER },  
   { fieldName: '불량률', dataType: ValueType.NUMBER },  
   { fieldName: 'eohQty', dataType: ValueType.NUMBER },
   { fieldName: 'eohAmt', dataType: ValueType.NUMBER },
@@ -71,15 +71,6 @@ const tab090006GridField = {
         { column: 'inAmt' }
       ],
     },
-        { 
-      name: 'grpRmaIn',
-      header: { text: '타계정입고(RMA_IN)' },
-      direction: 'horizontal',
-      items: [
-        { column: 'rmaInQty' },
-        { column: 'rmaInAmt' }
-      ] 
-    }, 
     {
       name: 'grpOUT',
       header: { text: '출고(OUT)' },
@@ -89,15 +80,6 @@ const tab090006GridField = {
         { column: 'outAmt' }
       ],
     },
-    { 
-      name: 'grpRmaOut',
-      header: { text: '타계정출고(RMA_OUT)' },
-      direction: 'horizontal',
-      items: [
-        { column: 'rmaOutQty' },
-        { column: 'rmaOutAmt' }
-      ]
-    },
     {
       name: 'grpLoss',
       header: { text: 'LOSS' },
@@ -106,6 +88,24 @@ const tab090006GridField = {
         { column: 'lossQty' },
         { column: 'lossAmt' }
       ],
+    },
+    { 
+      name: 'grpRmaIn',
+      header: { text: '타계정입고(RMA_IN)' },
+      direction: 'horizontal',
+      items: [
+        { column: 'rmaInQty' },
+        { column: 'rmaInAmt' }
+      ] 
+    },    
+    { 
+      name: 'grpRmaOut',
+      header: { text: '타계정출고(RMA_OUT)' },
+      direction: 'horizontal',
+      items: [
+        { column: 'rmaOutQty' },
+        { column: 'rmaOutAmt' }
+      ]
     },
     { column: '불량률' },    
     {
@@ -164,15 +164,15 @@ const tab090006GridField = {
   { name: 'bohQty', fieldName: 'bohQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'bohAmt', fieldName: 'bohAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'inQty', fieldName: 'inQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
-  { name: 'inAmt', fieldName: 'inAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
-  { name: 'rmaInQty', fieldName: 'rmaInQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
-  { name: 'rmaInAmt', fieldName: 'rmaInAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },  
+  { name: 'inAmt', fieldName: 'inAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },  
   { name: 'outQty', fieldName: 'outQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'outAmt', fieldName: 'outAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
-  { name: 'rmaOutQty', fieldName: 'rmaOutQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
-  { name: 'rmaOutAmt', fieldName: 'rmaOutAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'lossQty', fieldName: 'lossQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'lossAmt', fieldName: 'lossAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'rmaInQty', fieldName: 'rmaInQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'rmaInAmt', fieldName: 'rmaInAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },  
+  { name: 'rmaOutQty', fieldName: 'rmaOutQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'rmaOutAmt', fieldName: 'rmaOutAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: '불량률', fieldName: '불량률', width: 80, header: { text: '불량률(%)' }, styleName: 'tr', numberFormat: '#,##0.00' },  
   { name: 'eohQty', fieldName: 'eohQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'eohAmt', fieldName: 'eohAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },

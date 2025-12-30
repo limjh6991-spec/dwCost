@@ -4,6 +4,56 @@
 
 const { ValueType } = require('realgrid');
 
+const dualFootersValueCallback = [
+  {
+    text: "",
+    numberFormat: "#,##0",
+    styleName: "sum-footer1",   
+    valueCallback: function (grid, column, footerIndex, columnFooter) {
+      const dp = grid.getDataSource ? grid.getDataSource() : null;
+      if (!dp) return 0;
+
+      let sum = 0;
+      const field = columnFooter.column.fieldName;
+
+      const rowCount = dp.getRowCount();
+      for (let i = 0; i < rowCount; i++) {
+        const seq = dp.getValue(i, "순서");
+        if (Number(seq) === 1) {
+          sum += Number(dp.getValue(i, field)) || 0;
+        }
+      }
+      return sum;
+    }
+  },
+  {
+    text: "",
+    numberFormat: "#,##0",
+    styleName: "sum-footer1",
+    valueCallback: function (grid, column, footerIndex, columnFooter) {
+      const dp = grid.getDataSource ? grid.getDataSource() : null;
+      if (!dp) return 0;
+
+      let sum = 0;
+      const field = columnFooter.column.fieldName;
+
+      const rowCount = dp.getRowCount();
+      for (let i = 0; i < rowCount; i++) {
+        const seq = dp.getValue(i, "순서");
+        if (Number(seq) === 2) {
+          sum += Number(dp.getValue(i, field)) || 0;
+        }
+      }
+      return sum;
+    }
+  }
+];
+
+const dualFooterLabel = [
+  { text: "금액 합계", styleName: "tc" },
+  { text: "수량 합계" , styleName: "tc" }
+];
+
 const grid = {
   options: {
     checkBar: { visible: false },
@@ -16,7 +66,7 @@ const grid = {
       hscrollBar: true, 
       showEmptyMessage: true,
       headerDepth: 2,
-      mergePolicy: 'auto',  // 병합 정책 추가
+      mergePolicy: 'auto',
     },
     edit: { editable: false },
     footer: { visible: true },
@@ -125,6 +175,7 @@ const grid = {
       header: { text: '거래처' },
       autoFilter: true,
       styleName: 'tc',
+      footers: dualFooterLabel,
     },
     {
       name: 'BOH',
@@ -133,6 +184,7 @@ const grid = {
       header: { text: '기초재고수량' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      footers: dualFootersValueCallback,
     },
     {
       name: 'INPUT',
@@ -141,6 +193,7 @@ const grid = {
       header: { text: '입고수량' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      footers: dualFootersValueCallback,
     },
     {
       name: 'IN_ETC',
@@ -149,6 +202,7 @@ const grid = {
       header: { text: '기타입고수량' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      footers: dualFootersValueCallback,
     },
     {
       name: 'OUTPUT',
@@ -157,6 +211,7 @@ const grid = {
       header: { text: '출고수량' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      footers: dualFootersValueCallback,
     },
     {
       name: 'OUT_ETC',
@@ -165,6 +220,7 @@ const grid = {
       header: { text: '기타출고수량' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      footers: dualFootersValueCallback,
     },
     {
       name: 'EOH',
@@ -173,6 +229,7 @@ const grid = {
       header: { text: '기말재고수량' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      footers: dualFootersValueCallback,
     },
   ],
 };

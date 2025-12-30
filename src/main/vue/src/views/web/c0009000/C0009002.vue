@@ -107,12 +107,17 @@ export default {
     this.initializeGrid();
   },
   mounted() {
-      const gv = this.gridView;
-        if (this.prodSubulGrid.columnLayout) {
-          gv.setColumnLayout(this.prodSubulGrid.columnLayout);
+    const gv = this.gridView;
+
+    if (this.prodSubulGrid.columnLayout) {
+      gv.setColumnLayout(this.prodSubulGrid.columnLayout);
     }
-      gv.setCellStyleCallback(this.setCellStyleCallbackProd);
-      gv.setRowStyleCallback(this.setRowStyleCallbackProd);
+
+    gv.setFooter({ visible: true });              // visible만
+    gv.setFooters([{ height: 30 }, { height: 30 }]); // ✅ 2줄 선언 (핵심)
+
+    gv.setCellStyleCallback(this.setCellStyleCallbackProd);
+    gv.setRowStyleCallback(this.setRowStyleCallbackProd);
   },
   beforeUnmount() {},
   methods: {    initialize() {
@@ -140,46 +145,7 @@ export default {
         target: this.prodSubulGridRows,
       };
       let resp = await this.$axios.api.search(param);
-
-        const rows = this.prodSubulGridRows || [];
-
-        const amountRows = rows.filter(r => Number(r.순서) === 1); // 금액행
-        const qtyRows    = rows.filter(r => Number(r.순서) === 2); // 수량행
-
-        const sumField = (list, field) =>
-          list.reduce((acc, row) => acc + (Number(row[field]) || 0), 0);
-
-        // 금액 합계
-        const amountTotalRow = {
-          순서: 1,
-          구분: '금액 합계',
-          코드: '',
-          inch: '',
-          dwSite: '',
-          boh:   sumField(amountRows, 'boh'),
-          input: sumField(amountRows, 'input'),
-          inEtc: sumField(amountRows, 'inEtc'),
-          output: sumField(amountRows, 'output'),
-          outEtc: sumField(amountRows, 'outEtc'),
-          eoh:   sumField(amountRows, 'eoh'),
-        };
-
-        // 수량 합계
-        const qtyTotalRow = {
-          순서: 2,
-          구분: '수량 합계',
-          코드: '',
-          inch: '',
-          dwSite: '',
-          boh:   sumField(qtyRows, 'boh'),
-          input: sumField(qtyRows, 'input'),
-          inEtc: sumField(qtyRows, 'inEtc'),
-          output: sumField(qtyRows, 'output'),
-          outEtc: sumField(qtyRows, 'outEtc'),
-          eoh:   sumField(qtyRows, 'eoh'),
-        };
-
-        this.prodSubulGridRows.push(amountTotalRow, qtyTotalRow);  
+      console.log('첫행', this.prodSubulGridRows?.[0]);
     },
     searchClick() {
       this.getDataList();
@@ -207,6 +173,7 @@ export default {
 
       grid.exportGrid(options);
     },
+    
     setCellStyleCallbackProd(grid, dataCell) {
       const ret = {};
       
