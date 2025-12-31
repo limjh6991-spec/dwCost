@@ -854,7 +854,8 @@
 			RUN_SIZE,
 			X,
 			Y,
-			XY
+			XY,
+			ADD_YN
 		from
 			DOI_MODEL_MAST
 		where 1=1
@@ -884,6 +885,7 @@
 		, X
 		, Y
 		, XY
+		, ADD_YN
 		)
 		VALUES
 		(
@@ -901,6 +903,7 @@
 		, #{x}
 		, #{y}
 		, #{xy}
+		, #{addYn}
 		);
 	</insert>
 
@@ -908,7 +911,6 @@
 	<update id="updateTab4Data">
 		UPDATE DOI_MODEL_MAST
 		SET SEL_CODE = #{selCode}
-		,MODEL = #{model}
 		,SPEC = #{spec}
 		,INCH = #{inch}
 		,GLASS_THICK = #{glassThick}
@@ -933,6 +935,7 @@
 		and sel_code = #{selCode}
 		and site = #{siteOrg}
 		and model = #{model}
+		and add_yn = 'Y'
 	</delete>
 	<select id="checkTab4DuplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
 		DROP TABLE IF EXISTS #TempTable1;
@@ -988,7 +991,7 @@
 			AND b.MODEL = a.MODEL
 			);
 		</select>
-	<insert id="tab4UploadExcel" parameterType="java.util.List">
+	<!-- <insert id="tab4UploadExcel" parameterType="java.util.List">
 		CREATE TABLE #TempTable (
 		seq_no INT IDENTITY (1, 1) NOT NULL,
 		YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
@@ -1048,7 +1051,7 @@
 		);
 
 		DROP TABLE #TempTable;
-	</insert>
+	</insert> -->
 
 	<!-- Tab5 : 데이터 이월 -->
 	<select id="TAB010005_Sch1" resultType="CamelMap">

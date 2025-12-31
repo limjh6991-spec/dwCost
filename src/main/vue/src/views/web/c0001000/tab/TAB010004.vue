@@ -23,7 +23,7 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
-          <b-button class="second" @click="uploadClick">업로드</b-button>
+          <!-- <b-button class="second" @click="uploadClick">업로드</b-button> -->
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
           <b-button class="sub" @click="addBtnClick">추가</b-button>
           <b-button @click="delBtnClick">삭제</b-button>
@@ -121,6 +121,7 @@ export default {
     this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     this.$nextTick(() => {
       this.searchClick();
+      this.calcXYForAddRows();
     });
   },
   methods: {
@@ -159,9 +160,55 @@ export default {
       if (!this.gridView || !this.gridDataProvider) return;
 
       this.gridView.commit();
-      this.gridDataProvider.addRow({ yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, site: this.params.site });
+
+      this.gridDataProvider.addRow({
+        yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+        site: this.params.site,
+        selCode: 'ACTUAL',
+        addYn: 'Y',
+        xy: null
+      });
+
       let itemIndex = this.gridView.getItemCount() - 1;
-      this.gridView.setCurrent({ itemIndex: itemIndex });
+      this.gridView.setCurrent({ itemIndex });
+    },
+    calcXYForAddRows() {
+      if (!this.gridDataProvider) return;
+
+      let syncing = false;
+
+      this.gridDataProvider.onValueChanged = (provider, dataRow, fieldName) => {
+        if (syncing) return;
+        if (fieldName !== 'x' && fieldName !== 'y') return;
+
+        // 신규 행 xy 계산
+        const addYn = provider.getValue(dataRow, 'addYn');
+        if (addYn !== 'Y') return;
+
+        const x = this.normalizeNumber(provider.getValue(dataRow, 'x'));
+        const y = this.normalizeNumber(provider.getValue(dataRow, 'y'));
+
+        syncing = true;
+        provider.setValue(dataRow, 'xy', (x != null && y != null) ? (x * y) : null);
+        syncing = false;
+      };
+    },
+    normalizeNumber(v) {
+      if (v === '' || v === undefined || v === null) return null;
+      const n = Number(String(v).replaceAll(',', ''));
+      return Number.isFinite(n) ? n : null;
+    },
+    applyXY(rows) {
+      if (!rows || rows.length === 0) return;
+
+      rows.forEach(r => {
+        r.x = this.normalizeNumber(r.x);
+        r.y = this.normalizeNumber(r.y);
+
+        r.xy = (r.x != null && r.y != null) ? (r.x * r.y) : null;
+        
+        if (!r.addYn) r.addYn = 'Y';
+      });
     },
     delBtnClick() {
       if (!this.gridView || !this.gridDataProvider) return;
@@ -187,6 +234,10 @@ export default {
       this.gridView.commit();
 
       let saveData = this.$refs.modelGrid.getSaveData();
+
+      this.applyXY(saveData.insert);
+      this.applyXY(saveData.update);
+
       if (saveData.count <= 0) {
         this.$toast('info', '변경된 내용이 없습니다.');
         return;
@@ -259,17 +310,17 @@ export default {
 
       grid.exportGrid(options);
     },
-    uploadClick() {
-      let excelGrid = _.cloneDeep(gridField);
-      excelGrid.options.display.fitStyle = 'none'; // 엑셀다운로드시 none 아니면 width 0이 됨.
-      this.$refs.uploadPopup1.openDialog({
-        dialogTitle: '업로드 팝업',
-        uploadApi: '/api/c0001000/c0001004/tab4Upload',
-        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10', 'field11', 'field12', 'field13', 'field14', 'field15'],
-        excelGrid,
-        fileName: '면적기준정보_template',
-      });
-    },
+    // uploadClick() {
+    //   let excelGrid = _.cloneDeep(gridField);
+    //   excelGrid.options.display.fitStyle = 'none'; // 엑셀다운로드시 none 아니면 width 0이 됨.
+    //   this.$refs.uploadPopup1.openDialog({
+    //     dialogTitle: '업로드 팝업',
+    //     uploadApi: '/api/c0001000/c0001004/tab4Upload',
+    //     headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10', 'field11', 'field12', 'field13', 'field14', 'field15'],
+    //     excelGrid,
+    //     fileName: '면적기준정보_template',
+    //   });
+    // },
     closePopup() {
       this.searchClick();
     },
