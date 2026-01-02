@@ -63,7 +63,26 @@ const grid = {
         return ret;
       },
     },
-    { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'edit tl' },
+        {
+      name: 'selCode',
+      fieldName: 'selCode',
+      width: '80',
+      header: { text: 'SEL_CODE' },
+      autoFilter: true,
+      editable: false,
+      styleName: 'tl',
+      styleCallback: function (grid, dataCell) {
+        var ret = {};
+        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
+          ret.editable = true;
+          ret.styleName = 'edit tl';
+        } else {
+          ret.editable = false;
+          ret.styleName = 'tl';
+        }
+        return ret;
+      },
+    },
     { name: 'siteOrg', fieldName: 'siteOrg', width: '0', header: { text: 'SITE_ORG' }, autoFilter: true, visible: false, editable: false, styleName: 'tl' },
     {
       name: 'site',

@@ -6,7 +6,8 @@
     
     <!-- TAB090001: 월별 집계 (수량) -->
     <select id="C0009001_Tab090001" resultType="CamelMap">
-        SELECT
+    EXEC DOI_ProdSubulMonthlyReport @YYYY=#{yyyy}, @SITE=#{site};
+        <!-- SELECT
             구분,
             도우코드 AS 코드,
             Inch,
@@ -39,7 +40,7 @@
         <if test="site != null and site != ''">
           AND SITE = #{site}
         </if>
-        ORDER BY 구분_ord, 도우코드, Inch
+        ORDER BY 구분_ord, 도우코드, Inch -->
     </select>
 
     <!-- TAB090002: 월별, 기간별(누적) 조회 -->

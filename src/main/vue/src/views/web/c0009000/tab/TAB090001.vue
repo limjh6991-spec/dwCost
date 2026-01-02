@@ -1,12 +1,12 @@
 /** * TAB090001 - 월별 집계 (수량) */
 <template>
-  <div>
+ <div>
     <div class="search_box">
       <b-row class="search_area">
         <b-col cols="1" class="period">
           <div class="form-floating me-1">
-            <date-picker label="기준월" mode="month" v-model="params.yyyymm" @change="onDateInput" />
-            <label for="floatingSelect" class="select">기준월</label>
+            <date-picker label="연도" mode="year" v-model="params.yyyymm" />
+            <label for="floatingSelect" class="select">년도</label>
           </div>
         </b-col>
         <b-col cols="2" class="ms-3">
@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :rows="prodSubulGridRows" style="height: 100%" />
+        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :grid="prodSubulGrid" :layout="prodSubulGrid.columnLayout" :step="'1'" :rows="prodSubulGridRows" style="height: 100%" :fitLayoutWidthEnable="false" />
       </div>
     </div>
   </div>
@@ -65,7 +65,7 @@ export default {
       },
     };
   },
-  watch: {
+   watch: {
     'params.yyyymm': function(newVal) {
       if (newVal) {
         this.onDateChange();
@@ -75,10 +75,9 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.yyyymm = newVal;
-          console.log('[Tab090001] yyyymm 변경:', this.params.yyyymm);
         }
-      }
-     },
+      },
+    },
     prodCtg: {
       handler(newVal) {
         if (newVal) {
@@ -106,7 +105,78 @@ export default {
     this.initialize();
     this.initializeGrid();
   },
-  mounted() {},
+  mounted() {
+     const gv = this.gridView;
+
+    if (this.prodSubulGrid.columnLayout) {
+      gv.setColumnLayout(this.prodSubulGrid.columnLayout);
+    }
+
+    gv.setRowStyleCallback((grid, item, fixed) => {
+      const row = item.dataRow;
+      if (row == null || row < 0) return null;
+
+      const rowType = (grid.getValue(row, 'rowType') || '').toString();
+      console.log('rowStyleCallback:', row, rowType);
+
+      if (rowType === 'SUBTOTAL') {
+        return {
+          style: {
+            background: '#f5f7ff',
+            fontWeight: 'bold',
+          },
+        };
+      }
+
+      if (rowType === 'TOTAL') {
+        return {
+          style: {
+            background: '#fff3cd',
+            fontWeight: 'bold',
+          },
+        };
+      }
+
+      return null;
+    });
+
+    const layoutGubun = gv.layoutByColumn('구분');
+    if (layoutGubun) {
+      layoutGubun.spanCallback = (grid, layout, itemIndex) => {
+        const dataRow = grid.getDataRow(itemIndex);
+        if (dataRow == null || dataRow < 0) return 1;
+
+        const rowType = String(grid.getValue(itemIndex, 'rowType') || '');
+        const totalKind = String(grid.getValue(itemIndex, 'totalKind') || '');
+
+        if (rowType === 'SUBTOTAL') return 5;
+
+        if (rowType === 'TOTAL') {
+          if (totalKind === 'MONTH_TOTAL') return 5;
+          if (totalKind === 'SITE_TOTAL')  return 2;
+          return 2;
+        }
+        return 1;
+      };
+    }
+
+    const layoutInch = gv.layoutByColumn('inch');
+    if (layoutInch) {
+      layoutInch.spanCallback = (grid, layout, itemIndex) => {
+        const dataRow = grid.getDataRow(itemIndex);
+        if (dataRow == null || dataRow < 0) return 1;
+
+        const rowType = String(grid.getValue(dataRow, 'rowType') || '');
+        const totalKind = String(grid.getValue(dataRow, 'totalKind') || '');
+
+        if (rowType === 'TOTAL') {
+          if (totalKind === 'MONTH_TOTAL') return 3;
+          if (totalKind === 'SITE_TOTAL')  return 3;
+        }
+        return 1;
+      };
+    }
+  },
   beforeUnmount() {},
   methods: {
     initialize() {
@@ -116,9 +186,6 @@ export default {
     initializeGrid() {
       this.prodSubulGrid = _.cloneDeep(gridField);
     },
-    onDateInput() {
-      // date-picker의 @change 이벤트 핸들러
-    },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
@@ -126,7 +193,7 @@ export default {
       this.gridView.commit();
 
       let params = {
-        yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+        yyyy: this.params.yyyymm.substring(0, 4),
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
 
@@ -137,6 +204,183 @@ export default {
         target: this.prodSubulGridRows,
       };
       let resp = await this.$axios.api.search(param);
+
+      let rows = [];
+      if (resp && resp.data) {
+        rows = Array.isArray(resp.data) ? resp.data : resp.data.rows || [];
+      } else if (Array.isArray(resp)) {
+        rows = resp;
+      }
+      
+      this.prodSubulGridRows = this.buildProdSubulRows(rows);
+    },
+    buildProdSubulRows(rows) {
+      if (!Array.isArray(rows) || rows.length === 0) return [];
+
+      const num = (v) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : 0;
+      };
+
+      const numberCols = ['계획', '실적', 'boh', 'in', 'out', 'loss', 'eoh'];
+      const baseRows = rows.filter(r => (r['월'] || '') !== '당월 총 생산실적');
+
+      const createSumRow = () =>
+        numberCols.reduce((acc, c) => ((acc[c] = 0), acc), {});
+
+      const accumulate = (target, source) => {
+        numberCols.forEach((c) => {
+          target[c] += num(source[c]);
+        });
+      };
+
+      const monthTotalSum = createSumRow();
+      baseRows.forEach(r => accumulate(monthTotalSum, r));
+
+      const monthTotalRow = {
+        rowType: 'TOTAL',
+        totalKind: 'MONTH_TOTAL',
+        구분: '당월 총 생산실적',
+        모델: '',
+        inch: '',
+        판매처: '',
+        월: '당월 총 생산실적',
+        ...monthTotalSum,
+        mergeKey: 'TOTAL|MONTH',
+        mergeKeyGubun: 'TOTAL|MONTH',
+      };
+
+      const result = [];
+
+      const groupMap = {};
+      baseRows.forEach((r) => {
+        const g = r['구분'] || '기타';
+        if (!groupMap[g]) groupMap[g] = [];
+        groupMap[g].push(r);
+      });
+
+      const orderedGubuns = [];
+      if (groupMap['개발']) orderedGubuns.push('개발');
+      if (groupMap['양산']) orderedGubuns.push('양산');
+      if (groupMap['카세트']) orderedGubuns.push('카세트');
+      Object.keys(groupMap).forEach((g) => {
+        if (!orderedGubuns.includes(g)) orderedGubuns.push(g);
+      });
+
+      const createSubtotal = (groupName) => ({
+        rowType: 'SUBTOTAL',
+        구분: `소계(${groupName})`,
+        월: '',
+        totalKind: '',
+
+        ...createSumRow(),
+        mergeKey: `SUBTOTAL|${groupName}`,
+        mergeKeyGubun: `SUBTOTAL|${groupName}`,
+      });
+
+      let mergeGroupSeq = 0;
+
+      orderedGubuns.forEach((g) => {
+        const list = groupMap[g];
+        if (!list || list.length === 0) return;
+
+        const subtotal = createSubtotal(g);
+        let lastKey = null;
+
+        list.forEach((r) => {
+          const prodKey = [
+            r['구분'] || '',
+            r['모델'] || r['model'] || '',
+            r['inch'] || r['Inch'] || '',
+            r['판매처'] || r['DW_SITE'] || r['dwSite'] || r['DW_Site'] || '',
+          ].join('|');
+
+          if (prodKey !== lastKey) {
+            mergeGroupSeq++;
+            lastKey = prodKey;
+          }
+
+          const mergeKey = `DATA|${mergeGroupSeq}`;
+
+          result.push({
+            ...r,
+            rowType: 'DATA',
+            totalKind: '',
+            mergeKey,
+            mergeKeyGubun: mergeKey,
+          });
+
+          accumulate(subtotal, r);
+        });
+
+        result.push(subtotal);
+      });
+
+      const first = baseRows[0] || {};
+      const dwSiteField =
+        '판매처' in first ? '판매처' :
+        'DW_SITE' in first ? 'DW_SITE' :
+        'dwSite' in first ? 'dwSite' :
+        'DW_Site' in first ? 'DW_Site' :
+        null;
+
+      if (dwSiteField) {
+        const siteTotals = {};
+        baseRows.forEach((r) => {
+          const key = r[dwSiteField];
+          if (!key) return;
+
+          if (!siteTotals[key]) siteTotals[key] = createSumRow();
+          accumulate(siteTotals[key], r);
+        });
+
+        Object.keys(siteTotals).forEach((key) => {
+          result.push({
+            rowType: 'TOTAL',
+            totalKind: 'SITE_TOTAL',
+            구분: '판매처별',
+            모델: '',
+            inch: key,
+            판매처: '',
+            월: '',
+            ...siteTotals[key],
+            mergeKey: `TOTAL|SITE|${key}`,
+            mergeKeyGubun: `TOTAL|SITE`,
+          });
+        });
+      }
+
+      return [monthTotalRow, ...result];
+    },
+
+    accumulateRow(target, source, numberCols) {
+      numberCols.forEach(col => {
+        const v = Number(source[col]) || 0;
+        target[col] += v;
+      });
+    },
+
+    makeSubtotalRowByGroup(row, groupName) {
+      return {
+        ...row,
+        rowType: 'SUBTOTAL',
+        구분: `소계(${groupName})`,
+        월: '',
+        mergeKeyGubun: `SUBTOTAL|${groupName}`,
+      };
+    },
+
+    makeTotalRow(row, dwSiteField, siteKey) {
+      return {
+        ...row,
+        rowType: 'TOTAL',
+        totalType: 'GRAND',
+        구분: '당월 총 생산실적',
+        모델: '',
+        inch: siteKey,
+        판매처: '',
+        월: '당월 총 생산실적',
+      };
     },
     searchClick() {
       this.getDataList();
