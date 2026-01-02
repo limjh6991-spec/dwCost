@@ -3,17 +3,13 @@
   <div>
     <div class="search_box">
       <b-row class="search_area">
-        <b-col cols="2">
-          <div class="form-floating">
-            <select class="form-select label-60" id="floatingSelect" v-model="params.yyyy">
-              <option v-for="yyyy in yearList" :key="yyyy.value" :value="yyyy">
-                {{ yyyy.text }}
-              </option>
-            </select>
-            <label for="floatingSelect" class="select">년도</label>
+        <b-col cols="1">
+          <div class="form-floating year">
+            <date-picker v-model="params.yyyymm" mode="year" placeholder="선택하세요" />
+            <label for="datepicker">년도</label>
           </div>
         </b-col>
-        <b-col cols="2">
+        <b-col cols="2" class="ms-3">
           <div class="form-floating">
             <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" :disabled="true" />
             <label for="floating">사업장</label>
@@ -67,7 +63,6 @@ export default {
       reportGridRows: [],
       params: {
         yyyymm: null,
-        yyyy: null,
         site: 'HQ',
       },
       yearList: [],
@@ -90,7 +85,6 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.yyyymm = newVal;
-          this.params.yyyy = { value: parseInt(newVal.substring(0, 4)), text: newVal.substring(0, 4) };
         }
       },
     },
@@ -125,16 +119,7 @@ export default {
   beforeUnmount() {},
   methods: {
     initialize() {
-      var current = new Date();
-      this.yearList = [];
-      for (let i = current.getFullYear() - 9; i <= current.getFullYear(); i++) {
-        this.yearList.push({ value: i, text: i.toString() });
-      }
-      if (this.srchInfo.yyyymm != null && this.srchInfo.yyyymm.length >= 4) {
-        this.params.yyyy = { value: parseInt(this.srchInfo.yyyymm.substring(0, 4)), text: this.srchInfo.yyyymm.substring(0, 4) };
-      } else {
-        this.params.yyyy = { value: current.getFullYear(), text: current.getFullYear().toString() };
-      }
+      this.params.yyyymm = this.srchInfo.yyyymm;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
       this.siteStr = this.params.site === 'VINA' ? '(VN)' : '(국내)';
     },
@@ -148,12 +133,11 @@ export default {
       this.gridView.commit();
 
       let params = {
-        yyyy: this.params.yyyy?.text,
+        yyyy: this.params.yyyymm?.substring(0, 4),
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
 
-      this.gridView.columnByName('tot').header.text = this.params.yyyy?.text?.substring(2, 4) + '年 실행';
-
+      this.gridView.columnByName('tot').header.text = this.params.yyyymm?.substring(2, 4) + '年 실행';
       let param = {
         menuId: 'c0008000',
         queryId: 'C0008014_Sch1',
