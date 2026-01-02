@@ -100,6 +100,16 @@ const c0008000Router = [
     },
   },
   {
+    path: '/c0008010',
+    name: '매출원가',
+    component: () => import('../views/web/c0008000/C0008010.vue'),
+    meta: {
+      upperSysResourceId: 'C0008000',
+      sysResourceId: 'C0008010',
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/c0008012',
     name: '매출',
     component: () => import('../views/web/c0008000/C0008012.vue'),
