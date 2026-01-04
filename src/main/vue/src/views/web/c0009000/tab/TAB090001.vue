@@ -260,8 +260,8 @@ export default {
       });
 
       const orderedGubuns = [];
-      if (groupMap['개발']) orderedGubuns.push('개발');
       if (groupMap['양산']) orderedGubuns.push('양산');
+      if (groupMap['개발']) orderedGubuns.push('개발');
       if (groupMap['카세트']) orderedGubuns.push('카세트');
       Object.keys(groupMap).forEach((g) => {
         if (!orderedGubuns.includes(g)) orderedGubuns.push(g);

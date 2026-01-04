@@ -6,33 +6,34 @@
 		select model,expen_sel명,acct_name,sum([in]) IN_AMT  FROM doi_cost where yyyymm='202510' and site='HQ'  AND EXPEN_SEL NOT IN ('MDAX','MIAX')
 		group by model,expen_sel명,acct_name
 	) SELECT * FROM EXPEN A FULL  JOIN COST B ON (A.MODEL=B.MODEL AND A.expen_sel명=B.expen_sel명 and a.acct_name=b.acct_name)
-	  WHERE A.IN_AMT = B.IN_AMT
+	  WHERE A.IN_AMT != B.IN_AMT
 
 	--가공비배부 체크 (Expen -> COST)
   	with 	MAT as (   
-	SELECT 도우모델 model,case when mat_class='원자재' then '직접재료비' else '간접재료비' end acct_name,
+	SELECT 구분,도우모델 model,case when mat_class='원자재' then '직접재료비' else '간접재료비' end acct_name,
 	   sum([배부금액]) IN_AMT --select *
 	 FROM DOI_MAT_COST where yyyymm='202510' and site='HQ' --and 도우모델='8136'
-	group by 도우모델,case when mat_class='원자재' then '직접재료비' else '간접재료비' end
+	group by 구분,도우모델,case when mat_class='원자재' then '직접재료비' else '간접재료비' end
 	), COST AS (
-		select model,expen_sel명,acct_name,sum([in]) IN_AMT FROM doi_cost where yyyymm='202510' and site='HQ'  AND EXPEN_SEL IN ('MDAX','MIAX')
-		group by model,expen_sel명,acct_name
-	) SELECT * FROM MAT A left  JOIN COST B ON (A.MODEL=B.MODEL AND A.acct_name=B.acct_name)
+		select 구분,model,expen_sel명,acct_name,sum([in]) IN_AMT FROM doi_cost where yyyymm='202510' and site='HQ'  AND EXPEN_SEL IN ('MDAX','MIAX')
+		group by 구분,model,expen_sel명,acct_name
+	) SELECT * FROM MAT A left  JOIN COST B ON (A.구분=B.구분 and A.MODEL=B.MODEL AND A.acct_name=B.acct_name)
 	  WHERE A.IN_AMT = B.IN_AMT   
 
   --배부(경비,재료비) -> 제품수불(창고수불)체크 : COST -> STCO	  
   with STCO as ( 
-	SELECT 구분,model,expen_sel명,acct_name,sum([in_amt]) IN_AMT 
-	FROM DOI_STCO where yyyymm='202510' and site='HQ' --AND MODEL like 'VN%'
-		group by 구분,model,expen_sel명,acct_name having sum([in_amt]) != 0
+	SELECT 구분,model,expen_sel명,sum([in_amt]) IN_AMT   --select * 
+	FROM DOI_STCO where yyyymm='202510' and site='HQ' --AND MODEL like '0281' AND expen_sel명='재료비'
+		group by 구분,model,expen_sel명 having sum([in_amt]) != 0
 	), COST AS (
-		select 구분,model,expen_sel명,acct_name,sum([out]) out_AMT  
+		select case when MODEL like 'VINA%'then '카세트' else 구분 end 구분,model,expen_sel명,sum([out]) out_AMT--, item_name	 --select * 
 		FROM doi_cost 
-		where yyyymm='202510' and site='HQ'  and adj_yn='Y' --AND MODEL like 'VN%'
-		group by 구분,model,expen_sel명,acct_name having sum([out]) != 0
-	) SELECT * FROM STCO A 
-  		LEFT  JOIN COST B ON (A.구분=B.구분 AND A.MODEL=B.MODEL AND A.expen_sel명=B.expen_sel명 AND A.acct_name=B.acct_name )
-    WHERE A.IN_AMT = coalesce(B.out_AMT,0);
+		where yyyymm='202510' and site='HQ'  and adj_yn='Y' --AND MODEL like '0281' AND expen_sel명='재료비'
+		group by 구분,model,expen_sel명/*,item_NAME*/ having sum([out]) != 0
+	) SELECT a.구분,a.model,a.expen_sel명,a.IN_AMT,b.out_AMT FROM STCO A 
+  		LEFT  JOIN COST B ON (A.구분=B.구분 AND A.MODEL=B.MODEL AND A.expen_sel명=B.expen_sel명)-- AND A.acct_name=B.acct_name )
+    WHERE /*a.expen_sel명='재료비'
+ 	  and*/  A.IN_AMT = coalesce(B.out_AMT,0);
   
    --제품수불 -> 매출원가 체크 : STCO -> SLCO
     with SLCO as ( 
@@ -44,7 +45,20 @@
 		SELECT 구분,model,expen_sel명,expen_sel,sum([out_amt]) OUT_AMT 
 		  FROM DOI_STCO where yyyymm='202510' and site='HQ' --AND MODEL like 'VN%'
 		 group by 구분,model,expen_sel명,expen_sel having sum([out_amt]) != 0
-	) SELECT * FROM SLCO A 
-  		LEFT  JOIN STCO B ON (A.구분=B.구분 AND A.MODEL=B.MODEL AND A.expen_sel명=B.expen_sel명 AND A.expen_sel=B.expen_sel )
-    WHERE A.OUT_AMT != coalesce(B.out_AMT,0);
+	) 
+	SELECT a.구분,a.model,a.expen_sel명,a.expen_sel,a.out_AMT,b.OUT_AMT 
+	FROM SLCO A 
+  		LEFT  JOIN STCO B ON (A.구분=B.구분 AND A.MODEL=B.MODEL  AND A.expen_sel=B.expen_sel )
+    WHERE A.OUT_AMT = coalesce(B.out_AMT,0);
     
+   WITH expen AS (
+    SELECT EXPEN_SEL명,SUM(ACCT_AMT) 판관비
+      FROM DOI_acct_expen where yyyymm='202510' and site='HQ' AND ACCT_CLASS='CC'
+      GROUP BY EXPEN_SEL명
+   ), SMCE AS ( 
+   select 구분,model,expen_sel명,sum(dist_amt) 배부금액,sum(sum(sum(dist_amt)) over (partition by expen_sel명) as expen_sel금액
+   from doi_smce_cost
+   where yyyymm='202510' and site='HQ'
+    group by 구분,model,expen_sel명
+   ) SELECT * FROM expen a
+      LEFT JOIN SMCE b on (a.expen_sel명 = b.expen_sel명)

@@ -100,6 +100,7 @@ const tab090001GridField = {
       header: { text: '실적' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      // footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: '달성률',
@@ -116,6 +117,7 @@ const tab090001GridField = {
       header: { text: 'BOH' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      // footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: 'in',
@@ -124,6 +126,7 @@ const tab090001GridField = {
       header: { text: 'IN' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      // footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: 'out',
@@ -132,6 +135,7 @@ const tab090001GridField = {
       header: { text: 'OUT' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      // footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: 'loss',
@@ -140,6 +144,7 @@ const tab090001GridField = {
       header: { text: 'LOSS' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      // footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: 'eoh',
@@ -148,6 +153,7 @@ const tab090001GridField = {
       header: { text: 'EOH' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      // footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: '불량률',
