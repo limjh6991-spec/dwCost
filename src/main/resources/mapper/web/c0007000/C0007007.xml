@@ -1,0 +1,588 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007007Mapper">
+	<select id="C0007007_TAB070011" resultType="CamelMap">
+		select
+		YYYYMM,SEL_CODE
+ 		,SITE as SITE_ORG 
+		,CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' end as SITE
+		,창고, 품명, 품번, 규격, 단위, 수량, 기타출고구분, 기준단위, 기준단위수량, LotNo, 코스트센터, 현재고, 특이사항
+		from
+			DOI_MIOS
+		where 1=1
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
+		</if>
+		<if test="site != null and site != ''">
+			and SITE = #{site}
+		</if>
+		order BY 창고, 품번, 품명;
+	</select>
+
+	<select id="checkTab1DuplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
+		DROP TABLE IF EXISTS #TempTable1;
+
+		CREATE TABLE #TempTable1 (
+			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			SITE varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			창고 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			품명 varchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			품번 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			규격 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			단위 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			수량 int NULL,
+			기타출고구분 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			기준단위 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			기준단위수량 int NULL,
+			LotNo varchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			코스트센터 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			현재고 int NULL,
+			특이사항 nvarchar(150) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable1
+		(
+		YYYYMM,SEL_CODE,SITE,창고,품명,품번,규격,단위,수량,기타출고구분,기준단위,기준단위수량,LotNo,코스트센터,현재고,특이사항
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			)
+		</foreach>;
+
+		SELECT * FROM #TempTable1 a
+		WHERE EXISTS (
+		SELECT 1
+		FROM DOI_MIOS b
+		WHERE 1=1
+		AND b.YYYYMM = a.YYYYMM
+		AND b.SEL_CODE = a.SEL_CODE
+		AND b.SITE = a.SITE
+		AND b.창고 = a.창고
+		AND b.품명 = a.품명
+		and b.품번 = a.품번
+		);
+	</select>
+
+	<insert id="tab1UploadExcel" parameterType="java.util.List">
+		CREATE TABLE #TempTable (
+			seq_no INT IDENTITY (1, 1) NOT NULL,
+			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			SITE varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			창고 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			품명 varchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			품번 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			규격 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			단위 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			수량 int NULL,
+			기타출고구분 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			기준단위 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			기준단위수량 int NULL,
+			LotNo varchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			코스트센터 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			현재고 int NULL,
+			특이사항 nvarchar(150) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable
+		(
+			YYYYMM,SEL_CODE,SITE,창고,품명,품번,규격,단위,수량,기타출고구분,기준단위,기준단위수량,LotNo,코스트센터,현재고,특이사항
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			)
+		</foreach>;
+
+		INSERT INTO DOI_MIOS (YYYYMM,SEL_CODE,SITE,창고,품명,품번,규격,단위,수량,기타출고구분,기준단위,기준단위수량,LotNo,코스트센터,현재고,특이사항)
+		SELECT YYYYMM,SEL_CODE,SITE,창고,품명,품번,규격,단위,수량,기타출고구분,기준단위,기준단위수량,LotNo,코스트센터,현재고,특이사항
+		FROM (
+		SELECT *, MAX(seq_no) over (partition by YYYYMM, SEL_CODE, SITE, 창고, 품명, 품번) max_seq_no FROM #TempTable
+		) A
+		WHERE 1=1
+		AND seq_no = max_seq_no
+		AND NOT EXISTS (
+			SELECT 1
+			FROM DOI_MIOS b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SEL_CODE = a.SEL_CODE
+			AND b.SITE = a.SITE
+			AND b.창고 = a.창고
+			AND b.품명 = a.품명
+			and b.품번 = a.품번
+		);
+
+		DROP TABLE #TempTable;
+	</insert>
+
+	<insert id="C0007007_Insert1">
+		INSERT INTO DOI_MIOS
+		(
+			YYYYMM,SEL_CODE,SITE,창고,품명,품번,규격,단위,수량,기타출고구분,기준단위,기준단위수량,LotNo,코스트센터,현재고,특이사항
+		)
+		VALUES
+		(
+		#{yyyymm}
+		, #{selCode}
+		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='VINA' then 'VN' else left(#{site},2) end
+		, #{창고}
+		, #{품명}
+		, #{품번}
+		, #{규격}
+		, #{단위}
+		, #{수량}
+		, #{기타출고구분}
+		, #{기준단위}
+		, #{기준단위수량}
+		, #{LotNo}
+		, #{코스트센터}
+		, #{현재고}
+		, #{특이사항}
+		);
+	</insert>
+
+	<delete id="C0007007_Delete1">
+		DELETE FROM DOI_MIOS
+		WHERE 1=1
+		and YYYYMM = #{yyyymm}
+		and SEL_CODE = #{selCode}
+		and SITE = #{site}
+		and 창고 = #{창고}
+		and 품명 = #{품명}
+		and 품번 = #{품번}
+	</delete>
+
+	<update id="C0007007_Update1">
+		UPDATE DOI_MIOS
+		,규격 = #{규격}
+		,단위 = #{단위}
+		,수량 = #{수량}
+		,기타출고구분 = #{기타출고구분}
+		,기준단위 = #{기준단위}
+		,기준단위수량 = #{기준단위수량}
+		,LotNo = #{lotNo}
+		,코스트센터 = #{코스트센터}
+		,현재고 = #{현재고}
+		,특이사항 = #{특이사항}
+		WHERE 1=1
+		and YYYYMM = #{yyyymm}
+		and SEL_CODE = #{selCode}
+		and SITE = #{site}
+		and 창고 = #{창고}
+		and 품명 = #{품명}
+		and 품번 = #{품번}
+		;
+	</update>
+
+	<select id="C0007007_TAB070012" resultType="CamelMap">
+		select
+		YYYYMM,SEL_CODE
+		,SITE as SITE_ORG
+		,CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' end as SITE
+        ,자산처리계정, 품목자산분류, 재고자산종류, 매출원가계정, 대분류, 중분류, 소분류, 품목기타분류, 품명, 품번, 규격, 단위, 기초수량, 기초금액, 입고수량, 입고금액, 출고수량, 출고금액, 재고수량A, 결산재고수량B, 차이수량A_B, 재고금액C, 결산재고금액D, 차이금액C_D, 최종결산월재고단가, 생산수량, 생산금액, 구매수량, 구매금액, 적송입고수량, 적송입고금액, 기타입고수량, 기타입고금액, 판매수량, 판매원가, 투입수량, 투입금액, 적송출고수량, 적송출고금액, 기타출고수량, 기타출고금액
+		from
+			DOI_IVDD
+		where 1=1
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
+		</if>
+		<if test="site != null and site != ''">
+			and SITE = #{site}
+		</if>
+		order BY 품번,품명;
+	</select>
+
+	<select id="checkTab2DuplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
+		DROP TABLE IF EXISTS #TempTable1;
+
+		CREATE TABLE #TempTable1 (
+			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			SITE varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			자산처리계정 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			품목자산분류 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			재고자산종류 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			매출원가계정 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			대분류 nvarchar(19) COLLATE Korean_Wansung_CI_AS NULL,
+			중분류 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			소분류 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			품목기타분류 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			품명 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			품번 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			규격 varchar(35) COLLATE Korean_Wansung_CI_AS NULL,
+			단위 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			기초수량 int NULL,
+			기초금액 int NULL,
+			입고수량 int NULL,
+			입고금액 int NULL,
+			출고수량 int NULL,
+			출고금액 int NULL,
+			재고수량A int NULL,
+			결산재고수량B int NULL,
+			차이수량A_B int NULL,
+			재고금액C int NULL,
+			결산재고금액D int NULL,
+			차이금액C_D int NULL,
+			최종결산월재고단가 float NULL,
+			생산수량 int NULL,
+			생산금액 int NULL,
+			구매수량 int NULL,
+			구매금액 int NULL,
+			적송입고수량 int NULL,
+			적송입고금액 int NULL,
+			기타입고수량 int NULL,
+			기타입고금액 int NULL,
+			판매수량 int NULL,
+			판매원가 int NULL,
+			투입수량 int NULL,
+			투입금액 int NULL,
+			적송출고수량 int NULL,
+			적송출고금액 int NULL,
+			기타출고수량 int NULL,
+			기타출고금액 int NULL
+		);
+
+		INSERT INTO #TempTable1
+		(
+		YYYYMM, SEL_CODE, SITE, 자산처리계정, 품목자산분류, 재고자산종류, 매출원가계정, 대분류, 중분류, 소분류, 품목기타분류, 품명, 품번, 규격, 단위, 기초수량, 기초금액, 입고수량, 입고금액, 출고수량, 출고금액, 재고수량A, 결산재고수량B, 차이수량A_B, 재고금액C, 결산재고금액D, 차이금액C_D, 최종결산월재고단가, 생산수량, 생산금액, 구매수량, 구매금액, 적송입고수량, 적송입고금액, 기타입고수량, 기타입고금액, 판매수량, 판매원가, 투입수량, 투입금액, 적송출고수량, 적송출고금액, 기타출고수량, 기타출고금액
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			, #{item.field23}
+			, #{item.field24}
+			, #{item.field25}
+			, #{item.field26}
+			, #{item.field27}
+			, #{item.field28}
+			, #{item.field29}
+			, #{item.field30}
+			, #{item.field31}
+			, #{item.field32}
+			, #{item.field33}
+			, #{item.field34}
+			, #{item.field35}
+			, #{item.field36}
+			, #{item.field37}
+			, #{item.field38}
+			, #{item.field39}
+			, #{item.field40}
+			, #{item.field41}
+			, #{item.field42}
+			, #{item.field43}
+			, #{item.field44}
+			, #{item.field45}					
+			)
+		</foreach>;
+
+		SELECT * FROM #TempTable1 a
+		WHERE EXISTS (
+		SELECT 1
+		FROM DOI_IVDD b
+		WHERE 1=1
+		AND b.YYYYMM = a.YYYYMM
+		AND b.SEL_CODE = a.SEL_CODE
+		AND b.SITE = a.SITE
+		AND b.품명 = a.품명
+		AND b.품번 = a.품번
+		);
+	</select>
+
+	<insert id="tab2UploadExcel" parameterType="java.util.List">
+		CREATE TABLE #TempTable (
+			seq_no INT IDENTITY (1, 1) NOT NULL,
+			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			SITE varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			자산처리계정 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			품목자산분류 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			재고자산종류 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			매출원가계정 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			대분류 nvarchar(19) COLLATE Korean_Wansung_CI_AS NULL,
+			중분류 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			소분류 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			품목기타분류 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			품명 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+			품번 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			규격 varchar(35) COLLATE Korean_Wansung_CI_AS NULL,
+			단위 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+			기초수량 int NULL,
+			기초금액 int NULL,
+			입고수량 int NULL,
+			입고금액 int NULL,
+			출고수량 int NULL,
+			출고금액 int NULL,
+			재고수량A int NULL,
+			결산재고수량B int NULL,
+			차이수량A_B int NULL,
+			재고금액C int NULL,
+			결산재고금액D int NULL,
+			차이금액C_D int NULL,
+			최종결산월재고단가 float NULL,
+			생산수량 int NULL,
+			생산금액 int NULL,
+			구매수량 int NULL,
+			구매금액 int NULL,
+			적송입고수량 int NULL,
+			적송입고금액 int NULL,
+			기타입고수량 int NULL,
+			기타입고금액 int NULL,
+			판매수량 int NULL,
+			판매원가 int NULL,
+			투입수량 int NULL,
+			투입금액 int NULL,
+			적송출고수량 int NULL,
+			적송출고금액 int NULL,
+			기타출고수량 int NULL,
+			기타출고금액 int NULL
+		);
+
+		INSERT INTO #TempTable
+		(
+		YYYYMM, SEL_CODE, SITE, 자산처리계정, 품목자산분류, 재고자산종류, 매출원가계정, 대분류, 중분류, 소분류, 품목기타분류, 품명, 품번, 규격, 단위, 기초수량, 기초금액, 입고수량, 입고금액, 출고수량, 출고금액, 재고수량A, 결산재고수량B, 차이수량A_B, 재고금액C, 결산재고금액D, 차이금액C_D, 최종결산월재고단가, 생산수량, 생산금액, 구매수량, 구매금액, 적송입고수량, 적송입고금액, 기타입고수량, 기타입고금액, 판매수량, 판매원가, 투입수량, 투입금액, 적송출고수량, 적송출고금액, 기타출고수량, 기타출고금액
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			, #{item.field23}
+			, #{item.field24}
+			, #{item.field25}
+			, #{item.field26}
+			, #{item.field27}
+			, #{item.field28}
+			, #{item.field29}
+			, #{item.field30}
+			, #{item.field31}
+			, #{item.field32}
+			, #{item.field33}
+			, #{item.field34}
+			, #{item.field35}
+			, #{item.field36}
+			, #{item.field37}
+			, #{item.field38}
+			, #{item.field39}
+			, #{item.field40}
+			, #{item.field41}
+			, #{item.field42}
+			, #{item.field43}
+			, #{item.field44}
+			, #{item.field45}				
+			)
+		</foreach>;
+
+		INSERT INTO DOI_IVDD (YYYYMM, SEL_CODE, SITE, 자산처리계정, 품목자산분류, 재고자산종류, 매출원가계정, 대분류, 중분류, 소분류, 품목기타분류, 품명, 품번, 규격, 단위, 기초수량, 기초금액, 입고수량, 입고금액, 출고수량, 출고금액, 재고수량A, 결산재고수량B, 차이수량A_B, 재고금액C, 결산재고금액D, 차이금액C_D, 최종결산월재고단가, 생산수량, 생산금액, 구매수량, 구매금액, 적송입고수량, 적송입고금액, 기타입고수량, 기타입고금액, 판매수량, 판매원가, 투입수량, 투입금액, 적송출고수량, 적송출고금액, 기타출고수량, 기타출고금액)
+		SELECT YYYYMM, SEL_CODE, SITE, 자산처리계정, 품목자산분류, 재고자산종류, 매출원가계정, 대분류, 중분류, 소분류, 품목기타분류, 품명, 품번, 규격, 단위, 기초수량, 기초금액, 입고수량, 입고금액, 출고수량, 출고금액, 재고수량A, 결산재고수량B, 차이수량A_B, 재고금액C, 결산재고금액D, 차이금액C_D, 최종결산월재고단가, 생산수량, 생산금액, 구매수량, 구매금액, 적송입고수량, 적송입고금액, 기타입고수량, 기타입고금액, 판매수량, 판매원가, 투입수량, 투입금액, 적송출고수량, 적송출고금액, 기타출고수량, 기타출고금액
+		FROM (
+		SELECT *, MAX(seq_no) over (partition by YYYYMM, SEL_CODE, SITE, 품번, 품명) max_seq_no FROM #TempTable
+		) A
+		WHERE 1=1
+		AND seq_no = max_seq_no
+		AND NOT EXISTS (
+			SELECT 1
+			FROM DOI_IVDD b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SEL_CODE = a.SEL_CODE
+			AND b.SITE = a.SITE
+			AND b.품번 = a.품번
+			AND b.품명 = a.품명
+		);
+
+		DROP TABLE #TempTable;
+	</insert>
+
+	<insert id="C0007007_Insert2">
+		INSERT INTO DOI_IVDD
+		(
+		YYYYMM, SEL_CODE, SITE, 자산처리계정, 품목자산분류, 재고자산종류, 매출원가계정, 대분류, 중분류, 소분류, 품목기타분류, 품명, 품번, 규격, 단위, 기초수량, 기초금액, 입고수량, 입고금액, 출고수량, 출고금액, 재고수량A, 결산재고수량B, 차이수량A_B, 재고금액C, 결산재고금액D, 차이금액C_D, 최종결산월재고단가, 생산수량, 생산금액, 구매수량, 구매금액, 적송입고수량, 적송입고금액, 기타입고수량, 기타입고금액, 판매수량, 판매원가, 투입수량, 투입금액, 적송출고수량, 적송출고금액, 기타출고수량, 기타출고금액
+		)
+		VALUES
+		(
+		#{yyyymm}
+		, #{selCode}
+		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='VINA' then 'VN' else left(#{site},2) end
+		, #{자산처리계정}
+		, #{품목자산분류}
+		, #{재고자산종류}
+		, #{매출원가계정}
+		, #{대분류}
+		, #{중분류}
+		, #{소분류}
+		, #{품목기타분류}
+		, #{품명}
+		, #{품번}
+		, #{규격}
+		, #{단위}
+		, #{기초수량}
+		, #{기초금액}
+		, #{입고수량}
+		, #{입고금액}
+		, #{출고수량}
+		, #{출고금액}
+		, #{재고수량A}
+		, #{결산재고수량B}
+		, #{차이수량A_B}
+		, #{재고금액C}
+		, #{결산재고금액D}
+		, #{차이금액C_D}
+		, #{최종결산월재고단가}
+		, #{생산수량}
+		, #{생산금액}
+		, #{구매수량}
+		, #{구매금액}
+		, #{적송입고수량}
+		, #{적송입고금액}
+		, #{기타입고수량}
+		, #{기타입고금액}
+		, #{판매수량}
+		, #{판매원가}
+		, #{투입수량}
+		, #{투입금액}
+		, #{적송출고수량}
+		, #{적송출고금액}
+		, #{기타출고수량}
+		, #{기타출고금액}
+		);
+	</insert>
+
+	<delete id="C0007007_Delete2">
+		DELETE FROM DOI_IVDD
+		WHERE 1=1
+		and YYYYMM = #{yyyymm}
+		and SEL_CODE = #{selCode}
+		and SITE = #{site}
+		and 품명 = #{품명}
+		and 품번 = #{품번}
+	</delete>
+
+	<update id="C0007007_Update2">
+		UPDATE DOI_IVDD
+		SET 자산처리계정 = #{자산처리계정}
+		,품목자산분류 = #{품목자산분류}
+		,재고자산종류 = #{재고자산종류}
+		,매출원가계정 = #{매출원가계정}
+		,대분류 = #{대분류}
+		,중분류 = #{중분류}
+		,소분류 = #{소분류}
+		,품목기타분류 = #{품목기타분류}
+		,품명 = #{품명}
+		,품번 = #{품번}
+		,규격 = #{규격}
+		,단위 = #{단위}
+		,기초수량 = #{기초수량}
+		,기초금액 = #{기초금액}
+		,입고수량 = #{입고수량}
+		,입고금액 = #{입고금액}
+		,출고수량 = #{출고수량}
+		,출고금액 = #{출고금액}
+		,재고수량A = #{재고수량A}
+		,결산재고수량B = #{결산재고수량B}
+		,차이수량A_B = #{차이수량A_B}
+		,재고금액C = #{재고금액C}
+		,결산재고금액D = #{결산재고금액D}
+		,차이금액C_D = #{차이금액C_D}
+		,최종결산월재고단가 = #{최종결산월재고단가}
+		,생산수량 = #{생산수량}
+		,생산금액 = #{생산금액}
+		,구매수량 = #{구매수량}
+		,구매금액 = #{구매금액}
+		,적송입고수량 = #{적송입고수량}
+		,적송입고금액 = #{적송입고금액}
+		,기타입고수량 = #{기타입고수량}
+		,기타입고금액 = #{기타입고금액}
+		,판매수량 = #{판매수량}
+		,판매원가 = #{판매원가}
+		,투입수량 = #{투입수량}
+		,투입금액 = #{투입금액}
+		,적송출고수량 = #{적송출고수량}
+		,적송출고금액 = #{적송출고금액}
+		,기타출고수량 = #{기타출고수량}
+		,기타출고금액 = #{기타출고금액}
+		WHERE 1=1
+		and YYYYMM = #{yyyymm}
+		and SEL_CODE = #{selCode}
+		and SITE = #{site}
+		and 품명 = #{품명}
+		and 품번 = #{품번}
+		;
+	</update>
+
+</mapper>
