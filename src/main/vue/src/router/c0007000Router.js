@@ -38,16 +38,16 @@ const c0007000Router = [
       requiresAuth: false,
     },
   },
-  // {
-  //   path: '/c0007007',
-  //   name: '입고수불 자체 체크',
-  //   component: () => import('../views/web/c0007000/C0007007.vue'),
-  //   meta: {
-  //     upperSysResourceId: 'C0007000',
-  //     sysResourceId: 'C0007007',
-  //     requiresAuth: false,
-  //   },
-  // },
+  {
+    path: '/c0007007',
+    name: '유상사급',
+    component: () => import('../views/web/c0007000/C0007007.vue'),
+    meta: {
+      upperSysResourceId: 'C0007000',
+      sysResourceId: 'C0007007',
+      requiresAuth: false,
+    },
+  },
   // {
   //   path: '/c0007008',
   //   name: '생산/입고/판매 체크',
