@@ -723,9 +723,9 @@
 		자재중분류 nvarchar(16) COLLATE Korean_Wansung_CI_AS NULL,
 		자재소분류 nvarchar(37) COLLATE Korean_Wansung_CI_AS NULL,
 		투입단위 nvarchar(7) COLLATE Korean_Wansung_CI_AS NULL,
-		소요량 numeric(15,4) NULL,
-		내부Loss율 numeric(5,2) NULL,
-		외부Loss율 numeric(5,2) NULL,
+		소요량 nvarchar(50) NULL,
+		내부Loss율 nvarchar(50) NULL,
+		외부Loss율 nvarchar(50) NULL,
 		조립위치 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 		특이사항 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
 		최초작성일 date NULL,
@@ -773,7 +773,8 @@
 		</foreach>;
 
 		INSERT INTO DOI_BOM_MAST (YYYYMM,SITE,제품명,제품번호,품목자산분류,품목대분류,품목중분류,품목소분류,공정차수,공정,공정품명,공정품번호,자재명,자재번호,자재자산분류,자재대분류,자재중분류,자재소분류,투입단위,소요량,내부Loss율,외부Loss율,조립위치,특이사항,최초작성일,최초작성자,최종수정일,최종수정자 )
-		SELECT YYYYMM,SITE,제품명,제품번호,품목자산분류,품목대분류,품목중분류,품목소분류,공정차수,공정,공정품명,공정품번호,자재명,자재번호,자재자산분류,자재대분류,자재중분류,자재소분류,투입단위,소요량,내부Loss율,외부Loss율,조립위치,특이사항,최초작성일,최초작성자,최종수정일,최종수정자
+		SELECT YYYYMM,SITE,제품명,제품번호,품목자산분류,품목대분류,품목중분류,품목소분류,공정차수,공정,공정품명,공정품번호,자재명,자재번호,자재자산분류,자재대분류,자재중분류,자재소분류,투입단위,
+		소요량,내부Loss율,외부Loss율,조립위치,특이사항,최초작성일,최초작성자,최종수정일,최종수정자
 		FROM (
 			SELECT *, MAX(seq_no) over (partition by YYYYMM, SITE, 제품번호, 공정, 자재번호) max_seq_no FROM #TempTable
 		)A

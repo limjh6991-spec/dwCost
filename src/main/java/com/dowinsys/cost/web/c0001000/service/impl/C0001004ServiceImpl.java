@@ -10,6 +10,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+
 @Service
 public class C0001004ServiceImpl implements C0001004Service {
     @Autowired
@@ -447,15 +451,9 @@ public class C0001004ServiceImpl implements C0001004Service {
                 // 2. NULL 변환
                 list = list.stream().map(item -> {
                 // 빈 문자열을 null로 변환
-                if ("".equals(item.get("field21"))) {
-                    item.put("field21", null);
-                }
-                if ("".equals(item.get("field22"))) {
-                    item.put("field22", null);
-                }
-                if ("".equals(item.get("field23"))) {
-                    item.put("field23", null);
-                }
+                if (item.get("field21") != null && item.get("field21").trim().isEmpty()) item.put("field21", null);
+                if (item.get("field22") != null && item.get("field22").trim().isEmpty()) item.put("field22", null);
+                if (item.get("field23") != null && item.get("field23").trim().isEmpty()) item.put("field23", null);
                 if ("".equals(item.get("field26"))) {
                     item.put("field26", null);
                 }
@@ -465,6 +463,12 @@ public class C0001004ServiceImpl implements C0001004Service {
                 return item;
             }).collect(Collectors.toList());
 
+            list = list.stream().map(item -> {
+                item.put("field21", toBigDecimalString(item.get("field21"), 4));
+                item.put("field22", toBigDecimalString(item.get("field22"), 2));
+                item.put("field23", toBigDecimalString(item.get("field23"), 2));
+                return item;
+            }).collect(Collectors.toList());
 
             //check excel pk duplicate
             List<Map<String, String>> list3 = ExcelUtils.readExcel(file, headerList, 1, true, true);
@@ -633,6 +637,22 @@ public class C0001004ServiceImpl implements C0001004Service {
         return result;
     }
 
+    private String toBigDecimalString(Object v, int scale) {
+        if (v == null) return "0";
+
+        String s = v.toString().trim();
+        if (s.isEmpty() || "-".equals(s)) return "0";
+
+        s = s.replace(",", "")
+            .replace("\u00A0", "")
+            .replace("%", "");
+
+        BigDecimal bd = new BigDecimal(s).setScale(scale, RoundingMode.HALF_UP);
+
+        // DB numeric(15,4)에 맞춰 고정 소수점 문자열로 내려줌 (E표기 방지)
+        return bd.toPlainString();
+    }    
+    
     // Tab4
         @Override
         public Map<String, String> tab4UploadExcel(MultipartFile file, String headers) throws Exception {
