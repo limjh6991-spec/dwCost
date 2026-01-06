@@ -1,5 +1,5 @@
 /**
- * 기준정보 > 설비관리
+ * 타시스템 > 제품정보
  */
 package com.dowinsys.cost.web.c0007000.mapper;
 

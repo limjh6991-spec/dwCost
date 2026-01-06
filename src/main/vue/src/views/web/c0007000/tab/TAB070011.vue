@@ -164,7 +164,7 @@ export default {
     delBtnClick() {
       if (!this.gridView || !this.gridDataProvider) return;
 
-      this.gridView.commit();
+      // this.gridView.commit();
       const checkedRows = this.gridView.getCheckedRows();
       if (checkedRows.length === 0) {
         this.$toast('info', '삭제할 행을 선택하세요');
@@ -189,7 +189,6 @@ export default {
         this.$toast('info', '변경된 내용이 없습니다.');
         return;
       }
-      this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
 
       this.isValidateCellMatEtcGrid = true;
       let rslt = this.gridView.validateCells(null, false);
@@ -200,9 +199,9 @@ export default {
           if (confirm) {
             let param = {
               menuId: 'c0007007',
-              delete: [{ queryId: 'C0007007_TAB070011_Delete1', data: saveData.delete }],
-              insert: [{ queryId: 'C0007007_TAB070011_Insert1', data: saveData.insert }],
-              update: [{ queryId: 'C0007007_TAB070011_Update1', data: saveData.update }],
+              delete: [{ queryId: 'C0007007_Delete1', data: saveData.delete }],
+              insert: [{ queryId: 'C0007007_Insert1', data: saveData.insert }],
+              update: [{ queryId: 'C0007007_Update1', data: saveData.update }],
             };
 
             try {
@@ -215,24 +214,6 @@ export default {
           }
         });
       }
-    },
-    onValidateColumnMatEtcGrid(grid, column, inserting, value, itemIndex, dataRow) {
-      let error = {};
-      if (!this.isValidateCellMatEtcGrid) return error;
-
-      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', '창고', '품명', '품번', '규격', '단위', '수량', '기타출고구분', '기준단위', '기준단위수량', 'lotNo', '코스트센터', '현재고', '특이사항'], column.fieldName)) {
-        if (_.isNil(value)) {
-          error.level = 'error';
-          error.message = '필수 입력입니다.';
-        }
-      }
-
-      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'selCode', 'site', '창고', '품명', '품번'], column.fieldName)) {
-        error.level = 'warning';
-        error.message = '중복 입력입니다.';
-      }
-
-      return error;
     },
     async excelBtnClick() {
       const grid = this.gridView;

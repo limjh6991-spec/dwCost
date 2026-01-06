@@ -42,6 +42,7 @@ const grid = {
     stateBar: { visible: true },
   },
   fields: [
+    { fieldName: 'seqNo', dataType: ValueType.NUMBER },
     { fieldName: 'yyyymm', dataType: ValueType.TEXT },
     { fieldName: 'selCode', dataType: ValueType.TEXT },
     { fieldName: 'siteOrg', dataType: ValueType.TEXT },
@@ -62,6 +63,7 @@ const grid = {
   ],
 
   columns: [
+    { name: 'seqNo', fieldName: 'seqNo', width: '0', header: { text: 'SEQ_NO' }, autoFilter: true, visible: false, editable: false, styleName: 'tl' },    
     {
       name: 'YYYYMM',
       fieldName: 'yyyymm',

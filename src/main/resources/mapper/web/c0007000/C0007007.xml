@@ -5,7 +5,7 @@
 <mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007007Mapper">
 	<select id="C0007007_TAB070011" resultType="CamelMap">
 		select
-		YYYYMM,SEL_CODE
+		SEQ_NO, YYYYMM,SEL_CODE
  		,SITE as SITE_ORG 
 		,CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' end as SITE
 		,창고, 품명, 품번, 규격, 단위, 수량, 기타출고구분, 기준단위, 기준단위수량, LotNo, 코스트센터, 현재고, 특이사항
@@ -21,134 +21,38 @@
 		order BY 창고, 품번, 품명;
 	</select>
 
-	<select id="checkTab1DuplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
-		DROP TABLE IF EXISTS #TempTable1;
-
-		CREATE TABLE #TempTable1 (
-			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
-			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			SITE varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
-			창고 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
-			품명 varchar(30) COLLATE Korean_Wansung_CI_AS NULL,
-			품번 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
-			규격 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
-			단위 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
-			수량 int NULL,
-			기타출고구분 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			기준단위 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
-			기준단위수량 int NULL,
-			LotNo varchar(30) COLLATE Korean_Wansung_CI_AS NULL,
-			코스트센터 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
-			현재고 int NULL,
-			특이사항 nvarchar(150) COLLATE Korean_Wansung_CI_AS NULL
-		);
-
-		INSERT INTO #TempTable1
-		(
-		YYYYMM,SEL_CODE,SITE,창고,품명,품번,규격,단위,수량,기타출고구분,기준단위,기준단위수량,LotNo,코스트센터,현재고,특이사항
-		)
-		VALUES
-		<foreach collection="list" item="item" separator=",">
-			(
-			#{item.field2}
-			, #{item.field3}
-			, #{item.field4}
-			, #{item.field5}
-			, #{item.field6}
-			, #{item.field7}
-			, #{item.field8}
-			, #{item.field9}
-			, #{item.field10}
-			, #{item.field11}
-			, #{item.field12}
-			, #{item.field13}
-			, #{item.field14}
-			, #{item.field15}
-			, #{item.field16}
-			, #{item.field17}
-			)
-		</foreach>;
-
-		SELECT * FROM #TempTable1 a
-		WHERE EXISTS (
-		SELECT 1
-		FROM DOI_MIOS b
-		WHERE 1=1
-		AND b.YYYYMM = a.YYYYMM
-		AND b.SEL_CODE = a.SEL_CODE
-		AND b.SITE = a.SITE
-		AND b.창고 = a.창고
-		AND b.품명 = a.품명
-		and b.품번 = a.품번
-		);
-	</select>
-
 	<insert id="tab1UploadExcel" parameterType="java.util.List">
-		CREATE TABLE #TempTable (
-			seq_no INT IDENTITY (1, 1) NOT NULL,
-			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
-			SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			SITE varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
-			창고 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
-			품명 varchar(30) COLLATE Korean_Wansung_CI_AS NULL,
-			품번 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
-			규격 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
-			단위 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
-			수량 int NULL,
-			기타출고구분 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			기준단위 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
-			기준단위수량 int NULL,
-			LotNo varchar(30) COLLATE Korean_Wansung_CI_AS NULL,
-			코스트센터 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
-			현재고 int NULL,
-			특이사항 nvarchar(150) COLLATE Korean_Wansung_CI_AS NULL
-		);
+	CREATE TABLE #TempTable (
+		YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
+		SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		SITE varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		창고 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		품명 varchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+		품번 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		규격 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		단위 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		수량 int NULL,
+		기타출고구분 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		기준단위 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		기준단위수량 int NULL,
+		LotNo varchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+		코스트센터 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		현재고 int NULL,
+		특이사항 nvarchar(150) COLLATE Korean_Wansung_CI_AS NULL
+	);
 
-		INSERT INTO #TempTable
-		(
-			YYYYMM,SEL_CODE,SITE,창고,품명,품번,규격,단위,수량,기타출고구분,기준단위,기준단위수량,LotNo,코스트센터,현재고,특이사항
-		)
-		VALUES
-		<foreach collection="list" item="item" separator=",">
-			(
-			#{item.field2}
-			, #{item.field3}
-			, #{item.field4}
-			, #{item.field5}
-			, #{item.field6}
-			, #{item.field7}
-			, #{item.field8}
-			, #{item.field9}
-			, #{item.field10}
-			, #{item.field11}
-			, #{item.field12}
-			, #{item.field13}
-			, #{item.field14}
-			, #{item.field15}
-			, #{item.field16}
-			)
-		</foreach>;
+	INSERT INTO #TempTable (YYYYMM,SEL_CODE,SITE,창고,품명,품번,규격,단위,수량,기타출고구분,기준단위,기준단위수량,LotNo,코스트센터,현재고,특이사항)
+	VALUES
+	<foreach collection="list" item="item" separator=",">
+		(#{item.field2}, #{item.field3}, #{item.field4}, #{item.field5}, #{item.field6}, #{item.field7}, #{item.field8}, #{item.field9},
+		#{item.field10}, #{item.field11}, #{item.field12}, #{item.field13}, #{item.field14}, #{item.field15}, #{item.field16}, #{item.field17})
+	</foreach>;
 
-		INSERT INTO DOI_MIOS (YYYYMM,SEL_CODE,SITE,창고,품명,품번,규격,단위,수량,기타출고구분,기준단위,기준단위수량,LotNo,코스트센터,현재고,특이사항)
-		SELECT YYYYMM,SEL_CODE,SITE,창고,품명,품번,규격,단위,수량,기타출고구분,기준단위,기준단위수량,LotNo,코스트센터,현재고,특이사항
-		FROM (
-		SELECT *, MAX(seq_no) over (partition by YYYYMM, SEL_CODE, SITE, 창고, 품명, 품번) max_seq_no FROM #TempTable
-		) A
-		WHERE 1=1
-		AND seq_no = max_seq_no
-		AND NOT EXISTS (
-			SELECT 1
-			FROM DOI_MIOS b
-			WHERE 1=1
-			AND b.YYYYMM = a.YYYYMM
-			AND b.SEL_CODE = a.SEL_CODE
-			AND b.SITE = a.SITE
-			AND b.창고 = a.창고
-			AND b.품명 = a.품명
-			and b.품번 = a.품번
-		);
+	INSERT INTO DOI_MIOS (YYYYMM,SEL_CODE,SITE,창고,품명,품번,규격,단위,수량,기타출고구분,기준단위,기준단위수량,LotNo,코스트센터,현재고,특이사항)
+	SELECT YYYYMM,SEL_CODE,SITE,창고,품명,품번,규격,단위,수량,기타출고구분,기준단위,기준단위수량,LotNo,코스트센터,현재고,특이사항
+	FROM #TempTable;
 
-		DROP TABLE #TempTable;
+	DROP TABLE #TempTable;
 	</insert>
 
 	<insert id="C0007007_Insert1">
@@ -170,7 +74,7 @@
 		, #{기타출고구분}
 		, #{기준단위}
 		, #{기준단위수량}
-		, #{LotNo}
+		, #{lotNo}
 		, #{코스트센터}
 		, #{현재고}
 		, #{특이사항}
@@ -179,18 +83,13 @@
 
 	<delete id="C0007007_Delete1">
 		DELETE FROM DOI_MIOS
-		WHERE 1=1
-		and YYYYMM = #{yyyymm}
-		and SEL_CODE = #{selCode}
-		and SITE = #{site}
-		and 창고 = #{창고}
-		and 품명 = #{품명}
-		and 품번 = #{품번}
+		WHERE 1=1 
+		AND	SEQ_NO = #{seqNo}
 	</delete>
 
 	<update id="C0007007_Update1">
 		UPDATE DOI_MIOS
-		,규격 = #{규격}
+		SET 규격 = #{규격}
 		,단위 = #{단위}
 		,수량 = #{수량}
 		,기타출고구분 = #{기타출고구분}
@@ -201,12 +100,7 @@
 		,현재고 = #{현재고}
 		,특이사항 = #{특이사항}
 		WHERE 1=1
-		and YYYYMM = #{yyyymm}
-		and SEL_CODE = #{selCode}
-		and SITE = #{site}
-		and 창고 = #{창고}
-		and 품명 = #{품명}
-		and 품번 = #{품번}
+		and SEQ_NO = #{seqNo}
 		;
 	</update>
 
@@ -528,7 +422,7 @@
 		WHERE 1=1
 		and YYYYMM = #{yyyymm}
 		and SEL_CODE = #{selCode}
-		and SITE = #{site}
+		and SITE = #{siteOrg}
 		and 품명 = #{품명}
 		and 품번 = #{품번}
 	</delete>
@@ -579,7 +473,7 @@
 		WHERE 1=1
 		and YYYYMM = #{yyyymm}
 		and SEL_CODE = #{selCode}
-		and SITE = #{site}
+		and SITE = #{siteOrg}
 		and 품명 = #{품명}
 		and 품번 = #{품번}
 		;
