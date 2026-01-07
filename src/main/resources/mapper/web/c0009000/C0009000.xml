@@ -393,7 +393,20 @@
     </select>
 
     <select id="C0009010_Sch1" resultType="CamelMap">
-        EXEC DOI_TotalCost @YYYYMM=#{yyyymm}, @SITE=#{site};
+        EXEC DOI_TotalCost @YYYYMM=#{yyyymm}, @SITE=#{site}, @SELCODE=#{selCode};
+    </select>
+
+    <select id="C0009010_SelectSelCode" resultType="CamelMap">
+        SELECT SEL_CODE AS value, SEL_CODE AS text
+        FROM DOI_SELCODE
+        WHERE 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            AND yyyymm = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            AND site = #{site}
+        </if>
+        ORDER BY SEL_CODE
     </select>
 
     <select id="C0009004_Sch1" resultType="CamelMap">

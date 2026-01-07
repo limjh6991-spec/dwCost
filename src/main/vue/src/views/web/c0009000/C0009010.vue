@@ -15,6 +15,24 @@
             <label for="floating">사업장</label>
           </div>
         </b-col>
+        <b-col cols="2">
+          <div class="form-floating">
+            <select
+              class="form-select label-80"
+              id="selCodeSelect"
+              v-model="params.selCode"
+            >
+              <option
+                v-for="o in selCodeList"
+                :key="o.value"
+                :value="o.value"
+              >
+                {{ o.text }}
+              </option>
+            </select>
+            <label for="selCodeSelect" class="select">SEL_CODE</label>
+          </div>
+        </b-col>     
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -53,9 +71,11 @@ export default {
     return {
       totalCostGrid: null,
       totalCostGridRows: [],
+      selCodeList: [],
       params: {
         yyyymm: null,
         site: 'HQ',
+        selCode: '',
       },
       siteMap: {
         본사: 'HQ',
@@ -67,9 +87,10 @@ export default {
     };
   },
   watch: {
-        'params.yyyymm': function(newVal) {
+        'params.yyyymm': async function(newVal) {
       if (newVal) {
         this.onDateChange();
+        await this.loadSelCodeList();        
       }
     },
     'srchInfo.yyyymm': {
@@ -80,9 +101,11 @@ export default {
       }
      },
     prodCtg: {
-      handler(newVal) {
+      async handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
+          await this.loadSelCodeList();
+
           if (this.$refs.totalCostGrid != null) {
             this.initialize();
             this.searchClick();
@@ -105,6 +128,7 @@ export default {
   created() {
     this.initialize();
     this.initializeGrid();
+    this.loadSelCodeList();
   },
   mounted() {},
   beforeUnmount() {},
@@ -341,7 +365,14 @@ export default {
       const params = {
         yyyymm: this.params.yyyymm?.replaceAll('-', ''),
         site: this.siteMap[this.params.site],
+        selCode: this.params.selCode,
       };
+
+      console.log("params", {
+        yyyymm: this.params.yyyymm?.replaceAll('-', ''),
+        site: this.siteMap[this.params.site],
+        selCode: this.params.selCode,
+      });
 
       await this.$axios.api.search({
         menuId: 'c0009000',
@@ -352,6 +383,27 @@ export default {
 
       this.buildGridColumnsFromResult(this.totalCostGridRows);
       this.gridDataProvider.setRows(this.totalCostGridRows);
+    },
+
+    async loadSelCodeList() {
+      const list = [];
+
+      await this.$axios.api.search({
+        menuId: 'c0009000',
+        queryId: 'C0009010_SelectSelCode',
+        queryParams: {},
+        target: list,
+      });
+
+      this.selCodeList = list;
+
+      const actual = this.selCodeList.find(x => x.value === 'ACTUAL');
+
+      if (actual) {
+        this.params.selCode = 'ACTUAL';
+      } else {
+        this.params.selCode = this.selCodeList[0]?.value ?? '';
+      }
     },
 
     searchClick() {
