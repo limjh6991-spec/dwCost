@@ -21,6 +21,7 @@
         where 1=1
           and a.EXPEN_SEL not in ('MDAX','MIAX')
           and a.EXPEN_SEL != 'NONE' --미분류 제외
+          and a.SEL_CODE = 'ACTUAL'
         <if test="yyyymm != null and yyyymm != ''">
             and a.YYYYMM = #{yyyymm}
         </if>
@@ -90,6 +91,7 @@
         SUM(ACCT_AMT) ACCT_AMT
         from DOI_ACCT_EXPEN
         where 1=1
+          and sel_code='ACTUAL'
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}
         </if>
@@ -111,6 +113,7 @@
 		from
 			doi_material_resc
         where 1=1
+        and sel_code='ACTUAL'
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}
         </if>
@@ -139,6 +142,7 @@
 	        SUM(ACCT_AMT) ACCT_AMT
 	        from DOI_ACCT_EXPEN a inner join doi_dept b on(a.YYYYMM =b.yyyymm and a.site=b.site and a.dept=b.dept)
 	        where 1=1
+            and a.sel_code='ACTUAL'
 	        <if test="yyyymm != null and yyyymm != ''">
 	            and a.YYYYMM = #{yyyymm}
 	        </if>
@@ -317,6 +321,7 @@
         SUB_NAME
         from doi_expen_matl
         where 1=1
+        and sel_code='ACTUAL'
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}
         </if>
@@ -337,6 +342,7 @@
         mat_class
         from doi_mat_cost
         where 1=1
+        and sel_code='ACTUAL'
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}
         </if>
@@ -772,6 +778,7 @@
 	from
 		doi_expen_matl
         where 1=1
+        and   sel_code='ACTUAL'
         and   expen_sel != 'NONE'
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}

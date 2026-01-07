@@ -221,6 +221,7 @@
                 UNION
                 SELECT 구분, model from doi_expen_matl
                 where 1=1
+                and sel_code='ACTUAL'
                 <if test="yyyymm != null and yyyymm != ''">
                     AND YYYYMM = #{yyyymm}
                 </if>
@@ -242,6 +243,7 @@
                     UNION
                     SELECT 구분 FROM doi_expen_matl
                     where 1=1
+                     and sel_code='ACTUAL'
                     <if test="yyyymm != null and yyyymm != ''">
                         AND YYYYMM = #{yyyymm}
                     </if>

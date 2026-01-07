@@ -151,6 +151,7 @@ export default {
           autoFilter: false,
           numberFormat: '#,##0',
           styleName: 'tr',
+          footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
         });
       });
 

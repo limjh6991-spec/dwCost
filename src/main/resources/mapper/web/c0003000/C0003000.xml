@@ -35,7 +35,7 @@
 	DECLARE @RET_CODE INT;
 	EXEC @RET_CODE = UP_DOI_EXPEN_MATL 
 		#{yyyymm},
-		#{site}
+		#{site},'ACTUAL'
     </select>
 	   
     <select id="C0003009_Sch1" resultType="CamelMap">
