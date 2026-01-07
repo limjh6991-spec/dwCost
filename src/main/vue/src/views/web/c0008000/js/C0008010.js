@@ -6,10 +6,10 @@ const { ValueType } = require('realgrid');
 const grid = {
   options: {
     checkBar: { visible: false },
-    copy: { enabled: true, singleMode: true },
+    copy: { enabled: true, singleMode: false },
     display: { columnMovable: false, editItemMerging: true, fitStyle: 'even', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
     edit: { editable: false },
-    footer: { visible: false },
+    footer: { visible: true },
     paste: { enabled: false },
     rowIndicator: { visible: true },
     sorting: { enabled: true },
@@ -33,9 +33,9 @@ const grid = {
     { name: 'local구분', fieldName: 'local구분', width: '110', header: { text: 'Local구분' }, mergeRule: { criteria: "value['구분']+value['모델']+value['local구분']+value['판매단위']+value['거래처']" }, autoFilter: true, styleName: 'tl' },
     { name: '판매단위', fieldName: '판매단위', width: '120', header: { text: '판매단위' }, mergeRule: { criteria: "value['구분']+value['모델']+value['local구분']+value['판매단위']+value['거래처']" }, autoFilter: true, styleName: 'tl' },
     { name: '거래처', fieldName: '거래처', width: '90', header: { text: '거래처' }, mergeRule: { criteria: "value['구분']+value['모델']+value['local구분']+value['판매단위']+value['거래처']" }, autoFilter: true, styleName: 'tl' },
-    { name: '월', fieldName: '월', width: '80', header: { text: '월' }, autoFilter: true, styleName: 'tl' },
-    { name: 'outQty', fieldName: 'outQty', width: '80', header: { text: '수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
-    { name: 'outAmt', fieldName: 'outAmt', width: '80', header: { text: '금액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0.######' },
+    { name: '월', fieldName: '월', width: '80', header: { text: '월' }, autoFilter: true, styleName: 'tl', footer: { text: '합계' } },
+    { name: 'outQty', fieldName: 'outQty', width: '80', header: { text: '수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'outAmt', fieldName: 'outAmt', width: '80', header: { text: '금액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0.######', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
   layout: [
     '구분',
