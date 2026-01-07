@@ -296,10 +296,8 @@ export default {
       rows = rows.map(r => {
         if (r == null) return r;
 
-        // 이미 있으면 그대로
         if ('YYYYMM' in r || 'yyyymm' in r) return r;
 
-        // r['월']이 '1월' 형태라면 월번호 추출
         const mm = this.parseMonthNumber(r['월']);
         if (!mm) return r;
 
@@ -518,20 +516,13 @@ export default {
       };
     },
     async searchClick() {
-      console.log('=== searchClick START ===');
       const yearRows = await this.fetchYearRowsIfNeeded();
-      console.log('yearRows fetched:', yearRows.length);
 
       if (this.params.viewMode === 'YEAR') {
-        console.log('Mode: YEAR');
         this.applyGridMode('YEAR');
         const rows = this.buildManuCostRows(yearRows);
-        console.log('buildManuCostRows result:', rows.length);
-        
-        // TOTAL 행 개수 저장
+
         this.totalRowCount = rows.filter(r => r.rowType === 'TOTAL').length;
-        
-        // 모든 행을 그대로 grid에 표시 (TOTAL 포함)
         this.manuCostGridRows = rows;
         
         this.$nextTick(() => {
@@ -540,26 +531,17 @@ export default {
         return;
       }
 
-      // MONTH
-      console.log('Mode: MONTH');
       this.applyGridMode('MONTH');
 
       const selectedYYYYMM = String(this.params.yyyymm || '');
-      console.log('selectedYYYYMM:', selectedYYYYMM);
-      
       const filtered = yearRows.filter(r => {
         const rowYYYYMM = String(r['YYYYMM'] || r['yyyymm'] || '');
         return rowYYYYMM === selectedYYYYMM;
       });
 
-      console.log('filtered rows:', filtered.length);
       const rows = this.buildMonthDetailRowsWithTotal(filtered, selectedYYYYMM);
-      console.log('buildMonthDetailRowsWithTotal result:', rows.length);
       
-      // TOTAL 행 개수 저장
       this.totalRowCount = rows.filter(r => r.rowType === 'TOTAL').length;
-      
-      // 모든 행을 그대로 grid에 표시 (TOTAL 포함)
       this.manuCostGridRows = rows;
       
       this.$nextTick(() => {
@@ -568,17 +550,8 @@ export default {
     },
     applyRowFixing() {
       const gv = this.gridView;
+
       if (!gv || this.totalRowCount === 0) return;
-      
-      try {
-        // 마지막 totalRowCount개 행을 고정
-        // RealGrid fixed.rowCount는 top rows를 고정하는데, 
-        // bottom rows를 고정하려면 다른 방법을 사용해야 함
-        // 대신 spanCallback 사용해서 TOTAL 행들을 병합하고 스타일링
-        console.log(`applyRowFixing: totalRowCount=${this.totalRowCount}`);
-      } catch(e) {
-        console.error('applyRowFixing error:', e);
-      }
     },
     async excelBtnClick() {
       const grid = this.gridView;
