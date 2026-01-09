@@ -59,6 +59,7 @@ export default {
         yyyymm: null,
         site: 'HQ',
         gubun: { value: '전체', text: '전체' },
+        sel_code: 'ACTUAL',
       },
       gubunList: [
         { value: '전체', text: '전체' },
@@ -155,6 +156,7 @@ export default {
         let params = {
           yyyymm: yyyymm,
           site: this.siteMap[this.params.site],
+          selcode: this.params.sel_code,
         };
 
         let param = [{

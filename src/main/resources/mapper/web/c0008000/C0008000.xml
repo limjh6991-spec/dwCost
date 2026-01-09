@@ -928,6 +928,6 @@
     </select>
 
     <select id="C0008010_Sch1" resultType="CamelMap">
-        exec DOI_SaleCOGM @YYYY=#{yyyy}, @SITE=#{site};
+        exec DOI_SaleCOGM @YYYY=#{yyyy}, @SITE=#{site}, @SEL_CODE=#{selcode}
     </select>
 </mapper>
