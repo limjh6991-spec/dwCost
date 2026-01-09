@@ -200,7 +200,7 @@
     </select>
 
     <select id="C0009005_Tab090004" resultType="CamelMap">
-        EXEC DOI_ManufacturingExpenseByDept @YYYYMM=#{yyyymm}, @SITE=#{site};
+        EXEC DOI_ManufacturingExpenseByDept @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE='ACTUAL';
     </select>
 
     <select id="C0009005_Tab090005_Col" resultType="CamelMap">
@@ -259,7 +259,7 @@
     </select>
 
     <select id="C0009005_Tab090005" resultType="CamelMap">
-        EXEC DOI_ManufacturingExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
+        EXEC DOI_ManufacturingExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selcode};
     </select>
 
     <select id="C0009006_Sch1_Col" resultType="CamelMap">
@@ -275,7 +275,7 @@
     </select>
 
     <select id="C0009006_Sch1" resultType="CamelMap">
-        exec DOI_DsitributeMatCostByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
+        exec DOI_DsitributeMatCostByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selcode};
     </select>
 
     <select id="C0009008_Tab090008_Col" resultType="CamelMap">

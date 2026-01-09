@@ -28,7 +28,8 @@
 	DECLARE @RET_CODE INT;
 	EXEC @RET_CODE = UP_DOI_FAB_COST 
 		#{yyyymm},
-		#{site}
+		#{site},
+        'ACTUAL'
     </select>
     
     <select id="C0003007_Sch1" resultType="CamelMap">
@@ -42,14 +43,16 @@
 	DECLARE @RET_CODE INT;
 	EXEC @RET_CODE = UP_DOI_STOCK_BOH 
 		#{yyyymm},
-		#{site}
+		#{site},
+        #{selcode}
     </select>
 	   
     <select id="C0003009_Sch2" resultType="CamelMap">
 	DECLARE @RET_CODE INT;
 	EXEC @RET_CODE = UP_DOI_STOCK_COST
 		#{yyyymm},
-		#{site}
+		#{site},
+        #{selcode}
     </select>
 
     <!-- C0003008: 매출원가 (모델별/거래선별 매출금액 비율 배부) -->
@@ -144,7 +147,8 @@
     <select id="C0003008_Generate" resultType="CamelMap">
         EXEC UP_DOI_SALE_COST 
             #{yyyymm},
-            #{site}
+            #{site},
+            #{selcode};
     </select>
 
     <!-- C0003008: 매출원가 조회 (SLCO 테이블에서) -->
@@ -204,6 +208,7 @@
     <select id="C0003010_Sch1" resultType="CamelMap">
 	EXEC UP_DOI_SCOF 
 		#{yyyymm},
-		#{site}
+		#{site},
+        #{selcode}
     </select>
 </mapper>

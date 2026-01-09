@@ -55,6 +55,7 @@ export default {
       params: {
         yyyymm: null,
         site: 'HQ',
+        selcode: 'ACTUAL',
       },
       siteMap: {
         본사: 'HQ',
@@ -123,6 +124,7 @@ export default {
       let params = {
         yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
+        selcode : this.params.selcode != null ? this.params.selcode : null,
       };
 
       let searchParam = {
