@@ -4,9 +4,9 @@
   <div>
     <div class="search_box">
       <b-row class="search_area">
-        <b-col cols="2">
-          <div class="form-floating">
-            <date-picker v-model="params.yyyymm" mode="year" />
+        <b-col cols="1" class="period">
+          <div class="form-floating me-1">
+            <date-picker label="연도" mode="year" v-model="params.year" />
             <label for="floatingSelect" class="select">년도</label>
           </div>
         </b-col>

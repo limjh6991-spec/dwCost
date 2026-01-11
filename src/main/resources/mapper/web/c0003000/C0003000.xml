@@ -211,4 +211,27 @@
 		#{site},
         #{selcode}
     </select>
+
+    <select id="ExeclogPopup" resultType="CamelMap">
+    SELECT
+        seq_no,
+        yyyymm,
+        sel_code,
+        CASE WHEN SITE='HQ' THEN '본사' WHEN SITE='VN' THEN 'VINA' ELSE SITE END AS site,
+        exec_date,
+        exec_user
+    FROM doi_execlog
+    WHERE 1 = 1
+    ORDER BY exec_date;      
+    </select>
+
+    <select id="ExeclogDetail" resultType="CamelMap">
+    SELECT
+        exec_rslt AS execRslt
+    FROM doi_execlog
+    WHERE 1 = 1
+    <if test="seqNo != null and seqNo != ''">
+        AND seq_no = #{seqNo}
+    </if>   
+    </select>
 </mapper>

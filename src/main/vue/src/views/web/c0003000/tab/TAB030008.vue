@@ -1,4 +1,4 @@
-/** * 제조매출원가 > 원장매출상계(UP_DOI_SOCF) */
+/** * 제조매출원가 > 원장매출상계(UP_DOI_SCOF) */
 <template>
   <div>
     <div class="search_box">
@@ -20,21 +20,30 @@
         <b-button @click="executeClick"><span class="ico_search"></span>실행</b-button>
       </div>
     </div>
-     <div 
-      class="log-display"
-      contenteditable="false"
-      v-html="formattedLog" >
+    <div class="grid_box search_onerow">
+      <div class="left_box">
+        <div class="btn_wrap ms-auto">
+          <b-button class="second" @click="openExecLog">로그 보기</b-button>
+        </div>
       </div>
+      <div 
+        class="log-display"
+        contenteditable="false"
+        v-html="formattedLog" >
+      </div>
+    </div>
+    <ExeclogPopup ref="execlogPopup" />
   </div>
 </template>
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
+import ExeclogPopup from '@web/c0003000/tab/ExeclogPopup.vue';
 
 export default {
   props: {},
-  components: {},
+  components: { ExeclogPopup },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -138,6 +147,14 @@ export default {
       this.resultMessage = `실행 버튼을 클릭하면 ${this.params.yyyymm}월 ${this.params.site} 원장 매출상계를 배부를 실행 합니다`;
       console.log('onMonthChange ---c0003010'+this.params.yyyymm);
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
+    },
+    openExecLog() {
+      const queryParams = {
+        yyyymm: this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : null,
+        site: this.params.site ? this.siteMap[this.params.site] : null,
+        selCode: 'ACTUAL',
+      };
+      this.$refs.execlogPopup.open(queryParams);
     },
     async getDataList() {
       //this.gridView.commit();
