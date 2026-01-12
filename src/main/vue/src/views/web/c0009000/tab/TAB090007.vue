@@ -6,7 +6,7 @@
       <b-row class="search_area">
         <b-col cols="1" class="period">
           <div class="form-floating me-1">
-            <date-picker label="연도" mode="year" v-model="params.year" />
+            <date-picker label="연도" mode="year" v-model="params.yyyymm" />
             <label for="floatingSelect" class="select">년도</label>
           </div>
         </b-col>

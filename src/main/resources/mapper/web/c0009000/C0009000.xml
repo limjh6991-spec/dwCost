@@ -345,15 +345,15 @@
     </select>
 
     <select id="C0009007_Tab090006" resultType="CamelMap">
-        EXEC DOI_ManufacturingCostOfWIP @YYYY=#{yyyy}, @SITE=#{site}, @SEL_CODE=#{selcode};
+        EXEC DOI_ManufacturingCostOfWIP @YYYY=#{yyyy}, @SITE=#{site}, @SEL_CODE=#{selCode};
     </select>
 
     <select id="C0009007_Tab090006_Detail" resultType="CamelMap">
-        EXEC DOI_ManufacturingCostOfWIP @YYYY=#{yyyy}, @SITE=#{site}, @SEL_CODE=#{selcode};
+        EXEC DOI_ManufacturingCostOfWIP @YYYY=#{yyyy}, @SITE=#{site}, @SEL_CODE=#{selCode};
     </select>
 
     <select id="C0009009_Sch1" resultType="CamelMap">
-        EXEC DOI_PL_ByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selcode};
+        EXEC DOI_PL_ByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selCode};
     </select>
 
     <select id="C0009009_Qty" resultType="CamelMap">

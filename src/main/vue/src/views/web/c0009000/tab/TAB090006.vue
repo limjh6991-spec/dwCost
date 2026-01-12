@@ -299,8 +299,8 @@ export default {
       }
       const yyyy = this.params.year;
       const site = this.params.site != null ? this.siteMap[this.params.site] : null;
-      const key = `${yyyy}|${site || ''}`;
-      const selcode = this.params.selCode === '' ? 'ACTUAL' : this.params.selCode;
+      const selCode = this.params.selCode === '' ? 'ACTUAL' : this.params.selCode;
+      const key = `${yyyy}|${site || ''}|${selCode || ''}`;
 
       if (this.yearCacheKey === key && Array.isArray(this.yearRowsCache) && this.yearRowsCache.length) {
         return this.yearRowsCache;
@@ -309,7 +309,7 @@ export default {
       const param = {
         menuId: 'c0009000',
         queryId: 'C0009007_Tab090006',
-        queryParams: { yyyy, site, selcode },
+        queryParams: { yyyy, site, selCode },
         target: [],
       };
 
