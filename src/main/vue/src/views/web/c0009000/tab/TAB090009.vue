@@ -15,6 +15,24 @@
             <label for="floating">사업장</label>
           </div>
         </b-col>
+        <b-col cols="2" v-if="hasSysAdmin">
+          <div class="form-floating">
+            <select
+              class="form-select label-80"
+              id="selCodeSelect"
+              v-model="params.selCode"
+            >
+              <option
+                v-for="o in selCodeList"
+                :key="o.value"
+                :value="o.value"
+              >
+                {{ o.text }}
+              </option>
+            </select>
+            <label for="selCodeSelect" class="select">SEL_CODE</label>
+          </div>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -52,9 +70,11 @@ export default {
     return {
       sga2Grid: null,
       sga2GridRows: [],
+      selCodeList: [],
       params: {
         yyyy: null,
         site: 'HQ',
+        selCode: '',
       },
       siteMap: {
         본사: 'HQ',
@@ -90,6 +110,10 @@ export default {
     },
   },
   computed: {
+    hasSysAdmin() {
+      const roleList = this.userAuthInfo?.roleList || [];
+      return roleList.includes('SYSADMIN');
+    },
     gridView() {
       return this.$refs.sga2Grid.getGridView();
     },
@@ -110,6 +134,7 @@ export default {
     initialize() {
       this.params.yyyymm = this.srchInfo.yyyymm;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
+      this.loadSelCodeList();
     },
     initializeGrid() {
       this.sga2Grid = _.cloneDeep(require(`@web/c0009000/js/TAB090009.js`));
@@ -123,6 +148,7 @@ export default {
       let params = {
         yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
+        selCode: this.params.selCode === '' ? 'ACTUAL' : this.params.selCode,
       };
 
       let searchParam = {
@@ -165,6 +191,28 @@ export default {
       };
       let resp = await this.$axios.api.search(param);
     },
+
+    async loadSelCodeList() {
+      const list = [];
+
+      await this.$axios.api.search({
+        menuId: 'c0009000',
+        queryId: 'C0009010_SelectSelCode',
+        queryParams: {},
+        target: list,
+      });
+
+      this.selCodeList = list;
+
+      const actual = this.selCodeList.find(x => x.value === 'ACTUAL');
+
+      if (actual) {
+        this.params.selCode = 'ACTUAL';
+      } else {
+        this.params.selCode = this.selCodeList[0]?.value ?? '';
+      }
+    },
+
     searchClick() {
       this.getDataList();
     },

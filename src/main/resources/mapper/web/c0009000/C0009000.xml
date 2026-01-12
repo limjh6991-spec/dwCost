@@ -314,7 +314,7 @@
     </select>
     
     <select id="C0009008_Tab090009" resultType="Map">
-        EXEC DOI_SalesAdminByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
+        EXEC DOI_SalesAdminByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selCode};
     </select>
     
     <select id="C0009008_Tab090009_Col" resultType="CamelMap">
@@ -333,7 +333,7 @@
     </select>
 
     <select id="C0009002_Sch1" resultType="CamelMap">
-        EXEC DOI_StockExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
+        EXEC DOI_StockExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selCode};
     </select>
 
     <select id="C0009003_Sch1" resultType="CamelMap">
@@ -341,19 +341,19 @@
     </select>
 
     <select id="C0009007_Tab090007" resultType="CamelMap">
-        EXEC DOI_ProductCOGS @YYYY=#{yyyy}, @SITE=#{site};
+        EXEC DOI_ProductCOGS @YYYY=#{yyyy}, @SITE=#{site}, @SEL_CODE=#{selCode};
     </select>
 
     <select id="C0009007_Tab090006" resultType="CamelMap">
-        EXEC DOI_ManufacturingCostOfWIP @YYYY=#{yyyy}, @SITE=#{site};
+        EXEC DOI_ManufacturingCostOfWIP @YYYY=#{yyyy}, @SITE=#{site}, @SEL_CODE=#{selcode};
     </select>
 
     <select id="C0009007_Tab090006_Detail" resultType="CamelMap">
-        EXEC DOI_ManufacturingCostOfWIP @YYYY=#{yyyy}, @SITE=#{site};
+        EXEC DOI_ManufacturingCostOfWIP @YYYY=#{yyyy}, @SITE=#{site}, @SEL_CODE=#{selcode};
     </select>
 
     <select id="C0009009_Sch1" resultType="CamelMap">
-        EXEC DOI_PL_ByModel @YYYYMM=#{yyyymm}, @SITE=#{site};
+        EXEC DOI_PL_ByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selcode};
     </select>
 
     <select id="C0009009_Qty" resultType="CamelMap">

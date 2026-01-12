@@ -811,6 +811,9 @@
         <if test="site != null and site != ''">
             and SITE = #{site}
         </if>
+        <if test="selCode != null and selCode != ''">
+            and SEL_CODE = #{selCode}
+        </if>
         order by  model, EXPEN_SEL, EXPEN_SEL명 ,구분 ;  --SUB_NAME, ITEM_NAME,
     </select>
 

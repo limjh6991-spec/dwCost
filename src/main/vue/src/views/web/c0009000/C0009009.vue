@@ -15,6 +15,24 @@
             <label for="floating">사업장</label>
           </div>
         </b-col>
+        <b-col cols="2" v-if="hasSysAdmin">
+          <div class="form-floating">
+            <select
+              class="form-select label-80"
+              id="selCodeSelect"
+              v-model="params.selCode"
+            >
+              <option
+                v-for="o in selCodeList"
+                :key="o.value"
+                :value="o.value"
+              >
+                {{ o.text }}
+              </option>
+            </select>
+            <label for="selCodeSelect" class="select">SEL_CODE</label>
+          </div>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -48,10 +66,12 @@ export default {
     return {
       modelPlGrid: null,
       modelPlGridRows: [],
+      selCodeList: [],
 
       params: {
         yyyymm: null,
         site: 'HQ',
+        selCode : '',
       },
 
       siteMap: {
@@ -63,27 +83,11 @@ export default {
     };
   },
 
-  computed: {
-    gridView() {
-      return this.$refs.modelPlGrid?.getGridView();
-    },
-    gridDataProvider() {
-      return this.$refs.modelPlGrid?.getGridDataProvider();
-    },
-    prodCtg() {
-      return this.userAuthInfo.curProdCtg;
-    },
-  },
-
   watch: {
     'params.yyyymm'(newVal) {
       if (newVal) this.onDateChange();
     },
-    'srchInfo.yyyymm': {
-      handler(newVal) {
-        if (newVal) this.params.yyyymm = newVal;
-      },
-    },
+    
     prodCtg: {
       handler(newVal) {
         if (!newVal) return;
@@ -96,6 +100,22 @@ export default {
     },
   },
 
+  computed: {
+    hasSysAdmin() {
+      const roleList = this.userAuthInfo?.roleList || [];
+      return roleList.includes('SYSADMIN');
+    },
+    gridView() {
+      return this.$refs.modelPlGrid?.getGridView();
+    },
+    gridDataProvider() {
+      return this.$refs.modelPlGrid?.getGridDataProvider();
+    },
+    prodCtg() {
+      return this.userAuthInfo.curProdCtg;
+    },
+  },
+
   created() {
     this.initialize();
     this.initializeGrid();
@@ -105,6 +125,7 @@ export default {
     initialize() {
       this.params.yyyymm = this.srchInfo.yyyymm;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
+      this.loadSelCodeList();
     },
 
     initializeGrid() {
@@ -261,9 +282,14 @@ export default {
     async getDataList() {
       this.gridView.commit();
 
+      if (!this.hasSysAdmin) {
+        this.params.selCode = 'ACTUAL';
+      }
+
       const params = {
         yyyymm: this.params.yyyymm?.replaceAll('-',''),
-        site: this.siteMap[this.params.site]
+        site: this.siteMap[this.params.site],
+        selcode: this.params.selCode === '' ? 'ACTUAL' : this.params.selCode
       };
 
       const amountResp = await this.$axios.api.search({
@@ -343,6 +369,27 @@ export default {
 
       this.modelPlGridRows = finalRows;
       this.gridDataProvider.setRows(finalRows);
+    },
+
+    async loadSelCodeList() {
+      const list = [];
+
+      await this.$axios.api.search({
+        menuId: 'c0009000',
+        queryId: 'C0009010_SelectSelCode',
+        queryParams: {},
+        target: list,
+      });
+
+      this.selCodeList = list;
+
+      const actual = this.selCodeList.find(x => x.value === 'ACTUAL');
+
+      if (actual) {
+        this.params.selCode = 'ACTUAL';
+      } else {
+        this.params.selCode = this.selCodeList[0]?.value ?? '';
+      }
     },
 
     searchClick() {

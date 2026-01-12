@@ -22,6 +22,24 @@
             <label for="floating">사업장</label>
           </div>
         </b-col>
+        <b-col cols="2" v-if="hasSysAdmin">
+          <div class="form-floating">
+            <select
+              class="form-select label-80"
+              id="selCodeSelect"
+              v-model="params.selCode"
+            >
+              <option
+                v-for="o in selCodeList"
+                :key="o.value"
+                :value="o.value"
+              >
+                {{ o.text }}
+              </option>
+            </select>
+            <label for="selCodeSelect" class="select">SEL_CODE</label>
+          </div>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -84,12 +102,14 @@ export default {
         { value: '11', text: '11월' },
         { value: '12', text: '12월' },
       ],
+      selCodeList: [],
 
       params: {
         year: null,
         month: null,
         yyyymm: null,
         site: 'HQ',
+        selCode: '',
         },
       siteMap: {
         본사: 'HQ',
@@ -155,6 +175,10 @@ export default {
     },
   },  
   computed: {
+    hasSysAdmin() {
+      const roleList = this.userAuthInfo?.roleList || [];
+      return roleList.includes('SYSADMIN');
+    },
     showMonth() {
       return this.yearSelected;
     },
@@ -251,6 +275,7 @@ export default {
 
       this.yearSelected = false;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
+      this.loadSelCodeList();
     },
     initializeGrid() {
       this.manuCostGrid = _.cloneDeep(require(`@web/c0009000/js/TAB090006.js`));
@@ -269,9 +294,13 @@ export default {
       }
     },
     async fetchYearRowsIfNeeded() {
+      if (!this.hasSysAdmin) {
+        this.params.selCode = 'ACTUAL';
+      }
       const yyyy = this.params.year;
       const site = this.params.site != null ? this.siteMap[this.params.site] : null;
       const key = `${yyyy}|${site || ''}`;
+      const selcode = this.params.selCode === '' ? 'ACTUAL' : this.params.selCode;
 
       if (this.yearCacheKey === key && Array.isArray(this.yearRowsCache) && this.yearRowsCache.length) {
         return this.yearRowsCache;
@@ -280,7 +309,7 @@ export default {
       const param = {
         menuId: 'c0009000',
         queryId: 'C0009007_Tab090006',
-        queryParams: { yyyy, site },
+        queryParams: { yyyy, site, selcode },
         target: [],
       };
 
@@ -309,6 +338,28 @@ export default {
       this.yearCacheKey = key;
       return rows;
     },
+
+    async loadSelCodeList() {
+      const list = [];
+
+      await this.$axios.api.search({
+        menuId: 'c0009000',
+        queryId: 'C0009010_SelectSelCode',
+        queryParams: {},
+        target: list,
+      });
+
+      this.selCodeList = list;
+
+      const actual = this.selCodeList.find(x => x.value === 'ACTUAL');
+
+      if (actual) {
+        this.params.selCode = 'ACTUAL';
+      } else {
+        this.params.selCode = this.selCodeList[0]?.value ?? '';
+      }
+    },
+
     parseMonthNumber(monthText) {
       const m = String(monthText || '').match(/(\d{1,2})\s*월/);
       if (!m) return null;

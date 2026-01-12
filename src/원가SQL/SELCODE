@@ -1,0 +1,48 @@
+	--경비집계
+	DECLARE @RET_CODE INT;
+	EXEC @RET_CODE = UP_DOI_EXPEN_MATL 
+		'202511',
+		'HQ','ACTCHG';
+	
+	--가공비배부
+	DECLARE @RET_CODE INT;
+	EXEC @RET_CODE = UP_DOI_FAB_COST 
+		'202511',
+		'HQ',
+        'ACTCHG';
+	
+	--재료비집계
+		EXEC UP_DOI_MAT_AMT 
+		'202511',
+		'HQ',
+		'ACTCHG';
+	
+	--재료비배부
+		EXEC UP_DOI_MAT_COST 
+		'202511',
+		'HQ',
+		'ACTCHG';
+	
+	--재공평가
+		EXEC UP_DOI_COST_MAT 
+		'202511',
+		'HQ',
+		'ACTCHG';
+	
+	--제품수불
+	DECLARE @RET_CODE INT;
+	EXEC @RET_CODE = UP_DOI_STOCK_BOH 
+		'202511',
+		'HQ',
+        'ACTCHG'; --commit;
+	
+	--매출원가/판관비
+		EXEC UP_DOI_SALE_COST 
+            '202511',
+            'HQ',
+            'ACTCHG';  --commit;
+	
+	--매출상계
+		EXEC UP_DOI_SCOF 
+		'202511',
+		'HQ','ACTCHG';
