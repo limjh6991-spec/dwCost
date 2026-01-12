@@ -894,34 +894,34 @@
 		, #{selCode}
 		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='VINA' then 'VN' else left(#{site},2) end
 		, #{model}
-		, #{spec}
-		, #{inch}
-		, #{glassThick}
-		, #{sheet}
-		, #{block}
-		, #{cell}
-		, #{runSize}
-		, #{x}
-		, #{y}
-		, #{xy}
+    	, #{spec}
+		, <if test="inch != null">CAST(#{inch} as real)</if><if test="inch == null">NULL</if>
+		, <if test="glassThick != null">CAST(#{glassThick} as real)</if><if test="glassThick == null">NULL</if>
+		, <if test="sheet != null">CAST(#{sheet} as real)</if><if test="sheet == null">NULL</if>
+		, <if test="block != null">CAST(#{block} as real)</if><if test="block == null">NULL</if>
+		, <if test="cell != null">CAST(#{cell} as real)</if><if test="cell == null">NULL</if>
+		, <if test="runSize != null">CAST(#{runSize} as real)</if><if test="runSize == null">NULL</if>
+		, <if test="x != null">CAST(#{x} as real)</if><if test="x == null">NULL</if>
+		, <if test="y != null">CAST(#{y} as real)</if><if test="y == null">NULL</if>
+		, <if test="xy != null">CAST(#{xy} as numeric(38,25))</if><if test="xy == null">NULL</if>
 		, #{addYn}
-		);
+		)
 	</insert>
 
 	<!-- tab4: 면적기준 정보 관리 update/delete -->
 	<update id="updateTab4Data">
 		UPDATE DOI_MODEL_MAST
 		SET SEL_CODE = #{selCode}
-		,SPEC = #{spec}
-		,INCH = #{inch}
-		,GLASS_THICK = #{glassThick}
-		,SHEET = #{sheet}
-		,BLOCK = #{block}
-		,CELL = #{cell}
-		,RUN_SIZE = #{runSize}
-		,X = #{x}
-		,Y = #{y}
-		,XY = #{xy}
+  		,SPEC        = #{spec}
+		,INCH        = <if test="inch != null">CAST(#{inch} as real)</if><if test="inch == null">NULL</if>
+		,GLASS_THICK = <if test="glassThick != null">CAST(#{glassThick} as real)</if><if test="glassThick == null">NULL</if>
+		,SHEET       = <if test="sheet != null">CAST(#{sheet} as real)</if><if test="sheet == null">NULL</if>
+		,BLOCK       = <if test="block != null">CAST(#{block} as real)</if><if test="block == null">NULL</if>
+		,CELL        = <if test="cell != null">CAST(#{cell} as real)</if><if test="cell == null">NULL</if>
+		,RUN_SIZE    = <if test="runSize != null">CAST(#{runSize} as real)</if><if test="runSize == null">NULL</if>
+		,X = <if test="x != null">CAST(#{x} as real)</if><if test="x == null">NULL</if>
+		,Y = <if test="y != null">CAST(#{y} as real)</if><if test="y == null">NULL</if>
+		,XY = <if test="xy != null">CAST(#{xy} as numeric(38,25))</if><if test="xy == null">NULL</if>
 		WHERE 1=1
 		and yyyymm = #{yyyymm}
 		and site = #{siteOrg}
