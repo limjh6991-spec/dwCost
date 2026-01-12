@@ -148,7 +148,7 @@
         EXEC UP_DOI_SALE_COST 
             #{yyyymm},
             #{site},
-            #{selcode};
+            #{selCode};
     </select>
 
     <!-- C0003008: 매출원가 조회 (SLCO 테이블에서) -->
@@ -215,23 +215,27 @@
     <select id="ExeclogPopup" resultType="CamelMap">
     SELECT
         seq_no,
+        exec_rslt,
         yyyymm,
         sel_code,
         CASE WHEN SITE='HQ' THEN '본사' WHEN SITE='VN' THEN 'VINA' ELSE SITE END AS site,
-        exec_date,
+        CONVERT(varchar(23), exec_date, 121) AS exec_date,
         exec_user
     FROM doi_execlog
     WHERE 1 = 1
+    <if test="procName != null and procName != ''">
+        AND proc_name = #{procName}
+    </if>
     ORDER BY exec_date;      
     </select>
 
     <select id="ExeclogDetail" resultType="CamelMap">
     SELECT
-        exec_rslt AS execRslt
+        rslt_message AS rsltMessage
     FROM doi_execlog
     WHERE 1 = 1
     <if test="seqNo != null and seqNo != ''">
         AND seq_no = #{seqNo}
-    </if>   
+    </if>
     </select>
 </mapper>

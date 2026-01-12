@@ -32,7 +32,7 @@
         v-html="formattedLog" >
       </div>
     </div>
-    <ExeclogPopup ref="execlogPopup" />
+    <ExeclogPopup ref="execlogPopup" style="margin-top: 100px;" />
   </div>
 </template>
 
@@ -153,6 +153,7 @@ export default {
         yyyymm: this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : null,
         site: this.params.site ? this.siteMap[this.params.site] : null,
         selCode: 'ACTUAL',
+        procName: 'UP_DOI_SCOF',
       };
       this.$refs.execlogPopup.open(queryParams);
     },

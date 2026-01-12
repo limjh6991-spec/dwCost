@@ -7,14 +7,13 @@
     hide-footer
     @shown="onShown"
   >
-    <div style="height: 350px;">
-      <RealGrid ref="execLogGrid" :uid="'execLogGrid'" :step="'1'" :rows="logRows" style="height: 100%" />
+    <div style="height: 250px;">
+      <RealGrid ref="execLogGrid" :uid="'execLogGrid'" :step="'1'" :rows="logRows" />
     </div>
 
     <div style="height: 400px;">
       <div class="d-flex align-items-center mb-2">
-        <strong class="me-2">상세 로그(exec_rslt)</strong>
-        <small class="text-muted" v-if="selectedKeyText">{{ selectedKeyText }}</small>
+        <strong style="margin-top: 10px;">상세 로그</strong>
       </div>
 
       <div class="rslt-box" v-html="formattedRslt"></div>
@@ -33,7 +32,7 @@ export default {
       execLogGrid: null,
       queryParams: null,
       selectedRow: null,
-      execRslt: '',
+      rsltMessage: '',
       _gridInited: false,
     };
   },
@@ -44,13 +43,8 @@ export default {
   computed: {
     formattedRslt() {
 
-      const msg = this.execRslt || '행을 선택하면 상세 로그가 표시됩니다.';
+      const msg = this.rsltMessage || '행을 선택하면 상세 로그가 표시됩니다.';
       return msg.replaceAll('\n', '<br/>');
-    },
-    selectedKeyText() {
-      if (!this.selectedRow) return '';
-      const { yyyymm, selCode, site, execDate, execUser } = this.selectedRow;
-      return `(${yyyymm} / ${selCode} / ${site} / ${execDate} / ${execUser})`;
     },
     gridView() {
       return this.$refs.execLogGrid?.getGridView();
@@ -68,7 +62,7 @@ export default {
       await this.$nextTick();
       this.initGridOnce();
       await this.fetchLogList();
-      this.execRslt = '';
+      this.rsltMessage = '';
       this.selectedRow = null;
     },
 
@@ -83,7 +77,7 @@ export default {
 
         const row = this.dataProvider.getJsonRow(clickData.itemIndex);
         this.selectedRow = row;
-        await this.fetchExecRslt(row);
+        await this.fetchRsltMessage(row);
       };
       this._gridInited = true;
     },
@@ -102,10 +96,10 @@ export default {
       this.logRows = Array.isArray(data) ? data : [];
     },
 
-    async fetchExecRslt(row) {
+    async fetchRsltMessage(row) {
       const param = {
         menuId: 'c0003000',
-        queryId: 'ExeclogDetail', // ✅ exec_rslt 가져오기
+        queryId: 'ExeclogDetail',
         queryParams: { seqNo: row.seqNo ?? row.seqno },
         target: null,
       };
@@ -114,9 +108,9 @@ export default {
       const data = resp?.data?.data || resp?.data || resp || [];
 
     const one = data[0] || null;
-    const v = one?.execRslt ?? one?.exec_rslt ?? one.execrslt;
+    const v = one?.rsltMessage ?? one?.rslt_message ?? one.rsltmessage;
 
-    this.execRslt = (v === null || v === undefined)
+    this.rsltMessage = (v === null || v === undefined)
       ? '(상세 로그가 없습니다)'
       : String(v);
 
@@ -129,8 +123,7 @@ export default {
 <style scoped>
 .rslt-box {
   width: 100%;
-  min-height: 200px;
-  max-height: 350px;
+  height: 350px;
   overflow-y: auto;
   border: 1px solid #d8d8d8;
   border-radius: 6px;
