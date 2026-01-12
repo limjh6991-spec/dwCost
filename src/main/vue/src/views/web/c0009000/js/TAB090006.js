@@ -19,7 +19,7 @@ const grid = {
       headerDepth: 2,
      },
     footer: { visible: false },
-    filtering: { enabled: true },
+    filtering: { enabled: false },
     footers: {
       visible: false,
       items: []
