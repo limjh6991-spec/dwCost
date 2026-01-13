@@ -289,7 +289,7 @@ export default {
       const params = {
         yyyymm: this.params.yyyymm?.replaceAll('-',''),
         site: this.siteMap[this.params.site],
-        selcode: this.params.selCode === '' ? 'ACTUAL' : this.params.selCode
+        selCode: this.params.selCode === '' ? 'ACTUAL' : this.params.selCode
       };
 
       const amountResp = await this.$axios.api.search({
