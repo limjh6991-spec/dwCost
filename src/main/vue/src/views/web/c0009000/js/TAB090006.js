@@ -58,6 +58,7 @@ const grid = {
         const gubun = (grid.getValue(itemIndex, '구분') || '').toString();
         
         if (rowType === 'SUBTOTAL') return 5;
+        if (rowType === 'GRAND_TOTAL') return 5;
         if (rowType === 'TOTAL' && gubun === '판매처별') return 2;
         if (rowType === 'TOTAL') return 5;
         return 1;
@@ -70,6 +71,7 @@ const grid = {
         const gubun = (grid.getValue(itemIndex, '구분') || '').toString();
         
         if (rowType === 'SUBTOTAL') return 5;
+        if (rowType === 'GRAND_TOTAL') return 5;
         if (rowType === 'TOTAL' && gubun === '판매처별') return 2;
         if (rowType === 'TOTAL') return 5;
         return 1;
@@ -82,6 +84,7 @@ const grid = {
         const gubun = (grid.getValue(itemIndex, '구분') || '').toString();
         
         if (rowType === 'SUBTOTAL') return 5;
+        if (rowType === 'GRAND_TOTAL') return 5;
         if (rowType === 'TOTAL' && gubun === '판매처별') return 3;
         if (rowType === 'TOTAL') return 5;
         return 1;
@@ -94,6 +97,7 @@ const grid = {
         const gubun = (grid.getValue(itemIndex, '구분') || '').toString();
         
         if (rowType === 'SUBTOTAL') return 5;
+        if (rowType === 'GRAND_TOTAL') return 5;
         if (rowType === 'TOTAL' && gubun === '판매처별') return 3;
         if (rowType === 'TOTAL') return 5;
         return 1;
@@ -106,6 +110,7 @@ const grid = {
         const gubun = (grid.getValue(itemIndex, '구분') || '').toString();
         
         if (rowType === 'SUBTOTAL') return 5;
+        if (rowType === 'GRAND_TOTAL') return 5;
         if (rowType === 'TOTAL' && gubun === '판매처별') return 3;
         if (rowType === 'TOTAL') return 5;
         return 1;

@@ -61,7 +61,16 @@ const tab090007GridField = {
     { column: '모델' },
     { column: 'inch' },
     { column: '판매처' },
-    { column: '월' },
+    { 
+      column: '월',
+      spanCallback: (grid, layout, itemIndex) => {
+        const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
+        
+        if (rowType === 'SUBTOTAL') return 0;
+        if (rowType === 'GRAND_TOTAL') return 0;
+        return 1;
+      }
+    },
     {
       name: 'grpCOGS',
       header: { text: '매출원가' },

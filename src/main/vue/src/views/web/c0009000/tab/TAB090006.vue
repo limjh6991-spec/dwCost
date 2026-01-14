@@ -222,6 +222,15 @@ export default {
         };
       }
 
+      if (rowType === 'GRAND_TOTAL') {
+        return {
+          style: {
+            background: '#e8f4f8',
+            fontWeight: 'bold',
+          },
+        };
+      }
+
       if (rowType === 'TOTAL') {
         return {
           style: {
@@ -234,32 +243,7 @@ export default {
       return null;
     });
 
-    const layoutGubun = gv.layoutByColumn('구분');
-    if (layoutGubun) {
-      layoutGubun.spanCallback = (grid, layout, itemIndex) => {
-        const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
-
-        if (rowType === 'SUBTOTAL') {
-          return 5;
-        }
-        if (rowType === 'TOTAL') {
-          return 2;
-        }
-        return 1;
-      };
-    }
-
-    const layoutInch = gv.layoutByColumn('inch');
-    if (layoutInch) {
-      layoutInch.spanCallback = (grid, layout, itemIndex) => {
-        const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
-
-        if (rowType === 'TOTAL') {
-          return 3;
-        }
-        return 1;
-      };
-    }
+    this.applySpanCallbacks();
   },
   beforeUnmount() {},
   methods: {
@@ -291,6 +275,59 @@ export default {
       } else {
         if (this.manuCostDtlGrid?.columnLayout) gv.setColumnLayout(this.manuCostDtlGrid.columnLayout);
         if (this.manuCostDtlGrid?.columns) gv.setColumns(this.manuCostDtlGrid.columns);
+      }
+      
+      this.$nextTick(() => {
+        this.applySpanCallbacks();
+      });
+    },
+    applySpanCallbacks() {
+      const gv = this.gridView;
+      if (!gv) return;
+
+      const layoutGubun = gv.layoutByColumn('구분');
+      if (layoutGubun) {
+        layoutGubun.spanCallback = (grid, layout, itemIndex) => {
+          const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
+
+          if (rowType === 'SUBTOTAL') {
+            return 5;
+          }
+          if (rowType === 'GRAND_TOTAL') {
+            return 5;
+          }
+          if (rowType === 'TOTAL') {
+            return 2;
+          }
+          return 1;
+        };
+      }
+
+      const layoutMonth = gv.layoutByColumn('월');
+      if (layoutMonth) {
+        layoutMonth.spanCallback = (grid, layout, itemIndex) => {
+          const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
+
+          if (rowType === 'SUBTOTAL') {
+            return 0;
+          }
+          if (rowType === 'GRAND_TOTAL') {
+            return 0;
+          }
+          return 1;
+        };
+      }
+
+      const layoutInch = gv.layoutByColumn('inch');
+      if (layoutInch) {
+        layoutInch.spanCallback = (grid, layout, itemIndex) => {
+          const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
+
+          if (rowType === 'TOTAL') {
+            return 3;
+          }
+          return 1;
+        };
       }
     },
     async fetchYearRowsIfNeeded() {
@@ -396,6 +433,7 @@ export default {
       });
 
       let mergeGroupSeq = 0;
+      const grandTotalRow = this.createEmptySubtotalRowByGroup('총합계', rows[0] || {});
 
       orderedGubuns.forEach(g => {
         const list = groupMap[g];
@@ -432,10 +470,14 @@ export default {
             mergeKeyGubun,
           });
           this.accumulateRow(subtotalRow, r, numberCols);
+          this.accumulateRow(grandTotalRow, r, numberCols);
         });
 
         result.push(this.makeSubtotalRowByGroup(subtotalRow, g));
       });
+
+
+      result.push(this.makeGrandTotalRow(grandTotalRow));
 
       const first = rows[0] || {};
       const dwSiteField = 
@@ -459,7 +501,16 @@ export default {
         this.accumulateRow(siteTotalsMap[key], r, numberCols);
       });
 
-      Object.keys(siteTotalsMap).forEach((key, idx) => {
+      const siteKeys = Object.keys(siteTotalsMap);
+      const orderedSiteKeys = [];
+      if (siteKeys.includes('-')) {
+        orderedSiteKeys.push('-');
+      }
+      siteKeys.filter(k => k !== '-').sort().forEach(k => {
+        orderedSiteKeys.push(k);
+      });
+
+      orderedSiteKeys.forEach((key, idx) => {
         const totalRow = siteTotalsMap[key];
         result.push({
           ...this.makeTotalRow(totalRow, dwSiteField, key),
@@ -552,6 +603,16 @@ export default {
         구분: `소계(${groupName})`,
         월: '',
         mergeKeyGubun: `SUBTOTAL|${groupName}`,
+      };
+    },
+
+    makeGrandTotalRow(row) {
+      return {
+        ...row,
+        rowType: 'GRAND_TOTAL',
+        구분: '총 합계',
+        월: '',
+        mergeKeyGubun: 'GRAND_TOTAL',
       };
     },
 
