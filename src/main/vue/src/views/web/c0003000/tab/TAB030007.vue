@@ -156,7 +156,7 @@ export default {
         let params = {
           yyyymm: yyyymm,
           site: this.siteMap[this.params.site],
-          selcode: this.params.sel_code,
+          selCode: this.params.sel_code,
         };
 
         let param = [{
