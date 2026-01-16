@@ -50,67 +50,12 @@ const grid = {
   { fieldName: 'eohQty', dataType: ValueType.NUMBER },
   { fieldName: 'eohAmt', dataType: ValueType.NUMBER },
   ],
-  columnLayout: [
-    { 
-      column: '구분',
-      spanCallback: (grid, layout, itemIndex) => {
-        const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
-        const gubun = (grid.getValue(itemIndex, '구분') || '').toString();
-        
-        if (rowType === 'SUBTOTAL') return 5;
-        if (rowType === 'TOTAL' && gubun === '판매처별') return 2;
-        if (rowType === 'TOTAL') return 5;
-        return 1;
-      }
-    },
-    { 
-      column: '모델',
-      spanCallback: (grid, layout, itemIndex) => {
-        const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
-        const gubun = (grid.getValue(itemIndex, '구분') || '').toString();
-        
-        if (rowType === 'SUBTOTAL') return 5;
-        if (rowType === 'TOTAL' && gubun === '판매처별') return 2;
-        if (rowType === 'TOTAL') return 5;
-        return 1;
-      }
-    },
-    { 
-      column: 'inch',
-      spanCallback: (grid, layout, itemIndex) => {
-        const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
-        const gubun = (grid.getValue(itemIndex, '구분') || '').toString();
-        
-        if (rowType === 'SUBTOTAL') return 5;
-        if (rowType === 'TOTAL' && gubun === '판매처별') return 3;
-        if (rowType === 'TOTAL') return 5;
-        return 1;
-      }
-    },
-    { 
-      column: '판매처',
-      spanCallback: (grid, layout, itemIndex) => {
-        const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
-        const gubun = (grid.getValue(itemIndex, '구분') || '').toString();
-        
-        if (rowType === 'SUBTOTAL') return 5;
-        if (rowType === 'TOTAL' && gubun === '판매처별') return 3;
-        if (rowType === 'TOTAL') return 5;
-        return 1;
-      }
-    },
-    { 
-      column: '월',
-      spanCallback: (grid, layout, itemIndex) => {
-        const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
-        const gubun = (grid.getValue(itemIndex, '구분') || '').toString();
-        
-        if (rowType === 'SUBTOTAL') return 5;
-        if (rowType === 'TOTAL' && gubun === '판매처별') return 3;
-        if (rowType === 'TOTAL') return 5;
-        return 1;
-      }
-    },
+columnLayout: [
+    { column: '구분' },
+    { column: '모델' },
+    { column: 'inch' },
+    { column: '판매처' },
+    { column: '월' },
     {
       name: 'grpBOH',
       header: { text: '기초재공품재고(BOH)' },

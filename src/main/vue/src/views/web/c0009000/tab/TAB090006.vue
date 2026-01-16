@@ -52,7 +52,14 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="manuCostGrid" :uid="'manuCostGrid'" :grid="manuCostGrid" :layout="manuCostGrid.columnLayout" :step="'1'" :rows="manuCostGridRows" style="height: 100%" />
+        <RealGrid
+          ref="manuCostGrid"
+          :uid="'manuCostGrid'"
+          :grid="activeGrid"
+          :step="'1'"
+          :rows="manuCostGridRows"
+          style="height: 100%"
+        />
       </div>
     </div>
   </div>
@@ -182,11 +189,14 @@ export default {
     showMonth() {
       return this.yearSelected;
     },
+    activeGrid() {
+      return this.params.viewMode === 'MONTH' ? this.manuCostDtlGrid : this.manuCostGrid;
+    },
+    gridKey() {
+      return this.params.viewMode === 'MONTH' ? 'MONTH' : 'YEAR';
+    },
     gridView() {
       return this.$refs.manuCostGrid.getGridView();
-    },
-    gridDataProvider() {
-      return this.$refs.manuCostGrid.getGridDataProvider();
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
@@ -203,47 +213,35 @@ export default {
   mounted() {
     const gv = this.gridView;
 
-    if (this.manuCostGrid.columnLayout) {
-      gv.setColumnLayout(this.manuCostGrid.columnLayout);
-    }
+    // ✅ 1) 요약행 색상: itemIndex 기준으로 rowType 읽기
+    gv.setRowStyleCallback((grid, item) => {
+      const itemIndex =
+        item?.itemIndex ?? item?.index ?? item?.dataRow; // 버전별 안전 처리
 
-    gv.setRowStyleCallback((grid, item, fixed) => {
-      const row = item.dataRow;
-      if (row == null || row < 0) return null;
+      if (itemIndex == null || itemIndex < 0) return null;
 
-      const rowType = (grid.getValue(row, 'rowType') || '').toString();
+      const rowType = String(grid.getValue(itemIndex, 'rowType') ?? '');
 
       if (rowType === 'SUBTOTAL') {
-        return {
-          style: {
-            background: '#f5f7ff',
-            fontWeight: 'bold',
-          },
-        };
+        return { style: { background: '#f5f7ff', fontWeight: 'bold' } };
       }
-
       if (rowType === 'GRAND_TOTAL') {
-        return {
-          style: {
-            background: '#e8f4f8',
-            fontWeight: 'bold',
-          },
-        };
+        return { style: { background: '#e8f4f8', fontWeight: 'bold' } };
       }
-
       if (rowType === 'TOTAL') {
-        return {
-          style: {
-            background: '#fff3cd',
-            fontWeight: 'bold',
-          },
-        };
+        return { style: { background: '#fff3cd', fontWeight: 'bold' } };
       }
-
       return null;
     });
 
+    // ✅ 2) 병합 spanCallback도 itemIndex 기준으로 판별
     this.applySpanCallbacks();
+
+    // ✅ 3) 정렬 후 refresh(보험)
+    // (이벤트명이 환경/버전에 따라 다를 수 있어 여러개 걸어둠)
+    gv.onSorted = () => gv.refresh();
+    gv.onSortingChanged = () => gv.refresh();
+    gv.onDataSorted = () => gv.refresh();
   },
   beforeUnmount() {},
   methods: {
@@ -265,70 +263,58 @@ export default {
       this.manuCostGrid = _.cloneDeep(require(`@web/c0009000/js/TAB090006.js`));
       this.manuCostDtlGrid = _.cloneDeep(require(`@web/c0009000/js/TAB090006_2.js`));
     },
-    applyGridMode(mode) {
+    async applyGridMode(mode) {
       const gv = this.gridView;
       if (!gv) return;
 
-      if (mode === 'YEAR') {
-        if (this.manuCostGrid?.columnLayout) gv.setColumnLayout(this.manuCostGrid.columnLayout);
-        if (this.manuCostGrid?.columns) gv.setColumns(this.manuCostGrid.columns);
-      } else {
-        if (this.manuCostDtlGrid?.columnLayout) gv.setColumnLayout(this.manuCostDtlGrid.columnLayout);
-        if (this.manuCostDtlGrid?.columns) gv.setColumns(this.manuCostDtlGrid.columns);
-      }
-      
-      this.$nextTick(() => {
-        this.applySpanCallbacks();
-      });
+      const g = mode === 'MONTH' ? this.manuCostDtlGrid : this.manuCostGrid;
+
+      if (g?.columns) gv.setColumns(g.columns);
+      if (g?.columnLayout) gv.setColumnLayout(g.columnLayout);
+
+      this.applySpanCallbacks();
+      gv.refresh();
+    },
+    capSpan(span) {
+      const max = 5;
+      const s = Number(span) || 1;
+      return Math.max(1, Math.min(s, max));
+    },
+    getRowInfoByItemIndex(grid, itemIndex) {
+      return {
+        rowType: String(grid.getValue(itemIndex, 'rowType') ?? ''),
+        gubun: String(grid.getValue(itemIndex, '구분') ?? ''),
+      };
     },
     applySpanCallbacks() {
       const gv = this.gridView;
       if (!gv) return;
 
-      const layoutGubun = gv.layoutByColumn('구분');
-      if (layoutGubun) {
-        layoutGubun.spanCallback = (grid, layout, itemIndex) => {
-          const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
+      const makeSpan = (colName) => {
+        const layout = gv.layoutByColumn(colName);
+        if (!layout) return;
 
-          if (rowType === 'SUBTOTAL') {
-            return 5;
-          }
-          if (rowType === 'GRAND_TOTAL') {
-            return 5;
-          }
-          if (rowType === 'TOTAL') {
-            return 2;
-          }
-          return 1;
+        layout.spanCallback = (grid, layout, itemIndex) => {
+          if (itemIndex == null || itemIndex < 0) return 1;
+
+          const { rowType, gubun } = this.getRowInfoByItemIndex(grid, itemIndex);
+
+          let span = 1;
+
+          if (rowType === 'SUBTOTAL') span = 5;
+          else if (rowType === 'GRAND_TOTAL') span = 5;
+          else if (rowType === 'TOTAL' && gubun === '판매처별') {
+            if (colName === '구분' || colName === '모델') span = 2;
+            else if (colName === 'inch' || colName === '판매처' || colName === '월') span = 3;
+          } else if (rowType === 'TOTAL') span = 5;
+
+          return this.capSpan(span);
         };
-      }
+      };
 
-      const layoutMonth = gv.layoutByColumn('월');
-      if (layoutMonth) {
-        layoutMonth.spanCallback = (grid, layout, itemIndex) => {
-          const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
+      ['구분', '모델', 'inch', '판매처', '월'].forEach(makeSpan);
 
-          if (rowType === 'SUBTOTAL') {
-            return 0;
-          }
-          if (rowType === 'GRAND_TOTAL') {
-            return 0;
-          }
-          return 1;
-        };
-      }
-
-      const layoutInch = gv.layoutByColumn('inch');
-      if (layoutInch) {
-        layoutInch.spanCallback = (grid, layout, itemIndex) => {
-          const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
-
-          if (rowType === 'TOTAL') {
-            return 3;
-          }
-          return 1;
-        };
-      }
+      gv.refresh();
     },
     async fetchYearRowsIfNeeded() {
       if (!this.hasSysAdmin) {
@@ -602,6 +588,7 @@ export default {
         rowType: 'SUBTOTAL',
         구분: `소계(${groupName})`,
         월: '',
+        mergeKey: `SUBTOTAL|${groupName}`,
         mergeKeyGubun: `SUBTOTAL|${groupName}`,
       };
     },
@@ -612,6 +599,7 @@ export default {
         rowType: 'GRAND_TOTAL',
         구분: '총 합계',
         월: '',
+        mergeKey: 'GRAND_TOTAL',
         mergeKeyGubun: 'GRAND_TOTAL',
       };
     },
@@ -631,7 +619,7 @@ export default {
       const yearRows = await this.fetchYearRowsIfNeeded();
 
       if (this.params.viewMode === 'YEAR') {
-        this.applyGridMode('YEAR');
+        await this.applyGridMode('YEAR');
         const rows = this.buildManuCostRows(yearRows);
 
         this.totalRowCount = rows.filter(r => r.rowType === 'TOTAL').length;
@@ -643,7 +631,7 @@ export default {
         return;
       }
 
-      this.applyGridMode('MONTH');
+      await this.applyGridMode('MONTH');
 
       const selectedYYYYMM = String(this.params.yyyymm || '');
       const filtered = yearRows.filter(r => {
@@ -668,6 +656,8 @@ export default {
     async excelBtnClick() {
       const grid = this.gridView;
 
+      await this.$nextTick();
+
       const now = new Date();
       const yyyymmdd = this.$utils.getTodayDate();
 
@@ -681,6 +671,7 @@ export default {
         target: 'local',
         fileName: fileName,
         progressMessage: '엑셀 Export중입니다.',
+        exportDisplay: true,
         done: function () {
           alert('엑셀 내보내기가 완료되었습니다!');
         },
