@@ -5,7 +5,7 @@
 <mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007007Mapper">
 	<select id="C0007007_TAB070011" resultType="CamelMap">
 		select
-		SEQ_NO, YYYYMM,SEL_CODE
+		YYYYMM,SEL_CODE
  		,SITE as SITE_ORG 
 		,CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' end as SITE
 		,창고, 품명, 품번, 규격, 단위, 수량, 기타출고구분, 기준단위, 기준단위수량, LotNo, 코스트센터, 현재고, 특이사항
