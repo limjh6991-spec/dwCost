@@ -458,4 +458,47 @@
     </if>
     order BY 품명, 품번 ;
 </select>
+
+    <select id="C0009013_Sch1" resultType="CamelMap">
+    select
+        YYYYMM,       
+        SITE as SITE_ORG,
+        CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then 'VINA' else site end as SITE,
+        SEL_CODE,
+        구분,
+        MODEL,
+        창고,
+        품번,
+        상계금액,
+        수량,
+        최종결산월재고단가,
+        IN_MONTH,
+        DIST_RATE,
+        FINAL_AMT 
+    FROM DOI_SCOF
+    where 1=1
+    <if test="yyyymm != null and yyyymm != ''">
+        and YYYYMM = #{yyyymm}
+    </if>
+    <if test="site != null and site != ''">
+        and SITE = #{site}
+    </if>
+    <if test="selCode != null and selCode != ''">
+        and SEL_CODE = #{selCode}
+    </if>
+    order BY 품번, MODEL ;
+</select>
+
+    <select id="C0009013_SelectSelCode" resultType="CamelMap">
+        SELECT SEL_CODE AS value, SEL_CODE AS text
+        FROM DOI_SELCODE
+        WHERE 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            AND yyyymm = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            AND site = #{site}
+        </if>
+        ORDER BY SEL_CODE
+    </select>
 </mapper>

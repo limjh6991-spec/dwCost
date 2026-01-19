@@ -99,6 +99,16 @@ const c0009000Router = [
       requiresAuth: true,
     },
   },
+  {
+    path: '/c0009013',
+    name: '유상사급',
+    component: () => import('../views/web/c0009000/C0009013.vue'),
+    meta: {
+      upperSysResourceId: 'C0009000',
+      sysResourceId: 'C0009013',
+      requiresAuth: true,
+    },
+  },
 ];
 
 export default c0009000Router;

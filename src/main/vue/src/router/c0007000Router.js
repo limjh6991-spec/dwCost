@@ -40,7 +40,7 @@ const c0007000Router = [
   },
   {
     path: '/c0007007',
-    name: '유상사급',
+    name: 'C0007007',
     component: () => import('../views/web/c0007000/C0007007.vue'),
     meta: {
       upperSysResourceId: 'C0007000',
