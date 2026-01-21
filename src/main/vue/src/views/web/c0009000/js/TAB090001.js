@@ -17,7 +17,7 @@ const tab090001GridField = {
       hscrollBar: true, 
       showEmptyMessage: true,
      },
-    footer: { visible: false },
+    footer: { visible: true },
     filtering: { enabled: true },
   },  
   fields: [
@@ -36,6 +36,7 @@ const tab090001GridField = {
     { fieldName: 'boh', dataType: ValueType.NUMBER },
     { fieldName: 'in', dataType: ValueType.NUMBER },
     { fieldName: 'out', dataType: ValueType.NUMBER },
+    { fieldName: 'outEtc', dataType: ValueType.NUMBER },
     { fieldName: 'loss', dataType: ValueType.NUMBER },
     { fieldName: 'eoh', dataType: ValueType.NUMBER },
     { fieldName: '불량률', dataType: ValueType.NUMBER },
@@ -117,7 +118,7 @@ const tab090001GridField = {
       header: { text: 'BOH' },
       styleName: 'tr',
       numberFormat: '#,##0',
-      // footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
+      footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: 'in',
@@ -126,7 +127,7 @@ const tab090001GridField = {
       header: { text: 'IN' },
       styleName: 'tr',
       numberFormat: '#,##0',
-      // footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
+      footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: 'out',
@@ -135,7 +136,7 @@ const tab090001GridField = {
       header: { text: 'OUT' },
       styleName: 'tr',
       numberFormat: '#,##0',
-      // footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
+      footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: 'loss',
@@ -144,7 +145,7 @@ const tab090001GridField = {
       header: { text: 'LOSS' },
       styleName: 'tr',
       numberFormat: '#,##0',
-      // footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
+      footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: 'eoh',
@@ -153,7 +154,16 @@ const tab090001GridField = {
       header: { text: 'EOH' },
       styleName: 'tr',
       numberFormat: '#,##0',
-      // footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
+      footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
+    },
+    {
+      name: 'outEtc',
+      fieldName: 'outEtc',
+      width: 100,
+      header: { text: 'OUT_ETC' },
+      styleName: 'tr',
+      numberFormat: '#,##0',
+      footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: '불량률',

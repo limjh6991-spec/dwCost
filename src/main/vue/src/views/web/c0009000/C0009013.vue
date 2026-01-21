@@ -164,6 +164,7 @@ export default {
         queryParams: params,
         target: this.saleCostGridRows,
       };
+      console.log('C0009013_Sch1 파라미터:', params);
       await this.$axios.api.search(param);
       this.gridDataProvider.setRows(this.saleCostGridRows);
     },

@@ -271,6 +271,9 @@
         <if test="site != null and site != ''">
             AND SITE = #{site}
         </if>
+        <if test="selcode != null and selcode != ''">
+            AND SEL_CODE = #{selcode}
+        </if>
         ORDER BY 1
     </select>
 

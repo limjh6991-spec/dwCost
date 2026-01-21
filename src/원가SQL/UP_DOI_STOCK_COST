@@ -1,8 +1,9 @@
-CREATE                                                   procedure UP_DOI_STOCK_COST
+CREATE                                                               procedure UP_DOI_STOCK_COST
 (
     @YYYYMM varchar(10),--집계 년/월 설정
     @SITE varchar(2),  --사업장코드 (본사 : HQ, 베트남 : VN)
- @R_Message nvarchar(MAX) OUTPUT
+    @SEL_CODE varchar(10),
+ 	@R_Message nvarchar(MAX) OUTPUT
 )
 AS
 BEGIN
@@ -24,8 +25,9 @@ SET NOCOUNT ON;
     BEGIN
 		SELECT @CNT = count(*)
 		FROM DOI_COST
-		      WHERE yyyymm=@YYYYMM
-		        and site  =@SITE;
+		      WHERE yyyymm	= @YYYYMM
+		        and site  	= @SITE
+   				and sel_code= @SEL_CODE;
 		IF @CNT = 0 BEGIN
 		SET  @R_Message =  @R_Message + char(10) + '[ERROR] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 가공비 배부(DOI_COST) 테이블에 '
 		+ @YYYYMM + '월 ' + CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
@@ -48,8 +50,9 @@ SET NOCOUNT ON;
     
 	SELECT @CNT = count(*)
 	FROM DOI_STOCK_BOH
-	      WHERE yyyymm=@YYYYMM
-	        and site  =@SITE;
+	      WHERE yyyymm	 = @YYYYMM
+	        and site  	 = @SITE
+			and sel_code = @SEL_CODE;
 	IF @CNT = 0 BEGIN
 	SET  @R_Message =  @R_Message + char(10) + '[ERROR] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품BOH(DOI_STOCK_BOH) 테이블에 '
 	+@YYYYMM + '월 ' + CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
@@ -83,25 +86,33 @@ SET NOCOUNT ON;
 	BEGIN TRANSACTION;
 	
 	DELETE FROM DOI_STCO 
-	WHERE YYYYMM= @YYYYMM
-	  AND SITE= @SITE;	
+	WHERE YYYYMM	= @YYYYMM
+	  AND SITE		= @SITE
+	  AND SEL_CODE  = @SEL_CODE;	
 	SET  @R_Message =  @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STCO) 테이블에 '+@YYYYMM + '월 '
 	+ CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + '제품수불금액 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 삭제 했습니다';
 	
 	-- expen_sel (원가항목) 기준으로 집계하도록 수정
 	WITH MODEL_IN_AMT AS(
-		SELECT a.YYYYMM, a.site, a.model, a.구분, a.expen_sel,a.expen_sel명,a.acct_name, SUM([out]) IN_AMT
+		SELECT a.YYYYMM, a.site, a.model, a.구분, a.expen_sel,a.expen_sel명,a.acct_name, SUM([out]) IN_AMT,
+		MAX(구분) over (partition by a.yyyymm, a.site, a.model) as MAX_구분,
+		MIN(구분) over (partition by a.yyyymm, a.site, a.model) as MIN_구분
 		FROM DOI_COST a 
 		WHERE A.yyyymm=@YYYYMM --and model='8136'
 		  AND a.site=@SITE
+	  	  AND SEL_CODE  = @SEL_CODE
           --AND a.ADJ_YN='Y'
 		  AND a.expen_sel != 'NONE'
 	GROUP BY a.yyyymm, a.site, a.model, a.구분, a.expen_sel, a.expen_sel명,a.acct_name
 	), MODEL_BOH_AMT AS(
-		SELECT a.YYYYMM, a.site, a.model, a.구분, a.expen_sel, a.expen_sel명,a.acct_name, COALESCE(SUM(BOH_AMT),0) BOH_AMT
+		SELECT a.YYYYMM, a.site, a.model, a.구분, a.expen_sel, a.expen_sel명,a.acct_name,
+		COALESCE(SUM(BOH_AMT),0) BOH_AMT,
+		COALESCE(SUM(InEtc_AMT),0) InEtc_AMT,
+		COALESCE(SUM(OutEtc_AMT),0) OutEtc_AMT  --select *
 		FROM DOI_STOCK_BOH a 
 		WHERE A.yyyymm=@YYYYMM --and model='8136'
 		  AND a.site=@SITE
+	  	  AND SEL_CODE  = @SEL_CODE
 		GROUP BY a.yyyymm, a.site, a.model, a.구분, a.expen_sel, a.expen_sel명,a.acct_name
 	), MODEL_STOCK AS (
 		select
@@ -112,9 +123,11 @@ SET NOCOUNT ON;
 			case when right(a.model_type,1)='D' then '개발' else '양산' end as 구분,
 			A.MODEL,
 			SUM(A.BOH) as BOH,
-			SUM(A.INPUT) as INPUT,
-			SUM(A.OUT) as OUT,  --2025.11.11 확인필요
-			SUM(A.EOH) as EOH --select *
+			SUM(A.INPUT_PROD) as INPUT,
+			SUM(A.OUT - A.OUT_ETC - A.OUT_MOVING) as OUT,  --2025.11.11 확인필요
+			SUM(A.EOH) as EOH,
+			SUM(A.INPUT_MOVING) as INETC,
+			SUM(A.OUT_ETC+A.OUT_MOVING) AS OUTETC--select *
 		from
 		DOI_STOCK a
 		where a.YYYYMM=@YYYYMM  --and model='8136'
@@ -127,7 +140,8 @@ SET NOCOUNT ON;
 			case when right(a.model_type,1)='D' then '개발' else '양산' end
 	), MODEL_EOH_AMT AS(
 	 SELECT 
-	 	YYYYMM ,SITE ,SEL_CODE ,구분 ,MODEL ,expen_sel ,expen_sel명 ,acct_name ,BOH ,[INPUT] ,[OUT] ,EOH ,BOH_AMT ,IN_AMT ,Final_Eoh AS EOH_AMT
+	 	YYYYMM ,SITE ,SEL_CODE ,구분 ,MODEL ,expen_sel ,expen_sel명 ,acct_name ,BOH ,[INPUT] ,[OUT] ,EOH , INETC, OUTETC,
+	 	BOH_AMT ,IN_AMT ,Final_Eoh AS EOH_AMT, INETC_AMT, OUTETC_AMT
 	 FROM (
 		select t.*, Base_EOH_AMT + case when rn=1 then round(Ori_total,0)-Base_total else 0 end as Final_Eoh
 		FROM (
@@ -139,36 +153,43 @@ SET NOCOUNT ON;
 				select
 					a.YYYYMM,
 					a.SITE,
-					a.SEL_CODE,
+					@SEL_CODE as SEL_CODE,
 					a.구분,
 					A.MODEL,
 					b.expen_sel,
 					b.expen_sel명,
 					b.acct_name,
-					A.BOH, A.INPUT, A.OUT, A.EOH,
-					B.BOH_AMT,
+					A.BOH, A.INPUT, A.OUT, A.EOH, A.INETC, A.OUTETC,
+					B.BOH_AMT,B.INETC_AMT,B.OUTETC_AMT,
 					coalesce(c.IN_AMT,0) as IN_AMT, 
-					case when a.out = 0 then coalesce(b.boh_amt,0)+coalesce(c.IN_AMT,0)
-					 else (coalesce(b.boh_amt,0)+coalesce(c.IN_AMT,0))/nullif((a.eoh + a.out),0)*a.eoh*1.0  end as Ori_EOH_AMT,
-					round(case when a.out = 0 then coalesce(b.boh_amt,0)+coalesce(c.IN_AMT,0)
-					 else (coalesce(b.boh_amt,0)+coalesce(c.IN_AMT,0))/nullif((a.eoh + a.out),0)*a.eoh end,0) as Base_EOH_AMT
+					case when a.out + a.outetc = 0 and a.eoh != 0 then coalesce(b.boh_amt,0)+coalesce(c.IN_AMT,0)+coalesce(b.INETC_AMT,0)
+					 else (coalesce(b.boh_amt,0)+coalesce(c.IN_AMT,0)+coalesce(b.INETC_AMT,0)-coalesce(b.OUTETC_AMT,0))
+					 		/nullif((a.eoh + a.out),0)*a.eoh*1.0  end as Ori_EOH_AMT,
+			   round(case when a.out + a.outetc = 0 and a.eoh != 0 then coalesce(b.boh_amt,0)+coalesce(c.IN_AMT,0)+coalesce(b.INETC_AMT,0)
+					 else (coalesce(b.boh_amt,0)+coalesce(c.IN_AMT,0)+coalesce(b.INETC_AMT,0)-coalesce(b.OUTETC_AMT,0))
+					 		/nullif((a.eoh + a.out),0)*a.eoh end,0) as Base_EOH_AMT
 				from	MODEL_STOCK a
 				 left join MODEL_BOH_AMT b 
 				 on (a.yyyymm=b.yyyymm and a.site=b.site and a.model=b.model and b.구분=a.구분)
 				 left join MODEL_IN_AMT c  
-				 on (a.yyyymm=c.yyyymm and a.site=c.site and a.model=c.model and c.구분=a.구분 and c.expen_sel=b.expen_sel and c.acct_name=b.acct_name)
+				 on (a.yyyymm=c.yyyymm and a.site=c.site and a.model=c.model  
+				 	and a.구분 = case when MAX_구분=MIN_구분 then a.구분 else c.구분 end 
+				 	and c.expen_sel=b.expen_sel and c.acct_name=b.acct_name)
 				WHERE A.yyyymm=@YYYYMM --and a.model='8136'
 				  AND a.site=@SITE
 				)a
 			)t
 		)Final
-	)--, tot as (
+	)
 	INSERT	INTO	DOI_STCO
-	(YYYYMM ,SITE ,SEL_CODE ,구분 ,MODEL ,expen_sel ,expen_sel명 ,acct_name, BOH ,[INPUT] ,[OUT] ,EOH ,BOH_AMT ,IN_AMT ,EOH_AMT ,OUT_AMT)
-	select YYYYMM,SITE,SEL_CODE,구분,MODEL,coalesce(expen_sel,'NONE') AS expen_sel,
+	(YYYYMM,SITE,SEL_CODE,구분,MODEL,expen_sel,expen_sel명,acct_name,BOH,[INPUT],[OUT],EOH,INETC,OUTETC,BOH_AMT,IN_AMT,EOH_AMT,OUT_AMT,INETC_AMT,OUTETC_AMT)
+	select 	YYYYMM,SITE,SEL_CODE,구분,MODEL,coalesce(expen_sel,'NONE') AS expen_sel,
 			coalesce(expen_sel명,'생산수불없음') AS expen_sel명, COALESCE(acct_name,'생산수불없음') AS acct_name,
-			BOH,[INPUT],[OUT],EOH,BOH_AMT,IN_AMT,EOH_AMT,
-		round(case when eoh = 0 then (boh_amt + IN_AMT) else (boh_amt + IN_AMT-eoh_amt) end, 0) as OUT_AMT  --INTO DOI_STCO
+			BOH,[INPUT],[OUT],EOH,INETC,OUTETC,BOH_AMT,IN_AMT,EOH_AMT,
+			round(case when eoh = 0 and a.out != 0 then (boh_amt + IN_AMT + INETC_AMT - OUTETC_AMT) 
+					   else (boh_amt + IN_AMT + INETC_AMT - OUTETC_AMT -eoh_amt) end, 0) as OUT_AMT,
+			INETC_AMT,
+			case when  BOH=OUTETC then BOH_AMT ELSE  OUTETC_AMT END AS OUTETC_AMT
 	from	MODEL_EOH_AMT a	--) select sum(boh_amt+in_amt) ,sum(eoh_amt+out_amt) from tot a
 	--where a.expen_sel is not null
 	ORDER BY  
@@ -181,14 +202,15 @@ SET NOCOUNT ON;
 		+ CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + '재품수불금액 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
 	
 	--카세트 재료비 1
-		INSERT	INTO	DOI_STCO
+	INSERT	INTO	DOI_STCO
 	(YYYYMM ,SITE ,SEL_CODE ,구분 ,MODEL ,expen_sel ,expen_sel명 ,acct_name, BOH ,[INPUT] , EOH , [OUT] ,BOH_AMT ,IN_AMT ,EOH_AMT ,OUT_AMT)
 	select YYYYMM ,SITE ,SEL_CODE ,CASE WHEN model like 'VINA%' THEN '카세트' else 구분 end as 구분,
 		MODEL ,expen_sel ,expen_sel명 ,acct_name,boh_qty ,in_qty ,eoh_qty ,out_qty ,boh ,[in] ,eoh ,[out]
 	from doi_cost a
 	WHERE 1 = 1 
-	 and YYYYMM = @YYYYMM
-     and SITE = @SITE
+	 and YYYYMM   = @YYYYMM
+     and SITE 	  = @SITE
+     and SEL_CODE = @SEL_CODE
      and model like 'VINA%'
      and expen_sel명 not like '%재료비'
      and ADJ_YN='Y'
@@ -197,8 +219,9 @@ SET NOCOUNT ON;
 		MODEL ,expen_sel ,expen_sel명 ,acct_name,sum(boh_qty) ,sum(in_qty) ,sum(eoh_qty) ,sum(out_qty) ,sum(boh) ,sum([out]) ,sum(eoh) ,sum([out]) --select *
 	from doi_cost a
 	WHERE 1 = 1 
-	 and YYYYMM = @YYYYMM
-     and SITE = @SITE
+	 and YYYYMM   = @YYYYMM
+     and SITE 	  = @SITE
+     and SEL_CODE = @SEL_CODE
      and model like 'VINA%'
      and expen_sel명 like '%재료비'
      and ADJ_YN='Y'
@@ -207,7 +230,42 @@ SET NOCOUNT ON;
 	
 	SET  @R_Message =  @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STCO) 테이블에 '+@YYYYMM + '월 '
 		+ CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + '카셑트재료비 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
-			
+
+	--EXTRA (수불은 없지만 재공 기초금액이 있는 모델) 처리 
+	INSERT INTO DOI_STCO 
+	(YYYYMM,SEL_CODE,SITE,구분,MODEL,EXPEN_SEL,expen_sel명,ACCT_NAME,BOH,[INPUT],[OUT],EOH,BOH_AMT,IN_AMT,EOH_AMT,OUT_AMT,OUTETC_AMT)
+	select
+		YYYYMM,
+		SEL_CODE,
+		SITE,
+		'개발' as 구분,
+		'EXTRA' AS MODEL,
+		'*' as EXPEN_SEL,
+		'*' as expen_sel명,
+		'*' as ACCT_NAME,
+		SUM(BOH_QTY) as BOH,
+		SUM(IN_QTY) as INPUT,
+		SUM(OUT_QTY) as OUT,
+		SUM(EOH_QTY) as EOH,
+		SUM(BOH) as BOH_AMT,
+		SUM(ADJ_BOH) as IN_AMT,
+		SUM(EOH) as EOH_AMT, 
+		SUM(ADJ_BOH) as OUT_AMT,
+		SUM(OUT_ETC) as OUTETC_AMT --select *
+	from
+		doi_cost
+	where
+		yyyymm = @YYYYMM
+		and sel_code = @SEL_CODE
+		and site = @SITE
+		and expen_sel = '*'
+	group by 	YYYYMM,
+		SEL_CODE,
+		SITE;
+	
+	SET  @R_Message =  @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STCO) 테이블에 '+@YYYYMM + '월 '
+		+ CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + '수불은 없지만 재공 기초금액이 있는 모델 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 처리했습니다';
+	
 	 SET  @R_Message =  @R_Message + char(10) + '  [END]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STCO) 테이블에 '+@YYYYMM + '월 '
 		+ CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + '재품수불금액 집계 완료했습니다';
 	 COMMIT TRANSACTION;

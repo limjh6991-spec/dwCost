@@ -464,7 +464,7 @@
 				and yyyymm = #{yyyymm}
 				and site = #{site}
 				and nullif(자재번호, '') IS NOT NULL
-			union all	
+			union	
 			select
 				c.yyyymm,
 				c.자재번호,
@@ -509,6 +509,9 @@
         <if test="site != null and site != ''">
             and A.SITE = #{site}
         </if>
+        <if test="selCode != null and selCode != ''">
+            and A.SEL_CODE = #{selCode}
+        </if>
      order by a.배부방식 desc,a.구분,a.자재번호     
     </select>
 
@@ -541,6 +544,9 @@
         </if>
         <if test="site != null and site != ''">
             and SITE = #{site}
+        </if>
+        <if test="selCode != null and selCode != ''">
+            and SEL_CODE = #{selCode}
         </if>
         group by 구분,도우모델,
 			case when a.mat_class='원자재' then 'MDAX' else 'MIDX' end,

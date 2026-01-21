@@ -1,8 +1,8 @@
-CREATE                                       Procedure UP_DOI_MAT_COST
+CREATE                                                                 Procedure UP_DOI_MAT_COST
 (
     @YYYYMM varchar(10),--집계 년/월 설정
     @SITE varchar(2),  --사업장코드 (본사 : HQ, 베트남 : VN)
-    @SELCODE varchar(10)
+    @SEL_CODE varchar(10)
 )
 AS
 BEGIN
@@ -18,7 +18,7 @@ BEGIN
     WAITFOR DELAY '00:00:01';
   	
 	SET  @Message =  '[START]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비배부(DOI_MAT_COST) 테이블에 '+@YYYYMM + '월 '
-						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '데이타 배부를 시작합니다';
+						+ CASE WHEN @SITE='HQ' THEN '본사' ELSE 'VINA' END + '데이타 배부를 시작합니다';
 	
 	--데이타 체크	
 	SELECT @CNT = count(*)
@@ -27,7 +27,7 @@ BEGIN
         and site  =@SITE;
 	IF @CNT = 0 BEGIN
 		SET @Message = @Message + char(10) + '[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 면적정보(DOI_MODEL_MAST) 테이블에 '
-				+ @YYYYMM + '월 '+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+				+ @YYYYMM + '월 '+ CASE WHEN @SITE='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
 		SET @CHECK = 1;
 	END
 	
@@ -37,33 +37,34 @@ BEGIN
         and site  =@SITE;
 	IF @CNT = 0 BEGIN
 		SET @Message = @Message + char(10) + '[ERROR] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 자재BOM(DOI_BOM_MAST) 테이블에 '+@YYYYMM + '월 '
-						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+						+ CASE WHEN @SITE='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
 		SET @CHECK = 1;
 	END
 			
 	SELECT @CNT = count(*)
-		FROM DOI_PROD_SUBUL
+		FROM V_DOI_PROD_SUBUL
       WHERE yyyymm=@YYYYMM
-        and dw_site  =@SITE;
+        and site  =@SITE;
 	IF @CNT = 0 BEGIN
 		SET @Message =  @Message + char(10)+'[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 생산집계(DOI_PROD_SUBUL) 테이블에 '
-				+@YYYYMM + '월 '+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+				+@YYYYMM + '월 '+ CASE WHEN @SITE='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
 		SET @CHECK = 1;
 	END	
 	
 	SELECT @CNT = count(*)
 		FROM DOI_MAT_AMT WITH (NOLOCK)
-      WHERE yyyymm=@YYYYMM
-        and site  =@SITE;
+      WHERE yyyymm	= @YYYYMM
+        and site  	= @SITE
+		and sel_code= @SEL_CODE  ;
 	IF @CNT = 0 BEGIN
 		SET @Message =  @Message + char(10)+'[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비집계(DOI_MAT_AMT) 테이블에 '
-				+@YYYYMM + '월 '+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+				+@YYYYMM + '월 '+ CASE WHEN @SITE='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
 		SET @CHECK = 1;
 	END
 	
 	IF @CHECK = 1 BEGIN 
 		SET @Message = @Message + char(10)+'[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 기본정보 테이블들에 '
-				+@YYYYMM + '월 '+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+				+@YYYYMM + '월 '+ CASE WHEN @SITE='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
 		SELECT @Message as retMessage;
 		RETURN -1;
 	END
@@ -71,24 +72,36 @@ BEGIN
 	BEGIN TRANSACTION;
 	--삭제
 	DELETE FROM DOI_MAT_COST 
-	WHERE yyyymm=@YYYYMM
-	  and site  =@SITE;
+	WHERE yyyymm	= @YYYYMM
+	  and site  	= @SITE
+	  and sel_code  = @SEL_CODE;
 
 	SET  @Message =  @Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비배부(DOI_MAT_COST) 테이블에 '+@YYYYMM + '월 '
-						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '데이타가 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 삭제 했습니다';
+						+ CASE WHEN @SITE='HQ' THEN '본사' ELSE 'VINA' END + '데이타가 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 삭제 했습니다';
     
-		--BOM
 		WITH BOM as (
 			select
 				b.yyyymm as byyyymm,
 				b.자재번호,
 				b.제품명,
+				CASE WHEN b.품목중분류='VINA CST' 	  THEN '양산' 
+					 WHEN RIGHT(b.품목중분류,1) = 'P' THEN '양산'
+					 WHEN RIGHT(b.품목중분류,1) = 'D' THEN '개발'
+					 WHEN b.제품번호 LIKE 'H%' 		  THEN CASE WHEN SUBSTRING(b.제품번호,6,1)='D' THEN '개발' else '양산' END --HTG 제품
+					 WHEN SUBSTRING(b.제품번호,5,1)='D' THEN '개발' 
+					 ELSE '양산' END 구분b,
 				--b.제품번호,
 				--b.품목대분류,
 				b.자재대분류,
 				cast(sum(소요량) as numeric(38,25)) as  소요량,
 				count(*) cnt,
-				row_number() over (partition by b.자재번호,	b.제품명 order by (b.자재대분류)) rn, 
+				row_number() over (partition by b.자재번호,	b.제품명,
+											CASE WHEN b.품목중분류='VINA CST' 	  THEN '양산' 
+												 WHEN RIGHT(b.품목중분류,1) = 'P' THEN '양산'
+												 WHEN RIGHT(b.품목중분류,1) = 'D' THEN '개발'
+												 WHEN b.제품번호 LIKE 'H%' 		  THEN CASE WHEN SUBSTRING(b.제품번호,6,1)='D' THEN '개발' else '양산' END --HTG 제품
+												 WHEN SUBSTRING(b.제품번호,5,1)='D' THEN '개발' 
+												 ELSE '양산' END order by (b.자재대분류)) rn, 
 				row_number() over (partition by b.자재번호 order by (b.자재대분류)) rn1 --select *
 			from	doi_bom_mast b
 			where 1=1
@@ -97,227 +110,225 @@ BEGIN
 				and nullif(자재번호, '') IS NOT NULL
 				--and 공정차수 = '00'
 			group by
-				b.yyyymm,b.자재번호,	b.제품명,	/*b.제품번호,	b.품목대분류,*/ b.자재대분류
+				b.yyyymm,b.자재번호,	b.제품명,	
+				CASE WHEN b.품목중분류='VINA CST' 	  THEN '양산' 
+					 WHEN RIGHT(b.품목중분류,1) = 'P' THEN '양산'
+					 WHEN RIGHT(b.품목중분류,1) = 'D' THEN '개발'
+					 WHEN b.제품번호 LIKE 'H%' 		  THEN CASE WHEN SUBSTRING(b.제품번호,6,1)='D' THEN '개발' else '양산' END --HTG 제품
+					 WHEN SUBSTRING(b.제품번호,5,1)='D' THEN '개발' 
+					 ELSE '양산' END, b.자재대분류
 		), CHGQTY AS( --생산 환산량
 		select
 			a.yyyymm,
 			a.sel_code,
-			a.DW_SITE,
+			a.site,
 			a.도우모델,
+			a.구분,
+			sum(a.BOH_MONTH) boh_qty,
 			sum(a.IN_MONTH) in_qty,
-			/*MODEL_N_TYPE,도우모델+IIF(substring(MODEL_N_TYPE,4,1)='D','D','P') 제품번호_c,*/
-			sum(a.IN_MONTH + a.OUT_MONTH + a.LOSS_MONTH)/ 2 as 환산량
+			sum(a.EOH_MONTH) eoh_qty,
+			sum(a.OUT_MONTH) out_qty,
+			sum(a.LOSS_MONTH) loss_qty,
+			sum(a.IN_MONTH + a.OUT_MONTH + a.LOSS_MONTH)/ 2.0 as 환산량,
+			A.Adj_YN --SELECT *
 		from
-			doi_prod_subul a
+			V_DOI_PROD_SUBUL a
 		where	1=1
 			and a.yyyymm = @YYYYMM
-			--and a.sel_code = @SELCODE
-			and a.DW_SITE = @SITE
-				group by a.yyyymm,a.sel_code,a.DW_SITE,a.도우모델/*MODEL_N_TYPE,도우모델+IIF(substring(MODEL_N_TYPE,4,1)='D','D','P')*/
+			and a.site = @SITE
+				group by a.yyyymm,a.sel_code,a.site,a.도우모델,a.구분,a.Adj_YN
 				having sum(a.IN_MONTH+a.OUT_MONTH+a.LOSS_MONTH) > 0
 		), MAT_DISTRATE AS(
 		select	(환산량 * 소요량) as 사용량,
 				sum(환산량 * 소요량) over(partition by 자재번호) as 자재사용량,
-				CAST((환산량 * 소요량) AS NUMERIC(38,30))/sum(환산량 * 소요량) over(partition by 자재번호)  as 배부율,
+				CAST((환산량 * 소요량) AS NUMERIC(38,18))/sum(환산량 * 소요량) over(partition by 자재번호)  as 배부율,
 				--CAST( (환산량 * 소요량) AS DECIMAL(38,15) ) / CAST( sum(환산량 * 소요량) over(partition by 자재번호) AS DECIMAL(38,15) )as 배부적수, 
 			*
 			from BOM a
-			inner join CHGQTY b on	(a.제품명 = b.도우모델 and a.rn = 1)
+			inner join CHGQTY b on	(a.제품명 = b.도우모델 and a.구분b=b.구분 and a.rn1 = 1)
 			--order by 자재번호
 		), MAT_COMM_RATE AS(
-		select 	a.*,(환산량 * b.xy)/sum(환산량 * b.xy) over() as comm_rate,b.xy,(환산량 * b.xy) as 배부적수
-		  from CHGQTY A   
+			select 
+				a.*,
+				CAST((환산량 * b.xy) as NUMERIC(38,25)) / sum(환산량 * b.xy) over() as comm_rate,
+				b.xy,
+				(환산량 * b.xy) as 배부적수
+			from
+				CHGQTY A
 		  inner join DOI_MODEL_MAST B ON     --모델별 면적정보
-	         (a.도우모델 = b.MODEL and b.YYYYMM = @YYYYMM and a.DW_SITE = b.SITE)
-		)/*,MAT_AMT as (
-		--자재별 사용 금액
-		select a.mat_code,a.mat_class,b.자재대분류,count(*) mat_cnt,sum(a.in_amt) in_amt  --select *
-		from DOI_MATERIAL_RESC a 
-		left join BOM b on (a.mat_code=b.자재번호 and b.rn1=1)
-		where a.yyyymm=@YYYYMM -- and mat_code='DW00702000'
-			  and a.sel_code='ACTUAL'
-			  and a.SITE=@SITE
-		group by a.mat_code,a.mat_class,b.자재대분류
-		having sum(in_amt) > 0
-		)*/
+	         (a.도우모델 = b.MODEL and b.YYYYMM = @YYYYMM and a.site = b.SITE)
+		)
 		INSERT INTO DOI_MAT_COST
-		(yyyymm,sel_code,site,도우모델,자재번호,mat_class,자재대분류,in_amt,in_qty,환산량,소요량,배부율,배부금액,사용량,배부방식)
-		/*select
-			b.yyyymm,
-			b.sel_code,
-			b.DW_SITE site,
-			b.도우모델,
-			b.자재번호,
-			a.mat_class,
-			a.자재대분류,
-			a.in_amt,
-			b.in_qty,
-			b.환산량,
-			b.소요량,
-			b.배부율,
-			round(a.in_amt * b.배부율,3) as 배부금액,
-			b.사용량,
-			'BOM' --TRUNCATE TABLE  DOI_MAT_COST
-			-- sum(a.in_amt * b.배부적수)
-		from
-			DOI_MAT_AMT a with(nolock)
-		inner join MAT_DISTRATE b on
-			(a.mat_code = b.자재번호)
-		where a.yyyymm = @YYYYMM 
-			and a.site = @SITE */
+		(yyyymm,sel_code,site,구분,도우모델,자재번호,mat_gubun,mat_class,자재대분류,in_amt,boh_qty,in_qty,eoh_qty,out_qty,loss_qty,환산량,소요량,배부율,BOH_AMT,배부금액,사용량,배부방식,단가,ADJ_YN)
 		SELECT
 			yyyymm,
 			sel_code,
 			site,
+			구분,
 			도우모델,
 			자재번호,
+			mat_gubun,
 			mat_class,
 			자재대분류,
 			in_amt,
+			boh_qty,
 			in_qty,
+			eoh_qty,
+			out_qty,
+			loss_qty,
 			환산량,
 			소요량,
 			배부율,
-			Final_Amt,
+			Final_BOH_Amt as BOH_AMT,
+			Final_IN_Amt as 배부금액,
 			사용량,
-			배부방식
+			배부방식,
+			Final_IN_Amt/환산량 as 단가,
+			ADJ_YN --into #kyhBB
 		FROM (
 			SELECT
 		        T.*,
 		        -- [4-3] 최종 보정: 1차 배부액 + (1등에게 잔액 몰아주기)
 		        -- IN 금액 보정
-		        Base_Amt + CASE WHEN RN = 1 THEN (IN_Amt - Sum_Base_Amt) ELSE 0 END AS Final_Amt
+		        Base_BOH_Amt + CASE WHEN RN = 1 THEN (ROUND(In_amt / 2.0, 0) - Sum_Base_BOH_Amt) ELSE 0 END AS Final_BOH_Amt,
+		        Base_In_Amt + CASE WHEN RN = 1 THEN (IN_Amt - Sum_Base_In_Amt) ELSE 0 END AS Final_IN_Amt
 		     FROM(   
 				 SELECT 
 		            A.*,
 		            -- [4-2] 그룹별(비용항목별) 원금액 합계 계산
-		            SUM(Base_Amt) OVER (PARTITION BY YYYYMM, SITE,자재번호) AS Sum_Base_Amt,
+		            SUM(Base_BOH_Amt) OVER (PARTITION BY YYYYMM, SITE,자재번호) AS Sum_Base_BOH_Amt,
+		            SUM(Base_In_Amt) OVER (PARTITION BY YYYYMM, SITE,자재번호) AS Sum_Base_In_Amt,
 		            -- [4-2] 보정 대상 순위 (배부율 높은 순)
 		            ROW_NUMBER() OVER (PARTITION BY YYYYMM, SITE, 자재번호 ORDER BY 배부율 DESC, 도우모델) AS RN
 		         FROM(
 		            -- [4-1] 1차 배부 계산 (Base Amount)    
 					select
 						b.yyyymm,
-						b.sel_code,
-						b.DW_SITE site,
+						@SEL_CODE as sel_code,
+						b.site site,
+						b.구분,
 						b.도우모델,
 						b.자재번호,
+						a.mat_gubun,
 						a.mat_class,
 						a.자재대분류,
 						a.in_amt,
+						b.boh_qty,
 						b.in_qty,
+						b.eoh_qty,
+						b.out_qty,
+						b.loss_qty,
 						b.환산량,
 						b.소요량,
 						b.배부율,
 			--			round(a.in_amt * b.배부율,3) as 배부금액,
-						a.in_amt * b.배부율 as Origin_Amt,
-						ROUND(a.in_amt * b.배부율,0) as Base_Amt,
+						ROUND(a.in_amt * b.배부율 / 2.0, 0) AS Base_BOH_Amt,
+						a.in_amt * b.배부율 as Origin_IN_Amt,
+						ROUND(a.in_amt * b.배부율,0) as Base_In_Amt,
 						b.사용량,
-						'BOM' AS 배부방식--TRUNCATE TABLE  DOI_MAT_COST
+						'BOM' AS 배부방식,
+						b.ADJ_YN--TRUNCATE TABLE  DOI_MAT_COST
 						-- sum(a.in_amt * b.배부적수)
 					from
 						DOI_MAT_AMT a with(nolock)
 					inner join MAT_DISTRATE b on
 						(a.mat_code = b.자재번호)
-					where a.yyyymm = '202510'
-						and a.site ='HQ'
+					where a.yyyymm		= @YYYYMM
+						and a.site 		= @SITE
+						and a.sel_code 	= @SEL_CODE
+						and a.mat_gubun!='카세트제품'
 				 )A
 			)T
-		) F		
+		) F
 		union all
 		SELECT
 			yyyymm,
 			sel_code,
 			site,
+			구분,
 			도우모델,
 			mat_code,
+			mat_gubun,
 			mat_class,
 			자재대분류,
 			in_amt,
+			boh_qty,
 			in_qty,
+			eoh_qty,
+			out_qty,
+			loss_qty,
 			환산량,
 			xy,
 			comm_rate,
+			Final_BOH_Amt,
 			Final_Amt,
 			사용량,
-			배부방식
+			배부방식,
+			Final_Amt/환산량 as 단가,
+			ADJ_YN
 		FROM (
 			SELECT
 		        T.*,
 		        -- [4-3] 최종 보정: 1차 배부액 + (1등에게 잔액 몰아주기)
 		        -- IN 금액 보정
-		        Base_Amt + CASE WHEN RN = 1 THEN (IN_Amt - Sum_Base_Amt) ELSE 0 END AS Final_Amt
+		        Base_BOH_Amt + CASE WHEN RN = 1 THEN (ROUND(In_amt / 2.0, 0) - Sum_Base_BOH_Amt) ELSE 0 END AS Final_BOH_Amt,
+		        Base_In_Amt + CASE WHEN RN = 1 THEN (IN_Amt - Sum_Base_In_Amt) ELSE 0 END AS Final_Amt
 		     FROM(   
 				 SELECT 
 		            A.*,
 		            -- [4-2] 그룹별(비용항목별) 원금액 합계 계산
-		            SUM(Base_Amt) OVER (PARTITION BY YYYYMM, SITE,mat_code) AS Sum_Base_Amt,
+		            SUM(Base_BOH_Amt) OVER (PARTITION BY YYYYMM, SITE,mat_code) AS Sum_Base_BOH_Amt,
+		            SUM(Base_In_Amt) OVER (PARTITION BY YYYYMM, SITE,mat_code) AS Sum_Base_In_Amt,
 		            -- [4-2] 보정 대상 순위 (배부율 높은 순)
 		            ROW_NUMBER() OVER (PARTITION BY YYYYMM, SITE, mat_code ORDER BY comm_rate DESC, 도우모델) AS RN
 		         FROM(
 		            -- [4-1] 1차 배부 계산 (Base Amount)    
 				  select
 					b.yyyymm,
-					b.sel_code,
-					b.DW_SITE site,
+					@SEL_CODE as sel_code,
+					b.site site,
+					b.구분,
 					b.도우모델,
 					a.mat_code,
+					a.mat_gubun,
 					a.mat_class,
 					a.자재대분류,
 					a.in_amt,
+					b.boh_qty,
 					b.in_qty,
+					b.eoh_qty,
+					b.out_qty,
+					b.loss_qty,
 					b.환산량,
 					CAST(b.xy as NUMERIC(38,25)) as xy,
 					b.comm_rate,
-					a.in_amt * b.comm_rate  as Origin_Amt,
-					round(a.in_amt * b.comm_rate,0) as Base_amt,
+					ROUND(a.in_amt * b.comm_rate / 2.0, 0) AS Base_BOH_Amt,
+					a.in_amt * b.comm_rate  as Origin_IN_Amt,
+					round(a.in_amt * b.comm_rate,0) as Base_In_Amt,
 					b.배부적수 as 사용량,
-					'공통' as 배부방식
+					'공통' as 배부방식,
+					b.ADJ_YN
 					-- sum(a.in_amt*b.comm_rate)
 				from
 					DOI_MAT_AMT a with(nolock)
 				inner join MAT_COMM_RATE b on
 					(1 = 1)
-				where a.yyyymm = '202510' 
-					and a.site = 'HQ'
+				where a.yyyymm 		= @YYYYMM 
+					and a.site 		= @SITE
+					and a.sel_code  = @SEL_CODE
 					and a.mat_gubun != '카세트제품'
-					--and (a.sel_code = @SELCODE OR @SELCODE IS NULL OR @SELCODE = '')
+					--and (a.sel_code = @SEL_CODE OR @SEL_CODE IS NULL OR @SEL_CODE = '')
 					and not exists (select 1 from MAT_DISTRATE c where a.mat_code = c.자재번호)
 				)A
 			)T
-		)F;		
-/*			  select
-			b.yyyymm,
-			b.sel_code,
-			b.DW_SITE site,
-			b.도우모델,
-			a.mat_code,
-			a.mat_class,
-			a.자재대분류,
-			a.in_amt,
-			b.in_qty,
-			b.환산량,
-			b.xy,
-			b.comm_rate,
-			round(a.in_amt * b.comm_rate,3) 배부금액,
-			0,'공통'
-			-- sum(a.in_amt*b.comm_rate)
-		from
-			DOI_MAT_AMT a with(nolock)
-		inner join MAT_COMM_RATE b on
-			(1 = 1)
-		where a.yyyymm = @YYYYMM 
-			and a.site = @SITE
-			and a.mat_gubun != '카세트제품'
-			--and (a.sel_code = @SELCODE OR @SELCODE IS NULL OR @SELCODE = '')
-			and not exists (select 1 from MAT_DISTRATE c where a.mat_code = c.자재번호)
-		;*/
+		)F;
+		
 	  SET  @Message =  @Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비배부(DOI_MAT_COST) 테이블에 '+@YYYYMM + '월 '
-						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '일반 재료비 배부 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
-      
+						+ CASE WHEN @SITE='HQ' THEN '본사' ELSE 'VINA' END + '일반 재료비 배부 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
+
 		WITH CST_BOM AS (
 			SELECT
-				제품번호,
+				제품명,
 				자재번호,
 				총소요량
 			from
@@ -328,42 +339,91 @@ BEGIN
 				AND SITE = @SITE
 		), MAT_CST as (
 			select
-				MAT_CODE,
+				MAT_CODE,MODEL,
 				SUM(IN_QTY) AS IN_QTY,
 				SUM(IN_AMT) AS IN_AMT,
 				MAT_CLASS
 			from
 				DOI_MATERIAL_RESC
 			WHERE 1 = 1 
-				AND YYYYMM =  @YYYYMM
-				AND SITE = @SITE
+				 and YYYYMM = @YYYYMM
+            	and SITE = @SITE
 				AND MAT_GUBUN = '카세트제품'
-			GROUP BY MAT_CODE,MAT_CLASS
+			GROUP BY MAT_CODE,MAT_CLASS,MODEL
 		)
 		INSERT INTO DOI_MAT_COST
-		(yyyymm,sel_code,site,도우모델,자재번호,mat_class,자재대분류,in_amt,in_qty,환산량,소요량,배부율,배부금액,사용량,배부방식)
+		(yyyymm,sel_code,site,구분,도우모델,자재번호,mat_gubun,mat_class,자재대분류,in_amt,boh_qty,in_qty,eoh_qty,out_qty,loss_qty,환산량,소요량,배부율,BOH_AMT,배부금액,사용량,배부방식,단가,ADJ_YN)
 		SELECT
-			@YYYYMM as YYYYMM,
-			'ACTUAL' as SEL_CODE,
-			@SITE as SITE,
-			b.제품번호 as 도유모델,
-			b.자재번호 as 자재번호,
-			a.MAT_CLASS,
-			'카세트' as  자재대분류,
-			a.in_AMT,
-			a.in_QTY,
-			sum(총소요량) over (partition by MAT_CODE) AS TOT,
-			b.총소요량,
-			CAST(b.총소요량 as INT)/sum(총소요량) over (partition by MAT_CODE) as 배부율,
-			IN_AMT * CAST(b.총소요량 as INT)/sum(총소요량) over (partition by MAT_CODE) as 배부금액,
-			sum(총소요량) over (partition by MAT_CODE) * CAST(b.총소요량 as INT)/sum(총소요량) over (partition by MAT_CODE) as 사용량,
-			'CST' as 배부방식
+			YYYYMM ,
+			SEL_CODE ,
+			SITE ,
+			구분 ,
+			도우모델 ,
+			자재번호 ,
+			'카세트제품' as MAT_GUBUN,
+			MAT_CLASS ,
+			자재대분류 ,
+			IN_Amt as in_AMT ,
+			0 as BOH_QTY ,
+			in_QTY ,
+			0 as EOH_QTY,
+			in_QTY as OUT_QTY,
+			0 as LOSS_QTY,
+			ADJ_QTY ,
+			총소요량 ,
+			배부율 ,
+			Final_BOH_Amt as BOH_AMT,
+			Final_IN_Amt as 배부금액,
+			사용량 ,
+			배부방식,Final_IN_Amt/in_QTY as 단가,
+			'Y' AS ADJ_YN
 		FROM
-			MAT_CST A
-		LEFT JOIN CST_BOM B ON
-			(A.MAT_CODE = B.자재번호);
+		(
+			SELECT
+		        T.*,
+		        -- [4-3] 최종 보정: 1차 배부액 + (1등에게 잔액 몰아주기)
+		        -- IN 금액 보정
+		        Base_BOH_Amt + CASE WHEN RN = 1 THEN (IN_Amt/2 - Sum_Base_BOH_Amt) ELSE 0 END AS Final_BOH_Amt,
+		        Base_IN_Amt + CASE WHEN RN = 1 THEN (IN_Amt - Sum_Base_IN_Amt) ELSE 0 END AS Final_IN_Amt
+		     FROM(  
+				SELECT 
+		            A.*,
+		            -- [4-2] 그룹별(비용항목별) 원금액 합계 계산
+		            SUM(Base_BOH_Amt) OVER (PARTITION BY 자재번호) AS Sum_Base_BOH_Amt,
+		          SUM(Base_IN_Amt) OVER (PARTITION BY 자재번호) AS Sum_Base_IN_Amt,
+		            -- [4-2] 보정 대상 순위 (배부율 높은 순)
+		            ROW_NUMBER() OVER (PARTITION BY 자재번호 ORDER BY 배부율 DESC, 도우모델) AS RN
+		         FROM(
+		            -- [4-1] 1차 배부 계산 (Base Amount)    
+					SELECT
+						@YYYYMM as YYYYMM,
+						@SEL_CODE as SEL_CODE,
+						@SITE as SITE,
+						'양산' as 구분,
+						b.제품명 as 도우모델,
+						b.자재번호 as 자재번호,
+						a.MAT_CLASS,
+						'카세트' as  자재대분류,
+						a.in_AMT,
+						a.in_QTY,
+						a.in_QTY as ADJ_QTY, --sum(총소요량) over (partition by MAT_CODE) AS TOT,
+						b.총소요량,
+						CAST(b.총소요량 as INT)/sum(총소요량) over (partition by MAT_CODE) as 배부율,
+						IN_AMT * CAST(b.총소요량 as INT)/sum(총소요량) over (partition by MAT_CODE) AS  Origin_Amt,
+						round(IN_AMT/2 * CAST(b.총소요량 as INT)/sum(총소요량) over (partition by MAT_CODE), 0) as Base_BOH_Amt,
+						round(IN_AMT * CAST(b.총소요량 as INT)/sum(총소요량) over (partition by MAT_CODE), 0) as Base_IN_Amt,
+						sum(총소요량) over (partition by MAT_CODE) * CAST(b.총소요량 as INT)/sum(총소요량) over (partition by MAT_CODE) as 사용량,
+						'CST' as 배부방식 
+					FROM
+						MAT_CST A
+					LEFT JOIN CST_BOM B ON
+						(A.MAT_CODE = B.자재번호 AND A.MODEL=B.제품명)
+			  	)a
+		  	)T
+	  )F;
+		
  		SET  @Message =  @Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비배부(DOI_MAT_COST) 테이블에 '+@YYYYMM + '월 '
-						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '카세트 재료비 배부 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
+						+ CASE WHEN @SITE='HQ' THEN '본사' ELSE 'VINA' END + '카세트 재료비 배부 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
    		
       -- ========================================
       -- 데이터 무결성 검증
@@ -371,29 +431,29 @@ BEGIN
       DECLARE @SOURCE_AMT BIGINT = 0,
               @TARGET_AMT BIGINT = 0,
               @DIFF_AMT BIGINT = 0,
-              @SOURCE_CNT INT = 0,
+           @SOURCE_CNT INT = 0,
               @TARGET_CNT INT = 0,
               @MODEL_CNT INT = 0;
       
-      -- 1. 소스 데이터 (DOI_MAT_AMT)
+ -- 1. 소스 데이터 (DOI_MAT_AMT)
       SELECT @SOURCE_AMT = ISNULL(CAST(SUM(in_amt) AS BIGINT), 0),
              @SOURCE_CNT = COUNT(*)
       FROM DOI_MAT_AMT
-      WHERE yyyymm = @YYYYMM AND site = @SITE;
-        --AND (sel_code = @SELCODE OR @SELCODE IS NULL OR @SELCODE = '');
+      WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SEL_CODE;
+        --AND (sel_code = @SEL_CODE OR @SEL_CODE IS NULL OR @SEL_CODE = '');
       
       -- 2. 타겟 데이터 (DOI_MAT_COST) - 자재별로 그룹핑한 배부금액 합계
       SELECT @TARGET_AMT = ISNULL(CAST(SUM(배부금액) AS NUMERIC), 0),
              @TARGET_CNT = COUNT(DISTINCT 자재번호)
       FROM DOI_MAT_COST
-      WHERE yyyymm = @YYYYMM AND site = @SITE;
-        --AND (sel_code = @SELCODE OR @SELCODE IS NULL OR @SELCODE = '');
+      WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SEL_CODE;
+        --AND (sel_code = @SEL_CODE OR @SEL_CODE IS NULL OR @SEL_CODE = '');
       
       -- 3. 모델 수
       SELECT @MODEL_CNT = COUNT(DISTINCT 도우모델)
       FROM DOI_MAT_COST
-      WHERE yyyymm = @YYYYMM AND site = @SITE;
-        --AND (sel_code = @SELCODE OR @SELCODE IS NULL OR @SELCODE = '');
+      WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SEL_CODE;
+        --AND (sel_code = @SEL_CODE OR @SEL_CODE IS NULL OR @SEL_CODE = '');
       
       SET @DIFF_AMT = @SOURCE_AMT - @TARGET_AMT;
       
@@ -426,7 +486,7 @@ BEGIN
       FROM DOI_MAT_AMT a
       LEFT JOIN DOI_BOM_MAST b ON (a.yyyymm = b.yyyymm AND a.site = b.site AND a.mat_code = b.자재번호)
       WHERE a.yyyymm = @YYYYMM AND a.site = @SITE
-        --AND a.sel_code = @SELCODE
+        AND a.sel_code = @SEL_CODE
         AND b.자재번호 IS NULL;
       
       -- 미배부 자재 수 (소스에는 있는데 타겟에 없는 자재)
@@ -434,7 +494,7 @@ BEGIN
       FROM DOI_MAT_AMT a
       LEFT JOIN DOI_MAT_COST b ON (a.yyyymm = b.yyyymm AND a.site = b.site AND a.mat_code = b.자재번호)
       WHERE a.yyyymm = @YYYYMM AND a.site = @SITE
-        --AND a.sel_code = @SELCODE
+        AND a.sel_code = @SEL_CODE
         AND b.자재번호 IS NULL;
       
       SET  @Message =  @Message + char(10) + '====================================================================================================';
@@ -463,15 +523,24 @@ BEGIN
       SET  @Message =  @Message + char(10);
       
       SET  @Message =  @Message + char(10) + '[FINISH] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재료비배부(DOI_MAT_COST) 테이블에 '+@YYYYMM + '월 '
-						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + '데이타 입력 완료했습니다';
-      COMMIT TRANSACTION; 
+						+ CASE WHEN @SITE='HQ' THEN '본사' ELSE 'VINA' END + '데이타 입력 완료했습니다';
+      
+	-- 로그 테이블 기록
+	 INSERT INTO doi_execlog
+	 values
+	 (@YYYYMM, @SEL_CODE, @SITE, getdate(), @Message, 'system', '재료비 배부', 'UP_DOI_MAT_COST', 'SUCCESS');				
+					
+	COMMIT TRANSACTION; 
       SELECT @Message as retMessage;
       RETURN 0;     
 	END TRY
    
 	BEGIN CATCH
 		SET  @Message =  @Message + char(10) + '[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+(SELECT ERROR_MESSAGE());-- AS ErrorMessage;
-		ROLLBACK TRANSACTION;
+		INSERT INTO doi_execlog
+		    values
+		    (@YYYYMM, @SEL_CODE, @SITE, getdate(), @Message, 'system', '재료비 배부', 'UP_DOI_MAT_COST', 'FAIL');	
+	ROLLBACK TRANSACTION;
 		SELECT @Message as retMessage;
 	END CATCH;
 END;

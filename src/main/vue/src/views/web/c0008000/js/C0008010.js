@@ -38,12 +38,12 @@ const grid = {
     { name: 'outAmt', fieldName: 'outAmt', width: '80', header: { text: '원가' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0.######', footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", } },
   ],
   layout: [
+    '월',
     '구분',
     '모델',
     'local구분',
     '판매단위',
     '거래처',
-    '월',
     {
       name: '매출원가',
       direction: 'horizontal',
