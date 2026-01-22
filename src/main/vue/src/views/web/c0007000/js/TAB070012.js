@@ -1,5 +1,5 @@
 /*
- * 기준정보 > 부서별, 계정별 비용
+ * 유상사급 > 재고금액상세
  */
 const { ValueType } = require('realgrid');
 
@@ -32,7 +32,7 @@ const grid = {
   options: {
     checkBar: { visible: true, exclusive: false, syncHeadCheck: true },
     copy: { enabled: true, singleMode: false },
-    display: { columnMovable: false, editItemMerging: true, fitStyle: 'none', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
+    display: { columnMovable: false, editItemMerging: true, fitStyle: 'fill', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
     edit: { editable: true, columnEditableFirst: true, commitByCell: true, commitWhenLeave: true },
     footer: { visible: true },
     hideDeletedRows: true,

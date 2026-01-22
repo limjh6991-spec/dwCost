@@ -1,5 +1,5 @@
 /*
- * 기준정보 > 부서별, 계정별 비용
+ * 유상사급 > 자재기타출고
  */
 const { ValueType } = require('realgrid');
 
