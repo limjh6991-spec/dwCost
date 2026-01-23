@@ -69,7 +69,7 @@ export default {
         HQ: 'HQ',
         VN: 'VN',
       },
-      duplicateKey: ['yyyymm', 'selCode', 'site', 'matCode', 'model', 'modelNType'],
+      duplicateKey: ['yyyymm', 'selCode', 'site', 'matCode'],
       isValidateCellMaterialGrid: false,
     };
   },
@@ -217,14 +217,14 @@ export default {
       let error = {};
       if (!this.isValidateCellMaterialGrid) return error;
 
-      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', 'matCode', 'model', 'modelNType'], column.fieldName)) {
+      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', 'matCode'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';
         }
       }
 
-      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'selCode', 'site', 'matCode', 'model', 'modelNType'], column.fieldName)) {
+      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'selCode', 'site', 'matCode'], column.fieldName)) {
         error.level = 'warning';
         error.message = '중복 입력입니다.';
       }
@@ -258,7 +258,7 @@ export default {
       this.$refs.uploadPopup1.openDialog({
         dialogTitle: '업로드 팝업',
         uploadApi: '/api/c0007000/c0007002/upload',
-        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10', 'field11', 'field12', 'field13', 'field14', 'field15'],
+        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10', 'field11', 'field12', 'field13'],
         excelGrid,
         fileName: '자재투입정보_template',
       });

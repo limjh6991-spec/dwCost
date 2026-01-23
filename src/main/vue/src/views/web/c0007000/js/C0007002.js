@@ -21,17 +21,47 @@ const grid = {
     { fieldName: 'selCode', dataType: ValueType.TEXT },
     { fieldName: 'siteOrg', dataType: ValueType.TEXT },
     { fieldName: 'site', dataType: ValueType.TEXT },
-    { fieldName: 'matCode', dataType: ValueType.TEXT },
-    { fieldName: 'matDesc', dataType: ValueType.TEXT },
-    { fieldName: 'size', dataType: ValueType.TEXT },
-    { fieldName: 'inQty', dataType: ValueType.NUMBER },
-    { fieldName: 'unitCost', dataType: ValueType.NUMBER },
-    { fieldName: 'inAmt', dataType: ValueType.NUMBER },
-    { fieldName: 'costGubun', dataType: ValueType.TEXT },
-    { fieldName: 'matGubun', dataType: ValueType.TEXT },
-    { fieldName: 'matClass', dataType: ValueType.TEXT },
-    { fieldName: 'model', dataType: ValueType.TEXT },
-    { fieldName: 'modelNType', dataType: ValueType.TEXT },
+    { fieldName: '자산처리계정', dataType: ValueType.TEXT },
+    { fieldName: '품목자산분류', dataType: ValueType.TEXT },
+    { fieldName: '재고자산종류', dataType: ValueType.TEXT },
+    { fieldName: '매출원가계정', dataType: ValueType.TEXT },    
+    { fieldName: '대분류', dataType: ValueType.TEXT },
+    { fieldName: '중분류', dataType: ValueType.TEXT },
+    { fieldName: '소분류', dataType: ValueType.TEXT },
+    { fieldName: '품목기타분류', dataType: ValueType.TEXT },
+    { fieldName: '품명', dataType: ValueType.TEXT },        
+    { fieldName: '품번', dataType: ValueType.TEXT },
+    { fieldName: '규격', dataType: ValueType.TEXT },
+    { fieldName: '단위', dataType: ValueType.TEXT },
+    { fieldName: '기초수량', dataType: ValueType.NUMBER },
+    { fieldName: '기초금액', dataType: ValueType.NUMBER },
+    { fieldName: '입고수량', dataType: ValueType.NUMBER },    
+    { fieldName: '입고금액', dataType: ValueType.NUMBER },
+    { fieldName: '출고수량', dataType: ValueType.NUMBER },
+    { fieldName: '출고금액', dataType: ValueType.NUMBER },    
+    { fieldName: '재고수량', dataType: ValueType.NUMBER },
+    { fieldName: '결산후재고수량', dataType: ValueType.NUMBER },
+    { fieldName: '차이수량', dataType: ValueType.NUMBER },
+    { fieldName: '재고금액', dataType: ValueType.NUMBER },
+    { fieldName: '결산후재고금액', dataType: ValueType.NUMBER },
+    { fieldName: '차이금액', dataType: ValueType.NUMBER },
+    { fieldName: '최종결산월재고단가', dataType: ValueType.NUMBER },
+    { fieldName: '생산수량', dataType: ValueType.NUMBER },
+    { fieldName: '생산금액', dataType: ValueType.NUMBER },    
+    { fieldName: '구매수량', dataType: ValueType.NUMBER },
+    { fieldName: '구매금액', dataType: ValueType.NUMBER },    
+    { fieldName: '적송입고수량', dataType: ValueType.NUMBER },
+    { fieldName: '적송입고금액', dataType: ValueType.NUMBER },    
+    { fieldName: '기타입고수량', dataType: ValueType.NUMBER },
+    { fieldName: '기타입고금액', dataType: ValueType.NUMBER },    
+    { fieldName: '판매수량', dataType: ValueType.NUMBER },
+    { fieldName: '판매원가', dataType: ValueType.NUMBER },              
+    { fieldName: '투입수량', dataType: ValueType.NUMBER },
+    { fieldName: '투입금액', dataType: ValueType.NUMBER },
+    { fieldName: '적송출고수량', dataType: ValueType.NUMBER },
+    { fieldName: '적송출고금액', dataType: ValueType.NUMBER },       
+    { fieldName: '기타출고수량', dataType: ValueType.NUMBER },
+    { fieldName: '기타출고금액', dataType: ValueType.NUMBER },       
   ],
 
   columns: [
@@ -102,11 +132,20 @@ const grid = {
         return ret;
       },
     },
+    { name: '자산처리계정', fieldName: '자산처리계정', width: '120', header: { text: '자산처리계정' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: '품목자산분류', fieldName: '품목자산분류', width: '120', header: { text: '품목자산분류' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: '재고자산종류', fieldName: '재고자산종류', width: '120', header: { text: '재고자산종류' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: '매출원가계정', fieldName: '매출원가계정', width: '120', header: { text: '매출원가계정' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: '대분류', fieldName: '대분류', width: '120', header: { text: '대분류' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: '중분류', fieldName: '중분류', width: '120', header: { text: '중분류' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: '소분류', fieldName: '소분류', width: '120', header: { text: '소분류' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: '품목기타분류', fieldName: '품목기타분류', width: '120', header: { text: '품목기타분류' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: '품명', fieldName: '품명', width: '90', header: { text: '품명' }, autoFilter: true, editable: true, styleName: 'edit tl' },    
     {
-      name: 'MAT_CODE',
-      fieldName: 'matCode',
+      name: '품번',
+      fieldName: '품번',
       width: '90',
-      header: { text: '자재코드' },
+      header: { text: '품번' },
       autoFilter: true,
       editable: false,
       styleName: 'tl',
@@ -124,58 +163,37 @@ const grid = {
         return ret;
       },
     },
-    { name: 'MAT_DESC', fieldName: 'matDesc', width: '70', header: { text: 'MAT_DESC' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: '[SIZE]', fieldName: 'size', width: '120', header: { text: 'SIZE' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'IN_QTY', fieldName: 'inQty', width: '135', header: { text: 'IN_QTY' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'UNIT_COST', fieldName: 'unitCost', width: '135', header: { text: 'UNIT_COST' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.########' },
-    { name: 'IN_AMT', fieldName: 'inAmt', width: '70', header: { text: 'IN_AMT' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'COST_GUBUN', fieldName: 'costGubun', width: '120', header: { text: 'COST_GUBUN' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'MAT_GUBUN', fieldName: 'matGubun', width: '120', header: { text: 'MAT_GUBUN' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'MAT_CLASS', fieldName: 'matClass', width: '120', header: { text: 'MAT_CLASS' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    {
-      name: 'MODEL',
-      fieldName: 'model',
-      width: '120',
-      header: { text: 'MODEL' },
-      autoFilter: true,
-      editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
-    },
-    {
-      name: 'MODEL_N_TYPE',
-      fieldName: 'modelNType',
-      width: '120',
-      header: { text: 'MODEL_N_TYPE' },
-      autoFilter: true,
-      editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
-    },
+    { name: '규격', fieldName: '규격', width: '120', header: { text: '규격' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: '단위', fieldName: '단위', width: '70', header: { text: '단위' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: '기초수량', fieldName: '기초수량', width: '135', header: { text: '기초수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '기초금액', fieldName: '기초금액', width: '70', header: { text: '기초금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '입고수량', fieldName: '입고수량', width: '135', header: { text: '입고수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '입고금액', fieldName: '입고금액', width: '70', header: { text: '입고금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '출고수량', fieldName: '출고수량', width: '135', header: { text: '출고수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '출고금액', fieldName: '출고금액', width: '70', header: { text: '출고금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '재고수량', fieldName: '재고수량', width: '135', header: { text: '재고수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '결산후재고수량', fieldName: '결산후재고수량', width: '135', header: { text: '결산후재고수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '차이수량', fieldName: '차이수량', width: '135', header: { text: '차이수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '재고금액', fieldName: '재고금액', width: '70', header: { text: '재고금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },    
+    { name: '결산후재고금액', fieldName: '결산후재고금액', width: '70', header: { text: '결산후재고금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '차이금액', fieldName: '차이금액', width: '70', header: { text: '차이금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '최종결산월재고단가', fieldName: '최종결산월재고단가', width: '135', header: { text: '최종결산월재고단가' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.########' },
+    { name: '생산수량', fieldName: '생산수량', width: '135', header: { text: '생산수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '생산금액', fieldName: '생산금액', width: '70', header: { text: '생산금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },    
+    { name: '구매수량', fieldName: '구매수량', width: '135', header: { text: '구매수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '구매금액', fieldName: '구매금액', width: '70', header: { text: '구매금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '적송입고수량', fieldName: '적송입고수량', width: '135', header: { text: '적송입고수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '적송입고금액', fieldName: '적송입고금액', width: '70', header: { text: '적송입고금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '기타입고수량', fieldName: '기타입고수량', width: '135', header: { text: '기타입고수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '기타입고금액', fieldName: '기타입고금액', width: '70', header: { text: '기타입고금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '판매수량', fieldName: '판매수량', width: '135', header: { text: '판매수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '판매원가', fieldName: '판매원가', width: '70', header: { text: '판매원가' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '투입수량', fieldName: '투입수량', width: '135', header: { text: '투입수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '투입금액', fieldName: '투입금액', width: '70', header: { text: '투입금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '적송출고수량', fieldName: '적송출고수량', width: '135', header: { text: '적송출고수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '적송출고금액', fieldName: '적송출고금액', width: '70', header: { text: '적송출고금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '기타출고수량', fieldName: '기타출고수량', width: '135', header: { text: '기타출고수량' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '기타출고금액', fieldName: '기타출고금액', width: '70', header: { text: '기타출고금액' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };
 

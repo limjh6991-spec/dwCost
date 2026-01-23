@@ -9,19 +9,49 @@
 			SEL_CODE,
 			SITE AS SITE_ORG,
 			CASE WHEN SITE='HQ' then '본사' WHEN site='VN' then 'VINA' end as SITE,
-			MAT_CODE,
-			MAT_DESC,
-			[SIZE],
-			IN_QTY,
-			UNIT_COST,
-			IN_AMT,
-			COST_GUBUN,
-			MAT_GUBUN,
-			MAT_CLASS,
-			MODEL,
-			MODEL_N_TYPE
+			자산처리계정,
+			품목자산분류,
+			재고자산종류,
+			매출원가계정,
+			대분류,
+			중분류,
+			소분류,
+			품목기타분류,
+			품명,
+			품번,
+			규격,
+			단위,
+			기초수량,
+			기초금액,
+			입고수량,
+			입고금액,
+			출고수량,
+			출고금액,
+			재고수량,
+			결산후재고수량,
+			차이수량,
+			재고금액,
+			결산후재고금액,
+			차이금액,
+			최종결산월재고단가,
+			생산수량,
+			생산금액,
+			구매수량,
+			구매금액,
+			적송입고수량,
+			적송입고금액,
+			기타입고수량,
+			기타입고금액,
+			판매수량,
+			판매원가,
+			투입수량,
+			투입금액,
+			적송출고수량,
+			적송출고금액,
+			기타출고수량,
+			기타출고금액
 		from
-			DOI_MATERIAL_RESC
+			DOI_MATL_RESC
 		where
 			1=1
 		<if test="yyyymm != null and yyyymm != ''">
@@ -30,32 +60,62 @@
 		<if test="site != null and site != ''">
 			and site = #{site}
 		</if>
-		order BY MAT_CODE, MODEL, MODEL_N_TYPE;
+		order BY 품번;
 	</select>
 
 	<select id="checkduplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
 		DROP TABLE IF EXISTS #TempTable1;
 
 		CREATE TABLE #TempTable1 (
-			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
-			SEL_CODE varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
-			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
-			MAT_CODE varchar(24) COLLATE Korean_Wansung_CI_AS NULL,
-			MAT_DESC nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
-			[SIZE] varchar(40) COLLATE Korean_Wansung_CI_AS NULL,
-			IN_QTY real NULL,
-			UNIT_COST real NULL,
-			IN_AMT numeric(15,2) NULL,
-			COST_GUBUN nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
-			MAT_GUBUN nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			MAT_CLASS nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			MODEL varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
-			MODEL_N_TYPE varchar(15) COLLATE Korean_Wansung_CI_AS NULL
+			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SEL_CODE varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			자산처리계정 nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			품목자산분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			재고자산종류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			매출원가계정 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			대분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			중분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			소분류 nvarchar(100) COLLATE Korean_Wansung_CI_AS NULL,
+			품목기타분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			품명 nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
+			품번 varchar(24) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			규격 nvarchar(40) COLLATE Korean_Wansung_CI_AS NULL,
+			단위 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			기초수량 real NULL,
+			기초금액 numeric(15,2) NULL,
+			입고수량 real NULL,
+			입고금액 numeric(15,2) NULL,
+			출고수량 real NULL,
+			출고금액 numeric(15,2) NULL,
+			재고수량 real NULL,
+			결산후재고수량 real NULL,
+			차이수량 real NULL,
+			재고금액 numeric(15,2) NULL,
+			결산후재고금액 numeric(15,2) NULL,
+			차이금액 numeric(15,2) NULL,
+			최종결산월재고단가 real NULL,
+			생산수량 real NULL,
+			생산금액 numeric(15,2) NULL,
+			구매수량 real NULL,
+			구매금액 numeric(15,2) NULL,
+			적송입고수량 real NULL,
+			적송입고금액 numeric(15,2) NULL,
+			기타입고수량 real NULL,
+			기타입고금액 numeric(15,2) NULL,
+			판매수량 real NULL,
+			판매원가 numeric(15,2) NULL,
+			투입수량 real NULL,
+			투입금액 numeric(15,2) NULL,
+			적송출고수량 real NULL,
+			적송출고금액 numeric(15,2) NULL,
+			기타출고수량 real NULL,
+			기타출고금액 numeric(15,2) NULL
 		);
 
 		INSERT INTO #TempTable1
 		(
-		YYYYMM,SEL_CODE,SITE,MAT_CODE,MAT_DESC,[SIZE],IN_QTY,UNIT_COST,IN_AMT,COST_GUBUN,MAT_GUBUN,MAT_CLASS,MODEL,MODEL_N_TYPE
+		YYYYMM,SEL_CODE,SITE,자산처리계정,품목자산분류,재고자산종류,매출원가계정,대분류,중분류,소분류,품목기타분류,품명,품번,규격,단위,기초수량,기초금액,입고수량,입고금액,출고수량,출고금액,재고수량,결산후재고수량,차이수량,재고금액,결산후재고금액,차이금액,최종결산월재고단가,생산수량,생산금액,구매수량,구매금액,적송입고수량,적송입고금액,기타입고수량,기타입고금액,판매수량,판매원가,투입수량,투입금액,적송출고수량,적송출고금액,기타출고수량,기타출고금액
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
@@ -74,45 +134,103 @@
 			, #{item.field13}
 			, #{item.field14}
 			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			, #{item.field23}
+			, #{item.field24}
+			, #{item.field25}
+			, #{item.field26}
+			, #{item.field27}
+			, #{item.field28}
+			, #{item.field29}
+			, #{item.field30}
+			, #{item.field31}
+			, #{item.field32}
+			, #{item.field33}
+			, #{item.field34}
+			, #{item.field35}
+			, #{item.field36}
+			, #{item.field37}
+			, #{item.field38}
+			, #{item.field39}
+			, #{item.field40}
+			, #{item.field41}
+			, #{item.field42}
+			, #{item.field43}
+			, #{item.field44}
+			, #{item.field45}					
 			)
 		</foreach>;
 
 		SELECT * FROM #TempTable1 a
 		WHERE EXISTS (
 			SELECT 1
-			FROM DOI_MATERIAL_RESC b
+			FROM DOI_MATL_RESC b
 			WHERE 1=1
 			AND b.YYYYMM = a.YYYYMM
 			AND b.SEL_CODE = a.SEL_CODE
 			AND b.SITE = a.SITE
-			AND b.MAT_CODE = a.MAT_CODE
-			AND b.MODEL = a.MODEL
-			AND b.MODEL_N_TYPE = a.MODEL_N_TYPE
+			AND b.품번 = a.품번
 		);
 	</select>
 
 	<insert id="uploadExcel" parameterType="java.util.List">
 		CREATE TABLE #TempTable (
 			seq_no INT IDENTITY (1, 1) NOT NULL,
-			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
-			SEL_CODE varchar(6) COLLATE Korean_Wansung_CI_AS NULL,
-			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NULL,
-			MAT_CODE varchar(24) COLLATE Korean_Wansung_CI_AS NULL,
-			MAT_DESC nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
-			[SIZE] varchar(40) COLLATE Korean_Wansung_CI_AS NULL,
-			IN_QTY real NULL,
-			UNIT_COST real NULL,
-			IN_AMT numeric(15,2) NULL,
-			COST_GUBUN nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
-			MAT_GUBUN nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			MAT_CLASS nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
-			MODEL varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
-			MODEL_N_TYPE varchar(15) COLLATE Korean_Wansung_CI_AS NULL
+			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SEL_CODE varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			자산처리계정 nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			품목자산분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			재고자산종류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			매출원가계정 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			대분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			중분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			소분류 nvarchar(100) COLLATE Korean_Wansung_CI_AS NULL,
+			품목기타분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			품명 nvarchar(50) COLLATE Korean_Wansung_CI_AS NULL,
+			품번 varchar(24) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			규격 nvarchar(40) COLLATE Korean_Wansung_CI_AS NULL,
+			단위 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			기초수량 real NULL,
+			기초금액 numeric(15,2) NULL,
+			입고수량 real NULL,
+			입고금액 numeric(15,2) NULL,
+			출고수량 real NULL,
+			출고금액 numeric(15,2) NULL,
+			재고수량 real NULL,
+			결산후재고수량 real NULL,
+			차이수량 real NULL,
+			재고금액 numeric(15,2) NULL,
+			결산후재고금액 numeric(15,2) NULL,
+			차이금액 numeric(15,2) NULL,
+			최종결산월재고단가 real NULL,
+			생산수량 real NULL,
+			생산금액 numeric(15,2) NULL,
+			구매수량 real NULL,
+			구매금액 numeric(15,2) NULL,
+			적송입고수량 real NULL,
+			적송입고금액 numeric(15,2) NULL,
+			기타입고수량 real NULL,
+			기타입고금액 numeric(15,2) NULL,
+			판매수량 real NULL,
+			판매원가 numeric(15,2) NULL,
+			투입수량 real NULL,
+			투입금액 numeric(15,2) NULL,
+			적송출고수량 real NULL,
+			적송출고금액 numeric(15,2) NULL,
+			기타출고수량 real NULL,
+			기타출고금액 numeric(15,2) NULL
 		);
 
 		INSERT INTO #TempTable
 		(
-		YYYYMM,SEL_CODE,SITE,MAT_CODE,MAT_DESC,[SIZE],IN_QTY,UNIT_COST,IN_AMT,COST_GUBUN,MAT_GUBUN,MAT_CLASS,MODEL,MODEL_N_TYPE
+		YYYYMM,SEL_CODE,SITE,자산처리계정,품목자산분류,재고자산종류,매출원가계정,대분류,중분류,소분류,품목기타분류,품명,품번,규격,단위,기초수량,기초금액,입고수량,입고금액,출고수량,출고금액,재고수량,결산후재고수량,차이수량,재고금액,결산후재고금액,차이금액,최종결산월재고단가,생산수량,생산금액,구매수량,구매금액,적송입고수량,적송입고금액,기타입고수량,기타입고금액,판매수량,판매원가,투입수량,투입금액,적송출고수량,적송출고금액,기타출고수량,기타출고금액
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
@@ -131,83 +249,169 @@
 			, #{item.field13}
 			, #{item.field14}
 			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			, #{item.field23}
+			, #{item.field24}
+			, #{item.field25}
+			, #{item.field26}	
+			, #{item.field27}
+			, #{item.field28}
+			, #{item.field29}
+			, #{item.field30}
+			, #{item.field31}
+			, #{item.field32}
+			, #{item.field33}
+			, #{item.field34}
+			, #{item.field35}
+			, #{item.field36}
+			, #{item.field37}				
+			, #{item.field38}
+			, #{item.field39}
+			, #{item.field40}
+			, #{item.field41}
+			, #{item.field42}	
+			, #{item.field43}
+			, #{item.field44}
+			, #{item.field45}
 			)
 		</foreach>;
 
-		INSERT INTO DOI_MATERIAL_RESC (YYYYMM,SEL_CODE,SITE,MAT_CODE,MAT_DESC,[SIZE],IN_QTY,UNIT_COST,IN_AMT,COST_GUBUN,MAT_GUBUN,MAT_CLASS,MODEL,MODEL_N_TYPE)
-		SELECT YYYYMM,SEL_CODE,SITE,MAT_CODE,MAT_DESC,[SIZE],IN_QTY,UNIT_COST,IN_AMT,COST_GUBUN,MAT_GUBUN,MAT_CLASS,MODEL,MODEL_N_TYPE
+		INSERT INTO DOI_MATL_RESC (YYYYMM,SEL_CODE,SITE,자산처리계정,품목자산분류,재고자산종류,매출원가계정,대분류,중분류,소분류,품목기타분류,품명,품번,규격,단위,기초수량,기초금액,입고수량,입고금액,출고수량,출고금액,재고수량,결산후재고수량,차이수량,재고금액,결산후재고금액,차이금액,최종결산월재고단가,생산수량,생산금액,구매수량,구매금액,적송입고수량,적송입고금액,기타입고수량,기타입고금액,판매수량,판매원가,투입수량,투입금액,적송출고수량,적송출고금액,기타출고수량,기타출고금액)
+		SELECT YYYYMM,SEL_CODE,SITE,자산처리계정,품목자산분류,재고자산종류,매출원가계정,대분류,중분류,소분류,품목기타분류,품명,품번,규격,단위,기초수량,기초금액,입고수량,입고금액,출고수량,출고금액,재고수량,결산후재고수량,차이수량,재고금액,결산후재고금액,차이금액,최종결산월재고단가,생산수량,생산금액,구매수량,구매금액,적송입고수량,적송입고금액,기타입고수량,기타입고금액,판매수량,판매원가,투입수량,투입금액,적송출고수량,적송출고금액,기타출고수량,기타출고금액
 		FROM (
-			SELECT *, MAX(seq_no) over (partition by YYYYMM, SEL_CODE, SITE, MAT_CODE, MODEL, MODEL_N_TYPE) max_seq_no FROM #TempTable
+			SELECT *, MAX(seq_no) over (partition by YYYYMM, SEL_CODE, SITE, 품번) max_seq_no FROM #TempTable
 		) A
 		WHERE 1=1
 		AND seq_no = max_seq_no
 		AND NOT EXISTS (
 			SELECT 1
-			FROM DOI_MATERIAL_RESC b
+			FROM DOI_MATL_RESC b
 			WHERE 1=1
 			AND b.YYYYMM = a.YYYYMM
 			AND b.SEL_CODE = a.SEL_CODE
 			AND b.SITE = a.SITE
-			AND b.MAT_CODE = a.MAT_CODE
-			AND b.MODEL = a.MODEL
-			AND b.MODEL_N_TYPE = a.MODEL_N_TYPE
+			AND b.품번 = a.품번
 		);
 
 		DROP TABLE #TempTable;
 	</insert>
 	
 	<insert id="C0007002_Insert1">
-		INSERT INTO DOI_MATERIAL_RESC
+		INSERT INTO DOI_MATL_RESC
 		(
-		YYYYMM,SEL_CODE,SITE,MAT_CODE,MAT_DESC,[SIZE],IN_QTY,UNIT_COST,IN_AMT,COST_GUBUN,MAT_GUBUN,MAT_CLASS,MODEL,MODEL_N_TYPE
+		YYYYMM,SEL_CODE,SITE,자산처리계정,품목자산분류,재고자산종류,매출원가계정,대분류,중분류,소분류,품목기타분류,품명,품번,규격,단위,기초수량,기초금액,입고수량,입고금액,출고수량,출고금액,재고수량,결산후재고수량,차이수량,재고금액,결산후재고금액,차이금액,최종결산월재고단가,생산수량,생산금액,구매수량,구매금액,적송입고수량,적송입고금액,기타입고수량,기타입고금액,판매수량,판매원가,투입수량,투입금액,적송출고수량,적송출고금액,기타출고수량,기타출고금액
 		)
 		VALUES
 		(
 		#{yyyymm}
 		, #{selCode}
 		, CASE WHEN #{site}='본사' Then 'HQ'  WHEN #{site}='VINA' then 'VN' else left(#{site},2) end
-		, #{matCode}
-		, #{matDesc}
-		, #{size}
-		, #{inQty}
-		, #{unitCost}
-		, #{inAmt}
-		, #{costGubun}
-		, #{matGubun}
-		, #{matClass}
-		, #{model}
-		, #{modelNType}				
+		, #{자산처리계정}
+		, #{품목자산분류}
+		, #{재고자산종류}
+		, #{매출원가계정}
+		, #{대분류}
+		, #{중분류}
+		, #{소분류}
+		, #{품목기타분류}
+		, #{품명}
+		, #{품번}
+		, #{규격}
+		, #{단위}
+		, #{기초수량}
+		, #{기초금액}
+		, #{입고수량}
+		, #{입고금액}
+		, #{출고수량}
+		, #{출고금액}
+		, #{재고수량}
+		, #{결산후재고수량}
+		, #{차이수량}
+		, #{재고금액}
+		, #{결산후재고금액}
+		, #{차이금액}
+		, #{최종결산월재고단가}
+		, #{생산수량}
+		, #{생산금액}
+		, #{구매수량}
+		, #{구매금액}
+		, #{적송입고수량}
+		, #{적송입고금액}
+		, #{기타입고수량}
+		, #{기타입고금액}
+		, #{판매수량}
+		, #{판매원가}
+		, #{투입수량}
+		, #{투입금액}
+		, #{적송출고수량}
+		, #{적송출고금액}
+		, #{기타출고수량}
+		, #{기타출고금액}
 		);
 	</insert>
 
 	<delete id="C0007002_Delete1">
-		DELETE FROM DOI_MATERIAL_RESC
+		DELETE FROM DOI_MATL_RESC
 		WHERE 1=1
 		and YYYYMM = #{yyyymm}
 		and SEL_CODE = #{selCode}
 		and SITE = #{siteOrg}
-		and MAT_CODE = #{matCode}
-		and MODEL = #{model}
-		and MODEL_N_TYPE = #{modelNType}
+		and 품번 = #{품번}
 	</delete>
 
 	<update id="C0007002_Update1">
-		UPDATE DOI_MATERIAL_RESC
-		SET MAT_DESC = #{matDesc}
-		,[SIZE] = #{size}
-		,IN_QTY = #{inQty}
-		,UNIT_COST = #{unitCost}
-		,IN_AMT = #{inAmt}
-		,COST_GUBUN = #{costGubun}
-		,MAT_GUBUN = #{matGubun}
-		,MAT_CLASS = #{matClass}
+		UPDATE DOI_MATL_RESC
+		SET 자산처리계정 = #{자산처리계정}
+		,품목자산분류 = #{품목자산분류}
+		,재고자산종류 = #{재고자산종류}
+		,매출원가계정 = #{매출원가계정}
+		,대분류 = #{대분류}
+		,중분류 = #{중분류}
+		,소분류 = #{소분류}
+		,품목기타분류 = #{품목기타분류}
+		,품명 = #{품명}
+		,규격 = #{규격}
+		,단위 = #{단위}
+		,기초수량 = #{기초수량}
+		,기초금액 = #{기초금액}
+		,입고수량 = #{입고수량}
+		,입고금액 = #{입고금액}
+		,출고수량 = #{출고수량}
+		,출고금액 = #{출고금액}
+		,재고수량 = #{재고수량}
+		,결산후재고수량 = #{결산후재고수량}
+		,차이수량 = #{차이수량}
+		,재고금액 = #{재고금액}
+		,결산후재고금액 = #{결산후재고금액}
+		,차이금액 = #{차이금액}
+		,최종결산월재고단가 = #{최종결산월재고단가}
+		,생산수량 = #{생산수량}
+		,생산금액 = #{생산금액}
+		,구매수량 = #{구매수량}
+		,구매금액 = #{구매금액}
+		,적송입고수량 = #{적송입고수량}
+		,적송입고금액 = #{적송입고금액}
+		,기타입고수량 = #{기타입고수량}
+		,기타입고금액 = #{기타입고금액}
+		,판매수량 = #{판매수량}
+		,판매원가 = #{판매원가}
+		,투입수량 = #{투입수량}		
+		,투입금액 = #{투입금액}
+		,적송출고수량 = #{적송출고수량}
+		,적송출고금액 = #{적송출고금액}
+		,기타출고수량 = #{기타출고수량}
+		,기타출고금액 = #{기타출고금액}
 		WHERE 1=1
 		and YYYYMM = #{yyyymm}
 		and SEL_CODE = #{selCode}
 		and SITE = #{siteOrg}
-		and MAT_CODE = #{matCode}
-		and MODEL = #{model}
-		and MODEL_N_TYPE = #{modelNType}
+		and 품번 = #{품번}
 		;
 	</update>
 </mapper>
