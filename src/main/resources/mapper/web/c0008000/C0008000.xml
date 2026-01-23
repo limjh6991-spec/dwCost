@@ -58,14 +58,14 @@
 			'재료비',
 			'000',
 			'제조공통',
-			CASE WHEN MAT_CLASS='원자재' then '51001010' else '51002010' end,
-			CASE WHEN MAT_CLASS='원자재' then 'MDAX' else 'MIDX' end,
-			CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end,
+			CASE WHEN 재고자산종류='원자재' then '51001010' else '51002010' end,
+			CASE WHEN 재고자산종류='원자재' then 'MDAX' else 'MIDX' end,
+			CASE WHEN 재고자산종류='원자재' then '직접재료비' else '간접재료비' end,
             '재료비',
-            CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end,
-			sum(IN_AMT) 금액,sum(IN_AMT) CBT_AMT,0
+            CASE WHEN 재고자산종류='원자재' then '원재료비' else '부재료비' end,
+			sum(투입금액) 금액,sum(투입금액) CBT_AMT,0
 		from
-			doi_material_resc
+			doi_matl_resc
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
             and YYYYMM = #{yyyymm}
@@ -74,9 +74,9 @@
             and SITE = #{site}
         </if>
 		group by
-			MAT_CLASS
+			재고자산종류
 		HAVING
-			sum(IN_AMT) != 0
+			sum(투입금액) != 0
         </if>
         order BY 1,2,3,4,5;
     </select>
@@ -104,14 +104,14 @@
         UNION ALL
         select
 			'제조비용',
-			CASE WHEN MAT_CLASS='원자재' then 'MDAX' else 'MIAX' end,
-			CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end,
+			CASE WHEN 재고자산종류='원자재' then 'MDAX' else 'MIAX' end,
+			CASE WHEN 재고자산종류='원자재' then '직접재료비' else '간접재료비' end,
             '재료비',
-            CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end,
-            CASE WHEN MAT_CLASS='원자재' then 0 else 0.5 end as disp_seq,
-			sum(IN_AMT) 금액  --select *
+            CASE WHEN 재고자산종류='원자재' then '원재료비' else '부재료비' end,
+            CASE WHEN 재고자산종류='원자재' then 0 else 0.5 end as disp_seq,
+			sum(투입금액) 금액  --select *
 		from
-			doi_material_resc
+			doi_matl_resc
         where 1=1
         and sel_code='ACTUAL'
         <if test="yyyymm != null and yyyymm != ''">
@@ -121,12 +121,12 @@
             and SITE = #{site}
         </if>
 		group by
-			CASE WHEN MAT_CLASS='원자재' then 'MDAX' else 'MIAX' end,
-			CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end,
-            CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end,
-            CASE WHEN MAT_CLASS='원자재' then 0 else 0.5 end
+			CASE WHEN 재고자산종류='원자재' then 'MDAX' else 'MIAX' end,
+			CASE WHEN 재고자산종류='원자재' then '직접재료비' else '간접재료비' end,
+            CASE WHEN 재고자산종류='원자재' then '원재료비' else '부재료비' end,
+            CASE WHEN 재고자산종류='원자재' then 0 else 0.5 end
 		HAVING
-			sum(IN_AMT) != 0
+			sum(투입금액) != 0
         order by ACCT_CLASS,DISP_SEQ,EXPEN_SEL,ACCT_NAME,ITEM_NAME;
     </select>
 
@@ -166,14 +166,14 @@
 	        select
 				'제조경비' ACCT_CLASS,
 				'제조공통' DEPT_NAME,
-				CASE WHEN MAT_CLASS='원자재' then 'MDAX' else 'MIAX' end EXPEN_SEL,
-				CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end EXPEN_SEL명,
+				CASE WHEN 재고자산종류='원자재' then 'MDAX' else 'MIAX' end EXPEN_SEL,
+				CASE WHEN 재고자산종류='원자재' then '직접재료비' else '간접재료비' end EXPEN_SEL명,
 			    '재료비' SUB_NAME,
-			    CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end ITEM_NAME,
+			    CASE WHEN 재고자산종류='원자재' then '원재료비' else '부재료비' end ITEM_NAME,
 				--sum(in_qty) in_qty,
-				sum(in_amt) acct_amt
+				sum(투입금액) acct_amt
 			from
-				DOI_MATERIAL_RESC a
+				DOI_MATL_RESC a
 			where	1 = 1
 	        <if test="yyyymm != null and yyyymm != ''">
 	            and a.YYYYMM = #{yyyymm}
@@ -182,12 +182,12 @@
 	            and a.SITE = #{site}
 	        </if>
 	        <if test="expenSel != null and expenSel != ''">
-	            and CASE WHEN MAT_CLASS='원자재' then 'MDAX' else 'MIAX' end = #{expenSel}
+	            and CASE WHEN 재고자산종류='원자재' then 'MDAX' else 'MIAX' end = #{expenSel}
 	  	    </if>
 			group by
-			CASE WHEN MAT_CLASS='원자재' then 'MDAX' else 'MIAX' end,
-				CASE WHEN MAT_CLASS='원자재' then '직접재료비' else '간접재료비' end,
-			    CASE WHEN MAT_CLASS='원자재' then '원재료비' else '부재료비' end
+			CASE WHEN 재고자산종류='원자재' then 'MDAX' else 'MIAX' end,
+				CASE WHEN 재고자산종류='원자재' then '직접재료비' else '간접재료비' end,
+			    CASE WHEN 재고자산종류='원자재' then '원재료비' else '부재료비' end
 	    </if >
 	</select>
 	
@@ -380,17 +380,17 @@
 	)
      select
 		--a.MAT_CLASS,
-		CASE WHEN a.MAT_CLASS='원자재' THEN 'MDAX' ELSE 'MIAX' end as expen_sel,
-		CASE WHEN a.MAT_CLASS='원자재' THEN '직접재료비' ELSE '간접재료비' end as expen_sel명,
-		a.MAT_CODE,
-		a.MAT_DESC,
+		CASE WHEN a.재고자산종류='원자재' THEN 'MDAX' ELSE 'MIAX' end as expen_sel,
+		CASE WHEN a.재고자산종류='원자재' THEN '직접재료비' ELSE '간접재료비' end as expen_sel명,
+		a.품번 mat_code,
+		a.품명 mat_desc,
 		max(b.자재대분류) mat_lclass,
 		max(b.투입단위) UNIT,
-		SUM(a.IN_QTY) IN_QTY,
-		AVG(a.UNIT_COST) UNIT_COST,
-		SUM(a.IN_AMT) IN_AMT
-        from DOI_MATERIAL_RESC a
-          left join BOM b on (a.mat_code = b.자재번호 and b.rn=1)
+		SUM(a.투입금액) IN_QTY,
+		AVG(a.최종결산월재고단가) UNIT_COST,
+		SUM(a.투입금액) IN_AMT
+        from DOI_MATL_RESC a
+          left join BOM b on (a.품번 = b.자재번호 and b.rn=1)
         where 1=1
             and a.sel_code = 'ACTUAL'
         <if test="yyyymm != null and yyyymm != ''">
@@ -403,10 +403,10 @@
 			a.YYYYMM,
 			a.SEL_CODE,
 			a.SITE,
-			a.MAT_CLASS,
-			a.MAT_CODE,
-			a.MAT_DESC
-        having sum(in_amt) != 0
+			a.재고자산종류,
+			a.품번,
+			a.품명
+        having sum(투입금액) != 0
 		order by 5,1;
     </select>
 
@@ -415,17 +415,15 @@
         YYYYMM,
         SEL_CODE,
         SITE,
-        MAT_CODE,
-        MAT_DESC,
-        [SIZE],
-        IN_QTY,
-        UNIT_COST,
-        IN_AMT,
-        COST_GUBUN,
-        MAT_CLASS,
-        MODEL,
-        MODEL_N_TYPE
-        FROM DOI_MATERIAL_RESC
+        품번,
+        품명,
+        규격,
+        투입금액,
+        최종결산월재고단가,
+        투입금액,
+        자산처리계정,
+        재고자산종류,
+        FROM DOI_MATL_RESC
         where 1=1
         and sel_code = 'ACTUAL'
         <if test="yyyymm != null and yyyymm != ''">
@@ -435,7 +433,7 @@
             and SITE = #{site}
         </if>
         <if test="matClass != null and matClass != ''">
-            and mat_class = #{matClass}
+            and 재고자산종류 = #{matClass}
         </if>
         order by 1,2,3,4;
     </select>
@@ -443,7 +441,7 @@
     <!-- C0008005: 재료비집계 프로시저 실행 (UP_DOI_MAT_AMT) -->
     <select id="C0008005_Exec" resultType="CamelMap">
 	DECLARE @RET_CODE INT;
-	EXEC @RET_CODE = UP_DOI_MAT_AMT 
+	EXEC @RET_CODE = UP_DOI_MAT_AMT_NEW 
 		#{yyyymm},
 		#{site},
 		N'ACTUAL'

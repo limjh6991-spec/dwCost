@@ -4,7 +4,7 @@
 
 <mapper namespace="com.dowinsys.cost.web.c0003000.mapper.C0003000Mapper">
     <select id="C0003001_Sch1" resultType="CamelMap">
-	EXEC UP_DOI_MAT_AMT 
+	EXEC UP_DOI_MAT_AMT_NEW 
 		#{yyyymm},
 		#{site},
 		#{selcode}
