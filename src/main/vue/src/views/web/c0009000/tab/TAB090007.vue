@@ -6,10 +6,16 @@
       <b-row class="search_area">
         <b-col cols="1" class="period">
           <div class="form-floating me-1">
-            <date-picker label="연도" mode="year" v-model="params.yyyymm" />
+            <date-picker label="연도" mode="year" v-model="params.year" />
             <label for="floatingSelect" class="select">년도</label>
           </div>
         </b-col>
+          <b-col cols="1" class="period">
+            <div class="form-floating me-1">
+              <b-form-select v-model="params.month" :options="monthOptions" class="form-control" style="padding-left: 60px; min-width: 150px;" />
+              <label for="floatingSelect" class="select">기준월</label>
+            </div>
+          </b-col>
         <b-col cols="2" class="ms-3">
           <div class="form-floating">
             <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" :disabled="true" />
@@ -46,7 +52,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodCogsGrid" :uid="'prodCogsGrid'" :grid="prodCogsGrid" :layout="prodCogsGrid.columnLayout" :step="'1'" :rows="prodCogsGridRows" style="height: 100%" />
+        <RealGrid ref="prodCogsGrid" :uid="'prodCogsGrid'" :grid="activeGrid" :layout="prodCogsGrid.columnLayout" :step="'1'" :rows="prodCogsGridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -55,7 +61,6 @@
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0009000/js/TAB090007.js';
 
 export default {
   props: {},
@@ -71,9 +76,36 @@ export default {
   data() {
     return {
       prodCogsGrid: null,
+      prodCogsDtlGrid: null,
       prodCogsGridRows: [],
+      totalRowCount: 0,
+
+      yearSelected: false,
+      syncingYearToMonth: false,
+      isInitializing: true,
+
+      yearRowsCache: [],
+      yearCacheKey: null,
+
+      monthOptions: [
+        { value: null, text: '전체' },
+        { value: '01', text: '01월' },
+        { value: '02', text: '02월' },
+        { value: '03', text: '03월' },
+        { value: '04', text: '04월' },
+        { value: '05', text: '05월' },
+        { value: '06', text: '06월' },
+        { value: '07', text: '07월' },
+        { value: '08', text: '08월' },
+        { value: '09', text: '09월' },
+        { value: '10', text: '10월' },
+        { value: '11', text: '11월' },
+        { value: '12', text: '12월' },
+      ],
       selCodeList: [],
       params: {
+        year: null,
+        month: null,
         yyyymm: null,
         site: 'HQ',
         selCode: '',
@@ -87,17 +119,47 @@ export default {
     };
   },
   watch: {
-    'params.yyyymm': function(newVal) {
-      if (newVal) {
-        this.onDateChange();
+    'params.year'(newVal) {
+      if (!newVal) {
+        this.yearSelected = false;
+        this.params.month = null;
+        this.params.yyyymm = null;
+        this.params.viewMode = 'YEAR';
+
+        return;
       }
+
+      if (!this.isInitializing) {
+        this.yearSelected = true;
+      }
+
+      const yyyy = String(newVal);
+
+      if (this.params.month) {
+        const mm = String(this.params.month);
+        this.params.yyyymm = `${yyyy}${mm}`;
+        this.params.viewMode = 'MONTH';
+      } else {
+        this.params.yyyymm = null;
+        this.params.viewMode = 'YEAR';
+      }
+      
+      this.clearYearCache?.();
     },
-    'srchInfo.yyyymm': {
-      handler(newVal) {
-        if (newVal) {
-          this.params.yyyymm = newVal;
-        }
-      },
+
+    'params.month'(newVal) {
+      if (!newVal) {
+        this.params.yyyymm = null;
+        this.params.viewMode = 'YEAR';
+        return;
+      }
+
+      if (!this.isInitializing) {
+        const yyyy = String(this.params.year);
+        const mm = String(newVal);
+        this.params.yyyymm = `${yyyy}${mm}`;
+        this.params.viewMode = 'MONTH';
+      }
     },
     prodCtg: {
       handler(newVal) {
@@ -116,149 +178,177 @@ export default {
       const roleList = this.userAuthInfo?.roleList || [];
       return roleList.includes('SYSADMIN');
     },
+    showMonth() {
+      return this.yearSelected;
+    },
+    activeGrid() {
+      return this.params.viewMode === 'MONTH' ? this.prodCogsGrid : this.prodCogsDtlGrid;
+    },
     gridView() {
       return this.$refs.prodCogsGrid.getGridView();
-    },
-    gridDataProvider() {
-      return this.$refs.prodCogsGrid.getGridDataProvider();
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
     },
   },
   created() {
+    this.isInitializing = true;
     this.initialize();
     this.initializeGrid();
+    this.$nextTick(() => {
+      this.isInitializing = false;
+    });
   },
   mounted() {
     const gv = this.gridView;
 
-    if (this.prodCogsGrid.columnLayout) {
-      gv.setColumnLayout(this.prodCogsGrid.columnLayout);
-    }
+    gv.setRowStyleCallback((grid, item) => {
+      const itemIndex =
+        item?.itemIndex ?? item?.index ?? item?.dataRow;
 
-    gv.setRowStyleCallback((grid, item, fixed) => {
-      const row = item.dataRow;
-      if (row == null || row < 0) return null;
-
-      const rowType = (grid.getValue(row, 'rowType') || '').toString();
-      console.log('rowStyleCallback:', row, rowType);
+      if (itemIndex == null || itemIndex < 0) return null;
+      
+      const rowType = String(grid.getValue(itemIndex, 'rowType') ?? '');
 
       if (rowType === 'SUBTOTAL') {
-        return {
-          style: {
-            background: '#f5f7ff',
-            fontWeight: 'bold',
-          },
-        };
+        return { style: { background: '#f5f7ff', fontWeight: 'bold' } };
       }
-
       if (rowType === 'GRAND_TOTAL') {
-        return {
-          style: {
-            background: '#e8f4f8',
-            fontWeight: 'bold',
-          },
-        };
+        return { style: { background: '#e8f4f8', fontWeight: 'bold' } };
       }
-
       if (rowType === 'TOTAL') {
-        return {
-          style: {
-            background: '#fff3cd',
-            fontWeight: 'bold',
-          },
-        };
+        return { style: { background: '#fff3cd', fontWeight: 'bold' } };
       }
-
       return null;
     });
 
-    const layoutGubun = gv.layoutByColumn('구분');
-    if (layoutGubun) {
-      layoutGubun.spanCallback = (grid, layout, itemIndex) => {
-        const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
+    this.applySpanCallbacks();
 
-        if (rowType === 'SUBTOTAL') {
-          return 5;
-        }
-        if (rowType === 'GRAND_TOTAL') {
-          return 5;
-        }
-        if (rowType === 'TOTAL') {
-          return 2;
-        }
-        return 1;
-      };
-    }
-
-    const layoutMonth = gv.layoutByColumn('월');
-    if (layoutMonth) {
-      layoutMonth.spanCallback = (grid, layout, itemIndex) => {
-        const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
-
-        if (rowType === 'SUBTOTAL') {
-          return 0;
-        }
-        if (rowType === 'GRAND_TOTAL') {
-          return 0;
-        }
-        return 1;
-      };
-    }
-
-    const layoutInch = gv.layoutByColumn('inch');
-    if (layoutInch) {
-      layoutInch.spanCallback = (grid, layout, itemIndex) => {
-        const rowType = (grid.getValue(itemIndex, 'rowType') || '').toString();
-
-        if (rowType === 'TOTAL') {
-          return 3;
-        }
-        return 1;
-      };
-    }
+    gv.onSorted = () => gv.refresh();
+    gv.onSortingChanged = () => gv.refresh();
+    gv.onDataSorted = () => gv.refresh();
   },
   beforeUnmount() {},
   methods: {
     initialize() {
-      this.params.yyyymm = this.srchInfo.yyyymm;
+      const baseYyyymm = this.srchInfo.yyyymm;
+      const defaultYear = baseYyyymm 
+      ? String(baseYyyymm).substring(0, 4) : String(new Date().getFullYear());
+
+      this.params.year = defaultYear;
+      this.params.month = null;
+      this.params.yyyymm = null;
+      this.params.viewMode = 'YEAR';
+
+      this.yearSelected = false;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
       this.loadSelCodeList();
     },
     initializeGrid() {
-      this.prodCogsGrid = _.cloneDeep(gridField);
+      this.prodCogsGrid = _.cloneDeep(require(`@web/c0009000/js/TAB090007.js`));
+      this.prodCogsDtlGrid = _.cloneDeep(require(`@web/c0009000/js/TAB090007_2.js`));
     },
-    onDateChange() {
-      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
-    },
-    async getDataList() {
-      this.gridView.commit();
+    async applyGridMode(mode) {
+      const gv = this.gridView;
+      if (!gv) return;
 
-      let params = {
-        yyyy: this.params.yyyymm.substring(0, 4),
-        site: this.params.site != null ? this.siteMap[this.params.site] : null,
-        selCode: this.params.selCode === '' ? 'ACTUAL' : this.params.selCode,
+      const g = mode === 'MONTH' ? this.prodCogsDtlGrid : this.prodCogsGrid;
+
+      if (g?.columns) gv.setColumns(g.columns);
+      if (g?.columnLayout) gv.setColumnLayout(g.columnLayout);
+
+      this.applySpanCallbacks();
+      gv.refresh();
+    },
+    capSpan(span) {
+      const max = 5;
+      const s = Number(span) || 1;
+      return Math.max(1, Math.min(s, max));
+    },
+    getRowInfoByItemIndex(grid, itemIndex) {
+      return {
+        rowType: String(grid.getValue(itemIndex, 'rowType') ?? ''),
+        gubun: String(grid.getValue(itemIndex, '구분') ?? ''),
+      };
+    },
+    applySpanCallbacks() {
+      const gv = this.gridView;
+      if (!gv) return;
+
+      const makeSpan = (colName) => {
+        const layout = gv.layoutByColumn(colName);
+        if (!layout) return;
+
+        layout.spanCallback = (grid, layout, itemIndex) => {
+          if (itemIndex == null || itemIndex < 0) return 1;
+
+          const { rowType, gubun } = this.getRowInfoByItemIndex(grid, itemIndex);
+
+          let span = 1;
+
+          if (rowType === 'SUBTOTAL') span = 5;
+          else if (rowType === 'GRAND_TOTAL') span = 5;
+          else if (rowType === 'TOTAL' && gubun === '판매처별') {
+            if (colName === '구분' || colName === '모델') span = 2;
+            else if (colName === 'inch' || colName === '판매처' || colName === '월') span = 3;
+          } else if (rowType === 'TOTAL') span = 5;
+
+          return this.capSpan(span);
+        };
       };
 
-      let param = {
+      ['구분', '모델', 'inch', '판매처', '월'].forEach(makeSpan);
+
+      gv.refresh();
+    },
+    async fetchYearRowsIfNeeded() {
+      if (!this.hasSysAdmin) {
+        this.params.selCode = 'ACTUAL';
+      }
+      const yyyy = this.params.year;
+      const site = this.params.site != null ? this.siteMap[this.params.site] : null;
+      const selCode = this.params.selCode === '' ? 'ACTUAL' : this.params.selCode;
+      const key = `${yyyy}|${site || ''}|${selCode || ''}`;
+
+      if (this.yearCacheKey === key && Array.isArray(this.yearRowsCache) && this.yearRowsCache.length) {
+        return this.yearRowsCache;
+      }
+
+      const param = {
         menuId: 'c0009000',
         queryId: 'C0009007_Tab090007',
-        queryParams: params,
-        target: this.prodCogsGridRows,
+        queryParams: { yyyy, site, selCode },
+        target: [],
       };
-      let resp = await this.$axios.api.search(param);
+
+      const resp = await this.$axios.api.search(param);
 
       let rows = [];
       if (resp && resp.data) {
-        rows = Array.isArray(resp.data) ? resp.data : resp.data.rows || [];
+        rows = Array.isArray(resp.data) ? resp.data : (resp.data.rows || []);
       } else if (Array.isArray(resp)) {
         rows = resp;
       }
 
-      this.prodCogsGridRows = this.buildProdCogsRows(rows);
-    },
+      rows = rows.map(r => {
+        if (r == null) return r;
 
+        if ('YYYYMM' in r || 'yyyymm' in r) return r;
+
+        const mm = this.parseMonthNumber(r['월']);
+        if (!mm) return r;
+
+        const yyyymm = `${this.params.year}${String(mm).padStart(2, '0')}`;
+        return { ...r, YYYYMM: yyyymm };
+      });
+
+      this.yearRowsCache = rows;
+      this.yearCacheKey = key;
+      return rows;
+    },           
+    onDateChange() {
+      this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
+    },
     async loadSelCodeList() {
       const list = [];
 
@@ -278,6 +368,12 @@ export default {
       } else {
         this.params.selCode = this.selCodeList[0]?.value ?? '';
       }
+    },
+    parseMonthNumber(monthText) {
+      const m = String(monthText || '').match(/(\d{1,2})\s*월/);
+      if (!m) return null;
+      const mm = Number(m[1]);
+      return mm >= 1 && mm <= 12 ? mm : null;
     },
     buildProdCogsRows(rows) {
       if (!Array.isArray(rows) || rows.length === 0) return [];
@@ -415,7 +511,52 @@ export default {
         outEtcQty: 0, outEtcAmt: 0,
       };
     },
+    buildMonthDetailRowsWithTotal(rows, selectedYYYYMM) {
+      const monthLabel = `${Number(selectedYYYYMM.substring(4, 6))}월`;
 
+      const result = [];
+      const numberColsCandidates = [
+        ['BOH_QTY', 'bohQty'], ['BOH_AMT', 'bohAmt'],
+        ['IN_QTY', 'inQty'],   ['IN_AMT', 'inAmt'],
+        ['OUT_QTY','outQty'],  ['OUT_AMT','outAmt'],
+        ['EOH_QTY','eohQty'],  ['EOH_AMT','eohAmt'],
+        ['IN_MAT_QTY','inMatQty'],['IN_MAT_AMT','inMatAmt'],
+        ['IN_ETC_QTY','inEtcQty'],['IN_ETC_AMT','inEtcAmt'],
+        ['RMA_IN_QTY','rmaInQty'], ['RMA_IN_AMT','rmaInAmt'],
+        ['OUT_GOOD_QTY','outGoodQty'], ['OUT_GOOD_AMT','outGoodAmt'],
+        ['OUT_ETC_QTY','outEtcQty'],   ['OUT_ETC_AMT','outEtcAmt'],
+      ];
+
+      rows.forEach((r, idx) => {
+        result.push({
+          ...r,
+          월: r['월'] ?? monthLabel,
+          rowType: 'DATA',
+          mergeKey: `MD|${idx}`,
+          mergeKeyGubun: `MD|${idx}`,
+        });
+      });
+
+      const totalRow = { rowType: 'TOTAL', 구분: '월합계', 월: monthLabel };
+
+      numberColsCandidates.forEach(([k1, k2]) => {
+        totalRow[k1] = 0;
+        totalRow[k2] = 0;
+      });
+
+      rows.forEach(r => {
+        numberColsCandidates.forEach(([k1, k2]) => {
+          if (k1 in r) totalRow[k1] += Number(r[k1]) || 0;
+          if (k2 in r) totalRow[k2] += Number(r[k2]) || 0;
+        });
+      });
+
+      totalRow.mergeKey = `TOTAL|${selectedYYYYMM}`;
+      totalRow.mergeKeyGubun = 'TOTAL';
+
+      result.push(totalRow);
+      return result;
+    },
     accumulateRow(target, source, numberCols) {
       numberCols.forEach(col => {
         const v = Number(source[col]) || 0;
@@ -454,11 +595,48 @@ export default {
         월: '',
       };
     },
-    searchClick() {
-      this.getDataList();
+    async searchClick() {
+      const yearRows = await this.fetchYearRowsIfNeeded();
+
+      if (this.params.viewMode === 'YEAR') {
+        await this.applyGridMode('YEAR');
+        const rows = this.buildProdCogsRows(yearRows);
+
+        this.totalRowCount = rows.filter(r => r.rowType === 'TOTAL').length;
+        this.prodCogsGridRows = rows;
+
+        this.$nextTick(() => {
+          this.applyRowFixing();
+        });
+        return;
+      }
+
+      await this.applyGridMode('MONTH');
+
+      const selectedYYYYMM = String(this.params.yyyymm || '');
+      const filtered = yearRows.filter(r => {
+        const rowYyyymm = String(r['YYYYMM'] || r['yyyymm'] || '');
+        return rowYyyymm === selectedYYYYMM;
+      });
+
+      const rows = this.buildMonthDetailRowsWithTotal(filtered, selectedYYYYMM);
+
+      this.totalRowCount = rows.filter(r => r.rowType === 'TOTAL').length;
+      this.prodCogsGridRows = rows;
+
+      this.$nextTick(() => {
+        this.applyRowFixing();
+      });
     },
+    applyRowFixing() {
+      const gv = this.gridView;
+
+      if (!gv || this.totalRowCount === 0) return;
+    },    
     async excelBtnClick() {
       const grid = this.gridView;
+
+      await this.$nextTick();
 
       const now = new Date();
       const yyyymmdd = this.$utils.getTodayDate();
