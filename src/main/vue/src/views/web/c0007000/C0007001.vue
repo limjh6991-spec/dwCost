@@ -257,7 +257,7 @@ export default {
       this.$refs.uploadPopup1.openDialog({
         dialogTitle: '업로드 팝업',
         uploadApi: '/api/c0007000/c0007001/upload',
-        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10', 'field11', 'field12'],
+        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10', 'field11', 'field12', 'field13'],
         excelGrid,
         fileName: '부서별_계정별_비용_template',
       });

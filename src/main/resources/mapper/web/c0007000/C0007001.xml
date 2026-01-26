@@ -16,7 +16,8 @@
 			계정과목,
 			비용구분,
 			차변금액,
-			대변금액
+			대변금액,
+			제외여부
 		from
 			DOI_DEPT_COST
 		where 1=1
@@ -103,7 +104,8 @@
 			계정과목 nvarchar(30) COLLATE Korean_Wansung_CI_AS NULL,
 			비용구분 nvarchar(8) COLLATE Korean_Wansung_CI_AS NULL,
 			차변금액 bigint NULL,
-			대변금액 bigint NULL
+			대변금액 bigint NULL,
+			제외여부 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL
 		);
 
 		INSERT INTO #TempTable
@@ -119,6 +121,7 @@
 		, 비용구분
 		, 차변금액
 		, 대변금액
+		, 제외여부
 		)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
@@ -134,11 +137,12 @@
 			, #{item.field10}
 			, #{item.field11}
 			, #{item.field12}
+			, #{item.field13}
 			)
 		</foreach>;
 
-		INSERT INTO DOI_DEPT_COST (yyyymm,sel_code,site,코스트센터,코스트센터분류,코스트센터유형,계정코드,계정과목,비용구분,차변금액,대변금액)
-		SELECT yyyymm,sel_code,site,코스트센터,코스트센터분류,코스트센터유형,계정코드,계정과목,비용구분,차변금액,대변금액
+		INSERT INTO DOI_DEPT_COST (yyyymm,sel_code,site,코스트센터,코스트센터분류,코스트센터유형,계정코드,계정과목,비용구분,차변금액,대변금액,제외여부)
+		SELECT yyyymm,sel_code,site,코스트센터,코스트센터분류,코스트센터유형,계정코드,계정과목,비용구분,차변금액,대변금액,제외여부
 		FROM (
 			SELECT *, MAX(seq_no) over (partition by yyyymm,sel_code,site,코스트센터,계정코드) max_seq_no FROM #TempTable
 		) A

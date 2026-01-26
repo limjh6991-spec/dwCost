@@ -29,6 +29,7 @@ const grid = {
     { fieldName: '비용구분', dataType: ValueType.TEXT },
     { fieldName: '차변금액', dataType: ValueType.NUMBER },
     { fieldName: '대변금액', dataType: ValueType.NUMBER },
+    { fieldName: '제외여부', dataType: ValueType.TEXT },
   ],
 
   columns: [
@@ -145,6 +146,7 @@ const grid = {
     { name: '비용구분', fieldName: '비용구분', width: '120', header: { text: '비용구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },
     { name: '차변금액', fieldName: '차변금액', width: '100', header: { text: '차변금액' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } }, 
     { name: '대변금액', fieldName: '대변금액', width: '100', header: { text: '대변금액' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '제외여부', fieldName: '제외여부', width: '100', header: { text: '제외여부' }, autoFilter: true, editable: true, styleName: 'tr', },
   ],
 };
 
