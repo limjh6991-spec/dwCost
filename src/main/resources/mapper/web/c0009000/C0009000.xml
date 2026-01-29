@@ -217,6 +217,7 @@
                 <if test="site != null and site != ''">
                     AND SITE = #{site}
                 </if>
+                and not (in_qty = 0 and out_qty = 0 and loss_qty = 0)
                 group by 구분, 도우모델
                 UNION
                 SELECT 구분, model from doi_expen_matl
@@ -228,6 +229,7 @@
                 <if test="site != null and site != ''">
                     AND SITE = #{site}
                 </if>
+                and not (in_qty = 0 and out_qty = 0 and loss_qty = 0)
                 group by 구분, model
                 UNION
                 SELECT 'Z' 구분, 구분 model FROM (
@@ -239,6 +241,7 @@
                     <if test="site != null and site != ''">
                         AND SITE = #{site}
                     </if>
+                    and not (in_qty = 0 and out_qty = 0 and loss_qty = 0)
                     group by 구분
                     UNION
                     SELECT 구분 FROM doi_expen_matl
@@ -250,6 +253,7 @@
                     <if test="site != null and site != ''">
                         AND SITE = #{site}
                     </if>
+                    and not (in_qty = 0 and out_qty = 0 and loss_qty = 0)
                     group by 구분
                 )A
             ) A
@@ -439,7 +443,7 @@
         출고금액,
         재고수량, 
         재고금액, 
-        재고단가, 
+        CAST(재고금액 AS FLOAT)/nullif(재고수량,0)  as 재고단가,
         최종결산월재고단가, 
         구매수량, 
         구매금액, 
@@ -451,7 +455,7 @@
         투입금액, 
         기타출고수량, 
         기타출고금액
-    FROM doi_mat_subul
+    FROM doi_matl_resc
     where 1=1
     <if test="yyyymm != null and yyyymm != ''">
         and yyyymm = #{yyyymm}

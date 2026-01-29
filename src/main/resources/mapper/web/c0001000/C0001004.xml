@@ -136,7 +136,7 @@
 			중분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			대분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 			expen_sel nvarchar(4) COLLATE Korean_Wansung_CI_AS NULL,
-			expen_sel명 nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+			expen_sel명 nvarchar(20) COLLATE Korean_Wansung_CI_AS NULL,
 			특이사항 nvarchar(150) COLLATE Korean_Wansung_CI_AS NULL
 		);
 
@@ -204,7 +204,7 @@
 		중분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 		대분류 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
 		expen_sel nvarchar(4) COLLATE Korean_Wansung_CI_AS NULL,
-		expen_sel명 nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		expen_sel명 nvarchar(20) COLLATE Korean_Wansung_CI_AS NULL,
 		특이사항 nvarchar(150) COLLATE Korean_Wansung_CI_AS NULL
 		);
 
@@ -395,7 +395,7 @@
 			AND b.YYYYMM = a.YYYYMM
 			AND b.SITE = a.SITE
 			AND b.DEPT = a.DEPT
-			AND b.COST_DIST = a.COST_DIST
+			--AND b.COST_DIST = a.COST_DIST
 			);
 		</select>
 	<insert id="tab2UploadExcel" parameterType="java.util.List">
