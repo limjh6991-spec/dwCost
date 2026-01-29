@@ -45,4 +45,27 @@ public class C0007005Controller {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload failed");
         }
     }
+
+    @PostMapping("/upload2")
+    public ResponseEntity<String> uploadFile2(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("headers") String headers
+    ) {
+        if (file.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File is empty");
+        }
+        try {
+            Map<String, String> ret = service.uploadExcel2(file, headers);
+            if (Objects.equals(ret.get("status"), "success")) {
+                return ResponseEntity.ok("File uploaded successfully");
+            } else if (Objects.equals(ret.get("status"), "error") && !ret.get("errorMessage").isEmpty()) {
+                return ResponseEntity.ok(ret.get("errorMessage"));
+            } else {
+                return ResponseEntity.ok("File upload failed");
+            }
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload failed");
+        }
+    }    
 }

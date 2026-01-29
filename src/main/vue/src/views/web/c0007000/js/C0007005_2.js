@@ -21,7 +21,7 @@ const grid = {
 
   fields: [
     { fieldName: 'yyyymm', dataType: ValueType.TEXT },
-    { fieldName: 'actual', dataType: ValueType.TEXT },
+    { fieldName: 'selCode', dataType: ValueType.TEXT },
     { fieldName: 'site', dataType: ValueType.TEXT },
     { fieldName: '선택', dataType: ValueType.NUMBER },
     { fieldName: '출고처리', dataType: ValueType.NUMBER },
@@ -61,7 +61,7 @@ const grid = {
 
   columns: [
     { name: 'yyyymm', fieldName: 'yyyymm', width: '80', header: { text: 'YYYYMM' }, autoFilter: true, styleName: 'tl' },
-    { name: 'actual', fieldName: 'actual', width: '80', header: { text: 'ACTUAL' }, autoFilter: true, styleName: 'tl' },
+    { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'tl' },
     { name: 'site', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true, styleName: 'tl' },
     { name: '선택', fieldName: '선택', width: '80', header: { text: '선택' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
     { name: '출고처리', fieldName: '출고처리', width: '120', header: { text: '출고처리' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },

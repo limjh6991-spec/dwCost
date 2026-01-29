@@ -13,6 +13,8 @@ import java.util.Map;
 @Mapper
 public interface C0007005Mapper {
     List<Map<String, String>> checkduplicateOrgList(List<Map<String, String>> list);
+    List<Map<String, String>> checkduplicateOrgList2(List<Map<String, String>> list);
 
     int uploadExcel(List<Map<String, String>> list);
+    int uploadExcel2(List<Map<String, String>> list);
 }

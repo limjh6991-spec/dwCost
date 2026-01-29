@@ -9,4 +9,5 @@ import java.util.Map;
 
 public interface C0007005Service {
     Map<String, String> uploadExcel(MultipartFile file, String headers) throws Exception;
+    Map<String, String> uploadExcel2(MultipartFile file, String headers) throws Exception;    
 }

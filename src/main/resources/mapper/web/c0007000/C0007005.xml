@@ -351,11 +351,8 @@
 		,보관위치,Lot_No,세금계산서_진행상태,배송상태,품목특이사항,매출시점,진행조회,원천조회,원천관리번호,원천번호
 		,PO_No,반품,매출수량,매출금액계,미매출금액,세금계산서금액계,계산서미발행액,계산서미발행수량,기타출고구분,품목자산분류
 		,단가소급여부,[수량(단가소급)],유상사급여부
-		FROM (
-			SELECT *, MAX(seq_no) over (partition by YYYYMM,SEL_CODE,SITE,거래명세서번호) max_seq_no FROM #TempTable
-		)A
+		FROM #TempTable a
 		WHERE 1=1
-		AND seq_no = max_seq_no
 		AND NOT EXISTS (
 			SELECT 1
 			FROM doi_sale_resc b
@@ -479,5 +476,303 @@
 		;
 	</update>
 
+	<select id="checkduplicateOrgList2" parameterType="java.util.List" resultType="CamelMap">
+		DROP TABLE IF EXISTS #TempTable1;
+
+		CREATE TABLE #TempTable1 (
+		YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		선택 bit NULL,
+		출고처리 bit NULL,
+		사업단위 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		Invoice_No varchar(17) COLLATE Korean_Wansung_CI_AS NULL,
+		Invoice관리번호 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		Invoice_Date varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		수출구분 nvarchar(8) COLLATE Korean_Wansung_CI_AS NULL,
+		출고구분 nvarchar(8) COLLATE Korean_Wansung_CI_AS NULL,
+		가격조건 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		부서 nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		담당자 nvarchar(13) COLLATE Korean_Wansung_CI_AS NULL,
+		Buyer varchar(29) COLLATE Korean_Wansung_CI_AS NULL,
+		Agent nvarchar(29) COLLATE Korean_Wansung_CI_AS NULL,
+		통화 varchar(3) COLLATE Korean_Wansung_CI_AS NULL,
+		환율 numeric(18,2) NULL,
+		품명 nvarchar(24) COLLATE Korean_Wansung_CI_AS NULL,
+		품번 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		규격 varchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+		단위 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		판매기준가 numeric(18,0) NULL,
+		판매단가 numeric(18,2) NULL,
+		수량 bigint NULL,
+		판매금액 numeric(18,2) NULL,
+		원화판매금액 numeric(18,0) NULL,
+		창고 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		납기일 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		기타출고구분 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		진행상태 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		매출진행상태 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		매출대상 bit NULL,
+		매출금액계 numeric(18,0) NULL,
+		미매출금액 numeric(18,0) NULL,
+		Remarks nvarchar(100) COLLATE Korean_Wansung_CI_AS NULL,
+		특이사항 nvarchar(100) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable1
+		(
+		YYYYMM,SEL_CODE,SITE,선택,출고처리,사업단위,Invoice_No,Invoice관리번호,Invoice_Date,수출구분,	
+		출고구분,가격조건,부서,담당자,Buyer,Agent,통화,환율,품명,품번,규격,단위,판매기준가,판매단가,수량,
+		판매금액,원화판매금액,창고,납기일,기타출고구분,진행상태,매출진행상태,매출대상,매출금액계,미매출금액,
+		Remarks,특이사항
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			, #{item.field23}
+			, #{item.field24}
+			, #{item.field25}
+			, #{item.field26}
+			, #{item.field27}
+			, #{item.field28}
+			, #{item.field29}
+			, #{item.field30}
+			, #{item.field31}
+			, #{item.field32}
+			, #{item.field33}
+			, #{item.field34}
+			, #{item.field35}
+			, #{item.field36}
+			, #{item.field37}
+			, #{item.field38}
+			)
+		</foreach>;
+
+		SELECT * FROM #TempTable1 a
+		WHERE EXISTS (
+		SELECT 1
+		FROM doi_invoice_resc b
+		WHERE 1=1
+		AND b.YYYYMM = a.YYYYMM
+		AND b.SEL_CODE = a.SEL_CODE
+		AND b.SITE = a.SITE
+		AND b.invoice관리번호 = a.invoice관리번호
+		);
+	</select>
+
+	<insert id="uploadExcel2" parameterType="java.util.List">
+		CREATE TABLE #TempTable (
+		seq_no INT IDENTITY (1, 1) NOT NULL,
+		YYYYMM varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SEL_CODE varchar(10) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		SITE varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+		선택 bit NULL,
+		출고처리 bit NULL,
+		사업단위 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		Invoice_No varchar(17) COLLATE Korean_Wansung_CI_AS NULL,
+		Invoice관리번호 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		Invoice_Date varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		수출구분 nvarchar(8) COLLATE Korean_Wansung_CI_AS NULL,
+		출고구분 nvarchar(8) COLLATE Korean_Wansung_CI_AS NULL,
+		가격조건 varchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		부서 nvarchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		담당자 nvarchar(13) COLLATE Korean_Wansung_CI_AS NULL,
+		Buyer varchar(29) COLLATE Korean_Wansung_CI_AS NULL,
+		Agent nvarchar(29) COLLATE Korean_Wansung_CI_AS NULL,
+		통화 varchar(3) COLLATE Korean_Wansung_CI_AS NULL,
+		환율 numeric(18,2) NULL,
+		품명 nvarchar(24) COLLATE Korean_Wansung_CI_AS NULL,
+		품번 varchar(15) COLLATE Korean_Wansung_CI_AS NULL,
+		규격 varchar(30) COLLATE Korean_Wansung_CI_AS NULL,
+		단위 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		판매기준가 numeric(18,0) NULL,
+		판매단가 numeric(18,2) NULL,
+		수량 bigint NULL,
+		판매금액 numeric(18,2) NULL,
+		원화판매금액 numeric(18,0) NULL,
+		창고 nvarchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		납기일 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		기타출고구분 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+		진행상태 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		매출진행상태 nvarchar(5) COLLATE Korean_Wansung_CI_AS NULL,
+		매출대상 bit NULL,
+		매출금액계 numeric(18,0) NULL,
+		미매출금액 numeric(18,0) NULL,
+		Remarks nvarchar(100) COLLATE Korean_Wansung_CI_AS NULL,
+		특이사항 nvarchar(100) COLLATE Korean_Wansung_CI_AS NULL
+		);
+
+		INSERT INTO #TempTable
+		(
+		YYYYMM,SEL_CODE,SITE,선택,출고처리,사업단위,Invoice_No,Invoice관리번호,Invoice_Date,수출구분,	
+		출고구분,가격조건,부서,담당자,Buyer,Agent,통화,환율,품명,품번,규격,단위,판매기준가,판매단가,수량,
+		판매금액,원화판매금액,창고,납기일,기타출고구분,진행상태,매출진행상태,매출대상,매출금액계,미매출금액,
+		Remarks,특이사항
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			, #{item.field23}
+			, #{item.field24}
+			, #{item.field25}
+			, #{item.field26}
+			, #{item.field27}
+			, #{item.field28}
+			, #{item.field29}
+			, #{item.field30}
+			, #{item.field31}
+			, #{item.field32}
+			, #{item.field33}
+			, #{item.field34}
+			, #{item.field35}
+			, #{item.field36}
+			, #{item.field37}
+			, #{item.field38}
+			)
+		</foreach>;
+
+		INSERT INTO doi_invoice_resc (
+		YYYYMM,SEL_CODE,SITE,선택,출고처리,사업단위,Invoice_No,Invoice관리번호,Invoice_Date,수출구분,	
+		출고구분,가격조건,부서,담당자,Buyer,Agent,통화,환율,품명,품번,규격,단위,판매기준가,판매단가,수량,
+		판매금액,원화판매금액,창고,납기일,기타출고구분,진행상태,매출진행상태,매출대상,매출금액계,미매출금액,
+		Remarks,특이사항
+		)
+		SELECT
+		YYYYMM,SEL_CODE,SITE,선택,출고처리,사업단위,Invoice_No,Invoice관리번호,Invoice_Date,수출구분,	
+		출고구분,가격조건,부서,담당자,Buyer,Agent,통화,환율,품명,품번,규격,단위,판매기준가,판매단가,수량,
+		판매금액,원화판매금액,창고,납기일,기타출고구분,진행상태,매출진행상태,매출대상,매출금액계,미매출금액,
+		Remarks,특이사항
+		FROM #TempTable a
+		WHERE 1=1
+		AND NOT EXISTS (
+			SELECT 1
+			FROM doi_invoice_resc b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SEL_CODE = a.SEL_CODE
+			AND b.SITE = a.SITE
+			AND b.Invoice관리번호 = a.Invoice관리번호
+		);
+
+		DROP TABLE #TempTable;
+	</insert>
+
+	<delete id="C0007005_Delete2">
+		DELETE FROM doi_invoice_resc
+		WHERE 1=1
+		AND YYYYMM = #{yyyymm}
+		AND SEL_CODE= #{selCode}
+		AND SITE= #{site}
+		and Invoice관리번호 = #{invoice관리번호}
+	</delete>
+
+	<insert id="C0007005_Insert2">
+		INSERT INTO doi_invoice_resc
+		(
+		YYYYMM,SEL_CODE,SITE,선택,출고처리,사업단위,Invoice_No,Invoice관리번호,Invoice_Date,수출구분,	
+		출고구분,가격조건,부서,담당자,Buyer,Agent,통화,환율,품명,품번,규격,단위,판매기준가,판매단가,수량,
+		판매금액,원화판매금액,창고,납기일,기타출고구분,진행상태,매출진행상태,매출대상,매출금액계,미매출금액,
+		Remarks,특이사항
+		)
+		VALUES
+		(
+		#{yyyymm}
+		,#{selCode}
+		,#{site}
+		,#{선택}
+		,#{출고처리}
+		,#{사업단위}
+		,#{invoiceNo}
+		,#{invoice관리번호}
+		,#{invoiceDate}
+		,#{수출구분}
+		,#{출고구분}
+		,#{가격조건}
+		,#{부서}
+		,#{담당자}
+		,#{buyer}
+		,#{agent}
+		,#{통화}
+		,#{환율}
+		,#{품명}
+		,#{품번}
+		,#{규격}
+		,#{단위}
+		,#{판매기준가}
+		,#{판매단가}
+		,#{수량}
+		,#{판매금액}
+		,#{원화판매금액}
+		,#{창고}
+		,#{납기일}
+		,#{기타출고구분}
+		,#{진행상태}
+		,#{매출진행상태}
+		,#{매출대상}
+		,#{매출금액계}
+		,#{미매출금액}
+		,#{Remarks}
+		,#{특이사항}
+		);
+	</insert>
+
+	<update id="C0007005_Update2">
+		UPDATE doi_invoice_resc
+		SET 선택=#{선택} ,출고처리=#{출고처리}
+		,사업단위=#{사업단위} ,invoiceNo=#{invoiceNo} ,수출구분=#{수출구분}
+		,출고구분 =#{출고구분} ,가격조건=#{가격조건} ,부서=#{부서} ,담당자=#{담당자} ,Buyer=#{buyer} ,Agent=#{agent}
+		,통화=#{통화} ,환율=#{환율} ,품명=#{품명} ,품번=#{품번} ,규격=#{규격} ,단위=#{단위}
+		,판매기준가=#{판매기준가} ,판매단가=#{판매단가} ,수량=#{수량}
+		,판매금액=#{판매금액} ,원화판매금액=#{원화판매금액} ,창고 =#{창고} ,납기일=#{납기일} ,기타출고구분=#{기타출고구분} ,진행상태=#{진행상태} ,매출진행상태=#{매출진행상태}
+		,매출대상=#{매출대상} ,매출금액계=#{매출금액계} ,미매출금액=#{미매출금액}, Remarks=#{Remarks} ,특이사항=#{특이사항}
+		WHERE 1=1
+		AND YYYYMM = #{yyyymm}
+		AND SEL_CODE= #{selCode}
+		AND SITE= #{site}
+		and invoice관리번호 = #{invoice관리번호}
+		;
+	</update>
 
 </mapper>

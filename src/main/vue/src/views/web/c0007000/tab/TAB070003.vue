@@ -132,7 +132,7 @@ export default {
 
       let params = {
         yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
-        site: this.params.site != null ? this.siteMap[this.params.site] : null,
+        site: this.params.site != null ? this.siteMap[this.params.site] : null,       
       };
 
       let param = {
@@ -177,7 +177,11 @@ export default {
       if (!this.gridView || !this.gridDataProvider) return;
 
       this.gridView.commit();
-      this.gridDataProvider.addRow({ yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, site: this.params.site != null ? this.siteMap[this.params.site] : null });
+      this.gridDataProvider.addRow({ 
+        yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, 
+        site: this.params.site != null ? this.siteMap[this.params.site] : null,
+        selCode: this.params.selCode ?? 'ACTUAL',
+      });
       let itemIndex = this.gridView.getItemCount() - 1;
       this.gridView.setCurrent({ itemIndex: itemIndex });
     },
