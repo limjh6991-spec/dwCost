@@ -136,24 +136,6 @@
 	    </dependency>
 		<!--end-->
 	</dependencies>
-	<profiles>
-	    <profile>
-	        <id>prod</id> <!-- 운영 환경일 때 활성화 -->
-	         <properties>
-	            <revision>prod</revision>
-	        </properties>
-	        <build>
-	            <resources>
-	                <resource>
-	                    <directory>src/main/resources</directory>
-	                    <excludes>
-	                        <exclude>public/**</exclude>
-	                    </excludes>
-	                </resource>
-	            </resources>
-	        </build>
-	   </profile>
-	</profiles>
 	<build>
 		<finalName>${project.artifactId}-${project.version}-${build.date}</finalName>
 		<plugins>
