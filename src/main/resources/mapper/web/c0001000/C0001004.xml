@@ -866,6 +866,9 @@
 		<if test="site != null and site != ''">
 			and site = #{site}
 		</if>
+		<if test="selCode != null and selCode != ''">
+			and sel_code = #{selCode}
+		</if>		
 		order BY MODEL;
 	</select>
 
@@ -1058,4 +1061,22 @@
 	<select id="TAB010005_Sch1" resultType="CamelMap">
 	EXEC UP_DOI_CarryOver @YYYYMM=#{yyyymm}, @SITE=#{site}, @PREV_YYYYMM=#{prevYyyymm}
 	</select>
+
+	<!-- Tab4: 데이터 생성 - 기존 데이터 확인 -->
+	<select id="countTab4ModelByYyyymmAndSite" resultType="int">
+		SELECT COUNT(*)
+		FROM DOI_MODEL_MAST
+		WHERE 1=1
+		<if test="yyyymm != null and yyyymm != ''">
+			AND YYYYMM = #{yyyymm}
+		</if>
+		<if test="site != null and site != ''">
+			AND SITE = #{site}
+		</if>
+	</select>
+
+	<!-- Tab4: 데이터 생성 - 프로시저 호출 -->
+	<update id="callGenDoiModelMastProcedure">
+		EXEC GEN_DOI_MODEL_MAST @YYYYMM=#{yyyymm}, @SITE=#{site}
+	</update>
 </mapper>

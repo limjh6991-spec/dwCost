@@ -14,4 +14,8 @@ public interface C0001004Service {
     Map<String, Object> tab1CarryOver(String yyyymm, String prevYyyymm, String site) throws Exception;
     Map<String, Object> tab2CarryOver(String yyyymm, String prevYyyymm, String site) throws Exception;
     Map<String, Object> tab3CarryOver(String yyyymm, String prevYyyymm, String site) throws Exception;
+
+    // Tab4 - 데이터 생성
+    Map<String, Object> checkExistingModelData(String yyyymm, String site) throws Exception;
+    Map<String, Object> executeGenModelMastProcedure(String yyyymm, String site) throws Exception;
 }

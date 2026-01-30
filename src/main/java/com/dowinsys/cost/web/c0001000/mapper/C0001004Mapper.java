@@ -44,4 +44,8 @@ public interface C0001004Mapper {
     // Tab3
     int countTab3ByYyyymmAndSite(Map<String, Object> param);
     List<Map<String, Object>> selectTab3ByYyyymmAndSite(Map<String, Object> param);
+
+    // Tab4 - 데이터 생성
+    int countTab4ModelByYyyymmAndSite(Map<String, Object> param);
+    int callGenDoiModelMastProcedure(Map<String, Object> param);
 }

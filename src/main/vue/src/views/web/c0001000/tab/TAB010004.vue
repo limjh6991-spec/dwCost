@@ -24,6 +24,7 @@
       <div class="left_box">
         <div class="btn_wrap ms-auto">
           <!-- <b-button class="second" @click="uploadClick">업로드</b-button> -->
+          <b-button class="second" @click="genData">데이터 생성</b-button>          
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
           <b-button class="sub" @click="addBtnClick">추가</b-button>
           <b-button @click="delBtnClick">삭제</b-button>
@@ -131,7 +132,7 @@ export default {
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
-      async getDataList() {
+    async getDataList() {
       if (!this.gridView) return;
 
       this.gridView.commit();
@@ -155,7 +156,7 @@ export default {
         return;
       }
       this.getDataList();
-    }, 
+    },
     addBtnClick() {
       if (!this.gridView || !this.gridDataProvider) return;
 
@@ -323,6 +324,66 @@ export default {
     // },
     closePopup() {
       this.searchClick();
+    },
+    async genData() {
+      if (!this.params.yyyymm) {
+        this.$toast && this.$toast('error', '년월 선택해 주세요.');
+        return;
+      }
+
+      try {
+        // 기존 데이터 확인
+        let checkParams = {
+          yyyymm: this.params.yyyymm.replaceAll('-', ''),
+          site: this.siteMap[this.params.site],
+        };
+
+        let checkResp = await this.$axios.post('/api/c0001000/c0001004/checkExistingData', checkParams);
+        
+        if (checkResp.data && checkResp.data.exists) {
+          this.$confirm('데이터 생성', '해당월 데이터가 존재합니다. 기존 데이터를 삭제하시겠습니까?', async (confirm) => {
+            if (confirm) {
+              this.$toast && this.$toast('info', '데이터를 생성 중입니다.');
+
+              this.modelGridRows = [];
+
+              await this.executeGenProcedure(checkParams);
+            }
+          });
+        } else {
+          await this.executeGenProcedure(checkParams);
+        }
+      } catch (error) {
+        this.$toast && this.$toast('error', '데이터 생성 중 오류가 발생했습니다.');
+        console.error(error);
+      }
+    },
+    async executeGenProcedure(params) {
+      try {
+        let procParams = {
+          yyyymm: params.yyyymm,
+          site: params.site,
+        };
+
+        let resp = await this.$axios.post('/api/c0001000/c0001004/genModelMast', procParams);
+        
+        console.log('프로시저 응답:', resp.data);
+        
+        if (resp.data && resp.data.success) {
+          // 데이터 생성 후 안정화 시간 대기
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          // 데이터 조회
+          this.searchClick();
+          this.$toast && this.$toast('info', '데이터 생성이 완료되었습니다.');
+        } else {
+          const errorMsg = resp.data?.message || '데이터 생성에 실패했습니다.';
+          this.$toast && this.$toast('error', errorMsg);
+          console.error('프로시저 실행 실패:', resp.data);
+        }
+      } catch (error) {
+        this.$toast && this.$toast('error', '프로시저 실행 중 오류가 발생했습니다: ' + error.message);
+        console.error('프로시저 호출 에러:', error);
+      }
     },
   },
 };

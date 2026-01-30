@@ -800,4 +800,55 @@ public class C0001004ServiceImpl implements C0001004Service {
             throw e;
         }
     }
-}    
+
+    // Tab4 - 데이터 생성
+    @Override
+    public Map<String, Object> checkExistingModelData(String yyyymm, String site) throws Exception {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            Map<String, Object> param = new HashMap<>();
+            param.put("yyyymm", yyyymm);
+            param.put("site", site);
+
+            int count = mapper.countTab4ModelByYyyymmAndSite(param);
+            result.put("exists", count > 0);
+            result.put("count", count);
+            result.put("success", true);
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "데이터 확인 중 오류가 발생했습니다.");
+            result.put("exists", false);
+        }
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> executeGenModelMastProcedure(String yyyymm, String site) throws Exception {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            Map<String, Object> param = new HashMap<>();
+            param.put("yyyymm", yyyymm);
+            param.put("site", site);
+
+            // 프로시저 실행 (프로시저 내에서 DELETE + INSERT 처리)
+            mapper.callGenDoiModelMastProcedure(param);
+
+            // 프로시저 실행 후 실제 생성된 데이터 개수 확인
+            int dataCount = mapper.countTab4ModelByYyyymmAndSite(param);
+
+            if (dataCount > 0) {
+                result.put("success", true);
+                result.put("message", "데이터 생성이 완료되었습니다.");
+                result.put("rowCount", dataCount);
+            } else {
+                result.put("success", false);
+                result.put("message", "가져올 데이터가 없습니다.");
+                result.put("rowCount", 0);
+            }
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "프로시저 실행 중 오류가 발생했습니다: " + e.getMessage());
+        }
+        return result;
+    }
+}   

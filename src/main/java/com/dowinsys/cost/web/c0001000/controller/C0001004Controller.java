@@ -139,4 +139,19 @@ public class C0001004Controller {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload failed");
         }
     }
+
+    // Tab4 - 데이터 생성
+    @PostMapping("/checkExistingData")
+    public ResponseEntity<Map<String, Object>> checkExistingData(@RequestBody Map<String, String> request) throws Exception {
+        String yyyymm = request.get("yyyymm");
+        String site = request.get("site");
+        return ResponseEntity.ok(service.checkExistingModelData(yyyymm, site));
+    }
+
+    @PostMapping("/genModelMast")
+    public ResponseEntity<Map<String, Object>> genModelMast(@RequestBody Map<String, String> request) throws Exception {
+        String yyyymm = request.get("yyyymm");
+        String site = request.get("site");
+        return ResponseEntity.ok(service.executeGenModelMastProcedure(yyyymm, site));
+    }
 }
