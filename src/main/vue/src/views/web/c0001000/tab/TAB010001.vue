@@ -158,7 +158,11 @@ export default {
       if (!this.gridView || !this.gridDataProvider) return;
 
       this.gridView.commit();
-      this.gridDataProvider.addRow({ yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, site: this.params.site });
+      this.gridDataProvider.addRow({ 
+        yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, 
+        site: this.params.site,
+        selCode: 'ACTUAL',
+        });
       let itemIndex = this.gridView.getItemCount() - 1;
       this.gridView.setCurrent({ itemIndex: itemIndex });
     },
@@ -171,14 +175,22 @@ export default {
         this.$toast('info', '삭제할 행을 선택하세요');
       } else {
         let delItems = [];
+        let deletedCount = 0;
         checkedRows.forEach((itemIndex) => {
           if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
             delItems.push(itemIndex);
           } else {
             this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
+            deletedCount++;
           }
         });
-        this.gridDataProvider.removeRows(delItems);
+
+        if (delItems.length > 0) {
+          this.gridDataProvider.removeRows(delItems);
+        }
+        if (deletedCount > 0) {
+          this.$toast('info', `${deletedCount}건이 삭제 대기 상태입니다. 저장 버튼을 눌러야 삭제됩니다.`);
+        }
       }
     },
     async saveBtnClick() {

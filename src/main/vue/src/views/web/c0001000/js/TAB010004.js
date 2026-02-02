@@ -38,12 +38,11 @@ const grid = {
     edit: { editable: true, columnEditableFirst: true, commitByCell: true, commitWhenLeave: true },
     footer: { visible: false },
     header: { height: 25 },
-    hideDeletedRows: true,
+    hideDeletedRows: false,
     paste: { enabled: true, checkReadOnly: true },
     rowIndicator: { visible: true },
     sorting: { enabled: false },
     stateBar: { visible: true },
-    fixed: { colBarWidth: 1, colCount: 1 },
   },
   fields: [
     { fieldName: 'yyyymm', dataType: ValueType.TEXT },

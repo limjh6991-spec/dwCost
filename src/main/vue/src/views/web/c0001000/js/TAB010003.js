@@ -11,7 +11,7 @@ const grid = {
     edit: { editable: true, columnEditableFirst: true, commitByCell: true, commitWhenLeave: true },
     footer: { visible: false },
     header: { height: 40, showTooltip: true, tooltipEllipsisOnly: true },
-    hideDeletedRows: true,
+    hideDeletedRows: false,
     paste: { enabled: true, checkReadOnly: true },
     rowIndicator: { visible: true },
     sorting: { enabled: false },
@@ -57,17 +57,6 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-        return ret;
-      },
     },
     { name: 'siteOrg', fieldName: 'siteOrg', width: '80', header: { text: 'SITE_ORG' }, autoFilter: true, visible:false },
     {
@@ -78,19 +67,6 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
     },
 		{ name: '제품명', fieldName: '제품명', width: '150', header: { text: '제품명' }, autoFilter: true },
 		{ name: '제품번호', fieldName: '제품번호', width: '150', header: { text: '제품번호' }, autoFilter: true },

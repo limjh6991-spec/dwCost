@@ -11,7 +11,7 @@ const grid = {
     edit: { editable: true, columnEditableFirst: true, commitByCell: true, commitWhenLeave: true },
     footer: { visible: false },
     header: { height: 40, showTooltip: true, tooltipEllipsisOnly: true },
-    hideDeletedRows: true,
+    hideDeletedRows: false,
     paste: { enabled: true, checkReadOnly: true },
     rowIndicator: { visible: true },
     sorting: { enabled: false },
@@ -51,17 +51,6 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-        return ret;
-      },
     },
         {
       name: 'selCode',
@@ -71,17 +60,6 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-        return ret;
-      },
     },
     { name: 'siteOrg', fieldName: 'siteOrg', width: '0', header: { text: 'SITE_ORG' }, autoFilter: true, visible: false, editable: false, styleName: 'tl' },
     {
@@ -92,17 +70,6 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-        return ret;
-      },
     },
     { name: 'acctClassOrg', fieldName: 'acctClassOrg', width: '0', header: { text: 'ACCT_CLASS_ORG' }, autoFilter: true, visible: false, editable: false, styleName: 'tl' },
     { name: 'acctClass', fieldName: 'acctClass', width: '100', header: { text: '원가항목' }, autoFilter: true, styleName: 'edit tl' },
