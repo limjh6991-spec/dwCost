@@ -20,7 +20,7 @@ const grid = {
   fields: [
     { fieldName: 'yyyymm', dataType: ValueType.TEXT },
     { fieldName: 'selCode', dataType: ValueType.TEXT },
-    { fieldName: 'dwSiteOrg', dataType: ValueType.TEXT },
+    { fieldName: 'siteOrg', dataType: ValueType.TEXT },
     { fieldName: 'site', dataType: ValueType.TEXT },
     { fieldName: '구분', dataType: ValueType.TEXT },
     { fieldName: '구분Ord', dataType: ValueType.TEXT },
@@ -43,13 +43,12 @@ const grid = {
     { fieldName: 'shippingPlanMonth', dataType: ValueType.NUMBER },
     { fieldName: 'shippingActualMonth', dataType: ValueType.NUMBER },
     { fieldName: 'materialLoss', dataType: ValueType.NUMBER },
-    { fieldName: 'recallLoss', dataType: ValueType.NUMBER },
   ],
 
   columns: [
     { name: 'yyyymm', fieldName: 'yyyymm', width: '80', header: { text: 'YYYYMM' }, autoFilter: true, styleName: 'tl' },
     { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'tl' },
-    { name: 'dwSiteOrg', fieldName: 'dwSiteOrg', width: '0', header: { text: 'DW_SITE_ORG' }, autoFilter: true, visible: false, styleName: 'tl' },
+    { name: 'siteOrg', fieldName: 'siteOrg', width: '0', header: { text: 'SITE_ORG' }, autoFilter: true, visible: false, styleName: 'tl' },
     { name: 'site', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true, styleName: 'tl' },
     { name: '구분', fieldName: '구분', width: '80', header: { text: '구분' }, autoFilter: true, styleName: 'tl' },
     { name: '구분Ord', fieldName: '구분Ord', width: '100', header: { text: '구분_ORD' }, autoFilter: true, styleName: 'tl' },
@@ -72,7 +71,6 @@ const grid = {
     { name: 'shippingPlanMonth', fieldName: 'shippingPlanMonth', width: '190', header: { text: 'SHIPPING_PLAN_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'shippingActualMonth', fieldName: 'shippingActualMonth', width: '210', header: { text: 'SHIPPING_ACTUAL_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'materialLoss', fieldName: 'materialLoss', width: '130', header: { text: 'MATERIAL_LOSS' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'recallLoss', fieldName: 'recallLoss', width: '130', header: { text: 'RECALL_LOSS' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };
 

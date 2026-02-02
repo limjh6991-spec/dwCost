@@ -69,7 +69,7 @@ export default {
         HQ: 'HQ',
         VN: 'VN',
       },
-      duplicateKey: ['yyyymm', 'selCode', 'dwSite', '도우코드', 'modelNType'],
+      duplicateKey: ['yyyymm', 'selCode', 'site', '도우코드'],
       isValidateCellRndSubGrid: false,
     };
   },
@@ -154,7 +154,32 @@ export default {
       if (!this.gridView || !this.gridDataProvider) return;
 
       this.gridView.commit();
-      this.gridDataProvider.addRow({ yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, dwSite: this.params.site });
+      this.gridDataProvider.addRow({
+        yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
+        selCode: 'ACTUAL', 
+        site: this.params.site,
+        구분: null,
+        구분Ord: null,
+        도우코드: null,
+        도우모델: null,
+        작업구분: null,
+        org작업구분: null,
+        model: null,
+        inch: null,
+        dwSite: null,
+        bohMonth: 0,
+        inMonth: 0,
+        bonusMonth: 0,
+        eohMonth: 0,
+        outMonth: 0,
+        lossMonth: 0,
+        ngMonth: 0,
+        수율제외Month: 0,
+        rework진행Month: 0,
+        shippingPlanMonth: 0,
+        shippingActualMonth: 0,
+        materialLoss: 0
+      });
       let itemIndex = this.gridView.getItemCount() - 1;
       this.gridView.setCurrent({ itemIndex: itemIndex });
     },
@@ -217,14 +242,14 @@ export default {
       let error = {};
       if (!this.isValidateCellRndSubGrid) return error;
 
-      if (this.$utils.containsValue(['yyyymm', 'selCode', 'dwSite', '구분', '구분Ord', '도우코드', 'modelNType', 'model', 'inch', 'site', 'bohMonth', 'bonusMonth', 'eohMonth', 'shippingPlanMonth', 'shippingActualMonth', 'materialLoss'], column.fieldName)) {
+      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', '구분', '구분Ord', '도우코드', 'model', 'inch', 'dwSite'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';
         }
       }
 
-      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'selCode', 'dwSite', '도우코드', 'modelNType'], column.fieldName)) {
+      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'selCode', 'site', '도우코드'], column.fieldName)) {
         error.level = 'warning';
         error.message = '중복 입력입니다.';
       }
@@ -258,7 +283,7 @@ export default {
       this.$refs.uploadPopup1.openDialog({
         dialogTitle: '업로드 팝업',
         uploadApi: '/api/c0007000/c0007003/tab2Upload',
-        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10', 'field11', 'field12', 'field13', 'field14', 'field15', 'field16', 'field17', 'field18', 'field19', 'field20', 'field21', 'field22', 'field23', 'field24', 'field25', 'field26'],
+        headers: ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8', 'field9', 'field10', 'field11', 'field12', 'field13', 'field14', 'field15', 'field16', 'field17', 'field18', 'field19', 'field20', 'field21', 'field22', 'field23', 'field24', 'field25'],
         excelGrid,
         fileName: '부서별_계정별_비용_template',
       });
