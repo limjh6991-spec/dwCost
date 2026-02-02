@@ -5,10 +5,16 @@
       <b-row class="search_area">
         <b-col cols="1" class="period">
           <div class="form-floating me-1">
-            <date-picker label="연도" mode="year" v-model="params.yyyymm" />
+            <date-picker label="연도" mode="year" v-model="params.year" />
             <label for="floatingSelect" class="select">년도</label>
           </div>
         </b-col>
+          <b-col cols="1" class="period">
+            <div class="form-floating me-1">
+              <b-form-select v-model="params.month" :options="monthOptions" class="form-control" style="padding-left: 60px; min-width: 150px;" />
+              <label for="floatingSelect" class="select">기준월</label>
+            </div>
+          </b-col>
         <b-col cols="2" class="ms-3">
           <div class="form-floating">
             <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" :disabled="true" />
@@ -52,9 +58,37 @@ export default {
   data() {
     return {
       prodSubulGrid: null,
+      prodSubulDtlGrid: null,      
       prodSubulGridRows: [],
+
+      yearSelected: false,
+      syncingYearToMonth: false,
+      isInitializing: true,
+
+      yearRowsCache: [],
+      yearCacheKey: null,
+      
+      monthOptions: [
+        { value: null, text: '전체' },
+        { value: '01', text: '1월' },
+        { value: '02', text: '2월' },
+        { value: '03', text: '3월' },
+        { value: '04', text: '4월' },
+        { value: '05', text: '5월' },
+        { value: '06', text: '6월' },
+        { value: '07', text: '7월' },
+        { value: '08', text: '8월' },
+        { value: '09', text: '9월' },
+        { value: '10', text: '10월' },
+        { value: '11', text: '11월' },
+        { value: '12', text: '12월' },
+      ],
+
       params: {
+        year: null,
+        month: null,
         yyyymm: null,
+        viewMode: 'YEAR',
         site: 'HQ',
       },
       siteMap: {
@@ -66,17 +100,46 @@ export default {
     };
   },
    watch: {
-    'params.yyyymm': function(newVal) {
-      if (newVal) {
-        this.onDateChange();
-      }
-    },
-    'srchInfo.yyyymm': {
-      handler(newVal) {
-        if (newVal) {
-          this.params.yyyymm = newVal;
+    'params.year': function(newVal) {
+        if (!newVal) {
+          this.yearSelected = false;
+          this.params.month = null;
+          this.params.yyyymm = null;
+          this.params.viewMode = 'YEAR';
+
+          return;
         }
-      },
+
+        if (!this.isInitializing) {
+          this.yearSelected = true;
+        }
+
+        const yyyy = String(newVal);
+
+        if (this.params.month) {
+          const mm = String(this.params.month);
+          this.params.yyyymm = `${yyyy}${mm}`;
+          this.params.viewMode = 'MONTH';
+        } else {
+          this.params.yyyymm = null;
+          this.params.viewMode = 'YEAR';
+        }
+        
+        this.clearYearCache();
+    },
+    'params.month': function(newVal) {
+        if (!newVal) {
+          this.params.yyyymm = null;
+          this.params.viewMode = 'YEAR';
+          return;
+        }
+
+        if (!this.isInitializing) {
+          const yyyy = String(this.params.year);
+          const mm = String(newVal);
+          this.params.yyyymm = `${yyyy}${mm}`;
+          this.params.viewMode = 'MONTH';
+        }
     },
     prodCtg: {
       handler(newVal) {
@@ -91,6 +154,15 @@ export default {
     },
   },
   computed: {
+    showMonth() {
+      return this.yearSelected;
+    },
+    activeGrid() {
+      return this.params.viewMode === 'MONTH' ? this.manuCostDtlGrid : this.manuCostGrid;
+    },
+    gridKey() {
+      return this.params.viewMode === 'MONTH' ? 'MONTH' : 'YEAR';
+    },
     gridView() {
       return this.$refs.prodSubulGrid.getGridView();
     },
@@ -102,8 +174,12 @@ export default {
     },
   },
   created() {
+    this.isInitializing = true;
     this.initialize();
     this.initializeGrid();
+    this.$nextTick(() => {
+      this.isInitializing = false;
+    });
   },
   mounted() {
      const gv = this.gridView;
@@ -180,8 +256,68 @@ export default {
   beforeUnmount() {},
   methods: {
     initialize() {
-      this.params.yyyymm = this.srchInfo.yyyymm;
+      const baseYyyymm = this.srchInfo.yyyymm;
+      const defaultYear = baseYyyymm 
+        ? String(baseYyyymm).substring(0, 4) 
+        : String(new Date().getFullYear());
+
+      this.params.year = defaultYear;
+      this.params.month = null;
+      this.params.yyyymm = null;
+      this.params.viewMode = 'YEAR';
+
+      this.yearSelected = false;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
+    },
+    clearYearCache() {
+      this.yearRowsCache = [];
+      this.yearCacheKey = null;
+    },
+    parseMonthNumber(monthText) {
+      const m = String(monthText || '').match(/(\d{1,2})\s*월/);
+      if (!m) return null;
+      const mm = Number(m[1]);
+      return mm >= 1 && mm <= 12 ? mm : null;
+    },
+    async fetchYearRowsIfNeeded() {
+      const yyyy = this.params.year;
+      const site = this.params.site != null ? this.siteMap[this.params.site] : null;
+      const key = `${yyyy}|${site || ''}`;
+
+      if (this.yearCacheKey === key && Array.isArray(this.yearRowsCache) && this.yearRowsCache.length) {
+        return this.yearRowsCache;
+      }
+
+      const param = {
+        menuId: 'c0009000',
+        queryId: 'C0009001_Tab090001',
+        queryParams: { yyyy, site },
+        target: [],
+      };
+
+      const resp = await this.$axios.api.search(param);
+
+      let rows = [];
+      if (resp && resp.data) {
+        rows = Array.isArray(resp.data) ? resp.data : (resp.data.rows || []);
+      } else if (Array.isArray(resp)) {
+        rows = resp;
+      }
+
+      rows = rows.map(r => {
+        if (r == null) return r;
+        if ('YYYYMM' in r || 'yyyymm' in r) return r;
+
+        const mm = this.parseMonthNumber(r['월']);
+        if (!mm) return r;
+
+        const yyyymm = `${this.params.year}${String(mm).padStart(2, '0')}`;
+        return { ...r, YYYYMM: yyyymm };
+      });
+
+      this.yearRowsCache = rows;
+      this.yearCacheKey = key;
+      return rows;
     },
     initializeGrid() {
       this.prodSubulGrid = _.cloneDeep(gridField);
@@ -192,29 +328,24 @@ export default {
     async getDataList() {
       this.gridView.commit();
 
-      let params = {
-        yyyy: this.params.yyyymm.substring(0, 4),
-        site: this.params.site != null ? this.siteMap[this.params.site] : null,
-      };
+      const yearRows = await this.fetchYearRowsIfNeeded();
 
-      let param = {
-        menuId: 'c0009000',
-        queryId: 'C0009001_Tab090001',
-        queryParams: params,
-        target: this.prodSubulGridRows,
-      };
-      let resp = await this.$axios.api.search(param);
-
-      let rows = [];
-      if (resp && resp.data) {
-        rows = Array.isArray(resp.data) ? resp.data : resp.data.rows || [];
-      } else if (Array.isArray(resp)) {
-        rows = resp;
+      if (this.params.viewMode === 'YEAR') {
+        // 연도 전체 조회 - 당해 총 생산실적
+        this.prodSubulGridRows = this.buildProdSubulRows(yearRows, false);
+        return;
       }
-      
-      this.prodSubulGridRows = this.buildProdSubulRows(rows);
+
+      // 특정 월 조회 - 당월 총 생산실적
+      const selectedYYYYMM = String(this.params.yyyymm || '');
+      const filtered = yearRows.filter(r => {
+        const rowYYYYMM = String(r['YYYYMM'] || r['yyyymm'] || '');
+        return rowYYYYMM === selectedYYYYMM;
+      });
+
+      this.prodSubulGridRows = this.buildProdSubulRows(filtered, true);
     },
-    buildProdSubulRows(rows) {
+    buildProdSubulRows(rows, isMonthView = false) {
       if (!Array.isArray(rows) || rows.length === 0) return [];
 
       const num = (v) => {
@@ -222,8 +353,11 @@ export default {
         return Number.isFinite(n) ? n : 0;
       };
 
-      const numberCols = ['계획', '실적', 'boh', 'in', 'out', 'loss', 'eoh'];
-      const baseRows = rows.filter(r => (r['월'] || '') !== '당월 총 생산실적');
+      const numberCols = ['계획', '실적', 'boh', 'in', 'out', 'loss', 'eoh', 'outEtc'];
+      const baseRows = rows.filter(r => {
+        const monthVal = r['월'] || '';
+        return monthVal !== '당월 총 생산실적' && monthVal !== '당해 총 생산실적';
+      });
 
       const createSumRow = () =>
         numberCols.reduce((acc, c) => ((acc[c] = 0), acc), {});
@@ -234,18 +368,21 @@ export default {
         });
       };
 
-      const monthTotalSum = createSumRow();
-      baseRows.forEach(r => accumulate(monthTotalSum, r));
+      const totalSum = createSumRow();
+      baseRows.forEach(r => accumulate(totalSum, r));
 
-      const monthTotalRow = {
+      // 월 선택 여부에 따라 표기 변경
+      const totalLabel = isMonthView ? '당월 총 생산실적' : '당해 총 생산실적';
+
+      const totalRow = {
         rowType: 'TOTAL',
         totalKind: 'MONTH_TOTAL',
-        구분: '당월 총 생산실적',
+        구분: totalLabel,
         모델: '',
         inch: '',
         판매처: '',
-        월: '당월 총 생산실적',
-        ...monthTotalSum,
+        월: totalLabel,
+        ...totalSum,
         mergeKey: 'TOTAL|MONTH',
         mergeKeyGubun: 'TOTAL|MONTH',
       };
@@ -266,6 +403,12 @@ export default {
       Object.keys(groupMap).forEach((g) => {
         if (!orderedGubuns.includes(g)) orderedGubuns.push(g);
       });
+
+      // 월 병합 처리: 연도 조회시에는 월별로 구분, 월 조회시에는 동일 mergeKey
+      const getMonthKey = (r) => {
+        if (isMonthView) return '';
+        return r['월'] || r['YYYYMM'] || r['yyyymm'] || '';
+      };
 
       const createSubtotal = (groupName) => ({
         rowType: 'SUBTOTAL',
@@ -293,6 +436,7 @@ export default {
             r['모델'] || r['model'] || '',
             r['inch'] || r['Inch'] || '',
             r['판매처'] || r['DW_SITE'] || r['dwSite'] || r['DW_Site'] || '',
+            getMonthKey(r),
           ].join('|');
 
           if (prodKey !== lastKey) {
@@ -350,7 +494,7 @@ export default {
         });
       }
 
-      return [monthTotalRow, ...result];
+      return [totalRow, ...result];
     },
 
     accumulateRow(target, source, numberCols) {

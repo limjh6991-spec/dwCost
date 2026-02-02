@@ -18,7 +18,7 @@ const tab090001GridField = {
       showEmptyMessage: true,
      },
     footer: { visible: true },
-    filtering: { enabled: false },
+    filtering: { enabled: true },
   },  
   fields: [
     { fieldName: '구분', dataType: ValueType.TEXT },
@@ -85,7 +85,7 @@ const tab090001GridField = {
     },
     { name: "rowType", fieldName: "rowType", visible: false },
     { name: "totalKind", fieldName: "totalKind", visible: false },    
-    { name: '월', fieldName: '월', width: 60, header: { text: '월' }, autoFilter: false, styleName: 'tc' },    
+    { name: '월', fieldName: '월', width: 60, header: { text: '월' }, autoFilter: true, styleName: 'tc' },    
     {
       name: '계획',
       fieldName: '계획',
@@ -118,6 +118,7 @@ const tab090001GridField = {
       header: { text: 'BOH' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: 'in',
@@ -126,6 +127,7 @@ const tab090001GridField = {
       header: { text: 'IN' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: 'out',
@@ -134,6 +136,7 @@ const tab090001GridField = {
       header: { text: 'OUT' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: 'loss',
@@ -142,6 +145,7 @@ const tab090001GridField = {
       header: { text: 'LOSS' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: 'eoh',
@@ -150,6 +154,7 @@ const tab090001GridField = {
       header: { text: 'EOH' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: 'outEtc',
@@ -158,6 +163,7 @@ const tab090001GridField = {
       header: { text: 'OUT_ETC' },
       styleName: 'tr',
       numberFormat: '#,##0',
+      footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
     },
     {
       name: '불량률',
