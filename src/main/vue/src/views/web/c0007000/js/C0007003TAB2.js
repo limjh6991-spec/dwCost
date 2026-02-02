@@ -3,6 +3,31 @@
  */
 const { ValueType } = require('realgrid');
 
+function isNewRow(dataCell) {
+  return dataCell.item &&
+    (dataCell.item.rowState === 'created' ||
+     dataCell.item.itemState === 'appending' ||
+     dataCell.item.itemState === 'inserting');
+}
+
+// 고정 컬럼
+function readOnly(styleName = 'tl') {
+  return function () {
+    return { editable: false, styleName };
+  };
+}
+
+// 추가 행 편집 스타일
+function addNewRow(styleName = 'edit tl') {
+  return function (grid, dataCell) {
+    const canEdit = isNewRow(dataCell);
+    return {
+      editable: canEdit,
+      styleName: canEdit ? `edit ${styleName}` : styleName,
+    };
+  };
+}
+
 const grid = {
   options: {
     checkBar: { visible: true, exclusive: false, syncHeadCheck: true },
@@ -10,7 +35,7 @@ const grid = {
     display: { columnMovable: false, editItemMerging: true, fitStyle: 'fill', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
     edit: { editable: true, columnEditableFirst: true, commitByCell: true, commitWhenLeave: true },
     footer: { visible: false },
-    hideDeletedRows: true,
+    hideDeletedRows: false,
     paste: { enabled: true, checkReadOnly: true },
     rowIndicator: { visible: true },
     sorting: { enabled: false },
@@ -54,17 +79,7 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-        return ret;
-      },
+      styleCallback: readOnly('tl')
     },
     {
       name: 'selCode',
@@ -74,17 +89,7 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-        return ret;
-      },
+      styleCallback: readOnly('tl')
     },
     { name: 'siteOrg', fieldName: 'siteOrg', width: '0', header: { text: 'SITE_ORG' }, autoFilter: true, visible: false, editable: false, styleName: 'tl' },
     {
@@ -95,20 +100,10 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-        return ret;
-      },
+      styleCallback: readOnly('tl')
     },
-    { name: '구분', fieldName: '구분', width: '80', header: { text: '구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: '구분Ord', fieldName: '구분Ord', width: '100', header: { text: '구분_ORD' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: '구분', fieldName: '구분', width: '80', header: { text: '구분' }, autoFilter: true, editable: false, styleName: 'tl', styleCallback: readOnly('tl') },
+    { name: '구분Ord', fieldName: '구분Ord', width: '100', header: { text: '구분_ORD' }, autoFilter: true, editable: false, styleName: 'tl', styleCallback: readOnly('tl') },
     {
       name: '도우코드',
       fieldName: '도우코드',
@@ -117,17 +112,7 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-        return ret;
-      },
+      styleCallback: readOnly('tl')
     },
     // {
     //   name: 'modelNType',
@@ -149,24 +134,24 @@ const grid = {
     //     return ret;
     //   },
     // },
-    { name: '도우모델', fieldName: '도우모델', width: '120', header: { text: '도우모델' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: '작업구분', fieldName: '작업구분', width: '120', header: { text: '작업구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'org작업구분', fieldName: 'org작업구분', width: '150', header: { text: 'ORG작업구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'model', fieldName: 'model', width: '80', header: { text: 'MODEL' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'inch', fieldName: 'inch', width: '80', header: { text: 'Inch' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'dwSite', fieldName: 'dwSite', width: '80', header: { text: 'Site' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'bohMonth', fieldName: 'bohMonth', width: '90', header: { text: 'BOH_MONTH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##' },
-    { name: 'inMonth', fieldName: 'inMonth', width: '80', header: { text: 'IN_MONTH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
-    { name: 'bonusMonth', fieldName: 'bonusMonth', width: '110', header: { text: 'BONUS_MONTH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
-    { name: 'eohMonth', fieldName: 'eohMonth', width: '90', header: { text: 'EOH_MONTH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##' },
-    { name: 'outMonth', fieldName: 'outMonth', width: '90', header: { text: 'OUT_MONTH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
-    { name: 'lossMonth', fieldName: 'lossMonth', width: '100', header: { text: 'LOSS_MONTH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
-    { name: 'ngMonth', fieldName: 'ngMonth', width: '80', header: { text: 'NG_MONTH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
-    { name: '수율제외Month', fieldName: '수율제외Month', width: '180', header: { text: '수율제외_MONTH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
-    { name: 'rework진행Month', fieldName: 'rework진행Month', width: '180', header: { text: 'REWORK진행_MONTH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
-    { name: 'shippingPlanMonth', fieldName: 'shippingPlanMonth', width: '190', header: { text: 'SHIPPING_PLAN_MONTH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
-    { name: 'shippingActualMonth', fieldName: 'shippingActualMonth', width: '210', header: { text: 'SHIPPING_ACTUAL_MONTH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
-    { name: 'materialLoss', fieldName: 'materialLoss', width: '130', header: { text: 'MATERIAL_LOSS' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
+    { name: '도우모델', fieldName: '도우모델', width: '120', header: { text: '도우모델' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '작업구분', fieldName: '작업구분', width: '120', header: { text: '작업구분' }, autoFilter: true, editable: false, styleName: 'tl', styleCallback: readOnly('tl') },
+    { name: 'org작업구분', fieldName: 'org작업구분', width: '150', header: { text: 'ORG작업구분' }, autoFilter: true, editable: false, styleName: 'tl', styleCallback: readOnly('tl') },
+    { name: 'model', fieldName: 'model', width: '80', header: { text: 'MODEL' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: 'inch', fieldName: 'inch', width: '80', header: { text: 'Inch' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: 'dwSite', fieldName: 'dwSite', width: '80', header: { text: 'Site' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: 'bohMonth', fieldName: 'bohMonth', width: '90', header: { text: 'BOH_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0.##', styleCallback: addNewRow('tr') },
+    { name: 'inMonth', fieldName: 'inMonth', width: '80', header: { text: 'IN_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr') },
+    { name: 'bonusMonth', fieldName: 'bonusMonth', width: '110', header: { text: 'BONUS_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr') },
+    { name: 'eohMonth', fieldName: 'eohMonth', width: '90', header: { text: 'EOH_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0.##', styleCallback: addNewRow('tr') },
+    { name: 'outMonth', fieldName: 'outMonth', width: '90', header: { text: 'OUT_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr') },
+    { name: 'lossMonth', fieldName: 'lossMonth', width: '100', header: { text: 'LOSS_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr') },
+    { name: 'ngMonth', fieldName: 'ngMonth', width: '80', header: { text: 'NG_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr') },
+    { name: '수율제외Month', fieldName: '수율제외Month', width: '180', header: { text: '수율제외_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr') },
+    { name: 'rework진행Month', fieldName: 'rework진행Month', width: '180', header: { text: 'REWORK진행_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr') },
+    { name: 'shippingPlanMonth', fieldName: 'shippingPlanMonth', width: '190', header: { text: 'SHIPPING_PLAN_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr') },
+    { name: 'shippingActualMonth', fieldName: 'shippingActualMonth', width: '210', header: { text: 'SHIPPING_ACTUAL_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr') },
+    { name: 'materialLoss', fieldName: 'materialLoss', width: '130', header: { text: 'MATERIAL_LOSS' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr') },
   ],
 };
 

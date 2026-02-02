@@ -35,6 +35,7 @@
       </div>
     </div>
     <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
+    <CmDialog1 ref="cmDialog1C0007003" @confirm="prodGubunConfirm" /> 
   </div>
 </template>
 
@@ -71,6 +72,8 @@ export default {
       },
       duplicateKey: ['yyyymm', 'selCode', 'site', '도우코드'],
       isValidateCellRndSubGrid: false,
+      // 작업구분 팝업용
+      selectedRowIndex: null,
     };
   },
   watch: {
@@ -115,6 +118,10 @@ export default {
     this.params.yyyymm = this.srchInfo.yyyymm;
     this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     this.$nextTick(() => {
+      // gridView에 직접 이벤트 바인딩
+      if (this.gridView) {
+        this.gridView.onCellClicked = this.onCellClicked;
+      }
       this.searchClick();
     });
   },
@@ -157,16 +164,12 @@ export default {
       this.gridDataProvider.addRow({
         yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
         selCode: 'ACTUAL', 
-        site: this.params.site,
-        구분: null,
-        구분Ord: null,
-        도우코드: null,
-        도우모델: null,
-        작업구분: null,
-        org작업구분: null,
-        model: null,
-        inch: null,
-        dwSite: null,
+        site: this.siteMap[this.params.site] || this.params.site,
+        // 필수 필드 기본값
+        model: '',
+        inch: '',
+        dwSite: '',
+        // MONTH 컬럼들 기본값 0
         bohMonth: 0,
         inMonth: 0,
         bonusMonth: 0,
@@ -178,7 +181,7 @@ export default {
         rework진행Month: 0,
         shippingPlanMonth: 0,
         shippingActualMonth: 0,
-        materialLoss: 0
+        materialLoss: 0,
       });
       let itemIndex = this.gridView.getItemCount() - 1;
       this.gridView.setCurrent({ itemIndex: itemIndex });
@@ -194,17 +197,38 @@ export default {
         let delItems = [];
         checkedRows.forEach((itemIndex) => {
           if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
+            // 신규 행은 화면에서 제거
             delItems.push(itemIndex);
           } else {
+            // 기존 행은 DELETED 상태로 변경 (화면에 -아이콘으로 표시)
             this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
           }
         });
-        this.gridDataProvider.removeRows(delItems);
+        // 신규 행만 제거
+        if (delItems.length > 0) {
+          this.gridDataProvider.removeRows(delItems);
+        }
+        // 체크 해제
+        this.gridView.setAllCheck(false);
       }
     },
     async saveBtnClick() {
       if (!this.gridView || !this.gridDataProvider) return;
       this.gridView.commit();
+
+      // 저장 전 MONTH 검증
+      const validationResult = this.validateMonthData();
+      if (!validationResult.valid) {
+        this.$toast('warning', validationResult.message);
+        return;
+      }
+
+      // 중복 검증
+      const duplicateResult = this.validateDuplicate();
+      if (!duplicateResult.valid) {
+        this.$toast('warning', duplicateResult.message);
+        return;
+      }
 
       let saveData = this.$refs.rndSubGrid.getSaveData();
       if (saveData.count <= 0) {
@@ -242,7 +266,7 @@ export default {
       let error = {};
       if (!this.isValidateCellRndSubGrid) return error;
 
-      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', '구분', '구분Ord', '도우코드', 'model', 'inch', 'dwSite'], column.fieldName)) {
+      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site','도우모델'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';
@@ -290,6 +314,253 @@ export default {
     },
     closePopup() {
       this.searchClick();
+    },
+    // 그리드 셀 클릭 이벤트
+    onCellClicked(grid, clickData) {
+      if (clickData.cellType !== 'data') return;
+
+      const fieldName = clickData.fieldName;
+      const itemIndex = clickData.itemIndex;
+
+      // 작업구분 셀 클릭 시 팝업 열기
+      if (fieldName === '작업구분') {
+        if (grid.isEditing()) {
+          try {
+            grid.commit(true);
+          } catch (e) {
+            try {
+              grid.cancel();
+            } catch (e2) {}
+          }
+        }
+
+        if (itemIndex == null || itemIndex < 0) return;
+
+        // 도우모델 입력 여부 확인
+        const 도우모델 = this.gridDataProvider.getValue(itemIndex, '도우모델');
+        if (!도우모델 || 도우모델.trim() === '') {
+          this.$toast('warning', '도우모델을 먼저 입력해주세요.');
+          return;
+        }
+
+        // 도우모델 자리수 확인 (4~5자리)
+        const 도우모델Length = 도우모델.trim().length;
+        if (도우모델Length < 4 || 도우모델Length > 5) {
+          this.$toast('warning', '도우모델은 4~5자리로 입력해주세요.');
+          return;
+        }
+
+        this.selectedRowIndex = itemIndex;
+        this.openProdGubunPopup();
+      }
+    },
+    // 작업구분 팝업 열기
+    openProdGubunPopup() {
+      const params = {
+        dialogTitle: '작업구분 선택',
+        popUpSize: 'sm',
+        step: 7,
+        height: 400,
+        gridJs: 'TAB070002Popup.js',
+        search: {
+          menuId: 'c0007003',
+          queryId: 'selectProdGubunPopup',
+          queryParams: {},
+        },
+        showButton: false,
+        confirmOnEnter: true,
+      };
+
+      this.$refs.cmDialog1C0007003.openDialog(params);
+
+      this.$nextTick(() => {
+        setTimeout(() => {
+          const dialog = this.$refs.cmDialog1C0007003;
+          const gridWrapper = dialog?.$refs?.cmDialog1Grid;
+
+          const gridView = gridWrapper?.getGridView?.();
+          const dp = gridWrapper?.getGridDataProvider?.();
+
+          if (!gridView || !dp) {
+            return;
+          }
+
+          // 팝업 그리드 더블클릭 시 값 적용
+          gridView.onCellDblClicked = (grid, clickData) => {
+            if (clickData.cellType !== 'data') return;
+
+            if (grid.isEditing()) {
+              try {
+                grid.commit(true);
+              } catch (e) {
+                try {
+                  grid.cancel();
+                } catch (e2) {}
+              }
+            }
+
+            const row = dp.getJsonRow(clickData.dataRow);
+            if (!row) return;
+
+            this.applyProdGubunFromPopup(row);
+
+            if (typeof dialog.closeDialog === 'function') dialog.closeDialog();
+            else if (typeof dialog.hide === 'function') dialog.hide();
+            else if (typeof dialog.close === 'function') dialog.close();
+          };
+        }, 50);
+      });
+    },
+    // 팝업 확인 버튼 클릭 시
+    prodGubunConfirm(params) {
+      if (params.gridJs !== 'TAB070002Popup.js') return;
+
+      const gridView = params.gridView;
+      const dp = params.dataProvider;
+
+      if (!gridView || !dp) {
+        this.$toast('error', '그리드 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      if (gridView.isEditing()) {
+        try {
+          gridView.commit(true);
+        } catch (e) {
+          try {
+            gridView.cancel();
+          } catch (e2) {}
+        }
+      }
+
+      const checked = gridView.getCheckedRows(true);
+      if (!checked || checked.length === 0) {
+        // 체크된 행이 없으면 현재 선택된 행 사용
+        const current = gridView.getCurrent();
+        if (current && current.dataRow >= 0) {
+          const row = dp.getJsonRow(current.dataRow);
+          this.applyProdGubunFromPopup(row);
+        } else {
+          this.$toast('info', '선택된 항목이 없습니다.');
+        }
+        return;
+      }
+
+      const row = dp.getJsonRow(checked[0]);
+      this.applyProdGubunFromPopup(row);
+    },
+    // 팝업에서 선택한 값 적용 (괄호 안 알파벳만 추출)
+    applyProdGubunFromPopup(row) {
+      const codeName = row['codeName'];
+      if (!codeName) {
+        this.$toast('error', '작업구분 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      if (!this.gridDataProvider || this.selectedRowIndex == null) {
+        this.$toast('error', '대상 행 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      // 괄호 안의 알파벳만 추출: "(P)xxx" -> "P"
+      const match = codeName.match(/^\(([A-Za-z])\)/);
+      const extractedValue = match ? match[1] : codeName;
+
+      // 작업구분에 알파벳 값 설정
+      this.gridDataProvider.setValue(this.selectedRowIndex, '작업구분', extractedValue);
+      // org작업구분에도 같은 알파벳 값 설정
+      this.gridDataProvider.setValue(this.selectedRowIndex, 'org작업구분', extractedValue);
+      
+      // P면 '양산', 아니면 '개발'
+      const gubun = extractedValue === 'P' ? '양산' : '개발';
+      this.gridDataProvider.setValue(this.selectedRowIndex, '구분', gubun);
+      
+      // P면 '1', 아니면 '2'
+      const gubunOrd = extractedValue === 'P' ? '1' : '2';
+      this.gridDataProvider.setValue(this.selectedRowIndex, '구분Ord', gubunOrd);
+
+      // 도우모델 + 작업구분 = 도우코드
+      const 도우모델 = this.gridDataProvider.getValue(this.selectedRowIndex, '도우모델');
+      if (도우모델) {
+        const 도우코드 = 도우모델.trim() + extractedValue;
+        this.gridDataProvider.setValue(this.selectedRowIndex, '도우코드', 도우코드);
+      }
+
+      this.selectedRowIndex = null;
+    },
+    // MONTH 데이터 검증: BOH + IN = EOH + OUT + LOSS, 모두 0인지 체크
+    validateMonthData() {
+      const rowCount = this.gridDataProvider.getRowCount();
+      
+      for (let i = 0; i < rowCount; i++) {
+        const rowState = this.gridDataProvider.getRowState(i);
+        // 신규 또는 수정된 행만 검증
+        if (rowState !== 'created' && rowState !== 'updated') continue;
+
+        const bohMonth = Number(this.gridDataProvider.getValue(i, 'bohMonth')) || 0;
+        const inMonth = Number(this.gridDataProvider.getValue(i, 'inMonth')) || 0;
+        const eohMonth = Number(this.gridDataProvider.getValue(i, 'eohMonth')) || 0;
+        const outMonth = Number(this.gridDataProvider.getValue(i, 'outMonth')) || 0;
+        const lossMonth = Number(this.gridDataProvider.getValue(i, 'lossMonth')) || 0;
+        const 도우코드 = this.gridDataProvider.getValue(i, '도우코드') || `행 ${i + 1}`;
+
+        // 모두 0인 경우 경고
+        if (bohMonth === 0 && inMonth === 0 && eohMonth === 0 && outMonth === 0 && lossMonth === 0) {
+          return {
+            valid: false,
+            message: `[${도우코드}] 수량을 입력해주세요.`
+          };
+        }
+
+        // BOH + IN = EOH + OUT + LOSS 검증
+        const leftSide = bohMonth + inMonth;
+        const rightSide = eohMonth + outMonth + lossMonth;
+        if (leftSide !== rightSide) {
+          return {
+            valid: false,
+            message: `[${도우코드}] BOH_MONTH(${bohMonth}) + IN_MONTH(${inMonth}) = ${leftSide} ≠ EOH_MONTH(${eohMonth}) + OUT_MONTH(${outMonth}) + LOSS_MONTH(${lossMonth}) = ${rightSide}`
+          };
+        }
+      }
+
+      return { valid: true };
+    },
+    // 중복 검증: yyyymm + selCode + site + 도우코드 기준
+    validateDuplicate() {
+      const rowCount = this.gridDataProvider.getRowCount();
+      const keyMap = {};
+
+      for (let i = 0; i < rowCount; i++) {
+        const rowState = this.gridDataProvider.getRowState(i);
+        // 삭제된 행은 제외
+        if (rowState === 'deleted') continue;
+
+        const yyyymm = this.gridDataProvider.getValue(i, 'yyyymm') || '';
+        const selCode = this.gridDataProvider.getValue(i, 'selCode') || '';
+        // site는 화면 표시용 ('본사'/'VINA'), siteOrg는 DB 저장용 ('HQ'/'VN')
+        // 신규 행은 siteOrg가 없으므로 site를 siteMap으로 변환
+        let siteValue = this.gridDataProvider.getValue(i, 'siteOrg') || '';
+        if (!siteValue) {
+          const displaySite = this.gridDataProvider.getValue(i, 'site') || '';
+          siteValue = this.siteMap[displaySite] || displaySite;
+        }
+        const 도우코드 = this.gridDataProvider.getValue(i, '도우코드') || '';
+
+        // 도우코드가 비어있으면 건너뛰기
+        if (!도우코드) continue;
+
+        const key = `${yyyymm}|${selCode}|${siteValue}|${도우코드}`;
+
+        if (keyMap[key] !== undefined) {
+          return {
+            valid: false,
+            message: `[${도우코드}] 중복 입력입니다.`
+          };
+        }
+        keyMap[key] = i;
+      }
+
+      return { valid: true };
     },
   },
 };

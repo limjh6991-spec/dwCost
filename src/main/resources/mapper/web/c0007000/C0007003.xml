@@ -276,4 +276,13 @@
 		;
 	</update>
 
+	<!-- 작업구분 팝업 조회 -->
+	<select id="selectProdGubunPopup" resultType="CamelMap">
+		SELECT code_name 
+		FROM doi_common_code 
+		WHERE maj_code = '31' 
+		AND code NOT IN ('15','02','04')
+		ORDER BY code
+	</select>
+
 </mapper>
