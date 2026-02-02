@@ -10,7 +10,7 @@ const grid = {
     display: { columnMovable: false, editItemMerging: true, fitStyle: 'fill', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
     edit: { editable: true, columnEditableFirst: true, commitByCell: true, commitWhenLeave: true },
     footer: { visible: false },
-    hideDeletedRows: true,
+    hideDeletedRows: false,
     paste: { enabled: true, checkReadOnly: true },
     rowIndicator: { visible: true },
     sorting: { enabled: true },

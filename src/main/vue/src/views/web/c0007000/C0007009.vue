@@ -339,6 +339,7 @@ export default {
         return;
       }
 
+      this.viewGridView.commit();
       const checkedRows = this.viewGridView.getCheckedRows(true);
 
       if (checkedRows.length === 0) {
@@ -346,37 +347,30 @@ export default {
         return;
       }
 
-      const result = confirm(`선택된 ${checkedRows.length}건을 삭제하시겠습니까?`);
-      if (!result) {
-        console.log('❌ 삭제 취소됨');
-        return;
-      }
+      let delItems = [];
+      let deletedCount = 0;
 
-      const deleteData = [];
-
-      checkedRows.forEach(rowIndex => {
-        const rowData = this.viewGridDataProvider.getJsonRow(rowIndex);
-
-        deleteData.push({
-          rowSeq: rowData.rowSeq,
-          yyyymm: rowData.yyyymm,
-          selCode: rowData.selCode,
-          siteOrg: rowData.siteOrg,
-          도우코드: rowData['도우코드'],
-        });
+      checkedRows.forEach((rowIndex) => {
+        const rowState = this.viewGridDataProvider.getRowState(rowIndex);
+        if (rowState === 'created') {
+          // 신규 행은 바로 삭제
+          delItems.push(rowIndex);
+        } else {
+          // 기존 행은 DELETED 상태로 변경 (- 아이콘 표시)
+          this.viewGridDataProvider.setRowState(rowIndex, 'deleted');
+          deletedCount++;
+        }
       });
 
-      this.deletedRows = this.deletedRows.concat(deleteData);
-      this.viewGridDataProvider.removeRows(checkedRows);
-      this.viewGridRows = this.viewGridDataProvider.getJsonRows(
-        0,
-        this.viewGridDataProvider.getRowCount()
-      );
+      // 신규 행만 제거
+      if (delItems.length > 0) {
+        this.viewGridDataProvider.removeRows(delItems);
+      }
 
-      this.$toast(
-        'success',
-        `${deleteData.length}건이 삭제되었습니다.\n"저장" 버튼을 눌러야 최종 삭제됩니다.`
-      );
+      // 기존 행이 삭제 대기 상태로 변경된 경우 메시지 표시
+      if (deletedCount > 0) {
+        this.$toast('info', `${deletedCount}건이 삭제 대기 상태입니다. 저장 버튼을 눌러야 삭제됩니다.`);
+      }
     },
 
     async updateRmaData() {
@@ -484,12 +478,28 @@ export default {
           updateData.push({
             ...base,
             생성자: this.userAuthInfo.userInfo.userName,
-
           });
         }
       }
 
-      const deleteData = this.deletedRows || [];
+      // DELETED 상태인 행 수집
+      const deleteData = [];
+      for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+        const rowState = dp.getRowState(rowIndex);
+        if (rowState === 'deleted') {
+          const rowData = dp.getJsonRow(rowIndex);
+          // rowSeq가 있는 경우만 삭제 (DB에 저장된 행만)
+          if (rowData.rowSeq) {
+            deleteData.push({
+              rowSeq: rowData.rowSeq,
+              yyyymm: rowData.yyyymm,
+              selCode: rowData.selCode,
+              siteOrg: rowData.siteOrg,
+              도우코드: rowData['도우코드'],
+            });
+          }
+        }
+      }
 
       if (insertData.length === 0 && updateData.length === 0 && deleteData.length === 0) {
         this.$toast('info', '추가/수정/삭제할 데이터가 없습니다.');

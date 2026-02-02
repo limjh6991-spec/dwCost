@@ -34,7 +34,7 @@ const viewGrid = {
     edit: { editable: true, insertable: false, appendable: false },
     footer: { visible: true, height: 30 },
     header: { height: 25 },
-    hideDeletedRows: true,
+    hideDeletedRows: false,
     paste: { enabled: false },
     rowIndicator: { visible: true },
     sorting: { enabled: false },
