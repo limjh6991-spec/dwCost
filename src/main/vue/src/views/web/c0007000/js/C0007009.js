@@ -1,8 +1,32 @@
 /*
  * 타시스템 I/F&Upload > 불량반품 - 조회용 그리드
  */
-const { values } = require('lodash');
 const { ValueType } = require('realgrid');
+
+function isNewRow(dataCell) {
+  return dataCell.item &&
+    (dataCell.item.rowState === 'created' ||
+     dataCell.item.itemState === 'appending' ||
+     dataCell.item.itemState === 'inserting');
+}
+
+// 고정 컬럼
+function readOnly(styleName = 'tl') {
+  return function () {
+    return { editable: false, styleName };
+  };
+}
+
+// 추가 행 편집 스타일
+function addNewRow(styleName = 'edit tl') {
+  return function (grid, dataCell) {
+    const canEdit = isNewRow(dataCell);
+    return {
+      editable: canEdit,
+      styleName: canEdit ? `edit ${styleName}` : styleName,
+    };
+  };
+}
 
 const fields = [
   { fieldName: 'rowSeq', dataType: ValueType.NUMBER },
@@ -55,8 +79,8 @@ const viewGrid = {
       width: 80, 
       header: { text: 'YYYYMM' }, 
       autoFilter: true, 
-      styleName: 'tl',
-      editable: false 
+      styleName: 'tc',
+      styleCallback: readOnly('tc'),
     },
     { 
       name: 'selCode', 
@@ -64,8 +88,8 @@ const viewGrid = {
       width: 80, 
       header: { text: 'SEL_CODE' }, 
       autoFilter: true, 
-      styleName: 'tl',
-      editable: false 
+      styleName: 'tc',
+      styleCallback: readOnly('tc'), 
     },
     { 
       name: 'siteOrg', 
@@ -73,8 +97,7 @@ const viewGrid = {
       width: 0, 
       header: { text: 'SITE_ORG' }, 
       visible: false, 
-      styleName: 'tl',
-      editable: false 
+      styleName: 'tc',
     },
     { 
       name: 'site', 
@@ -82,8 +105,8 @@ const viewGrid = {
       width: 80, 
       header: { text: '사이트' }, 
       autoFilter: true, 
-      styleName: 'tl',
-      editable: false 
+      styleName: 'tc',
+      styleCallback: readOnly('tc'),
     },
     { 
       name: '구분', 
@@ -91,15 +114,8 @@ const viewGrid = {
       width: 80, 
       header: { text: '구분' }, 
       autoFilter: true, 
-      styleName: 'tl',
-      editable: true,
-      lookupDisplay: true,
-      editor: {
-        type: 'dropdown',
-        textReadOnly: true,
-        dropDownWhenClick: true,
-        domainOnly: true,
-      },
+      styleName: 'tc',
+      styleCallback: readOnly('tc'),
     },
     { 
       name: '도우코드', 
@@ -107,8 +123,8 @@ const viewGrid = {
       width: 150, 
       header: { text: '도우코드' }, 
       autoFilter: true, 
-      styleName: 'tl cursor-pointer',
-      editable: false 
+      styleName: 'tc',
+      styleCallback: readOnly('tc'),
     },
     { 
       name: 'rmaIn', 
@@ -116,9 +132,9 @@ const viewGrid = {
       width: 120, 
       header: { text: 'RMA_IN' }, 
       autoFilter: true, 
-      styleName: 'tr',
       editable: true,
-      editor: { type: 'number' },
+      styleName: 'tr',
+      styleCallback: addNewRow('tr'),      
       numberFormat: '#,##0',
       footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' }
     },
@@ -128,9 +144,9 @@ const viewGrid = {
       width: 120, 
       header: { text: 'RMA_OUT' }, 
       autoFilter: true, 
-      styleName: 'tr',
       editable: true,
-      editor: { type: 'number' },
+      styleName: 'tr',
+      styleCallback: addNewRow('tr'),
       numberFormat: '#,##0',
       footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' }
     },
@@ -141,9 +157,8 @@ const viewGrid = {
     visible: false,
     header: { text: 'OUT_MONTH' },
     styleName: 'tr',
-    editable: false,
     }
   ],
 };
 
-module.exports = { viewGrid };
+module.exports = viewGrid;

@@ -60,7 +60,7 @@
         (
             #{yyyymm},
             #{selCode},
-            #{site},
+            CASE WHEN #{site}='본사' THEN 'HQ' WHEN #{site}='VINA' THEN 'VN' ELSE LEFT(#{site},2) END,
             #{도우코드},
             #{rmaIn},
             #{rmaOut},
