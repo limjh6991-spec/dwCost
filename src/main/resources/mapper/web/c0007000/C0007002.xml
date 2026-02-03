@@ -324,36 +324,36 @@
 		, #{품번}
 		, #{규격}
 		, #{단위}
-		, #{기초수량}
-		, #{기초금액}
-		, #{입고수량}
-		, #{입고금액}
-		, #{출고수량}
-		, #{출고금액}
-		, #{재고수량}
-		, #{결산후재고수량}
-		, #{차이수량}
-		, #{재고금액}
-		, #{결산후재고금액}
-		, #{차이금액}
-		, #{최종결산월재고단가}
-		, #{생산수량}
-		, #{생산금액}
-		, #{구매수량}
-		, #{구매금액}
-		, #{적송입고수량}
-		, #{적송입고금액}
-		, #{기타입고수량}
-		, #{기타입고금액}
-		, #{판매수량}
-		, #{판매원가}
-		, #{투입수량}
-		, #{투입금액}
-		, #{적송출고수량}
-		, #{적송출고금액}
-		, #{기타출고수량}
-		, #{기타출고금액}
-		);
+		, #{기초수량,jdbcType=NUMERIC}
+		, #{기초금액,jdbcType=NUMERIC}
+		, #{입고수량,jdbcType=NUMERIC}
+		, #{입고금액,jdbcType=NUMERIC}
+		, #{출고수량,jdbcType=NUMERIC}
+		, #{출고금액,jdbcType=NUMERIC}
+		, #{재고수량,jdbcType=NUMERIC}
+		, #{결산후재고수량,jdbcType=NUMERIC}
+		, #{차이수량,jdbcType=NUMERIC}
+		, #{재고금액,jdbcType=NUMERIC}
+		, #{결산후재고금액,jdbcType=NUMERIC}
+		, #{차이금액,jdbcType=NUMERIC}
+		, #{최종결산월재고단가,jdbcType=NUMERIC}
+		, #{생산수량,jdbcType=NUMERIC}
+		, #{생산금액,jdbcType=NUMERIC}
+		, #{구매수량,jdbcType=NUMERIC}
+		, #{구매금액,jdbcType=NUMERIC}
+		, #{적송입고수량,jdbcType=NUMERIC}
+		, #{적송입고금액,jdbcType=NUMERIC}
+		, #{기타입고수량,jdbcType=NUMERIC}
+		, #{기타입고금액,jdbcType=NUMERIC}
+		, #{판매수량,jdbcType=NUMERIC}
+		, #{판매원가,jdbcType=NUMERIC}
+		, #{투입수량,jdbcType=NUMERIC}
+		, #{투입금액,jdbcType=NUMERIC}
+		, #{적송출고수량,jdbcType=NUMERIC}
+		, #{적송출고금액,jdbcType=NUMERIC}
+		, #{기타출고수량,jdbcType=NUMERIC}
+		, #{기타출고금액,jdbcType=NUMERIC}
+		)
 	</insert>
 
 	<delete id="C0007002_Delete1">
@@ -412,6 +412,5 @@
 		and SEL_CODE = #{selCode}
 		and SITE = #{siteOrg}
 		and 품번 = #{품번}
-		;
 	</update>
 </mapper>

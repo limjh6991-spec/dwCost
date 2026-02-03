@@ -70,8 +70,8 @@ const grid = {
       header: { text: 'YYYYMM' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: readOnly('tl')
+      styleName: 'tc',
+      styleCallback: readOnly('tc')
     },
     {
       name: 'SEL_CODE',
@@ -80,8 +80,8 @@ const grid = {
       header: { text: 'SEL_CODE' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: readOnly('tl')
+      styleName: 'tc',
+      styleCallback: readOnly('tc')
     },
     { name: 'SITE_ORG', fieldName: 'siteOrg', width: '0', header: { text: '사이트' }, autoFilter: true, visible: false, editable: false, styleName: 'tl' },
     {
@@ -91,8 +91,8 @@ const grid = {
       header: { text: '사이트' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: readOnly('tl')
+      styleName: 'tc',
+      styleCallback: readOnly('tc')
     },
     {
       name: 'MODEL',
@@ -100,19 +100,19 @@ const grid = {
       width: '90',
       header: { text: 'MODEL' },
       autoFilter: true,
-      styleName: 'tl',
-      styleCallback: addNewRow('tl'),
+      styleName: 'tc',
+      styleCallback: addNewRow('tc'),
     },
-    { name: 'SPEC', fieldName: 'spec', width: '70', header: { text: '규격' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
-    { name: 'INCH', fieldName: 'inch', width: '120', header: { text: '인치' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
-    { name: 'GLASS_THICK', fieldName: 'glassThick', width: '135', header: { text: '두께' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
-    { name: 'SHEET', fieldName: 'sheet', width: '135', header: { text: 'SHEET' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
-    { name: 'BLOCK', fieldName: 'block', width: '70', header: { text: 'BLOCK' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
-    { name: 'CELL', fieldName: 'cell', width: '120', header: { text: 'CELL' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
-    { name: 'RUN_SIZE', fieldName: 'runSize', width: '135', header: { text: 'RUN_SIZE' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
-    { name: 'X', fieldName: 'x', width: '135', header: { text: '가로' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
-    { name: 'Y', fieldName: 'y', width: '135', header: { text: '세로' }, autoFilter: true , styleName: 'tl', styleCallback: addNewRow('tl') },
-    { name: 'XY', fieldName: 'xy', width: '135', header: { text: '면적' }, autoFilter: true, styleName: 'tl', styleCallback: readOnly('tl') },
+    { name: 'SPEC', fieldName: 'spec', width: '200', header: { text: '규격' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: 'INCH', fieldName: 'inch', width: '80', header: { text: '인치' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr') },
+    { name: 'GLASS_THICK', fieldName: 'glassThick', width: '135', header: { text: '두께' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr') },
+    { name: 'SHEET', fieldName: 'sheet', width: '135', header: { text: 'SHEET' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr') },
+    { name: 'BLOCK', fieldName: 'block', width: '70', header: { text: 'BLOCK' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr') },
+    { name: 'CELL', fieldName: 'cell', width: '120', header: { text: 'CELL' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr') },
+    { name: 'RUN_SIZE', fieldName: 'runSize', width: '135', header: { text: 'RUN_SIZE' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr') },
+    { name: 'X', fieldName: 'x', width: '135', header: { text: '가로' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr') },
+    { name: 'Y', fieldName: 'y', width: '135', header: { text: '세로' }, autoFilter: true , styleName: 'tr', styleCallback: addNewRow('tr') },
+    { name: 'XY', fieldName: 'xy', width: '135', header: { text: '면적' }, autoFilter: true, styleName: 'tr', styleCallback: readOnly('tr') },
     { name: 'ADD_YN', fieldName: 'addYn', width: '80', header: { text: 'ADD_YN' }, visible: false, autoFilter: true, styleName: 'tl', styleCallback: readOnly('tl') },
   ],
 };

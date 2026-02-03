@@ -3,11 +3,36 @@
  */
 const { ValueType } = require('realgrid');
 
+function isNewRow(dataCell) {
+  return dataCell.item &&
+    (dataCell.item.rowState === 'created' ||
+     dataCell.item.itemState === 'appending' ||
+     dataCell.item.itemState === 'inserting');
+}
+
+// 고정 컬럼
+function readOnly(styleName = 'tl') {
+  return function () {
+    return { editable: false, styleName };
+  };
+}
+
+// 추가 행 편집 스타일
+function addNewRow(styleName = 'edit tl') {
+  return function (grid, dataCell) {
+    const canEdit = isNewRow(dataCell);
+    return {
+      editable: canEdit,
+      styleName: canEdit ? `edit ${styleName}` : styleName,
+    };
+  };
+}
+
 const grid = {
   options: {
     checkBar: { visible: true, exclusive: false, syncHeadCheck: true },
     copy: { enabled: true, singleMode: false },
-    display: { columnMovable: false, editItemMerging: true, fitStyle: 'fill', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
+    display: { columnMovable: false, editItemMerging: true, fitStyle: 'even', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
     edit: { editable: true, columnEditableFirst: true, commitByCell: true, commitWhenLeave: true },
     footer: { visible: false },
     header: { height: 40, showTooltip: true, tooltipEllipsisOnly: true },
@@ -56,7 +81,8 @@ const grid = {
       header: { text: 'YYYYMM' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
+      styleName: 'tc',
+      styleCallback: readOnly('tc')
     },
     { name: 'siteOrg', fieldName: 'siteOrg', width: '80', header: { text: 'SITE_ORG' }, autoFilter: true, visible:false },
     {
@@ -66,34 +92,35 @@ const grid = {
       header: { text: '사이트' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
+      styleName: 'tc',
+      styleCallback: readOnly('tc')
     },
-		{ name: '제품명', fieldName: '제품명', width: '150', header: { text: '제품명' }, autoFilter: true },
-		{ name: '제품번호', fieldName: '제품번호', width: '150', header: { text: '제품번호' }, autoFilter: true },
-		{ name: '품목자산분류', fieldName: '품목자산분류', width: '150', header: { text: '품목자산분류' }, autoFilter: true },
-		{ name: '품목대분류', fieldName: '품목대분류', width: '80', header: { text: '품목대분류' }, autoFilter: true },
-		{ name: '품목중분류', fieldName: '품목중분류', width: '80', header: { text: '품목중분류' }, autoFilter: true },
-		{ name: '품목소분류', fieldName: '품목소분류', width: '80', header: { text: '품목소분류' }, autoFilter: true },
-		{ name: '공정차수', fieldName: '공정차수', width: '80', header: { text: '공정차수' }, autoFilter: true },
-		{ name: '공정', fieldName: '공정', width: '150', header: { text: '공정' }, autoFilter: true },
-		{ name: '공정품명', fieldName: '공정품명', width: '150', header: { text: '공정품명' }, autoFilter: true },
-		{ name: '공정품번호', fieldName: '공정품번호', width: '150', header: { text: '공정품번호' }, autoFilter: true },
-		{ name: '자재명', fieldName: '자재명', width: '150', header: { text: '자재명' }, autoFilter: true },
-		{ name: '자재번호', fieldName: '자재번호', width: '150', header: { text: '자재번호' }, autoFilter: true },
-		{ name: '자재자산분류', fieldName: '자재자산분류', width: '150', header: { text: '자재자산분류' }, autoFilter: true },
-		{ name: '자재대분류', fieldName: '자재대분류', width: '80', header: { text: '자재대분류' }, autoFilter: true },
-		{ name: '자재중분류', fieldName: '자재중분류', width: '80', header: { text: '자재중분류' }, autoFilter: true },
-		{ name: '자재소분류', fieldName: '자재소분류', width: '80', header: { text: '자재소분류' }, autoFilter: true },
-		{ name: '투입단위', fieldName: '투입단위', width: '80', header: { text: '투입단위' }, autoFilter: true },
-		{ name: '소요량', fieldName: '소요량', width: '80', header: { text: '소요량' }, autoFilter: true },
-		{ name: '내부loss율', fieldName: '내부loss율', width: '80', header: { text: '내부Loss율' }, autoFilter: true },
-		{ name: '외부loss율', fieldName: '외부loss율', width: '80', header: { text: '외부Loss율' }, autoFilter: true },
-		{ name: '조립위치', fieldName: '조립위치', width: '150', header: { text: '조립위치' }, autoFilter: true },
-		{ name: '특이사항', fieldName: '특이사항', width: '200', header: { text: '특이사항' }, autoFilter: true },
-		{ name: '최초작성일', fieldName: '최초작성일', width: '150', header: { text: '최초작성일' }, autoFilter: true },
-		{ name: '최초작성자', fieldName: '최초작성자', width: '100', header: { text: '최초작성자' }, autoFilter: true },
-		{ name: '최종수정일', fieldName: '최종수정일', width: '150', header: { text: '최종수정일' }, autoFilter: true },
-		{ name: '최종수정자', fieldName: '최종수정자', width: '100', header: { text: '최종수정자' }, autoFilter: true }
+		{ name: '제품명', fieldName: '제품명', width: '80', header: { text: '제품명' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '제품번호', fieldName: '제품번호', width: '100', header: { text: '제품번호' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '품목자산분류', fieldName: '품목자산분류', width: '120', header: { text: '품목자산분류' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '품목대분류', fieldName: '품목대분류', width: '100', header: { text: '품목대분류' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '품목중분류', fieldName: '품목중분류', width: '100', header: { text: '품목중분류' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '품목소분류', fieldName: '품목소분류', width: '100', header: { text: '품목소분류' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '공정차수', fieldName: '공정차수', width: '100', header: { text: '공정차수' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '공정', fieldName: '공정', width: '150', header: { text: '공정' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '공정품명', fieldName: '공정품명', width: '150', header: { text: '공정품명' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '공정품번호', fieldName: '공정품번호', width: '150', header: { text: '공정품번호' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '자재명', fieldName: '자재명', width: '180', header: { text: '자재명' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '자재번호', fieldName: '자재번호', width: '150', header: { text: '자재번호' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '자재자산분류', fieldName: '자재자산분류', width: '120', header: { text: '자재자산분류' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '자재대분류', fieldName: '자재대분류', width: '100', header: { text: '자재대분류' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '자재중분류', fieldName: '자재중분류', width: '100', header: { text: '자재중분류' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '자재소분류', fieldName: '자재소분류', width: '180', header: { text: '자재소분류' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '투입단위', fieldName: '투입단위', width: '100', header: { text: '투입단위' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '소요량', fieldName: '소요량', width: '80', header: { text: '소요량' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc'), numberFormat: '#,##0.0000' },
+		{ name: '내부loss율', fieldName: '내부loss율', width: '80', header: { text: '내부Loss율' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr') },
+		{ name: '외부loss율', fieldName: '외부loss율', width: '80', header: { text: '외부Loss율' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr') },
+		{ name: '조립위치', fieldName: '조립위치', width: '100', header: { text: '조립위치' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '특이사항', fieldName: '특이사항', width: '100', header: { text: '특이사항' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+		{ name: '최초작성일', fieldName: '최초작성일', width: '120', header: { text: '최초작성일' }, autoFilter: true, styleName: 'tc', styleCallback: readOnly('tc') },
+		{ name: '최초작성자', fieldName: '최초작성자', width: '100', header: { text: '최초작성자' }, autoFilter: true, styleName: 'tc', styleCallback: readOnly('tc') },
+		{ name: '최종수정일', fieldName: '최종수정일', width: '120', header: { text: '최종수정일' }, autoFilter: true, styleName: 'tc', styleCallback: readOnly('tc') },
+		{ name: '최종수정자', fieldName: '최종수정자', width: '100', header: { text: '최종수정자' }, autoFilter: true, styleName: 'tc', styleCallback: readOnly('tc') },
   ]
 };
 

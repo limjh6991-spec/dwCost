@@ -69,7 +69,7 @@ export default {
         HQ: 'HQ',
         VN: 'VN',
       },
-      duplicateKey: ['yyyymm', 'selCode', 'site', 'matCode'],
+      duplicateKey: ['yyyymm', 'selCode', 'site', '품번'],
       isValidateCellMaterialGrid: false,
     };
   },
@@ -154,7 +154,11 @@ export default {
       if (!this.gridView || !this.gridDataProvider) return;
 
       this.gridView.commit();
-      this.gridDataProvider.addRow({ yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, site: this.params.site });
+      this.gridDataProvider.addRow({ 
+        yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null, 
+        site: this.params.site,
+        selCode: 'ACTUAL'
+         });
       let itemIndex = this.gridView.getItemCount() - 1;
       this.gridView.setCurrent({ itemIndex: itemIndex });
     },
@@ -165,25 +169,45 @@ export default {
       const checkedRows = this.gridView.getCheckedRows();
       if (checkedRows.length === 0) {
         this.$toast('info', '삭제할 행을 선택하세요');
-      } else {
-        let delItems = [];
-        let deletedCount = 0;
+        return;
+      }
+
+      const deletedCount = checkedRows.length;
+      
+      this.$confirm('확인', `${deletedCount}건을 삭제하시겠습니까?`, async (confirmed) => {
+        if (!confirmed) return;
+
+        let newRows = [];
+        let existingRows = [];
+        
         checkedRows.forEach((itemIndex) => {
           if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
-            delItems.push(itemIndex);
+            newRows.push(itemIndex);
           } else {
-            this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
-            deletedCount++;
+            existingRows.push(this.gridDataProvider.getJsonRow(itemIndex));
           }
         });
 
-        if (delItems.length > 0) {
-          this.gridDataProvider.removeRows(delItems);
+        if (newRows.length > 0) {
+          this.gridDataProvider.removeRows(newRows);
         }
-        if (deletedCount > 0) {
-          this.$toast('info', `${deletedCount}건이 삭제 대기 상태입니다. 저장 버튼을 눌러야 삭제됩니다.`);
+
+        if (existingRows.length > 0) {
+          try {
+            let param = {
+              menuId: 'c0007002',
+              delete: [{ queryId: 'C0007002_Delete1', data: existingRows }],
+            };
+            await this.$axios.api.saveData(param);
+            this.searchClick();
+          } catch {
+            this.$toast('error', '삭제 중 에러가 발생했습니다.');
+            return;
+          }
         }
-      }
+        
+        this.$toast('success', `${deletedCount}건이 삭제되었습니다.`);
+      });
     },
     async saveBtnClick() {
       if (!this.gridView || !this.gridDataProvider) return;
@@ -225,14 +249,14 @@ export default {
       let error = {};
       if (!this.isValidateCellMaterialGrid) return error;
 
-      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', 'matCode'], column.fieldName)) {
+      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', '품번'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';
         }
       }
 
-      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'selCode', 'site', 'matCode'], column.fieldName)) {
+      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'selCode', 'site', '품번'], column.fieldName)) {
         error.level = 'warning';
         error.message = '중복 입력입니다.';
       }

@@ -3,6 +3,31 @@
  */
 const { ValueType } = require('realgrid');
 
+function isNewRow(dataCell) {
+  return dataCell.item &&
+    (dataCell.item.rowState === 'created' ||
+     dataCell.item.itemState === 'appending' ||
+     dataCell.item.itemState === 'inserting');
+}
+
+// 고정 컬럼
+function readOnly(styleName = 'tl') {
+  return function () {
+    return { editable: false, styleName };
+  };
+}
+
+// 추가 행 편집 스타일
+function addNewRow(styleName = 'edit tl') {
+  return function (grid, dataCell) {
+    const canEdit = isNewRow(dataCell);
+    return {
+      editable: canEdit,
+      styleName: canEdit ? `edit ${styleName}` : styleName,
+    };
+  };
+}
+
 const grid = {
   options: {
     checkBar: { visible: true, exclusive: false, syncHeadCheck: true },
@@ -35,7 +60,8 @@ const grid = {
       header: { text: 'YYYYMM' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
+      styleName: 'tc',
+      styleCallback: readOnly('tc')
     },
     {
       name: 'selCode',
@@ -44,7 +70,8 @@ const grid = {
       header: { text: 'SEL_CODE' },
       autoFilter: true,
       editable: true,
-      styleName: 'tl',
+      styleName: 'tc',
+      styleCallback: readOnly('tc')
     },
     { name: 'siteOrg', fieldName: 'siteOrg', width: '0', header: { text: '사이트' }, autoFilter: true, visible: false, editable: false, styleName: 'tl' },
     {
@@ -54,32 +81,21 @@ const grid = {
       header: { text: '사이트' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
+      styleName: 'tc',
+      styleCallback: readOnly('tc')
     },
     {
       name: 'dept',
       fieldName: 'dept',
-      width: '150',
+      width: '100',
       header: { text: '코스트센터' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: addNewRow('tc'),
     },
-    { name: 'deptName', fieldName: 'deptName', width: '120', header: { text: '코스트센터명' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: 'expenArea', fieldName: 'expenArea', width: '135', header: { text: '비용구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: 'deptName', fieldName: 'deptName', width: '120', header: { text: '코스트센터명' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: 'expenArea', fieldName: 'expenArea', width: '135', header: { text: '비용구분' }, autoFilter: true, editable: true, styleName: 'tc', styleCallback: addNewRow('tc') },
   ],
 };
 

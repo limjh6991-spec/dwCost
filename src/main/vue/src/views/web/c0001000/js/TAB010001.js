@@ -3,6 +3,31 @@
  */
 const { ValueType } = require('realgrid');
 
+function isNewRow(dataCell) {
+  return dataCell.item &&
+    (dataCell.item.rowState === 'created' ||
+     dataCell.item.itemState === 'appending' ||
+     dataCell.item.itemState === 'inserting');
+}
+
+// 고정 컬럼
+function readOnly(styleName = 'tl') {
+  return function () {
+    return { editable: false, styleName };
+  };
+}
+
+// 추가 행 편집 스타일
+function addNewRow(styleName = 'edit tl') {
+  return function (grid, dataCell) {
+    const canEdit = isNewRow(dataCell);
+    return {
+      editable: canEdit,
+      styleName: canEdit ? `edit ${styleName}` : styleName,
+    };
+  };
+}
+
 const grid = {
   options: {
     checkBar: { visible: true, exclusive: false, syncHeadCheck: true },
@@ -50,7 +75,8 @@ const grid = {
       header: { text: 'YYYYMM' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
+      styleName: 'tc',
+      styleCallback: readOnly('tc'),
     },
         {
       name: 'selCode',
@@ -59,9 +85,10 @@ const grid = {
       header: { text: 'SEL_CODE' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
+      styleName: 'tc',
+      styleCallback: readOnly('tc'),
     },
-    { name: 'siteOrg', fieldName: 'siteOrg', width: '0', header: { text: 'SITE_ORG' }, autoFilter: true, visible: false, editable: false, styleName: 'tl' },
+    { name: 'siteOrg', fieldName: 'siteOrg', width: '0', header: { text: 'SITE_ORG' }, autoFilter: true, visible: false, editable: false, styleName: 'tc' },
     {
       name: 'site',
       fieldName: 'site',
@@ -69,12 +96,13 @@ const grid = {
       header: { text: '사이트' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
+      styleName: 'tc',
+      styleCallback: readOnly('tc'),
     },
-    { name: 'acctClassOrg', fieldName: 'acctClassOrg', width: '0', header: { text: 'ACCT_CLASS_ORG' }, autoFilter: true, visible: false, editable: false, styleName: 'tl' },
-    { name: 'acctClass', fieldName: 'acctClass', width: '100', header: { text: '원가항목' }, autoFilter: true, styleName: 'edit tl' },
-    { name: '계정과목내부코드', fieldName: '계정과목내부코드', width: '100', header: { text: '계정과목\n내부코드', styleName: 'multiline-header' }, autoFilter: true, styleName: 'edit tr', numberFormat: '###0' },
-    { name: '전표기표여부', fieldName: '전표기표여부', width: '90', header: { text: '전표\n기표여부', styleName: 'multiline-header' }, autoFilter: true, styleName: 'edit tr', numberFormat: '###0' },
+    { name: 'acctClassOrg', fieldName: 'acctClassOrg', width: '0', header: { text: 'ACCT_CLASS_ORG' }, autoFilter: true, visible: false, editable: false, styleName: 'tc' },
+    { name: 'acctClass', fieldName: 'acctClass', width: '100', header: { text: '원가항목' }, autoFilter: true, styleName: 'edit tc', styleCallback: addNewRow('tc'), },
+    { name: '계정과목내부코드', fieldName: '계정과목내부코드', width: '100', header: { text: '계정과목\n내부코드', styleName: 'multiline-header' }, autoFilter: true, styleName: 'tr', numberFormat: '###0', styleCallback: addNewRow('tr'), },
+    { name: '전표기표여부', fieldName: '전표기표여부', width: '90', header: { text: '전표\n기표여부', styleName: 'multiline-header' }, autoFilter: true, styleName: 'tr', numberFormat: '###0', styleCallback: addNewRow('tr'), },
     {
       name: 'acct',
       fieldName: 'acct',
@@ -82,33 +110,23 @@ const grid = {
       header: { text: '계정코드' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: addNewRow('tc'),
     },
-    { name: 'acctName', fieldName: 'acctName', width: '200', header: { text: '계정명' }, autoFilter: true, styleName: 'edit tl' },
-    { name: '차대', fieldName: '차대', width: '60', header: { text: '차대' }, autoFilter: true, styleName: 'edit tl' },
-    { name: '계정대분류', fieldName: '계정대분류', width: '70', header: { text: '계정\n대분류', styleName: 'multiline-header' }, autoFilter: true, styleName: 'edit tl' },
-    { name: '관리항목유형', fieldName: '관리항목유형', width: '200', header: { text: '관리항목유형' }, autoFilter: true, styleName: 'edit tl' },
-    { name: '계정과목lev', fieldName: '계정과목lev', width: '50', header: { text: '계정과목\nLev', styleName: 'multiline-header' }, autoFilter: true, styleName: 'edit tr', numberFormat: '###0' },
-    { name: '상위계정과목', fieldName: '상위계정과목', width: '135', header: { text: '상위계정과목' }, autoFilter: true, styleName: 'edit tl' },
-    { name: '경영계획과목', fieldName: '경영계획과목', width: '155', header: { text: '경영계획과목' }, autoFilter: true, styleName: 'edit tl' },
-    { name: '상위계정과목내부코드', fieldName: '상위계정과목내부코드', width: '80', header: { text: '상위계정과목\n내부코드', styleName: 'multiline-header' }, autoFilter: true, styleName: 'edit tr', numberFormat: '###0' },
-    { name: '소분류', fieldName: '소분류', width: '135', header: { text: '소분류' }, autoFilter: true, styleName: 'edit tl' },
-    { name: '중분류', fieldName: '중분류', width: '135', header: { text: '중분류' }, autoFilter: true, styleName: 'edit tl' },
-    { name: '대분류', fieldName: '대분류', width: '135', header: { text: '비목코드' }, autoFilter: true, styleName: 'edit tl' },
-    { name: 'expenSel', fieldName: 'expenSel', width: '135', header: { text: '원가항목코드' }, autoFilter: true, styleName: 'edit tl' },
-    { name: 'expenSel명', fieldName: 'expenSel명', width: '135', header: { text: '원가항목명' }, autoFilter: true, styleName: 'edit tl' },
-    { name: '특이사항', fieldName: '특이사항', width: '135', header: { text: '특이사항' }, autoFilter: true, styleName: 'edit tl' },
+    { name: 'acctName', fieldName: 'acctName', width: '200', header: { text: '계정명' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl'), },
+    { name: '차대', fieldName: '차대', width: '60', header: { text: '차대' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc'), },
+    { name: '계정대분류', fieldName: '계정대분류', width: '70', header: { text: '계정\n대분류', styleName: 'multiline-header' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc'), },
+    { name: '관리항목유형', fieldName: '관리항목유형', width: '200', header: { text: '관리항목유형' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl'), },
+    { name: '계정과목lev', fieldName: '계정과목lev', width: '50', header: { text: '계정과목\nLev', styleName: 'multiline-header' }, autoFilter: true, styleName: 'tr', numberFormat: '###0', styleCallback: addNewRow('tr'), },
+    { name: '상위계정과목', fieldName: '상위계정과목', width: '135', header: { text: '상위계정과목' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl'), },
+    { name: '경영계획과목', fieldName: '경영계획과목', width: '155', header: { text: '경영계획과목' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl'), },
+    { name: '상위계정과목내부코드', fieldName: '상위계정과목내부코드', width: '80', header: { text: '상위계정과목\n내부코드', styleName: 'multiline-header' }, autoFilter: true, styleName: 'tr', numberFormat: '###0', styleCallback: addNewRow('tr'), },
+    { name: '소분류', fieldName: '소분류', width: '135', header: { text: '소분류' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl'), },
+    { name: '중분류', fieldName: '중분류', width: '135', header: { text: '중분류' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl'), },
+    { name: '대분류', fieldName: '대분류', width: '135', header: { text: '비목코드' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl'), },
+    { name: 'expenSel', fieldName: 'expenSel', width: '135', header: { text: '원가항목코드' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl'), },
+    { name: 'expenSel명', fieldName: 'expenSel명', width: '135', header: { text: '원가항목명' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl'), },
+    { name: '특이사항', fieldName: '특이사항', width: '135', header: { text: '특이사항' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl'), },
   ],
 };
 

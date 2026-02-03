@@ -3,6 +3,31 @@
  */
 const { ValueType } = require('realgrid');
 
+function isNewRow(dataCell) {
+  return dataCell.item &&
+    (dataCell.item.rowState === 'created' ||
+     dataCell.item.itemState === 'appending' ||
+     dataCell.item.itemState === 'inserting');
+}
+
+// 고정 컬럼
+function readOnly(styleName = 'tl') {
+  return function () {
+    return { editable: false, styleName };
+  };
+}
+
+// 추가 행 편집 스타일
+function addNewRow(styleName = 'edit tl') {
+  return function (grid, dataCell) {
+    const canEdit = isNewRow(dataCell);
+    return {
+      editable: canEdit,
+      styleName: canEdit ? `edit ${styleName}` : styleName,
+    };
+  };
+}
+
 const grid = {
   options: {
     checkBar: { visible: true, exclusive: false, syncHeadCheck: true },
@@ -40,20 +65,8 @@ const grid = {
       header: { text: 'YYYYMM' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: readOnly('tc'),        
     },
     {
       name: 'SEL_CODE',
@@ -62,20 +75,8 @@ const grid = {
       header: { text: 'SEL_CODE' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: readOnly('tc'),
     },
     { name: 'SITE_ORG', fieldName: 'siteOrg', width: '0', header: { text: '사이트' }, autoFilter: true, visible: false, editable: false, styleName: 'tl' },
     {
@@ -85,20 +86,8 @@ const grid = {
       header: { text: '사이트' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: readOnly('tc'),
     },
     {
       name: '코스트센터',
@@ -107,21 +96,11 @@ const grid = {
       header: { text: '코스트센터' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: addNewRow('tc'),
     },
-    { name: '코스트센터분류', fieldName: '코스트센터분류', width: '120', header: { text: '코스트센터분류' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: '코스트센터유형', fieldName: '코스트센터유형', width: '120', header: { text: '코스트센터유형' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: '코스트센터분류', fieldName: '코스트센터분류', width: '120', header: { text: '코스트센터분류' }, autoFilter: true, editable: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+    { name: '코스트센터유형', fieldName: '코스트센터유형', width: '120', header: { text: '코스트센터유형' }, autoFilter: true, editable: true, styleName: 'tc', styleCallback: addNewRow('tc') },
     {
       name: '계정코드',
       fieldName: '계정코드',
@@ -129,24 +108,14 @@ const grid = {
       header: { text: '계정코드' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: addNewRow('tc'),
     },
-    { name: '계정과목', fieldName: '계정과목', width: '150', header: { text: '계정과목' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: '비용구분', fieldName: '비용구분', width: '120', header: { text: '비용구분' }, autoFilter: true, editable: true, styleName: 'edit tl' },
-    { name: '차변금액', fieldName: '차변금액', width: '100', header: { text: '차변금액' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } }, 
-    { name: '대변금액', fieldName: '대변금액', width: '100', header: { text: '대변금액' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: '제외여부', fieldName: '제외여부', width: '100', header: { text: '제외여부' }, autoFilter: true, editable: true, styleName: 'tr', },
+    { name: '계정과목', fieldName: '계정과목', width: '150', header: { text: '계정과목' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '비용구분', fieldName: '비용구분', width: '120', header: { text: '비용구분' }, autoFilter: true, editable: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+    { name: '차변금액', fieldName: '차변금액', width: '100', header: { text: '차변금액' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr'), footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } }, 
+    { name: '대변금액', fieldName: '대변금액', width: '100', header: { text: '대변금액' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr'), footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '제외여부', fieldName: '제외여부', width: '100', header: { text: '제외여부' }, autoFilter: true, editable: true, styleName: 'tc', styleCallback: addNewRow('tc') },
   ],
 };
 

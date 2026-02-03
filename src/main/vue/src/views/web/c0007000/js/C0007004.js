@@ -3,6 +3,31 @@
  */
 const { ValueType } = require('realgrid');
 
+function isNewRow(dataCell) {
+  return dataCell.item &&
+    (dataCell.item.rowState === 'created' ||
+     dataCell.item.itemState === 'appending' ||
+     dataCell.item.itemState === 'inserting');
+}
+
+// 고정 컬럼
+function readOnly(styleName = 'tl') {
+  return function () {
+    return { editable: false, styleName };
+  };
+}
+
+// 추가 행 편집 스타일
+function addNewRow(styleName = 'edit tl') {
+  return function (grid, dataCell) {
+    const canEdit = isNewRow(dataCell);
+    return {
+      editable: canEdit,
+      styleName: canEdit ? `edit ${styleName}` : styleName,
+    };
+  };
+}
+
 const grid = {
   options: {
     checkBar: { visible: true, exclusive: false, syncHeadCheck: true },
@@ -46,20 +71,8 @@ const grid = {
       header: { text: 'YYYYMM' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: readOnly('tc')      
     },
     {
       name: 'SEL_CODE',
@@ -68,20 +81,8 @@ const grid = {
       header: { text: 'SEL_CODE' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: readOnly('tc')
     },
     { name: 'SITE_ORG', fieldName: 'siteOrg', width: '0', header: { text: '사이트' }, autoFilter: true, visible: false, editable: false, styleName: 'tl' },
     {
@@ -91,20 +92,8 @@ const grid = {
       header: { text: '사이트' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: readOnly('tc')
     },
     {
       name: 'MODEL',
@@ -113,20 +102,8 @@ const grid = {
       header: { text: 'MODEL' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: addNewRow('tc'),
     },
     {
       name: 'MODEL_TYPE',
@@ -135,20 +112,8 @@ const grid = {
       header: { text: 'MODEL_TYPE' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: addNewRow('tc'),
     },
     {
       name: 'STOCK',
@@ -158,32 +123,20 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleCallback: addNewRow('tl'),
     },
-    { name: 'BOH', fieldName: 'boh', width: '135', header: { text: 'BOH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'INPUT', fieldName: 'input', width: '135', header: { text: 'INPUT' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'OUT', fieldName: 'out', width: '70', header: { text: 'OUT' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'EOH', fieldName: 'eoh', width: '120', header: { text: 'EOH' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'INPUT_ETC', fieldName: 'inputEtc', width: '135', header: { text: 'INPUT_ETC' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'INPUT_MOVING', fieldName: 'inputMoving', width: '135', header: { text: 'INPUT_MOVING' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'INPUT_PROD', fieldName: 'inputProd', width: '70', header: { text: 'INPUT_PROD' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'OUT_SHEET', fieldName: 'outSheet', width: '120', header: { text: 'OUT_SHEET' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'OUT_RETURN', fieldName: 'outReturn', width: '120', header: { text: 'OUT_RETURN' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'OUT_INVOICE', fieldName: 'outInvoice', width: '120', header: { text: 'OUT_INVOICE' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'OUT_ETC', fieldName: 'outEtc', width: '120', header: { text: 'OUT_ETC' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'OUT_MOVING', fieldName: 'outMoving', width: '120', header: { text: 'OUT_MOVING' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'BOH', fieldName: 'boh', width: '135', header: { text: 'BOH' }, autoFilter: true, editable: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'INPUT', fieldName: 'input', width: '135', header: { text: 'INPUT' }, autoFilter: true, editable: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'OUT', fieldName: 'out', width: '70', header: { text: 'OUT' }, autoFilter: true, editable: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'EOH', fieldName: 'eoh', width: '120', header: { text: 'EOH' }, autoFilter: true, editable: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'INPUT_ETC', fieldName: 'inputEtc', width: '135', header: { text: 'INPUT_ETC' }, autoFilter: true, editable: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'INPUT_MOVING', fieldName: 'inputMoving', width: '135', header: { text: 'INPUT_MOVING' }, autoFilter: true, editable: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'INPUT_PROD', fieldName: 'inputProd', width: '70', header: { text: 'INPUT_PROD' }, autoFilter: true, editable: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'OUT_SHEET', fieldName: 'outSheet', width: '120', header: { text: 'OUT_SHEET' }, autoFilter: true, editable: true, styleName: 'tr',  styleCallback: addNewRow('tr'), numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'OUT_RETURN', fieldName: 'outReturn', width: '120', header: { text: 'OUT_RETURN' }, autoFilter: true, editable: true, styleName: 'tr',  styleCallback: addNewRow('tr'), numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'OUT_INVOICE', fieldName: 'outInvoice', width: '120', header: { text: 'OUT_INVOICE' }, autoFilter: true, editable: true, styleName: 'tr',  styleCallback: addNewRow('tr'), numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'OUT_ETC', fieldName: 'outEtc', width: '120', header: { text: 'OUT_ETC' }, autoFilter: true, editable: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'OUT_MOVING', fieldName: 'outMoving', width: '120', header: { text: 'OUT_MOVING' }, autoFilter: true, editable: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };
 

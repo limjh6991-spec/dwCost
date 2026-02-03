@@ -3,6 +3,31 @@
  */
 const { ValueType } = require('realgrid');
 
+function isNewRow(dataCell) {
+  return dataCell.item &&
+    (dataCell.item.rowState === 'created' ||
+     dataCell.item.itemState === 'appending' ||
+     dataCell.item.itemState === 'inserting');
+}
+
+// 고정 컬럼
+function readOnly(styleName = 'tl') {
+  return function () {
+    return { editable: false, styleName };
+  };
+}
+
+// 추가 행 편집 스타일
+function addNewRow(styleName = 'edit tl') {
+  return function (grid, dataCell) {
+    const canEdit = isNewRow(dataCell);
+    return {
+      editable: canEdit,
+      styleName: canEdit ? `edit ${styleName}` : styleName,
+    };
+  };
+}
+
 const grid = {
   options: {
     checkBar: { visible: true, exclusive: false, syncHeadCheck: true },
@@ -60,43 +85,43 @@ const grid = {
   ],
 
   columns: [
-    { name: 'yyyymm', fieldName: 'yyyymm', width: '80', header: { text: 'YYYYMM' }, autoFilter: true, styleName: 'tl' },
-    { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'tl' },
-    { name: 'site', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true, styleName: 'tl' },
-    { name: '선택', fieldName: '선택', width: '80', header: { text: '선택' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
-    { name: '출고처리', fieldName: '출고처리', width: '120', header: { text: '출고처리' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
-    { name: '사업단위', fieldName: '사업단위', width: '120', header: { text: '사업단위' }, autoFilter: true, styleName: 'tl' },
-    { name: 'invoiceNo', fieldName: 'invoiceNo', width: '100', header: { text: 'Invoice_No' }, autoFilter: true, styleName: 'tl' },
-    { name: 'invoice관리번호', fieldName: 'invoice관리번호', width: '190', header: { text: 'Invoice관리번호' }, autoFilter: true, styleName: 'tl' },
-    { name: 'invoiceDate', fieldName: 'invoiceDate', width: '120', header: { text: 'Invoice_Date' }, autoFilter: true, styleName: 'tl' },
-    { name: '수출구분', fieldName: '수출구분', width: '120', header: { text: '수출구분' }, autoFilter: true, styleName: 'tl' },
-    { name: '출고구분', fieldName: '출고구분', width: '120', header: { text: '출고구분' }, autoFilter: true, styleName: 'tl' },
-    { name: '가격조건', fieldName: '가격조건', width: '120', header: { text: '가격조건' }, autoFilter: true, styleName: 'tl' },
-    { name: '부서', fieldName: '부서', width: '80', header: { text: '부서' }, autoFilter: true, styleName: 'tl' },
-    { name: '담당자', fieldName: '담당자', width: '90', header: { text: '담당자' }, autoFilter: true, styleName: 'tl' },
-    { name: 'buyer', fieldName: 'buyer', width: '80', header: { text: 'Buyer' }, autoFilter: true, styleName: 'tl' },
-    { name: 'agent', fieldName: 'agent', width: '80', header: { text: 'Agent' }, autoFilter: true, styleName: 'tl' },
-    { name: '통화', fieldName: '통화', width: '80', header: { text: '통화' }, autoFilter: true, styleName: 'tl' },
-    { name: '환율', fieldName: '환율', width: '80', header: { text: '환율' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0.00' },
-    { name: '품명', fieldName: '품명', width: '80', header: { text: '품명' }, autoFilter: true, styleName: 'tl' },
-    { name: '품번', fieldName: '품번', width: '80', header: { text: '품번' }, autoFilter: true, styleName: 'tl' },
-    { name: '규격', fieldName: '규격', width: '80', header: { text: '규격' }, autoFilter: true, styleName: 'tl' },
-    { name: '단위', fieldName: '단위', width: '80', header: { text: '단위' }, autoFilter: true, styleName: 'tl' },
-    { name: '판매기준가', fieldName: '판매기준가', width: '150', header: { text: '판매기준가' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
-    { name: '판매단가', fieldName: '판매단가', width: '120', header: { text: '판매단가' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0.00' },
-    { name: '수량', fieldName: '수량', width: '80', header: { text: '수량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
-    { name: '판매금액', fieldName: '판매금액', width: '120', header: { text: '판매금액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0.00', footer: { expression: 'sum', numberFormat: '#,##0.00', styleName: 'sum-footer1' }  },
-    { name: '원화판매금액', fieldName: '원화판매금액', width: '180', header: { text: '원화판매금액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' , footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: '창고', fieldName: '창고', width: '80', header: { text: '창고' }, autoFilter: true, styleName: 'tl' },
-    { name: '납기일', fieldName: '납기일', width: '90', header: { text: '납기일' }, autoFilter: true, styleName: 'tl' },
-    { name: '기타출고구분', fieldName: '기타출고구분', width: '180', header: { text: '기타출고구분' }, autoFilter: true, styleName: 'tl' },
-    { name: '진행상태', fieldName: '진행상태', width: '120', header: { text: '진행상태' }, autoFilter: true, styleName: 'tl' },
-    { name: '매출진행상태', fieldName: '매출진행상태', width: '180', header: { text: '매출진행상태' }, autoFilter: true, styleName: 'tl' },
-    { name: '매출대상', fieldName: '매출대상', width: '120', header: { text: '매출대상' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
-    { name: '매출금액계', fieldName: '매출금액계', width: '150', header: { text: '매출금액계' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' , footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: '미매출금액', fieldName: '미매출금액', width: '150', header: { text: '미매출금액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' , footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'remarks', fieldName: 'remarks', width: '80', header: { text: 'Remarks' }, autoFilter: true, styleName: 'tl' },
-    { name: '특이사항', fieldName: '특이사항', width: '120', header: { text: '특이사항' }, autoFilter: true, styleName: 'tl' },
+    { name: 'yyyymm', fieldName: 'yyyymm', width: '80', header: { text: 'YYYYMM' }, autoFilter: true, styleName: 'tc', styleCallback: readOnly('tc') },
+    { name: 'selCode', fieldName: 'selCode', width: '80', header: { text: 'SEL_CODE' }, autoFilter: true, styleName: 'tc', styleCallback: readOnly('tc') },
+    { name: 'site', fieldName: 'site', width: '80', header: { text: '사이트' }, autoFilter: true, styleName: 'tc', styleCallback: readOnly('tc') },
+    { name: '선택', fieldName: '선택', width: '80', header: { text: '선택' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0' },
+    { name: '출고처리', fieldName: '출고처리', width: '120', header: { text: '출고처리' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0' },
+    { name: '사업단위', fieldName: '사업단위', width: '120', header: { text: '사업단위' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: 'invoiceNo', fieldName: 'invoiceNo', width: '100', header: { text: 'Invoice_No' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: 'invoice관리번호', fieldName: 'invoice관리번호', width: '190', header: { text: 'Invoice관리번호' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: 'invoiceDate', fieldName: 'invoiceDate', width: '120', header: { text: 'Invoice_Date' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '수출구분', fieldName: '수출구분', width: '120', header: { text: '수출구분' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '출고구분', fieldName: '출고구분', width: '120', header: { text: '출고구분' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '가격조건', fieldName: '가격조건', width: '120', header: { text: '가격조건' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '부서', fieldName: '부서', width: '80', header: { text: '부서' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '담당자', fieldName: '담당자', width: '90', header: { text: '담당자' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: 'buyer', fieldName: 'buyer', width: '80', header: { text: 'Buyer' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: 'agent', fieldName: 'agent', width: '80', header: { text: 'Agent' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '통화', fieldName: '통화', width: '80', header: { text: '통화' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '환율', fieldName: '환율', width: '80', header: { text: '환율' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0.00' },
+    { name: '품명', fieldName: '품명', width: '80', header: { text: '품명' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+    { name: '품번', fieldName: '품번', width: '80', header: { text: '품번' }, autoFilter: true, styleName: 'tc', styleCallback: addNewRow('tc') },
+    { name: '규격', fieldName: '규격', width: '80', header: { text: '규격' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '단위', fieldName: '단위', width: '80', header: { text: '단위' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '판매기준가', fieldName: '판매기준가', width: '150', header: { text: '판매기준가' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0' },
+    { name: '판매단가', fieldName: '판매단가', width: '120', header: { text: '판매단가' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0.00' },
+    { name: '수량', fieldName: '수량', width: '80', header: { text: '수량' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0' },
+    { name: '판매금액', fieldName: '판매금액', width: '120', header: { text: '판매금액' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0.00', footer: { expression: 'sum', numberFormat: '#,##0.00', styleName: 'sum-footer1' }  },
+    { name: '원화판매금액', fieldName: '원화판매금액', width: '180', header: { text: '원화판매금액' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0' , footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '창고', fieldName: '창고', width: '80', header: { text: '창고' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '납기일', fieldName: '납기일', width: '90', header: { text: '납기일' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '기타출고구분', fieldName: '기타출고구분', width: '180', header: { text: '기타출고구분' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '진행상태', fieldName: '진행상태', width: '120', header: { text: '진행상태' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '매출진행상태', fieldName: '매출진행상태', width: '180', header: { text: '매출진행상태' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '매출대상', fieldName: '매출대상', width: '120', header: { text: '매출대상' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0' },
+    { name: '매출금액계', fieldName: '매출금액계', width: '150', header: { text: '매출금액계' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0' , footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '미매출금액', fieldName: '미매출금액', width: '150', header: { text: '미매출금액' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0' , footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'remarks', fieldName: 'remarks', width: '80', header: { text: 'Remarks' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '특이사항', fieldName: '특이사항', width: '120', header: { text: '특이사항' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
   ],
 };
 
