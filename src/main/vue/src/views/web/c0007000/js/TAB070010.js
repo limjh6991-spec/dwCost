@@ -1,7 +1,33 @@
 /*
  * 타시스템 > 재공/재고기초금액 이월 >  재고기초금액 이월
  */
+const { add } = require('lodash');
 const { ValueType } = require('realgrid');
+
+function isNewRow(dataCell) {
+  return dataCell.item &&
+    (dataCell.item.rowState === 'created' ||
+     dataCell.item.itemState === 'appending' ||
+     dataCell.item.itemState === 'inserting');
+}
+
+// 고정 컬럼
+function readOnly(styleName = 'tl') {
+  return function () {
+    return { editable: false, styleName };
+  };
+}
+
+// 추가 행 편집 스타일
+function addNewRow(styleName = 'edit tl') {
+  return function (grid, dataCell) {
+    const canEdit = isNewRow(dataCell);
+    return {
+      editable: canEdit,
+      styleName: canEdit ? `edit ${styleName}` : styleName,
+    };
+  };
+}
 
 const grid = {
   options: {
@@ -18,8 +44,8 @@ const grid = {
   },
   fields: [
     { fieldName: 'yyyymm', dataType: ValueType.TEXT },
-    { fieldName: 'site', dataType: ValueType.TEXT },
     { fieldName: 'selCode', dataType: ValueType.TEXT },
+    { fieldName: 'site', dataType: ValueType.TEXT },
     { fieldName: '구분', dataType: ValueType.TEXT },
     { fieldName: 'model', dataType: ValueType.TEXT },
     { fieldName: 'expenSel', dataType: ValueType.TEXT },
@@ -37,42 +63,8 @@ const grid = {
       header: { text: 'YYYYMM' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
-    },
-    {
-      name: 'site',
-      fieldName: 'site',
-      width: '80',
-      header: { text: 'SITE' },
-      autoFilter: true,
-      editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: readOnly('tc')
     },
     {
       name: 'selCode',
@@ -81,20 +73,18 @@ const grid = {
       header: { text: 'SEL_CODE' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: readOnly('tc')
+    },
+    {
+      name: 'site',
+      fieldName: 'site',
+      width: '80',
+      header: { text: 'SITE' },
+      autoFilter: true,
+      editable: false,
+      styleName: 'tc',
+      styleCallback: readOnly('tc')
     },
     {
       name: '구분',
@@ -103,20 +93,8 @@ const grid = {
       header: { text: '구분' },
       autoFilter: true,
       editable: false,
-      styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleName: 'tc',
+      styleCallback: addNewRow('tc')
     },
     {
       name: 'model',
@@ -126,19 +104,7 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleCallback: addNewRow('tl')
     },
     {
       name: 'expenSel',
@@ -148,21 +114,9 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleCallback: addNewRow('tl')
     },
-    { name: 'expenSel명', fieldName: 'expenSel명', width: '120', header: { text: 'expen_sel명' }, autoFilter: true, editable: true, styleName: 'edit tl' },
+    { name: 'expenSel명', fieldName: 'expenSel명', width: '120', header: { text: 'expen_sel명' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
     {
       name: 'acctName',
       fieldName: 'acctName',
@@ -171,22 +125,10 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-
-        if (dataCell.item.rowState == 'created' || dataCell.item.itemState == 'appending' || dataCell.item.itemState == 'inserting') {
-          ret.editable = true;
-          ret.styleName = 'edit tl';
-        } else {
-          ret.editable = false;
-          ret.styleName = 'tl';
-        }
-
-        return ret;
-      },
+      styleCallback: addNewRow('tl')
     },
-    { name: 'bohQty', fieldName: 'bohQty', width: '80', header: { text: 'BOH_QTY' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0' },
-    { name: 'bohAmt', fieldName: 'bohAmt', width: '80', header: { text: 'BOH_AMT' }, autoFilter: true, editable: true, styleName: 'edit tr', numberFormat: '#,##0.##' },
+    { name: 'bohQty', fieldName: 'bohQty', width: '80', header: { text: 'BOH_QTY' }, autoFilter: true, editable: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0' },
+    { name: 'bohAmt', fieldName: 'bohAmt', width: '80', header: { text: 'BOH_AMT' }, autoFilter: true, editable: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0.##' },
   ],
 };
 
