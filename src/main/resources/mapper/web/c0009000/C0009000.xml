@@ -370,7 +370,7 @@
         SUM(qty) AS qty
     FROM (
         SELECT
-            IIF(RIGHT(LTRIM(RTRIM(품번)),1)='D', N'개발', N'양산') AS 구분,
+            IIF(RIGHT(LTRIM(RTRIM(품번)),1)='P', N'양산', N'개발') AS 구분,
             LTRIM(RTRIM(품명)) AS model,
             ISNULL(수량,0) AS qty
         FROM doi_sale_resc
