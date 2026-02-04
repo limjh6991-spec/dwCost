@@ -109,7 +109,7 @@ const grid = {
     { name: '단위', fieldName: '단위', width: '80', header: { text: '단위' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
     { name: '판매기준가', fieldName: '판매기준가', width: '150', header: { text: '판매기준가' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0' },
     { name: '판매단가', fieldName: '판매단가', width: '120', header: { text: '판매단가' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0.00' },
-    { name: '수량', fieldName: '수량', width: '80', header: { text: '수량' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0' },
+    { name: '수량', fieldName: '수량', width: '80', header: { text: '수량' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: '판매금액', fieldName: '판매금액', width: '120', header: { text: '판매금액' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0.00', footer: { expression: 'sum', numberFormat: '#,##0.00', styleName: 'sum-footer1' }  },
     { name: '원화판매금액', fieldName: '원화판매금액', width: '180', header: { text: '원화판매금액' }, autoFilter: true, styleName: 'tr', styleCallback: addNewRow('tr'), numberFormat: '#,##0' , footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: '창고', fieldName: '창고', width: '80', header: { text: '창고' }, autoFilter: true, styleName: 'tl', styleCallback: addNewRow('tl') },
