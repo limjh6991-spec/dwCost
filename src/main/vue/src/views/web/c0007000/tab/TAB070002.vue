@@ -364,13 +364,13 @@ export default {
 
         const 도우모델 = this.gridDataProvider.getValue(itemIndex, '도우모델');
         if (!도우모델 || 도우모델.trim() === '') {
-          this.$toast('warning', '도우모델을 먼저 입력해주세요.');
+          this.$toast('warning', 'MODEL을 먼저 입력해주세요.');
           return;
         }
 
         const 도우모델Length = 도우모델.trim().length;
         if (도우모델Length < 4 || 도우모델Length > 5) {
-          this.$toast('warning', '도우모델은 4~5자리로 입력해주세요.');
+          this.$toast('warning', 'MODEL은 4~5자리로 입력해주세요.');
           return;
         }
 
@@ -563,7 +563,7 @@ export default {
         if (leftSide !== rightSide) {
           return {
             valid: false,
-            message: `[${도우코드}] BOH_MONTH(${bohMonth}) + IN_MONTH(${inMonth}) = ${leftSide} ≠ EOH_MONTH(${eohMonth}) + OUT_MONTH(${outMonth}) + LOSS_MONTH(${lossMonth}) = ${rightSide}`
+            message: `[${도우코드}] 수량이 일치하지 않습니다.`
           };
         }
       }

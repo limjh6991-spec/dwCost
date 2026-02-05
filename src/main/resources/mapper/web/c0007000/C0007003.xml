@@ -8,7 +8,7 @@
 		YYYYMM,SEL_CODE
 		,SITE as SITE_ORG
 		,CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' end as SITE
-		,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,Site,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss,recall_loss
+		,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,DW_SITE,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss,recall_loss
 		from
 			DOI_PROD_SUBUL
 		where 1=1
