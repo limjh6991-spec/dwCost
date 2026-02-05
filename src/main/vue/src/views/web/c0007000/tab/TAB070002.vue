@@ -119,6 +119,7 @@ export default {
     this.$nextTick(() => {
       if (this.gridView) {
         this.gridView.onCellClicked = this.onCellClicked;
+        this.gridView.onCellEdited = this.onCellEdited;
       }
       this.searchClick();
     });
@@ -233,6 +234,13 @@ export default {
       if (!this.gridView || !this.gridDataProvider) return;
       this.gridView.commit();
 
+      // 도우모델 필수 입력 검증 (먼저 체크)
+      const modelValidation = this.validateModelInput();
+      if (!modelValidation.valid) {
+        this.$toast('warning', modelValidation.message);
+        return;
+      }
+
       const validationResult = this.validateMonthData();
       if (!validationResult.valid) {
         this.$toast('warning', validationResult.message);
@@ -281,7 +289,12 @@ export default {
       let error = {};
       if (!this.isValidateCellRndSubGrid) return error;
 
-      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site','도우모델'], column.fieldName)) {
+      if (column.fieldName === '도우모델') {
+        if (_.isNil(value) || value.trim() === '') {
+          error.level = 'error';
+          error.message = 'MODEL을 입력해주세요.';
+        }
+      } else if (this.$utils.containsValue(['yyyymm', 'selCode', 'site'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';
@@ -363,6 +376,24 @@ export default {
 
         this.selectedRowIndex = itemIndex;
         this.openProdGubunPopup();
+      }
+    },
+    onCellEdited(grid, itemIndex, dataRow, field) {
+      const fieldName = this.gridDataProvider.getFieldName(field);
+      
+      if (fieldName === '도우모델') {
+        // gridView.getValue를 사용해야 편집 완료된 값을 가져올 수 있음
+        const 도우모델 = grid.getValue(itemIndex, '도우모델');
+        const 작업구분 = grid.getValue(itemIndex, '작업구분');
+        
+        if (도우모델) {
+          const 도우코드 = 도우모델.trim() + (작업구분 || '');
+          
+          // 편집 상태 해제 후 값 설정
+          this.$nextTick(() => {
+            this.gridDataProvider.setValue(dataRow, '도우코드', 도우코드);
+          });
+        }
       }
     },
     openProdGubunPopup() {
@@ -488,6 +519,24 @@ export default {
 
       this.selectedRowIndex = null;
     },
+    validateModelInput() {
+      const rowCount = this.gridDataProvider.getRowCount();
+      
+      for (let i = 0; i < rowCount; i++) {
+        const rowState = this.gridDataProvider.getRowState(i);
+        if (rowState !== 'created' && rowState !== 'updated') continue;
+
+        const 도우모델 = this.gridDataProvider.getValue(i, '도우모델');
+        if (!도우모델 || 도우모델.trim() === '') {
+          return {
+            valid: false,
+            message: 'MODEL을 입력해주세요.'
+          };
+        }
+      }
+
+      return { valid: true };
+    },
     validateMonthData() {
       const rowCount = this.gridDataProvider.getRowCount();
       
@@ -505,7 +554,7 @@ export default {
         if (bohMonth === 0 && inMonth === 0 && eohMonth === 0 && outMonth === 0 && lossMonth === 0) {
           return {
             valid: false,
-            message: `[${도우코드}] 수량을 입력해주세요.`
+            message: `수량을 입력해주세요.`
           };
         }
 

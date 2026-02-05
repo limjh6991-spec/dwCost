@@ -112,6 +112,7 @@ const grid = {
       autoFilter: true,
       editable: false,
       styleName: 'tl',
+      visible: false,
       styleCallback: readOnly('tl')
     },
     // {
@@ -134,12 +135,12 @@ const grid = {
     //     return ret;
     //   },
     // },
-    { name: '도우모델', fieldName: '도우모델', width: '120', header: { text: '도우모델' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: '도우모델', fieldName: '도우모델', width: '120', header: { text: 'MODEL' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
     { name: '작업구분', fieldName: '작업구분', width: '120', header: { text: '작업구분' }, autoFilter: true, editable: false, styleName: 'tl', styleCallback: readOnly('tl') },
-    { name: 'org작업구분', fieldName: 'org작업구분', width: '150', header: { text: 'ORG작업구분' }, autoFilter: true, editable: false, styleName: 'tl', styleCallback: readOnly('tl') },
-    { name: 'model', fieldName: 'model', width: '80', header: { text: 'MODEL' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: 'org작업구분', fieldName: 'org작업구분', width: '150', header: { text: 'ORG작업구분' }, autoFilter: true, editable: false, styleName: 'tl', styleCallback: readOnly('tl'), visible: false },
+    { name: 'model', fieldName: 'model', width: '80', header: { text: '제품군' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
     { name: 'inch', fieldName: 'inch', width: '80', header: { text: 'Inch' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
-    { name: 'dwSite', fieldName: 'dwSite', width: '80', header: { text: 'Site' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
+    { name: 'dwSite', fieldName: 'dwSite', width: '80', header: { text: '판매처' }, autoFilter: true, editable: true, styleName: 'tl', styleCallback: addNewRow('tl') },
     { name: 'bohMonth', fieldName: 'bohMonth', width: '90', header: { text: 'BOH_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0.##', styleCallback: addNewRow('tr') },
     { name: 'inMonth', fieldName: 'inMonth', width: '80', header: { text: 'IN_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr') },
     { name: 'bonusMonth', fieldName: 'bonusMonth', width: '110', header: { text: 'BONUS_MONTH' }, autoFilter: true, editable: true, styleName: 'tr', numberFormat: '#,##0', styleCallback: addNewRow('tr') },
