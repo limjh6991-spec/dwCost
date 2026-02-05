@@ -568,9 +568,9 @@
 		, #{외부Loss율}
 		, #{조립위치}
 		, #{특이사항}
-		, #{최초작성일}
+		, CONVERT(date, GETDATE())
 		, #{최초작성자}
-		, #{최종수정일}
+		, CONVERT(date, GETDATE())
 		, #{최종수정자}
 		);
 	</insert>
@@ -597,9 +597,7 @@
 		,외부Loss율 = #{외부Loss율}
 		,조립위치 = #{조립위치}
 		,특이사항 = #{특이사항}
-		,최초작성일 = #{최초작성일}
-		,최초작성자 = #{최초작성자}
-		,최종수정일 = #{최종수정일}
+		,최종수정일 = CONVERT(date, GETDATE())
 		,최종수정자 = #{최종수정자}
 		WHERE 1=1
 		and yyyymm = #{yyyymm}
@@ -615,7 +613,7 @@
 		AND site = #{siteOrg}
 		AND 제품번호 = #{제품번호}
 		AND 공정 = #{공정}
-		AND ISNULL(자재번호, '') = ISNULL(#{자재번호}, '')
+		AND 자재번호 = #{자재번호}
 	</delete>
 	<select id="checkTab3DuplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
 		DROP TABLE IF EXISTS #TempTable1;

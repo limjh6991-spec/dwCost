@@ -75,7 +75,6 @@ export default {
         VN: 'VN',
       },
       isProcessing: false,
-      duplicateKey: ['yyyymm', 'site', '제품명', '제품번호'],
       isValidteCellMaterialGrid: false,
     };
   },
@@ -198,12 +197,14 @@ export default {
           try {
             let param = {
               menuId: 'c0001004',
-              delete: [{ queryId: 'deleteTab1Data', data: existingRows }],
+              delete: [{ queryId: 'deleteTab3Data', data: existingRows }],
             };
             await this.$axios.api.saveData(param);
             this.searchClick();
-          } catch {
-            this.$toast('error', '삭제 중 에러가 발생했습니다.');
+          } catch (e) {
+            console.error('삭제 에러:', e);
+            const errorMsg = e.response?.data?.message || e.response?.data?.error || e.message || '알 수 없는 에러';
+            this.$toast('error', `삭제 중 에러가 발생했습니다: ${errorMsg}`);
             return;
           }
         }
@@ -220,8 +221,6 @@ export default {
         this.$toast('info', '변경된 내용이 없습니다.');
         return;
       }
-
-      this.duplicateIndices = this.$utils.findDuplicateIndices(this.duplicateKey, this.gridDataProvider.getJsonRows(0, -1));
 
       this.isValidteCellMaterialGrid = true;
       let rslt = this.gridView.validateCells(null, false);
@@ -250,17 +249,13 @@ export default {
     },
     onValidateColumnMaterialGrid(grid, column, inserting, value, iteminex, dataRow) {
       let error = {};
-      if (this.isValidteCellMaterialGrid) return error;
+      if (!this.isValidteCellMaterialGrid) return error;
 
       if (this.$utils.containsValue(['yyyymm', 'site', '제품번호', '자재번호'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';
         }
-      }
-      if (this.duplicateIndices.includes(iteminex) && this.$utils.containsValue(['yyyymm', 'site', '제품번호', '자재번호'], column.fieldName)) {
-        error.level = 'warning';
-        error.message = '중복 입력입니다.';
       }
 
       return error;
