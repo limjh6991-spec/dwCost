@@ -4,7 +4,7 @@
       <div class="col login_visu">
                 <div class="header">
                   <h1 class="logo">
-                    <span>Login</span>
+                    <span>원가관리시스템</span>
                   </h1>
               </div>
         </div>
@@ -15,6 +15,7 @@
             </div>			
         </div>
         <div class="user_info_box"> 
+          <div class="title">Log In</div>
             <ul>
               <li class="user_id">
                   <div class="form-floating">

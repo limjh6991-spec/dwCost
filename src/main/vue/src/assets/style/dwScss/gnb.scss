@@ -28,12 +28,14 @@
         }
     }
     .user_info{
+        height: 50px;
         position: absolute;
         right: 10px;
-        top:5px;
+        top: 0px;
         display: flex;
         align-items: center;
         z-index: 1000;
+        justify-items: center;
         .logid{
             font-size: 14px;
             color:#fff;
@@ -64,8 +66,14 @@
         z-index: 100;
         &.on{
             background-color: #232f4e;
+             border-bottom: 1px solid rgba(256, 256, 256, 0.1);
             .depth1{
-                >li{padding:12px 55px;}
+                >li{padding:12px 55px;                     
+                     border-left: 1px solid rgba(256, 256, 256, 0.1);
+                     &:last-child{
+                     border-right: 1px solid rgba(256, 256, 256, 0.1);
+                     }
+                    }
             } 
             ul{
                 &.depth2{
@@ -87,6 +95,7 @@
                 justify-content: center;
                 margin: 0 auto;
                 height: 50px;
+               
                // width: 100%;
                 //padding-top:10px;
                >li{
@@ -94,22 +103,31 @@
                     color: #fff;
                     font-size: 16px;
                     padding:12px 35px;
+                    min-width: 200px;
+                    display: flex;
                     font-weight: 600;
                     cursor: pointer;
+                    justify-content: center;
                     &:hover{
                         background:rgba(0,0,0,0.14);
                         padding:12px 55px;
                         transition: all 0.3s;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.5);
                         &::before{     
                             opacity: 1;
                         }
                         &::after{     
                             opacity: 1;
                         }
+                        ul.depth2{
+                            background:rgba(0,0,0,0.14);
+                            transition: all 0.28s;
+                        }
                      }
                     >a{
                         span{
                             position: relative;
+                            letter-spacing: -1px;
                            // font-weight: 600;
                             }
                             &.on{
@@ -123,15 +141,15 @@
                     &::before{
                         content: '';
                         position: absolute;
-                        left: 3rem;
-                        top: 8px;
+                        //left: 3rem;
+                        top: 3px;
                         width: 0.5rem;
                         height: 0.5rem;
                         background-color: #2dc1dd;
                         //transform: translate(-120%, -70%);
                         opacity: 0;
                         transition: opacity 0.3s;
-                        border-radius: 2px;
+                        border-radius: 0.5rem;
                             }
                     &::after{
                         content: '';
@@ -145,15 +163,16 @@
                         ul{
                             &.depth2{
                                 position: absolute;
-                               // left:6rem;
+                                left:0;
                                 bottom: 0;
                                 width: 100%;
-                                min-height: 400px;
+                                min-height: 418px;
                                 transform: translateY(100%);
                                 opacity: 0;
                                 transition: opacity 0.1s;
                                 pointer-events: none;  
                                 padding-top: 10px;
+                                text-align: center;
                                 &:hover{
                                     opacity: 1!important;
                                 }
@@ -178,7 +197,7 @@
                                             color:#2dc1dd;
                                             font-weight: 500;
                                             span{
-                                                padding: 0.2em 0.7em ;
+                                                padding: 0.1em 0.7em ;
                                                 color:#232f4e;
                                                 background-color: #fff;  
 
@@ -188,7 +207,7 @@
                                             &.depth3{
                                                 display: block;
                                                 padding:0 ;
-                                                margin-left: 0.8rem;
+                                                //margin-left: 0.8rem;
                                                 width: calc(100% - 30px);
                                                 margin-top: 10px;
                                             }
@@ -196,11 +215,16 @@
                                     }
                                     ul{
                                         &.depth3{
-                                           // padding:0.7rem;
-                                            display: none;
+                                            width: calc(100% - 30px);
+                                             background:rgba(256, 256, 256, 0.05);
+                                             border-radius: 3px;
+                                             margin: auto;
+                                             display: none;
                                             li{
                                                 font-size: 14px;
-                                                padding: 0 0 5px 0;
+                                                padding: 0 0 5px 20px;
+                                                width: 100%;
+                                                display: flex;
                                                 // &:first-child{
                                                 //     padding-top:15px;
                                                 // }
@@ -209,7 +233,7 @@
                                                         padding:0.2rem 0.3rem;
                                                         transition:none;
                                                         font-size: 14px;
-                                                        border-bottom: 1px solid transparent;
+                                                       // border-bottom: 1px solid transparent;
                                                     }
                                                 }
                                                 &:hover{
@@ -219,7 +243,7 @@
                                                             border-radius:0rem;
                                                             background:none;
                                                             color: #869cc9;
-                                                            border-bottom: 1px solid #869cc9;
+                                                           // border-bottom: 1px solid #869cc9;
                                                             &::before{
                                                                 content: none;
                                                             }
@@ -233,7 +257,9 @@
                                                     content: '●';
                                                     font-size: 5px;
                                                     margin-right: 5px;
-                                                }                                                }
+                                                    margin-top: 10px;
+                                                }                                              
+                                              }
                                         }
                                     }
                                 }
@@ -259,7 +285,7 @@
         cursor: pointer;
     }
     .btn-wrap{
-        padding-top: 10px;
+        padding-top: 6px;
         border-top: 1px solid#324166;
         width: 100%;
         transition: all 0.1s ease;

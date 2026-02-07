@@ -87,7 +87,7 @@
       <div class="logid">{{userAuthInfo.userInfo.useName}}</div>
       <div class="logout" @click="logoutClick">logout</div>
     </div>
- <div class="btn-wrap" :style="closeBtnStyle">
+        <div class="btn-wrap" :style="closeBtnStyle">
           <b-button class="btn-close-gnb" @click="resetMenu">닫기</b-button>
        </div>
       <!--닫기 버튼 추가 -->
@@ -145,7 +145,7 @@ export default {
       isDragging: false,
       depthBgHeight: 0,
        opacity: 0,
-       top: "-100px",
+       top: "0px",
       selectdProdCtg:null,
       curDateStr:'',
     };
@@ -166,7 +166,7 @@ export default {
     },
     closeBtnStyle(){
       return {
-        top: `${this.depthBgHeight - 5 == -5 ? -100 : this.depthBgHeight - 5}px`,
+        top: `${this.depthBgHeight - 5 == -5 ? -30 : this.depthBgHeight - 0}px`,
         opacity: this.opacity,
         
       };
@@ -276,8 +276,8 @@ export default {
         this.depthBgHeight = 0;
          this.opacity = 0;
       }else{
-        const liHeight = 42;
-        this.depthBgHeight = maxDepth2Length * liHeight + 50;   
+        const liHeight = 42; //42
+        this.depthBgHeight = maxDepth2Length * liHeight + 48;   //50
          this.opacity = 1;      
       }
     },
@@ -297,7 +297,7 @@ export default {
          this.opacity = 0;
       }else{
         const liHeight = 42;
-        this.depthBgHeight = maxDepth2Length * liHeight + 50;   
+        this.depthBgHeight = maxDepth2Length * liHeight + 48;   
          this.opacity = 1;      
       }
     },
@@ -319,9 +319,10 @@ export default {
       });
       
       const liHeight = 42;
-      this.depthBgHeight = maxDepth2Length * liHeight + 50;
+      this.depthBgHeight = maxDepth2Length * liHeight + 48;   ;//48
        this.opacity = 1; 
     },
+
     /*navMouseLeave(event) {
       if(this.status)return;
       const relatedTarget = event.relatedTarget;
@@ -506,7 +507,7 @@ export default {
 
     .bi{
         border-color:#ffffff;
-        background: #7487ad;
+        background: #4bcae4;
         height: 26px;
         border-radius: 0;
         &::before, [class^="bi-"]::before, [class*=" bi-"]::before {
@@ -514,6 +515,7 @@ export default {
         }
         &:hover{
         border-color:#ffffff;
+        background-color: #232f4e!important;
         }
       }
     }
@@ -524,6 +526,7 @@ export default {
   position: relative;
   overflow: hidden; /* 탭 내용이 넘치더라도 숨김 */
   width:100%;
+  padding-top: 5px;
 }
 
 .tabs-wrapper {
@@ -531,13 +534,14 @@ export default {
   overflow-x: auto; /* 스크롤 가능 */
   white-space: nowrap;
   height: 26px;
-  width: calc(100% - 110px);
+  width: calc(100% - 115px);
   
 }
 
 .two_depth_tab {
   display: inline-flex;
   transition: transform 0.3s ease-in-out;
+
 }
 
 </style>

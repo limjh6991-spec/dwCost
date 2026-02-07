@@ -6,19 +6,24 @@
     &.two_depth_tab{
         height: 26px;
         width:100%;
-        background: url('@assets/images/bg_2depth.png') repeat-x;
+       // background: url('@assets/images/bg_2depth.png') repeat-x;
             .nav{
-                background: url('@assets/images/bg_2depth.png') repeat-x;
+               // background: url('@assets/images/bg_2depth.png') repeat-x;
                 display: flex;
                 flex-wrap: nowrap;
                 overflow: hidden;
+              
                 .nav-item{
                     position: relative;
                     height: 26px;
-                    border-radius: 3px 0 0 0;
+                    border-radius: 6px 0 0 0;
                     box-shadow: -3px -2px 3px rgba(0, 0, 0, 0.3);
-                    padding-right: 15px;
+                    padding-right: 26px;
                     white-space: nowrap;
+                    margin-left: -8px;
+                    &:first-child{
+                    margin-left: 0px!important;
+                    }
                     .nav-link{
                             padding: 0 ;
                             position: relative;
@@ -33,13 +38,14 @@
                                 background: #232f4e;
                                 position: absolute;
                                 top: 0;
-                                right: -10px;
+                                right: -16px;
+                                border-radius: 0 3px 0 0;
                                     }
                                 .path{
                                     background:#232f4e url('@assets/images/gps_off.png') no-repeat center;
                                     width:25px;
                                     height: 26px;
-                                    border-radius: 3px 0 0 0;
+                                    border-radius: 6px 0 0 0;
                                 }
                                 .menu{
                                     color:#7087ab;
@@ -68,8 +74,8 @@
                                     background: #fbfff2;
                                     position: absolute;
                                     top: 0;
-                                    right: -10px;
-                                        }
+                                    right: -16px;
+                                    border-radius: 0 3px 0 0;                                        }
                                     .path{
                                         background:#fff url('@assets/images/gps.png') no-repeat center;
                                         width:25px;
