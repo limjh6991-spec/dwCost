@@ -45,7 +45,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="totalCostGrid" :uid="'totalCostGrid'" :step="'1'" :rows="totalCostGridRows" :grid="totalCostGrid" style="height: 100%" :fitLayoutWidthEnable="false" />
+        <RealGrid ref="totalCostGrid" :uid="'totalCostGrid'" :step="'1'" :rows="totalCostGridRows" :grid="totalCostGrid" style="height: 100%" :fitLayoutWidthEnable="true" />
       </div>
     </div>
   </div>
@@ -261,7 +261,7 @@ export default {
           fieldName: k,
           header: { text },
           numberFormat: '#,##0',
-          width: 90,
+          width: 80,
           styleName: 'tr',
         });
       });
@@ -298,7 +298,7 @@ export default {
         this.ensureColumn(baseGrid, {
           name: fieldId,
           fieldName: fieldId,
-          width: 180,
+          width: 110,
           numberFormat: '#,##0',
           styleName: 'tr',
           header: { text: m.displayModel },

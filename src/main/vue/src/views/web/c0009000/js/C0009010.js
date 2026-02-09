@@ -8,7 +8,7 @@ const grid = {
     display: {
       columnMovable: false,
       editItemMerging: true,
-      fitStyle: 'even',
+      fitStyle: 'none',
       emptyMessage: '조회된 데이터가 없습니다.',
       hscrollBar: true,
       showEmptyMessage: true,

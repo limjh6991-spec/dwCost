@@ -347,7 +347,7 @@ export default {
           fieldName: m.fieldId,
           header: { text: m.model },
           numberFormat: '#,##0',
-          width: 85,
+          width: 110,
           styleName: 'tr',
         });
       });
