@@ -364,37 +364,60 @@
     </select>
 
     <select id="C0009009_Qty" resultType="CamelMap">
+    ;WITH MERCH_ITEM AS (
+        SELECT DISTINCT M.품번
+        FROM DOI_MATL_RESC M WITH(NOLOCK)
+        WHERE M.YYYYMM = #{yyyymm}
+          AND M.SITE = #{site}
+          AND M.SEL_CODE = #{selCode}
+          AND M.품목자산분류 = N'상품'
+          AND M.품번 IS NOT NULL
+    )
     SELECT
         구분,
         LTRIM(RTRIM(model)) AS model,
         SUM(qty) AS qty
     FROM (
+        -- 국내매출
         SELECT
-            IIF(RIGHT(LTRIM(RTRIM(품번)),1)='P', N'양산', N'개발') AS 구분,
-            LTRIM(RTRIM(품명)) AS model,
-            ISNULL(수량,0) AS qty
-        FROM doi_sale_resc
+            CASE 
+              WHEN A.품번 LIKE N'VN%' THEN N'카세트'
+              WHEN MI.품번 IS NOT NULL THEN N'구매'
+              WHEN RIGHT(LTRIM(RTRIM(A.품번)),1)='P' THEN N'양산'
+              ELSE N'개발'
+            END AS 구분,
+            LTRIM(RTRIM(A.품명)) AS model,
+            ISNULL(A.수량,0) AS qty
+        FROM doi_sale_resc A
+        LEFT JOIN MERCH_ITEM MI ON MI.품번 = A.품번
         WHERE 1=1
         <if test="yyyymm != null and yyyymm != ''">
-            AND yyyymm = #{yyyymm}
+            AND A.yyyymm = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
-            AND site = #{site}
+            AND A.site = #{site}
         </if>
 
         UNION ALL
 
+        -- 해외매출
         SELECT
-            IIF(RIGHT(LTRIM(RTRIM(품번)),1)='D', N'개발', N'양산') AS 구분,
-            LTRIM(RTRIM(품명)) AS model,
-            ISNULL(수량,0) AS qty
-        FROM doi_invoice_resc
+            CASE 
+              WHEN B.품번 LIKE N'VN%' THEN N'카세트'
+              WHEN MI.품번 IS NOT NULL THEN N'구매'
+              WHEN RIGHT(LTRIM(RTRIM(B.품번)),1)='P' THEN N'양산'
+              ELSE N'개발'
+            END AS 구분,
+            LTRIM(RTRIM(B.품명)) AS model,
+            ISNULL(B.수량,0) AS qty
+        FROM doi_invoice_resc B
+        LEFT JOIN MERCH_ITEM MI ON MI.품번 = B.품번
         WHERE 1=1
         <if test="yyyymm != null and yyyymm != ''">
-            AND yyyymm = #{yyyymm}
+            AND B.yyyymm = #{yyyymm}
         </if>
         <if test="site != null and site != ''">
-            AND site = #{site}
+            AND B.site = #{site}
         </if>
     ) A
     GROUP BY 구분, LTRIM(RTRIM(model))

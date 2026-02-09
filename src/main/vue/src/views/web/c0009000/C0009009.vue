@@ -189,8 +189,10 @@ export default {
         const procKey = this.makeProcModelKey(model);
         if (!procKey) return;
 
-        if (!map[procKey] || String(map[procKey]).length < model.length) {
-          map[procKey] = model;
+        // 소문자 키로 저장하여 대소문자 무관하게 매칭
+        const lowerKey = procKey.toLowerCase();
+        if (!map[lowerKey] || String(map[lowerKey]).length < model.length) {
+          map[lowerKey] = model;
         }
       });
       return map;
@@ -207,23 +209,30 @@ export default {
 
       const ignore = new Set([
         'rn', 'gubun',
-        'z합계', 'zTotal',
-        '개발z합계개발', 'z합계개발', 'zDevTotal',
-        '양산z합계양산', 'z합계양산', 'zMassTotal',
+        'z합계', 'zTotal', 'Z합계',
+        '개발z합계개발', '개발Z합계개발', 'z합계개발', 'Z합계개발', 'zDevTotal',
+        '양산z합계양산', '양산Z합계양산', 'z합계양산', 'Z합계양산', 'zMassTotal',
+        '카세트z합계카세트', '카세트Z합계카세트', 'z합계카세트', 'Z합계카세트', 'zCassetteTotal',
+        '구매z합계구매', '구매Z합계구매', 'z합계구매', 'Z합계구매', 'zPurchaseTotal',
       ]);
 
       return Object.keys(first)
         .filter(k => !ignore.has(k))
         .map(pivotKey => {
-          const gubun = pivotKey.startsWith('개발') ? '개발' : '양산';
-          const procModelKey = pivotKey.replace(/^개발|^양산/, '');
-          const raw = displayMap?.[procModelKey] ?? procModelKey;
+          let gubun = '양산';
+          if (pivotKey.startsWith('개발')) gubun = '개발';
+          else if (pivotKey.startsWith('카세트')) gubun = '카세트';
+          else if (pivotKey.startsWith('구매')) gubun = '구매';
+          const procModelKey = pivotKey.replace(/^개발|^양산|^카세트|^구매/, '');
+          // 소문자로 변환하여 displayMap에서 조회 (대소문자 무관 매칭)
+          const lowerKey = procModelKey.toLowerCase();
+          const raw = displayMap?.[lowerKey] ?? procModelKey;
           const displayModel = this.formatDisplayModel(raw);
 
           return {
             pivotKey,
             gubun,
-            procModelKey,
+            procModelKey: lowerKey,
             model: displayModel,
             fieldId: this.makeFieldId(pivotKey),
           };
@@ -231,24 +240,24 @@ export default {
     },
 
     buildQtyRow(headerMeta, qtyRespRows) {
+      // procModelKey 기준으로 수량 매핑 (구분 값 불일치 문제 해결)
       const qtyMap = {};
       (qtyRespRows || []).forEach(r => {
-        const gubunRaw = r.구분 ?? r.gubun ?? r['gubun'] ?? r['구분'];
         const modelRaw = r.model ?? r.MODEL ?? r['MODEL'];
-
-        const gubun = String(gubunRaw ?? '').trim();
         const model = String(modelRaw ?? '').trim();
 
         const procKey = this.makeProcModelKey(model);
-        if (!gubun || !procKey) return;
+        if (!procKey) return;
 
-        const pivotKey = `${gubun}${procKey}`;
-        qtyMap[pivotKey] = Number(r.qty || 0);
+        // 소문자 키로 저장하여 headerMeta.procModelKey와 매칭
+        const lowerKey = procKey.toLowerCase();
+        qtyMap[lowerKey] = (qtyMap[lowerKey] || 0) + Number(r.qty || 0);
       });
 
       const row = { gubun: '매출수량' };
       headerMeta.forEach(m => {
-        row[m.fieldId] = qtyMap[m.pivotKey] ?? 0;
+        // procModelKey로 매칭 (이미 lowercase)
+        row[m.fieldId] = qtyMap[m.procModelKey] ?? 0;
       });
 
       const sum = g =>
@@ -258,7 +267,9 @@ export default {
 
       row.zMassTotal = sum('양산');
       row.zDevTotal = sum('개발');
-      row.zTotal = row.zMassTotal + row.zDevTotal;
+      row.zCassetteTotal = sum('카세트');
+      row.zPurchaseTotal = sum('구매');
+      row.zTotal = row.zMassTotal + row.zDevTotal + row.zCassetteTotal + row.zPurchaseTotal;
 
       return row;
     },
@@ -272,8 +283,10 @@ export default {
         });
 
         o.zTotal = Number(r['z합계'] ?? r['Z합계'] ?? 0);
-        o.zDevTotal = Number(r['개발z합계개발'] ?? r['Z합계개발'] ?? 0);
-        o.zMassTotal = Number(r['양산z합계양산'] ?? r['Z합계양산'] ?? 0);
+        o.zDevTotal = Number(r['개발z합계개발'] ?? r['개발Z합계개발'] ?? r['Z합계개발'] ?? 0);
+        o.zMassTotal = Number(r['양산z합계양산'] ?? r['양산Z합계양산'] ?? r['Z합계양산'] ?? 0);
+        o.zCassetteTotal = Number(r['카세트z합계카세트'] ?? r['카세트Z합계카세트'] ?? r['Z합계카세트'] ?? 0);
+        o.zPurchaseTotal = Number(r['구매z합계구매'] ?? r['구매Z합계구매'] ?? r['Z합계구매'] ?? 0);
 
         return o;
       });
@@ -313,6 +326,8 @@ export default {
         { k:'zTotal',     text:'총합계' },
         { k:'zMassTotal', text:'양산합계' },
         { k:'zDevTotal',  text:'개발합계' },
+        { k:'zCassetteTotal', text:'카세트' },
+        { k:'zPurchaseTotal', text:'구매' },
       ].forEach(({k,text}) => {
         this.ensureField(baseGrid, k, 'number');
         this.ensureColumn(baseGrid, {
@@ -340,8 +355,11 @@ export default {
       this.gridDataProvider.setFields(baseGrid.fields);
       this.gridView.setColumns(baseGrid.columns);
 
-      const yangsanModels = headerMeta.filter(x => x.gubun === '양산');
-      const gaebalModels = headerMeta.filter(x => x.gubun === '개발');
+      const sortByModel = (a, b) => a.model.localeCompare(b.model, undefined, { sensitivity: 'base' });
+      const yangsanModels = headerMeta.filter(x => x.gubun === '양산').sort(sortByModel);
+      const gaebalModels = headerMeta.filter(x => x.gubun === '개발').sort(sortByModel);
+      const cassetteModels = headerMeta.filter(x => x.gubun === '카세트').sort(sortByModel);
+      const purchaseModels = headerMeta.filter(x => x.gubun === '구매').sort(sortByModel);
 
       const layout = [
         { header: { text: '사업구분' }, items: [{ column: 'gubun', rowSpan: 2, header: { text: '제품명' } }] },
@@ -351,10 +369,14 @@ export default {
           items: [
             { column: 'zMassTotal', header: { text: '양산' } },
             { column: 'zDevTotal', header: { text: '개발' } },
+            { column: 'zCassetteTotal', header: { text: '카세트' } },
+            { column: 'zPurchaseTotal', header: { text: '구매' } },
           ],
         },
         { header: { text: '양산' }, items: yangsanModels.map(m => ({ column: m.fieldId })) },
         { header: { text: '개발' }, items: gaebalModels.map(m => ({ column: m.fieldId })) },
+        { header: { text: '카세트' }, items: cassetteModels.map(m => ({ column: m.fieldId })) },
+        { header: { text: '구매' }, items: purchaseModels.map(m => ({ column: m.fieldId })) },
       ];
 
       this.gridView.setColumnLayout(layout);      

@@ -22,7 +22,7 @@ const grid = {
     sorting: { enabled: true },
     stateBar: { visible: false },
     filtering: { enabled: true },
-    fixed: { colBarWidth: 1, colCount: 1 },
+    fixed: { colBarWidth: 1, colCount: 6 },
   },
   fields: [
     { fieldName: 'gubun', dataType: ValueType.TEXT },
@@ -30,6 +30,7 @@ const grid = {
     { fieldName: '양산합계', dataType: ValueType.NUMBER },
     { fieldName: '개발합계', dataType: ValueType.NUMBER },
     { fieldName: '카세트합계', dataType: ValueType.NUMBER },
+  { fieldName: '구매합계', dataType: ValueType.NUMBER },
   ],
   columns: [
     { name: 'gubun', fieldName: 'gubun', width: 200, header: { text: '제품명' }, styleName: 'tl'},
@@ -37,6 +38,7 @@ const grid = {
     { name: '양산합계', fieldName: '양산합계', width: 130, header: { text: '양산 합계' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: '개발합계', fieldName: '개발합계', width: 130, header: { text: '개발 합계' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: '카세트합계', fieldName: '카세트합계', width: 130, header: { text: '카세트 합계' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: '구매합계', fieldName: '구매합계', width: 130, header: { text: '구매 합계' }, styleName: 'tr', numberFormat: '#,##0' },
   ]
 };
 

@@ -83,7 +83,7 @@ export default {
         HQ: 'HQ',
         VN: 'VN',
       },
-      STRUCT_ORDER: ['UTG', 'ITG', 'HTG', 'Coated', '카세트'],
+      STRUCT_ORDER: ['UTG', 'ITG', 'HTG', 'Coated', '카세트', '상품'],
     };
   },
   watch: {
@@ -149,11 +149,21 @@ export default {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
 
+    // camelCase를 띄어쓰기로 분리하여 대문자로 변환
+    camelToDisplay(str) {
+      if (!str) return '';
+      // camelCase → 띄어쓰기 분리 (uvResinCoating → UV RESIN COATING)
+      return str
+        .replace(/([a-z])([A-Z])/g, '$1 $2')  // 소문자 뒤 대문자 앞에 공백
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')  // 연속 대문자 분리
+        .toUpperCase();
+    },
+
     getModelMetaFromField(fieldId) {
       const raw = String(fieldId || '').trim();
 
       let s = raw;
-      const prefixes = [/^양산/, /^개발/, /^카세트/];
+      const prefixes = [/^양산/, /^개발/, /^카세트/, /^구매/];
       let changed = true;
       while (changed) {
         changed = false;
@@ -166,16 +176,19 @@ export default {
         }
       }
 
-      let model = String(s).toUpperCase();
+      // camelCase를 띄어쓰기로 분리하여 표시
+      let model = this.camelToDisplay(s);
 
       let bizGubun = '양산';
       if (raw.includes('카세트') || model.includes('카세트')) bizGubun = '카세트';
       else if (raw.includes('개발')) bizGubun = '개발';
+      else if (raw.includes('구매')) bizGubun = '구매';
 
       model = model.replace(/^카세트+/, '');
 
       let structure = 'UTG';
       if (bizGubun === '카세트') structure = '카세트';
+      else if (bizGubun === '구매') structure = '상품';
       else if (model.startsWith('I')) structure = 'ITG';
       else if (model.startsWith('H')) structure = 'HTG';
       else if (model.startsWith('C')) structure = 'Coated';
@@ -217,7 +230,7 @@ export default {
 
       const ignore = new Set([
         'rn', 'gubun',
-        '총합계', '양산합계', '개발합계', '카세트합계',
+        '총합계', '양산합계', '개발합계', '카세트합계', '구매합계',
         '상품매출', '기타매출'
       ]);
 
@@ -239,6 +252,7 @@ export default {
         { k: '양산합계', text: '양산합계' },
         { k: '개발합계', text: '개발합계' },
         { k: '카세트합계', text: '카세트합계' },
+        { k: '구매합계', text: '구매합계' },
       ].forEach(({ k, text }) => {
         if (!keys.includes(k)) return;
         this.ensureField(baseGrid, k, 'number');
@@ -262,10 +276,11 @@ export default {
           m.structure === 'ITG' ? 2 :
           m.structure === 'HTG' ? 3 :
           m.structure === 'Coated' ? 4 :
-          m.structure === '카세트' ? 9 : 9, };
+          m.structure === '카세트' ? 8 :
+          m.structure === '상품' ? 9 : 9,};
       });
 
-      const BIZ_ORDER = { '양산': 1, '개발': 2, '카세트': 3 };
+      const BIZ_ORDER = { '양산': 1, '개발': 2, '카세트': 3, '구매': 4 };
 
       headerMeta.sort((a, b) => {
         const bo = (BIZ_ORDER[a.bizGubun] ?? 9) - (BIZ_ORDER[b.bizGubun] ?? 9);
@@ -283,7 +298,7 @@ export default {
         this.ensureColumn(baseGrid, {
           name: fieldId,
           fieldName: fieldId,
-          width: 130,
+          width: 180,
           numberFormat: '#,##0',
           styleName: 'tr',
           header: { text: m.displayModel },
@@ -337,10 +352,12 @@ export default {
         { column: '양산합계', rowSpan: 3, header: { text: '양산합계' } },
         { column: '개발합계', rowSpan: 3, header: { text: '개발합계' } },
         { column: '카세트합계', rowSpan: 3, header: { text: '카세트합계' } },
+        { column: '구매합계', rowSpan: 3, header: { text: '구매합계' } },
 
         { header: { text: '양산' }, items: make2Depth('양산') },
         { header: { text: '개발' }, items: make2Depth('개발') },
         { header: { text: '카세트' }, items: make2Depth('카세트') },
+        { header: { text: '구매' }, items: make2Depth('구매') },
       ];
 
       this.gridView.setColumnLayout(layout);
