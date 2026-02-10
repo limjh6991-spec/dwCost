@@ -164,21 +164,49 @@ export default {
     delBtnClick() {
       if (!this.gridView || !this.gridDataProvider) return;
 
-      // this.gridView.commit();
+      this.gridView.commit();
       const checkedRows = this.gridView.getCheckedRows();
       if (checkedRows.length === 0) {
         this.$toast('info', '삭제할 행을 선택하세요');
-      } else {
-        let delItems = [];
+        return;
+      }
+
+      const deletedCount = checkedRows.length;
+      
+      this.$confirm('확인', `${deletedCount}건을 삭제하시겠습니까?`, async (confirmed) => {
+        if (!confirmed) return;
+
+        let newRows = [];
+        let existingRows = [];
+        
         checkedRows.forEach((itemIndex) => {
           if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
-            delItems.push(itemIndex);
+            newRows.push(itemIndex);
           } else {
-            this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
+            existingRows.push(this.gridDataProvider.getJsonRow(itemIndex));
           }
         });
-        this.gridDataProvider.removeRows(delItems);
-      }
+
+        if (newRows.length > 0) {
+          this.gridDataProvider.removeRows(newRows);
+        }
+
+        if (existingRows.length > 0) {
+          try {
+            let param = {
+              menuId: 'c0007007',
+              delete: [{ queryId: 'C0007007_Delete1', data: existingRows }],
+            };
+            await this.$axios.api.saveData(param);
+            this.searchClick();
+          } catch {
+            this.$toast('error', '삭제 중 에러가 발생했습니다.');
+            return;
+          }
+        }
+        
+        this.$toast('success', `${deletedCount}건이 삭제되었습니다.`);
+      });
     },
     async saveBtnClick() {
       if (!this.gridView || !this.gridDataProvider) return;

@@ -69,7 +69,8 @@ export default {
         HQ: 'HQ',
         VN: 'VN',
       },
-      duplicateKey: ['yyyymm', 'selCode', 'site', '도우코드', 'modelNType'],
+      duplicateKey: ['yyyymm', 'selCode', 'site', '품명', '품번'],
+      duplicateIndices: [],
       isValidateCellStockAmtGrid: false,
     };
   },
@@ -168,17 +169,45 @@ export default {
       const checkedRows = this.gridView.getCheckedRows();
       if (checkedRows.length === 0) {
         this.$toast('info', '삭제할 행을 선택하세요');
-      } else {
-        let delItems = [];
+        return;
+      }
+
+      const deletedCount = checkedRows.length;
+      
+      this.$confirm('확인', `${deletedCount}건을 삭제하시겠습니까?`, async (confirmed) => {
+        if (!confirmed) return;
+
+        let newRows = [];
+        let existingRows = [];
+        
         checkedRows.forEach((itemIndex) => {
           if (this.gridDataProvider.getRowState(itemIndex) === RowState.CREATED) {
-            delItems.push(itemIndex);
+            newRows.push(itemIndex);
           } else {
-            this.gridDataProvider.setRowState(itemIndex, RowState.DELETED);
+            existingRows.push(this.gridDataProvider.getJsonRow(itemIndex));
           }
         });
-        this.gridDataProvider.removeRows(delItems);
-      }
+
+        if (newRows.length > 0) {
+          this.gridDataProvider.removeRows(newRows);
+        }
+
+        if (existingRows.length > 0) {
+          try {
+            let param = {
+              menuId: 'c0007007',
+              delete: [{ queryId: 'C0007007_Delete2', data: existingRows }],
+            };
+            await this.$axios.api.saveData(param);
+            this.searchClick();
+          } catch {
+            this.$toast('error', '삭제 중 에러가 발생했습니다.');
+            return;
+          }
+        }
+        
+        this.$toast('success', `${deletedCount}건이 삭제되었습니다.`);
+      });
     },
     async saveBtnClick() {
       if (!this.gridView || !this.gridDataProvider) return;
@@ -220,16 +249,11 @@ export default {
       let error = {};
       if (!this.isValidateCellStockAmtGrid) return error;
 
-      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', '자산처리계정', '품목자산분류', '재고자산종류', '매출원가계정', '대분류', '중분류', '소분류', '품목기타분류', '품명', '품번', '규격', '단위', '기초수량', '기초금액', '입고수량', '입고금액', '출고수량', '출고금액', '재고수량A', '결산재고수량B', '차이수량A_B', '재고금액C', '결산재고금액D', '차이금액C_D', '최종결산월재고단가', '생산수량', '생산금액', '구매수량', '구매금액', '적송입고수량', '적송입고금액', '기타입고수량', '기타입고금액', '판매수량', '판매원가', '투입수량', '투입금액', '적송출고수량', '적송출고금액', '기타출고수량', '기타출고금액'], column.fieldName)) {
+      if (this.$utils.containsValue(['yyyymm', 'selCode', 'site', '품번'], column.fieldName)) {
         if (_.isNil(value)) {
           error.level = 'error';
           error.message = '필수 입력입니다.';
         }
-      }
-
-      if (this.duplicateIndices.includes(itemIndex) && this.$utils.containsValue(['yyyymm', 'selCode', 'site', '품명', '품번'], column.fieldName)) {
-        error.level = 'warning';
-        error.message = '중복 입력입니다.';
       }
 
       return error;

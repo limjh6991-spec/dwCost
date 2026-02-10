@@ -5,7 +5,7 @@
 <mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007007Mapper">
 	<select id="C0007007_TAB070011" resultType="CamelMap">
 		select
-		YYYYMM,SEL_CODE
+		SEQ_NO, YYYYMM,SEL_CODE
  		,SITE as SITE_ORG 
 		,CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' end as SITE
 		,창고, 품명, 품번, 규격, 단위, 수량, 기타출고구분, 기준단위, 기준단위수량, LotNo, 코스트센터, 현재고, 특이사항
@@ -385,35 +385,35 @@
 		, #{품번}
 		, #{규격}
 		, #{단위}
-		, #{기초수량}
-		, #{기초금액}
-		, #{입고수량}
-		, #{입고금액}
-		, #{출고수량}
-		, #{출고금액}
-		, #{재고수량A}
-		, #{결산재고수량B}
-		, #{차이수량A_B}
-		, #{재고금액C}
-		, #{결산재고금액D}
-		, #{차이금액C_D}
-		, #{최종결산월재고단가}
-		, #{생산수량}
-		, #{생산금액}
-		, #{구매수량}
-		, #{구매금액}
-		, #{적송입고수량}
-		, #{적송입고금액}
-		, #{기타입고수량}
-		, #{기타입고금액}
-		, #{판매수량}
-		, #{판매원가}
-		, #{투입수량}
-		, #{투입금액}
-		, #{적송출고수량}
-		, #{적송출고금액}
-		, #{기타출고수량}
-		, #{기타출고금액}
+		, COALESCE(CAST(#{기초수량,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{기초금액,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{입고수량,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{입고금액,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{출고수량,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{출고금액,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{재고수량A,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{결산재고수량B,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{차이수량A_B,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{재고금액C,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{결산재고금액D,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{차이금액C_D,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{최종결산월재고단가,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{생산수량,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{생산금액,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{구매수량,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{구매금액,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{적송입고수량,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{적송입고금액,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{기타입고수량,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{기타입고금액,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{판매수량,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{판매원가,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{투입수량,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{투입금액,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{적송출고수량,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{적송출고금액,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{기타출고수량,jdbcType=NUMERIC} AS FLOAT), 0)
+		, COALESCE(CAST(#{기타출고금액,jdbcType=NUMERIC} AS FLOAT), 0)
 		);
 	</insert>
 
