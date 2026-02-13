@@ -442,8 +442,8 @@ export default {
       if (dataCell.dataColumn.name != 'gubun') {
         return ret;
       }
-      var gubun = dataCell.value;
-      if (this.$utils.containsValue(['  I. 매출액', '  II. 재료비', '  III. 노무비', '  IV. 제조경비', '  V. 재고조정', '  VI. 판관비', '  VII. 총원가', '  VIII. 영업이익', '  IX. 한계이익', '  X. 손익분기점'], gubun)) {
+      var gubun = dataCell.value.trim();
+      if (/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\./.test(gubun)) {
         ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF' };
       } else {
         ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
@@ -452,8 +452,8 @@ export default {
     },
     setRowStyleCallbackGrid(grid, item, fixed) {
       var ret = {};
-      var gubun = grid.getValue(item.index, 'gubun');
-      if (this.$utils.containsValue(['  I. 매출액', '  II. 재료비', '  III. 노무비', '  IV. 제조경비', '  V. 재고조정', '  VI. 판관비', '  VII. 총원가', '  VIII. 영업이익', '  IX. 한계이익', '  X. 손익분기점'], gubun)) {
+      var gubun = grid.getValue(item.index, 'gubun').trim();
+      if (/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\./.test(gubun)) {
         ret.style = { background: '#BFBFBF' };
       }
       return ret;

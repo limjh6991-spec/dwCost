@@ -218,7 +218,7 @@ export default {
         return ret;
       }
       var gubun = dataCell.value.trim();
-      if (/^(IX|IV|V?I{0,3})\./.test(gubun)) {
+      if (/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\./.test(gubun)) {
         ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF' };
       } else {
         ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
@@ -228,7 +228,7 @@ export default {
     setRowStyleCallbackT2Grid(grid, item, fixed) {
       var ret = {};
       var gubun = grid.getValue(item.index, 'gubun').trim();
-      if (/^(IX|IV|V?I{0,3})\./.test(gubun)) {
+      if (/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\./.test(gubun)) {
         ret.style = { background: '#BFBFBF' };
       }
       return ret;
