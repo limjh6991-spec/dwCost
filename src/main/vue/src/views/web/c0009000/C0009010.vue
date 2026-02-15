@@ -17,22 +17,14 @@
         </b-col>
         <b-col cols="2" v-if="hasSysAdmin">
           <div class="form-floating">
-            <select
-              class="form-select label-80"
-              id="selCodeSelect"
-              v-model="params.selCode"
-            >
-              <option
-                v-for="o in selCodeList"
-                :key="o.value"
-                :value="o.value"
-              >
+            <select class="form-select label-80" id="selCodeSelect" v-model="params.selCode">
+              <option v-for="o in selCodeList" :key="o.value" :value="o.value">
                 {{ o.text }}
               </option>
             </select>
             <label for="selCodeSelect" class="select">SEL_CODE</label>
           </div>
-        </b-col>     
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -45,26 +37,28 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="totalCostGrid" :uid="'totalCostGrid'" :step="'1'" :rows="totalCostGridRows" :grid="totalCostGrid" style="height: 100%" :fitLayoutWidthEnable="true" />
+        <div id="totalCostGrid" ref="totalCostGrid" class="top-border" style="height: 100%"></div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { TreeView, LocalTreeDataProvider } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0009000/js/C0009010.js';
 
+let tcmTreeProvider, tcmTreeView;
 export default {
   props: {},
   components: {},
-    setup() {
+  setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
-    return { 
+    return {
       srchInfo,
-      userAuthInfo 
+      userAuthInfo,
     };
   },
   data() {
@@ -87,10 +81,10 @@ export default {
     };
   },
   watch: {
-        'params.yyyymm': async function(newVal) {
+    'params.yyyymm': async function (newVal) {
       if (newVal) {
         this.onDateChange();
-        await this.loadSelCodeList();        
+        await this.loadSelCodeList();
       }
     },
     'srchInfo.yyyymm': {
@@ -98,8 +92,8 @@ export default {
         if (newVal) {
           this.params.yyyymm = newVal;
         }
-      }
-     },
+      },
+    },
     prodCtg: {
       async handler(newVal) {
         if (newVal) {
@@ -119,22 +113,17 @@ export default {
       const roleList = this.userAuthInfo?.roleList || [];
       return roleList.includes('SYSADMIN');
     },
-    gridView() {
-      return this.$refs.totalCostGrid.getGridView();
-    },
-    gridDataProvider() {
-      return this.$refs.totalCostGrid.getGridDataProvider();
-    },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
     },
   },
   created() {
     this.initialize();
-    this.initializeGrid();
     this.loadSelCodeList();
   },
-  mounted() {},
+  mounted() {
+    this.initializeGrid();
+  },
   beforeUnmount() {},
 
   methods: {
@@ -144,6 +133,12 @@ export default {
     },
     initializeGrid() {
       this.totalCostGrid = _.cloneDeep(gridField);
+
+      tcmTreeProvider = new LocalTreeDataProvider(false);
+      tcmTreeView = new TreeView(this.$refs.totalCostGrid);
+      tcmTreeView.setDataSource(tcmTreeProvider);
+      tcmTreeView.setOptions(this.totalCostGrid.options);
+      tcmTreeView.treeOptions.expanderIconStyle = 'square';
     },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
@@ -154,8 +149,8 @@ export default {
       if (!str) return '';
       // camelCase → 띄어쓰기 분리 (uvResinCoating → UV RESIN COATING)
       return str
-        .replace(/([a-z])([A-Z])/g, '$1 $2')  // 소문자 뒤 대문자 앞에 공백
-        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')  // 연속 대문자 분리
+        .replace(/([a-z])([A-Z])/g, '$1 $2') // 소문자 뒤 대문자 앞에 공백
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2') // 연속 대문자 분리
         .toUpperCase();
     },
 
@@ -195,10 +190,10 @@ export default {
 
       return { bizGubun, structure, displayModel: model };
     },
-    
+
     ensureField(gridDef, fieldName, dataType = 'number') {
       if (!gridDef.fields) gridDef.fields = [];
-      if (!gridDef.fields.some(f => f.fieldName === fieldName)) {
+      if (!gridDef.fields.some((f) => f.fieldName === fieldName)) {
         gridDef.fields.push({
           fieldName,
           dataType,
@@ -209,7 +204,7 @@ export default {
 
     ensureColumn(gridDef, col) {
       if (!gridDef.columns) gridDef.columns = [];
-      if (!gridDef.columns.some(c => c.name === col.name)) {
+      if (!gridDef.columns.some((c) => c.name === col.name)) {
         gridDef.columns.push(col);
       }
     },
@@ -228,13 +223,9 @@ export default {
       const first = rows[0];
       const keys = Object.keys(first);
 
-      const ignore = new Set([
-        'rn', 'gubun',
-        '총합계', '양산합계', '개발합계', '카세트합계', '구매합계',
-        '상품매출', '기타매출'
-      ]);
+      const ignore = new Set(['treeId', 'rn', 'gubun', '총합계', '양산합계', '개발합계', '카세트합계', '구매합계', '상품매출', '기타매출']);
 
-      const modelKeys = keys.filter(k => !ignore.has(k));
+      const modelKeys = keys.filter((k) => !ignore.has(k));
 
       const baseGrid = _.cloneDeep(this.totalCostGrid);
 
@@ -266,21 +257,18 @@ export default {
         });
       });
 
-      const headerMeta = modelKeys.map(fieldId => {
+      const headerMeta = modelKeys.map((fieldId) => {
         const m = this.getModelMetaFromField(fieldId);
-        return { fieldId, ...m,    
-        sortNumeric: /^[0-9]/.test(m.displayModel) ? 0 : 1,
+        return {
+          fieldId,
+          ...m,
+          sortNumeric: /^[0-9]/.test(m.displayModel) ? 0 : 1,
 
-        sortStructure:
-          m.structure === 'UTG' ? 1 :
-          m.structure === 'ITG' ? 2 :
-          m.structure === 'HTG' ? 3 :
-          m.structure === 'Coated' ? 4 :
-          m.structure === '카세트' ? 8 :
-          m.structure === '상품' ? 9 : 9,};
+          sortStructure: m.structure === 'UTG' ? 1 : m.structure === 'ITG' ? 2 : m.structure === 'HTG' ? 3 : m.structure === 'Coated' ? 4 : m.structure === '카세트' ? 8 : m.structure === '상품' ? 9 : 9,
+        };
       });
 
-      const BIZ_ORDER = { '양산': 1, '개발': 2, '카세트': 3, '구매': 4 };
+      const BIZ_ORDER = { 양산: 1, 개발: 2, 카세트: 3, 구매: 4 };
 
       headerMeta.sort((a, b) => {
         const bo = (BIZ_ORDER[a.bizGubun] ?? 9) - (BIZ_ORDER[b.bizGubun] ?? 9);
@@ -291,7 +279,7 @@ export default {
         return a.displayModel.localeCompare(b.displayModel);
       });
 
-      headerMeta.forEach(m => {
+      headerMeta.forEach((m) => {
         const fieldId = m.fieldId;
 
         this.ensureField(baseGrid, fieldId, 'number');
@@ -305,30 +293,28 @@ export default {
         });
       });
 
-      this.gridDataProvider.setFields(baseGrid.fields);
-      this.gridView.setColumns(baseGrid.columns);
+      tcmTreeProvider.setFields(baseGrid.fields);
+      tcmTreeView.setColumns(baseGrid.columns);
 
       const make2Depth = (biz) => {
-        const list = headerMeta.filter(x => x.bizGubun === biz);
+        const list = headerMeta.filter((x) => x.bizGubun === biz);
 
-        return this.STRUCT_ORDER
-          .filter(structure => list.some(x => x.structure === structure))
-          .map(structure => {
-            const models = list
-              .filter(x => x.structure === structure)
-              .sort((a, b) => {
-                if (a.sortNumeric !== b.sortNumeric) return a.sortNumeric - b.sortNumeric;
-                return a.displayModel.localeCompare(b.displayModel);
-              });
+        return this.STRUCT_ORDER.filter((structure) => list.some((x) => x.structure === structure)).map((structure) => {
+          const models = list
+            .filter((x) => x.structure === structure)
+            .sort((a, b) => {
+              if (a.sortNumeric !== b.sortNumeric) return a.sortNumeric - b.sortNumeric;
+              return a.displayModel.localeCompare(b.displayModel);
+            });
 
-            return {
-              header: { text: structure },
-              items: models.map(m => ({
-                column: m.fieldId,
-                header: { text: m.displayModel },
-              })),
-            };
-          });
+          return {
+            header: { text: structure },
+            items: models.map((m) => ({
+              column: m.fieldId,
+              header: { text: m.displayModel },
+            })),
+          };
+        });
       };
       const layout = [
         {
@@ -360,14 +346,14 @@ export default {
         { header: { text: '구매' }, items: make2Depth('구매') },
       ];
 
-      this.gridView.setColumnLayout(layout);
-
-      this.gridView.setCellStyleCallback(this.setCellStyleCallbackGrid.bind(this));
-      this.gridView.setRowStyleCallback(this.setRowStyleCallbackGrid.bind(this));
+      tcmTreeView.setColumnLayout(layout);
+      
+      tcmTreeView.setCellStyleCallback(this.setCellStyleCallbackGrid.bind(this));
+      tcmTreeView.setRowStyleCallback(this.setRowStyleCallbackGrid.bind(this));
     },
 
     async getDataList() {
-      this.gridView.commit();
+      tcmTreeView.commit();
 
       if (!this.hasSysAdmin) {
         this.params.selCode = 'ACTUAL';
@@ -379,15 +365,15 @@ export default {
         selCode: this.params.selCode === '' ? 'ACTUAL' : this.params.selCode,
       };
 
-      await this.$axios.api.search({
+      let resp = await this.$axios.api.search({
         menuId: 'c0009000',
         queryId: 'C0009010_Sch1',
         queryParams: params,
         target: this.totalCostGridRows,
       });
-
       this.buildGridColumnsFromResult(this.totalCostGridRows);
-      this.gridDataProvider.setRows(this.totalCostGridRows);
+      tcmTreeProvider.setRows(this.totalCostGridRows, 'treeId');
+      tcmTreeView.expandAll();
     },
 
     async loadSelCodeList() {
@@ -402,7 +388,7 @@ export default {
 
       this.selCodeList = list;
 
-      const actual = this.selCodeList.find(x => x.value === 'ACTUAL');
+      const actual = this.selCodeList.find((x) => x.value === 'ACTUAL');
 
       if (actual) {
         this.params.selCode = 'ACTUAL';
@@ -416,7 +402,7 @@ export default {
     },
 
     async excelBtnClick() {
-      const grid = this.gridView;
+      const grid = tcmTreeView;
 
       const now = new Date();
       const yyyymmdd = this.$utils.getTodayDate();
@@ -442,7 +428,7 @@ export default {
       if (dataCell.dataColumn.name != 'gubun') {
         return ret;
       }
-      var gubun = dataCell.value.trim();
+      var gubun = dataCell?.value?.trim();
       if (/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\./.test(gubun)) {
         ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF' };
       } else {
@@ -452,12 +438,12 @@ export default {
     },
     setRowStyleCallbackGrid(grid, item, fixed) {
       var ret = {};
-      var gubun = grid.getValue(item.index, 'gubun').trim();
+      var gubun = grid?.getValue(item.index, 'gubun')?.trim();
       if (/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\./.test(gubun)) {
         ret.style = { background: '#BFBFBF' };
       }
       return ret;
     },
-  }
+  },
 };
 </script>
