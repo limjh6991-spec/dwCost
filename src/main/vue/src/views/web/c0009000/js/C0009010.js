@@ -35,7 +35,7 @@ const grid = {
   ],
   columns: [
     { name: 'treeId', fieldName: 'treeId', width: 0, visible: false },
-    { name: 'gubun', fieldName: 'gubun', width: 200, header: { text: '제품명' }, styleName: 'tl' },
+    { name: 'gubun', fieldName: 'gubun', width: 280, header: { text: '제품명' }, styleName: 'tl' },
     { name: '총합계', fieldName: '총합계', width: 130, header: { text: '총 합계' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: '양산합계', fieldName: '양산합계', width: 130, header: { text: '양산 합계' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: '개발합계', fieldName: '개발합계', width: 130, header: { text: '개발 합계' }, styleName: 'tr', numberFormat: '#,##0' },

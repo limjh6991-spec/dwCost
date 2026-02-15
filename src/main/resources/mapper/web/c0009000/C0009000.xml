@@ -425,7 +425,7 @@
     </select>
 
     <select id="C0009010_Sch1" resultType="CamelMap">
-        EXEC DOI_TotalCost @YYYYMM=#{yyyymm}, @SITE=#{site}, @SELCODE=#{selCode};
+        EXEC DOI_TotalCost_Tree @YYYYMM=#{yyyymm}, @SITE=#{site}, @SELCODE=#{selCode};
     </select>
 
     <select id="C0009010_SelectSelCode" resultType="CamelMap">

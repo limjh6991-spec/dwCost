@@ -233,7 +233,7 @@ export default {
       this.ensureColumn(baseGrid, {
         name: 'gubun',
         fieldName: 'gubun',
-        width: 220,
+        width: 280,
         header: { text: '제품명' },
         styleName: 'tl',
       });
@@ -325,7 +325,7 @@ export default {
               items: [
                 {
                   column: 'gubun',
-                  width: 200,
+                  width: 280,
                   header: { text: '제품명' },
                   rowSpan: 3,
                 },
