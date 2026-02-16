@@ -1,0 +1,26 @@
+﻿CREATE             Procedure DOI_MAKE_COST_BOH
+(
+    @YYYYMM varchar(6),
+    @SITE varchar(4)
+)
+AS
+BEGIN
+	BEGIN TRY
+	
+	DELETE FROM doi_cost_boh WHERE YYYYMM=@YYYYMM AND SITE=@SITE;
+	
+	INSERT INTO doi_cost_boh
+	select @YYYYMM YYYYMM, SEL_CODE, SITE, 구분, MODEL, expen_sel명, ACCT_NAME, ITEM_NAME, EXPEN_SEL, ADJ_YN, EOH_QTY BOH_QTY,  EOH BOH
+	from doi_cost
+	where YYYYMM=FORMAT(DATEADD(MONTH, -1, CONVERT(date, @YYYYMM + '01')), 'yyyyMM') and SITE=@SITE;
+	
+	SELECT * FROM doi_cost_boh WHERE YYYYMM=@YYYYMM AND SITE=@SITE
+    ORDER BY 1,2,3,4,5,6,7,8,9,10;;
+	
+	END TRY
+	
+	BEGIN CATCH
+	    ROLLBACK TRANSACTION;
+	   SELECT ERROR_MESSAGE() AS ErrorMessage;
+	END CATCH;
+END;
