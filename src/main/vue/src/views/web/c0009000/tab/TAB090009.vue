@@ -159,20 +159,57 @@ export default {
       };
 
       let result1 = await this.$axios.api.search(searchParam);
+      
+      result1.sort((a, b) => {
+        const aModel = a.model || '';
+        const bModel = b.model || '';
+        
+        const aIsYangsan = aModel.startsWith('양산');
+        const bIsYangsan = bModel.startsWith('양산');
+        const aIsGaebel = aModel.startsWith('개발');
+        const bIsGaebel = bModel.startsWith('개발');
+        
+        if (aIsYangsan && !bIsYangsan) return -1;
+        if (!aIsYangsan && bIsYangsan) return 1;
+        if (aIsGaebel && !bIsGaebel) return -1;
+        if (!aIsGaebel && bIsGaebel) return 1;
+        
+        return aModel.localeCompare(bModel);
+      });
+      
       const gridField1 = _.cloneDeep(require(`@web/c0009000/js/TAB090009.js`));
+      
+      // 고정 필드 (이미 존재하는 필드들)
+      const fixedColumns = [
+        { name: 'gubun', fieldName: 'gubun', width: 150, header: { text: '구분' }, styleName: 'tl' },
+        { name: '판매관리비계획', fieldName: '판매관리비계획', width: 100, header: { text: '판매관리비 계획' }, styleName: 'tr', numberFormat: '#,##0' },
+        { name: 'Z합계', fieldName: 'Z합계', width: 100, header: { text: '판매관리비 합계' }, styleName: 'tr', numberFormat: '#,##0' },
+        { name: 'X합계', fieldName: 'X합계', width: 100, header: { text: '양산 합계' }, styleName: 'tr', numberFormat: '#,##0' },
+        { name: 'Y합계', fieldName: 'Y합계', width: 100, header: { text: '개발 합계' }, styleName: 'tr', numberFormat: '#,##0' }
+      ];
+      
+      // 양산/개발 분류
+      const yangSanModels = result1.filter(m => m.model.startsWith('양산'));
+      const gaeBelModels = result1.filter(m => m.model.startsWith('개발'));
+      
+      // 동적 모델 필드 추가
       result1.forEach((item) => {
         gridField1.fields.push({
           fieldName: item.model,
           valueType: 'number',
           dataType: 'number',
         });
+      });
 
+      // 동적 컬럼 추가
+      result1.forEach((item) => {
+        const displayModel = item.model.replace(/^(양산|개발)/, '');
         gridField1.columns.push({
           name: item.model,
           fieldName: item.model,
           width: 80,
           header: {
-            text: item.model,
+            text: displayModel,
           },
           autoFilter: false,
           numberFormat: '#,##0',
@@ -181,7 +218,46 @@ export default {
       });
 
       this.gridDataProvider.setFields(gridField1.fields);
-      this.gridView.setColumns(gridField1.columns);
+      
+      // 모든 컬럼 = 고정 + 동적
+      const stripModelPrefix = (model) => model.replace(/^(양산|개발)/, '');
+      const allColumns = [
+        ...fixedColumns,
+        ...result1.map((item) => ({
+          name: item.model,
+          fieldName: item.model,
+          width: 80,
+          header: { text: stripModelPrefix(item.model) },
+          autoFilter: false,
+          numberFormat: '#,##0',
+          styleName: 'tr',
+        }))
+      ];
+      
+      this.gridView.setColumns(allColumns);
+      const layout = [
+        { column: 'gubun', rowSpan: 2, header: { text: '구분' } },
+        { column: '판매관리비계획', rowSpan: 2, header: { text: '판매관리비 계획' } },
+        { column: 'Z합계', rowSpan: 2, header: { text: '판매관리비 합계' } },
+        { column: 'X합계', rowSpan: 2, header: { text: '양산 합계' } },
+        { column: 'Y합계', rowSpan: 2, header: { text: '개발 합계' } },
+        {
+          header: { text: '양산' },
+          items: yangSanModels.map(m => ({
+            column: m.model,
+            header: { text: m.model.replace(/^양산/, '') }
+          }))
+        },
+        {
+          header: { text: '개발' },
+          items: gaeBelModels.map(m => ({
+            column: m.model,
+            header: { text: m.model.replace(/^개발/, '') }
+          }))
+        }
+      ];
+      
+      this.gridView.setColumnLayout(layout);
 
       let param = {
         menuId: 'c0009000',

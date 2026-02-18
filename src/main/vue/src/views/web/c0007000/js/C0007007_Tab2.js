@@ -50,6 +50,53 @@ const grid = {
 
   columns: [
     {
+      name: '상태',
+      fieldName: '상태',
+      width: '130',
+      header: { text: '상태' },
+      styleName: 'tc',
+      editable: false,
+      renderer: {
+        type: 'text',
+        showTooltip: true,
+      },
+      styleCallback: function (grid, dataCell) {
+        var ret = {};
+        var status = dataCell.value;
+        
+        if (status === '정상') {
+          ret.renderer = { 
+            type: 'text',
+            styles: {
+              background: '#d1e7dd',
+              foreground: '#0f5132',
+              fontBold: true,
+            }
+          };
+        } else if (status === '불일치') {
+          ret.renderer = { 
+            type: 'text',
+            styles: {
+              background: '#f8d7da',
+              foreground: '#842029',
+              fontBold: true,
+            }
+          };
+        } else if (status === '전월 데이터 없음') {
+          ret.renderer = { 
+            type: 'text',
+            styles: {
+              background: '#fff3cd',
+              foreground: '#664d03',
+              fontBold: true,
+            }
+          };
+        }
+        
+        return ret;
+      },
+    },
+    {
       name: 'YYYYMM',
       fieldName: 'yyyymm',
       width: '80',
@@ -133,53 +180,6 @@ const grid = {
             styles: {
               background: '#fff3cd',
               foreground: '#dc3545',
-              fontBold: true,
-            }
-          };
-        }
-        
-        return ret;
-      },
-    },
-    {
-      name: '상태',
-      fieldName: '상태',
-      width: '130',
-      header: { text: '상태' },
-      styleName: 'tc',
-      editable: false,
-      renderer: {
-        type: 'text',
-        showTooltip: true,
-      },
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        var status = dataCell.value;
-        
-        if (status === '정상') {
-          ret.renderer = { 
-            type: 'text',
-            styles: {
-              background: '#d1e7dd',
-              foreground: '#0f5132',
-              fontBold: true,
-            }
-          };
-        } else if (status === '불일치') {
-          ret.renderer = { 
-            type: 'text',
-            styles: {
-              background: '#f8d7da',
-              foreground: '#842029',
-              fontBold: true,
-            }
-          };
-        } else if (status === '전월 데이터 없음') {
-          ret.renderer = { 
-            type: 'text',
-            styles: {
-              background: '#fff3cd',
-              foreground: '#664d03',
               fontBold: true,
             }
           };

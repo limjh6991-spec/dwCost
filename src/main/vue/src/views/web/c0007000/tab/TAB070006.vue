@@ -120,7 +120,7 @@
             </div>
           </div>
           <div class="grid-border-none" style="height: 500px;">
-            <RealGrid ref="dataGrid2" :uid="'dataGrid2'" :step="'2'" :rows="dataGrid2Rows" style="height: 100%" />
+            <RealGrid ref="dataGrid2" :uid="'dataGrid2'" :step="'2'" :rows="dataGrid2Rows" style="height: 100%" :fitLayoutWidthEnable="false" />
           </div>
         </b-tab>
       </b-tabs>
@@ -209,6 +209,16 @@ export default {
   },
   mounted() {
     this.params.yyyymm = this.srchInfo.yyyymm;
+    this.$nextTick(() => {
+      const gv = this.gridView;
+      if (gv) {
+        gv.setRowStyleCallback(this.rowStyleCallbackBalance);
+      }
+      const gv2 = this.gridView2;
+      if (gv2) {
+        gv2.setRowStyleCallback(this.rowStyleCallbackContinuity);
+      }
+    });
   },
   beforeUnmount() {},
   methods: {
@@ -218,6 +228,39 @@ export default {
     },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
+    },
+    rowStyleCallbackBalance(grid, item, fixed) {
+      if (!item || item.index < 0) {
+        return null;
+      }
+
+      const status = String(grid.getValue(item.index, '상태') || '').trim();
+      if (status === '정상') {
+        return { style: { background: '#d1e7dd' } };
+      }
+      if (status && status !== '정상') {
+        return { style: { background: '#f8d7da' } };
+      }
+
+      return null;
+    },
+    rowStyleCallbackContinuity(grid, item, fixed) {
+      if (!item || item.index < 0) {
+        return null;
+      }
+
+      const status = String(grid.getValue(item.index, '상태') || '').trim();
+      if (status === '정상') {
+        return { style: { background: '#d1e7dd' } };
+      }
+      if (status === '전월 데이터 없음') {
+        return { style: { background: '#fff3cd' } };
+      }
+      if (status && status !== '정상') {
+        return { style: { background: '#f8d7da' } };
+      }
+
+      return null;
     },
     async getDataList() {
       this.gridView.commit();

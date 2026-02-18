@@ -37,7 +37,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <div id="totalCostGrid" ref="totalCostGrid" class="top-border" style="height: 100%"></div>
+        <div id="totalCostGrid" ref="totalCostGrid" class="top-border" style="height: 100%" :fitLayoutWidthEnable="true"></div>
       </div>
     </div>
   </div>
@@ -252,7 +252,7 @@ export default {
           fieldName: k,
           header: { text },
           numberFormat: '#,##0',
-          width: 80,
+          width: 60,
           styleName: 'tr',
         });
       });
@@ -286,7 +286,7 @@ export default {
         this.ensureColumn(baseGrid, {
           name: fieldId,
           fieldName: fieldId,
-          width: 110,
+          width: 100,
           numberFormat: '#,##0',
           styleName: 'tr',
           header: { text: m.displayModel },
@@ -374,6 +374,27 @@ export default {
       this.buildGridColumnsFromResult(this.totalCostGridRows);
       tcmTreeProvider.setRows(this.totalCostGridRows, 'treeId');
       tcmTreeView.expandAll();
+      this.collapseGubun('II. 재료비');
+      this.collapseGubun('III. 노무비');
+      this.collapseGubun('IV. 제조경비');
+      this.collapseGubun('VI. 판관비');
+    },
+
+    collapseGubun(targetLabel) {
+      const grid = tcmTreeView;
+      const count = typeof grid?.getItemCount === 'function' ? grid.getItemCount() : 0;
+
+      for (let i = 0; i < count; i += 1) {
+        const gubun = grid.getValue(i, 'gubun')?.trim();
+        if (gubun === targetLabel) {
+          if (typeof grid.collapse === 'function') {
+            grid.collapse(i, true);
+          } else if (typeof grid.setExpanded === 'function') {
+            grid.setExpanded(i, false, true);
+          }
+          break;
+        }
+      }
     },
 
     async loadSelCodeList() {

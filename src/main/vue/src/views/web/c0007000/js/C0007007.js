@@ -15,10 +15,10 @@ const grid = {
       emptyMessage: '조회된 데이터가 없습니다.', 
       hscrollBar: true, 
       showEmptyMessage: true,
-      rowChangeCallback: function(grid, oldRow, newRow) {
-        const status = grid.getValue(newRow, '상태');
+      rowStyleCallback: function(grid, item, fixed) {
+        const status = grid.getValue(item.index, '상태');
         if (status === '오류') {
-          return { background: '#fff5f5' };
+          return { background: '#f8d7da' };
         }
         return null;
       }
@@ -83,6 +83,74 @@ const grid = {
     //   styleName: 'tc',
     //   editable: false,
     // },
+    {
+      name: '상태',
+      fieldName: '상태',
+      width: '80',
+      header: { text: '상태' },
+      styleName: 'tc',
+      editable: false,
+      renderer: {
+        type: 'text',
+        showTooltip: true,
+      },
+      styleCallback: function (grid, dataCell) {
+        var ret = {};
+        var status = dataCell.value;
+        
+        if (status === '정상') {
+          ret.styleName = 'tc status-normal';
+          ret.renderer = { 
+            type: 'text',
+            styles: {
+              background: '#d1e7dd',
+              foreground: '#0f5132',
+              fontBold: true,
+            }
+          };
+        } else if (status === '오류') {
+          ret.styleName = 'tc status-error';
+          ret.renderer = { 
+            type: 'text',
+            styles: {
+              background: '#f8d7da',
+              foreground: '#842029',
+              fontBold: true,
+            }
+          };
+        }
+        
+        return ret;
+      },
+    },
+    {
+      name: '비고',
+      fieldName: '비고',
+      width: '150',
+      header: { text: '비고' },
+      styleName: 'tl',
+      editable: false,
+      renderer: {
+        type: 'text',
+        showTooltip: true,
+      },
+      styleCallback: function (grid, dataCell) {
+        var ret = {};
+        var remark = dataCell.value;
+        
+        if (remark && remark.indexOf('오류') >= 0) {
+          ret.renderer = { 
+            type: 'text',
+            styles: {
+              foreground: '#842029',
+              fontBold: true,
+            }
+          };
+        }
+        
+        return ret;
+      },
+    },
     {
       name: 'MODEL',
       fieldName: 'model',
@@ -233,74 +301,6 @@ const grid = {
             styles: {
               background: '#fff3cd',
               foreground: '#dc3545',
-              fontBold: true,
-            }
-          };
-        }
-        
-        return ret;
-      },
-    },
-    {
-      name: '상태',
-      fieldName: '상태',
-      width: '80',
-      header: { text: '상태' },
-      styleName: 'tc',
-      editable: false,
-      renderer: {
-        type: 'text',
-        showTooltip: true,
-      },
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        var status = dataCell.value;
-        
-        if (status === '정상') {
-          ret.styleName = 'tc status-normal';
-          ret.renderer = { 
-            type: 'text',
-            styles: {
-              background: '#d1e7dd',
-              foreground: '#0f5132',
-              fontBold: true,
-            }
-          };
-        } else if (status === '오류') {
-          ret.styleName = 'tc status-error';
-          ret.renderer = { 
-            type: 'text',
-            styles: {
-              background: '#f8d7da',
-              foreground: '#842029',
-              fontBold: true,
-            }
-          };
-        }
-        
-        return ret;
-      },
-    },
-    {
-      name: '비고',
-      fieldName: '비고',
-      width: '150',
-      header: { text: '비고' },
-      styleName: 'tl',
-      editable: false,
-      renderer: {
-        type: 'text',
-        showTooltip: true,
-      },
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        var remark = dataCell.value;
-        
-        if (remark && remark.indexOf('오류') >= 0) {
-          ret.renderer = { 
-            type: 'text',
-            styles: {
-              foreground: '#842029',
               fontBold: true,
             }
           };

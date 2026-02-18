@@ -36,6 +36,7 @@ const grid = {
     // fixed: { colBarWidth: 1, colCount: 3 },
   },
   fields: [
+    { fieldName: '상태', dataType: ValueType.TEXT },
     { fieldName: 'yyyymm', dataType: ValueType.TEXT },
     { fieldName: 'selCode', dataType: ValueType.TEXT },
     { fieldName: 'dwSite', dataType: ValueType.TEXT },
@@ -51,7 +52,6 @@ const grid = {
     { fieldName: 'bohMonth', dataType: ValueType.NUMBER },
     { fieldName: 'prevEohMonth', dataType: ValueType.NUMBER },
     { fieldName: '차이수량', dataType: ValueType.NUMBER },
-    { fieldName: '상태', dataType: ValueType.TEXT },
   ],
 
   columns: [
@@ -79,6 +79,49 @@ const grid = {
     //   styleName: 'tc',
     //   editable: false,
     // },
+    {
+      name: '상태',
+      fieldName: '상태',
+      width: '120',
+      header: { text: '상태' },
+      styleName: 'tc',
+      editable: false,
+      styleCallback: function (grid, dataCell) {
+        var ret = {};
+        var status = dataCell.value;
+        
+        if (status === '정상') {
+          ret.renderer = { 
+            type: 'text',
+            styles: {
+              background: '#d1e7dd',
+              foreground: '#0f5132',
+              fontBold: true,
+            }
+          };
+        } else if (status === '불일치') {
+          ret.renderer = { 
+            type: 'text',
+            styles: {
+              background: '#f8d7da',
+              foreground: '#842029',
+              fontBold: true,
+            }
+          };
+        } else if (status === '전월 데이터 없음') {
+          ret.renderer = { 
+            type: 'text',
+            styles: {
+              background: '#fff3cd',
+              foreground: '#664d03',
+              fontBold: true,
+            }
+          };
+        }
+        
+        return ret;
+      },
+    },
     {
       name: '구분',
       fieldName: '구분',
@@ -186,49 +229,6 @@ const grid = {
             type: 'text',
             styles: {
               foreground: '#dc3545',
-              fontBold: true,
-            }
-          };
-        }
-        
-        return ret;
-      },
-    },
-    {
-      name: '상태',
-      fieldName: '상태',
-      width: '120',
-      header: { text: '상태' },
-      styleName: 'tc',
-      editable: false,
-      styleCallback: function (grid, dataCell) {
-        var ret = {};
-        var status = dataCell.value;
-        
-        if (status === '정상') {
-          ret.renderer = { 
-            type: 'text',
-            styles: {
-              background: '#d1e7dd',
-              foreground: '#0f5132',
-              fontBold: true,
-            }
-          };
-        } else if (status === '불일치') {
-          ret.renderer = { 
-            type: 'text',
-            styles: {
-              background: '#f8d7da',
-              foreground: '#842029',
-              fontBold: true,
-            }
-          };
-        } else if (status === '전월 데이터 없음') {
-          ret.renderer = { 
-            type: 'text',
-            styles: {
-              background: '#fff3cd',
-              foreground: '#664d03',
               fontBold: true,
             }
           };

@@ -36,11 +36,11 @@ const grid = {
   columns: [
     { name: 'treeId', fieldName: 'treeId', width: 0, visible: false },
     { name: 'gubun', fieldName: 'gubun', width: 280, header: { text: '제품명' }, styleName: 'tl' },
-    { name: '총합계', fieldName: '총합계', width: 130, header: { text: '총 합계' }, styleName: 'tr', numberFormat: '#,##0' },
-    { name: '양산합계', fieldName: '양산합계', width: 130, header: { text: '양산 합계' }, styleName: 'tr', numberFormat: '#,##0' },
-    { name: '개발합계', fieldName: '개발합계', width: 130, header: { text: '개발 합계' }, styleName: 'tr', numberFormat: '#,##0' },
-    { name: '카세트합계', fieldName: '카세트합계', width: 130, header: { text: '카세트 합계' }, styleName: 'tr', numberFormat: '#,##0' },
-    { name: '구매합계', fieldName: '구매합계', width: 130, header: { text: '구매 합계' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: '총합계', fieldName: '총합계', width: 110, header: { text: '총 합계' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: '양산합계', fieldName: '양산합계', width: 110, header: { text: '양산 합계' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: '개발합계', fieldName: '개발합계', width: 110, header: { text: '개발 합계' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: '카세트합계', fieldName: '카세트합계', width: 80, header: { text: '카세트 합계' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: '구매합계', fieldName: '구매합계', width: 90, header: { text: '구매 합계' }, styleName: 'tr', numberFormat: '#,##0' },
   ],
 };
 

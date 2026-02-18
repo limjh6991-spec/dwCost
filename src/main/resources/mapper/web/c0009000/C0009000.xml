@@ -327,7 +327,7 @@
     <select id="C0009008_Tab090009_Col" resultType="CamelMap">
         SELECT DISTINCT TOP 500 model
         FROM (
-            SELECT DISTINCT model from doi_smce_cost
+            SELECT DISTINCT 구분+model as model from doi_smce_cost
             where 1=1
             <if test="yyyymm != null and yyyymm != ''">
                 AND YYYYMM = #{yyyymm}

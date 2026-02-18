@@ -31,6 +31,7 @@ const grid = {
     paste: { enabled: false },
     stateBar: { visible: false },
     sorting: { enabled: true, style: 'inclusive' },
+    fixed: { colBarWidth: 1, colCount: 2 },
   },
   fields: [
     { fieldName: 'yyyymm', dataType: 'text' },
@@ -45,6 +46,42 @@ const grid = {
     { fieldName: 'remark', dataType: 'text' },
   ],
   columns: [
+    {
+      name: 'status',
+      fieldName: 'status',
+      type: 'data',
+      width: 150,
+      minWidth: 150,
+      maxWidth: 150,
+      resizable: false,
+      fixedWidth: true,
+      header: { text: '상태' },
+      editable: false,
+      styleName: 'center-column',
+      styleCallback: function (grid, dataCell) {
+        const value = dataCell.value;
+        if (value === '일치') {
+          return { background: '#d1e7dd', foreground: '#0f5132' };
+        } else if (value === '불일치') {
+          return { background: '#f8d7da', foreground: '#842029', fontBold: true };
+        } else {
+          return { background: '#fff3cd', foreground: '#664d03' };
+        }
+      },
+    },
+    {
+      name: 'remark',
+      fieldName: 'remark',
+      type: 'data',
+      width: 150,
+      minWidth: 150,
+      maxWidth: 150,
+      resizable: false,
+      fixedWidth: true,
+      header: { text: '비고' },
+      editable: false,
+      styleName: 'left-column',
+    },
     {
       name: 'yyyymm',
       fieldName: 'yyyymm',
@@ -129,34 +166,6 @@ const grid = {
           };
         }
       },
-    },
-    {
-      name: 'status',
-      fieldName: 'status',
-      type: 'data',
-      width: 150,
-      header: { text: '상태' },
-      editable: false,
-      styleName: 'center-column',
-      styleCallback: function (grid, dataCell) {
-        const value = dataCell.value;
-        if (value === '일치') {
-          return { background: '#d1e7dd', foreground: '#0f5132' };
-        } else if (value === '불일치') {
-          return { background: '#f8d7da', foreground: '#842029', fontBold: true };
-        } else {
-          return { background: '#fff3cd', foreground: '#664d03' };
-        }
-      },
-    },
-    {
-      name: 'remark',
-      fieldName: 'remark',
-      type: 'data',
-      width: 400,
-      header: { text: '비고' },
-      editable: false,
-      styleName: 'left-column',
     },
   ],
 };

@@ -25,7 +25,7 @@
               </li>
               <li class="password mt-4">
                   <div class="form-floating">
-                    <input type="password" class="form-control" id="floatingPassword" placeholder="Password" v-model="password">
+                    <input type="password" class="form-control" id="floatingPassword" placeholder="Password" v-model="password" @keydown.enter="login">
                     <label for="floatingPassword">비밀번호</label>
                 </div>
               </li>

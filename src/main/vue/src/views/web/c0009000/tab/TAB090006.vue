@@ -213,7 +213,20 @@ export default {
   mounted() {
     const gv = this.gridView;
 
-    // ✅ 1) 요약행 색상: itemIndex 기준으로 rowType 읽기
+    // ✅ 1) Footer 명시적 활성화
+    if (gv) {
+      try {
+        // RealGridJS 스타일로 footer 활성화 시도
+        const footerVisible = { visible: true };
+        if (typeof gv.setFooterVisible === 'function') {
+          gv.setFooterVisible(true);
+        }
+      } catch (e) {
+        console.log('Footer setting error:', e.message);
+      }
+    }
+
+    // ✅ 2) 요약행 색상: itemIndex 기준으로 rowType 읽기
     gv.setRowStyleCallback((grid, item) => {
       const itemIndex =
         item?.itemIndex ?? item?.index ?? item?.dataRow; // 버전별 안전 처리
@@ -234,10 +247,10 @@ export default {
       return null;
     });
 
-    // ✅ 2) 병합 spanCallback도 itemIndex 기준으로 판별
+    // ✅ 3) 병합 spanCallback도 itemIndex 기준으로 판별
     this.applySpanCallbacks();
 
-    // ✅ 3) 정렬 후 refresh(보험)
+    // ✅ 4) 정렬 후 refresh(보험)
     // (이벤트명이 환경/버전에 따라 다를 수 있어 여러개 걸어둠)
     gv.onSorted = () => gv.refresh();
     gv.onSortingChanged = () => gv.refresh();
@@ -271,6 +284,14 @@ export default {
 
       if (g?.columns) gv.setColumns(g.columns);
       if (g?.columnLayout) gv.setColumnLayout(g.columnLayout);
+      
+      // 월상세 모드에서만 footer 활성화
+      if (mode === 'MONTH') {
+        // footer 옵션 활성화
+        if (gv.footerOptions) {
+          gv.footerOptions.visible = true;
+        }
+      }
 
       this.applySpanCallbacks();
       gv.refresh();
@@ -541,13 +562,13 @@ export default {
       ];
 
       rows.forEach((r, idx) => {
-        result.push({
-          ...r,
-          월: r['월'] ?? monthLabel,
-          rowType: 'DATA',
-          mergeKey: `MD|${idx}`,
-          mergeKeyGubun: `MD|${idx}`,
+        // camelCase 필드명 명시적 추가 (footer 계산용)
+        const dataRow = { ...r, 월: r['월'] ?? monthLabel, rowType: 'DATA', mergeKey: `MD|${idx}`, mergeKeyGubun: `MD|${idx}` };
+        numberColsCandidates.forEach(([k1, k2]) => {
+          if (k1 in r) dataRow[k2] = Number(r[k1]) || 0;
+          else if (k2 in r) dataRow[k2] = Number(r[k2]) || 0;
         });
+        result.push(dataRow);
       });
 
       const totalRow = { rowType: 'TOTAL', 구분: '월합계', 월: monthLabel };
@@ -572,6 +593,7 @@ export default {
       totalRow.mergeKey = `TOTAL|${selectedYYYYMM}`;
       totalRow.mergeKeyGubun = 'TOTAL';
 
+      // 마지막 행에 합계 표시 (footer 스타일로)
       result.push(totalRow);
       return result;
     },
@@ -645,7 +667,11 @@ export default {
       this.manuCostGridRows = rows;
       
       this.$nextTick(() => {
-        this.applyRowFixing();
+        // Footer 계산을 위해 refresh 수행
+        const gv = this.gridView;
+        if (gv) {
+          gv.refresh();
+        }
       });
     },
     applyRowFixing() {

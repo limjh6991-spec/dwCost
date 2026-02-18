@@ -232,6 +232,16 @@ export default {
   mounted() {
     this.params.yyyymm = this.srchInfo.yyyymm;
     this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
+    this.$nextTick(() => {
+      const gv = this.gridView;
+      if (gv) {
+        gv.setRowStyleCallback(this.rowStyleCallbackBalance);
+      }
+      const gv2 = this.gridView2;
+      if (gv2) {
+        gv2.setRowStyleCallback(this.rowStyleCallbackContinuity);
+      }
+    });
   },
   beforeUnmount() {},
   methods: {
@@ -241,6 +251,42 @@ export default {
     },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
+    },
+    rowStyleCallbackBalance(grid, item, fixed) {
+      if (!item || item.index < 0) {
+        return null;
+      }
+
+      const status = String(grid.getValue(item.index, '상태') || '').trim();
+      if (status === '정상') {
+        return { style: { background: '#d1e7dd' } };
+      }
+      if (status === '경고') {
+        return { style: { background: '#fff3cd' } };
+      }
+      if (status === '오류') {
+        return { style: { background: '#f8d7da' } };
+      }
+
+      return null;
+    },
+    rowStyleCallbackContinuity(grid, item, fixed) {
+      if (!item || item.index < 0) {
+        return null;
+      }
+
+      const status = String(grid.getValue(item.index, '상태') || '').trim();
+      if (status === '정상') {
+        return { style: { background: '#d1e7dd' } };
+      }
+      if (status === '불일치') {
+        return { style: { background: '#f8d7da' } };
+      }
+      if (status === '전월 데이터 없음') {
+        return { style: { background: '#fff3cd' } };
+      }
+
+      return null;
     },
     async getDataList() {
       this.gridView.commit();

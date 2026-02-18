@@ -681,7 +681,8 @@
         <if test="gubun != null and gubun != '' and gubun != '전체'">
             and 구분 = #{gubun}
         </if>
-            and BOH_AMT+IN_AMT+EOH_AMT+OUT_AMT > 0
+            and  ACCT_NAME != N'기타출고'
+            --and BOH_AMT+IN_AMT+EOH_AMT+OUT_AMT > 0
         order BY 1,2,3,4,5;
     </select>
 

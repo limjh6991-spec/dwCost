@@ -110,7 +110,7 @@
             </div>
           </div>
           <div class="grid-border-none" style="height: 500px;">
-            <RealGrid ref="dataGrid" :uid="'dataGrid'" :step="'1'" :rows="dataGridRows" style="height: 100%" />
+            <RealGrid ref="dataGrid" :uid="'dataGrid'" :step="'1'" :rows="dataGridRows" style="height: 100%" :fitLayoutWidthEnable="false" />
           </div>
         </b-tab>
         <b-tab title="입고 ↔ 판매">
@@ -120,7 +120,7 @@
             </div>
           </div>
           <div class="grid-border-none" style="height: 500px;">
-            <RealGrid ref="dataGrid2" :uid="'dataGrid2'" :step="'2'" :rows="dataGrid2Rows" style="height: 100%" />
+            <RealGrid ref="dataGrid2" :uid="'dataGrid2'" :step="'2'" :rows="dataGrid2Rows" style="height: 100%" :fitLayoutWidthEnable="false" />
           </div>
         </b-tab>
       </b-tabs>
@@ -175,6 +175,21 @@ export default {
     };
   },
   watch: {
+    activeTab() {
+      this.scheduleFixedWidthForActiveTab();
+    },
+    dataGridRows() {
+      this.$nextTick(() => {
+        this.applyAutoColumnWidths(this.gridView);
+        setTimeout(() => this.applyAutoColumnWidths(this.gridView), 0);
+      });
+    },
+    dataGrid2Rows() {
+      this.$nextTick(() => {
+        this.applyAutoColumnWidths(this.gridView2);
+        setTimeout(() => this.applyAutoColumnWidths(this.gridView2), 0);
+      });
+    },
     'params.yyyymm': function (newVal) {
       if (newVal) {
         this.onDateChange();
@@ -208,11 +223,105 @@ export default {
   },
   mounted() {
     this.params.yyyymm = this.srchInfo.yyyymm;
+    this.$nextTick(() => {
+      const gv = this.gridView;
+      if (gv) {
+        gv.setRowStyleCallback(this.rowStyleCallbackProdStock);
+      }
+      const gv2 = this.gridView2;
+      if (gv2) {
+        gv2.setRowStyleCallback(this.rowStyleCallbackStockSale);
+      }
+      this.applyFixedColumnWidths();
+    });
   },
   beforeUnmount() {},
   methods: {
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
+    },
+    applyFixedColumnWidths() {
+      this.applyAutoColumnWidths(this.gridView);
+      this.applyAutoColumnWidths(this.gridView2);
+    },
+    applyFixedColumnWidthsTo(gv) {
+      if (!gv) return;
+      gv.setColumnProperty('status', 'width', 150);
+      gv.setColumnProperty('status', 'minWidth', 150);
+      gv.setColumnProperty('status', 'maxWidth', 150);
+      gv.setColumnProperty('remark', 'width', 150);
+      gv.setColumnProperty('remark', 'minWidth', 150);
+      gv.setColumnProperty('remark', 'maxWidth', 150);
+    },
+    applyAutoColumnWidths(gv) {
+      if (!gv) return;
+      if (typeof gv.fitLayoutWidth === 'function') {
+        gv.fitLayoutWidth(null);
+      }
+      this.applyFixedColumnWidthsTo(gv);
+    },
+    resetGridSize(gv) {
+      if (!gv) return;
+      if (typeof gv.resetSize === 'function') {
+        gv.resetSize();
+      }
+    },
+    scheduleFixedWidthForActiveTab() {
+      this.$nextTick(() => {
+        const gv = this.activeTab === 0 ? this.gridView : this.gridView2;
+        this.resetGridSize(gv);
+        this.applyAutoColumnWidths(gv);
+        setTimeout(() => {
+          this.resetGridSize(gv);
+          this.applyAutoColumnWidths(gv);
+        }, 50);
+        setTimeout(() => {
+          this.resetGridSize(gv);
+          this.applyAutoColumnWidths(gv);
+        }, 200);
+      });
+    },
+    onDataLoadComplatedDataGrid(grid) {
+      this.applyAutoColumnWidths(grid);
+    },
+    onDataLoadComplatedDataGrid2(grid) {
+      this.applyAutoColumnWidths(grid);
+    },
+    rowStyleCallbackProdStock(grid, item, fixed) {
+      if (!item || item.index < 0) {
+        return null;
+      }
+
+      const status = String(grid.getValue(item.index, 'status') || '').trim();
+      if (status === '일치') {
+        return { style: { background: '#d1e7dd' } };
+      }
+      if (status === '입고 데이터 없음' || status === '생산 데이터 없음') {
+        return { style: { background: '#fff3cd' } };
+      }
+      if (status === '불일치') {
+        return { style: { background: '#f8d7da' } };
+      }
+
+      return null;
+    },
+    rowStyleCallbackStockSale(grid, item, fixed) {
+      if (!item || item.index < 0) {
+        return null;
+      }
+
+      const status = String(grid.getValue(item.index, 'status') || '').trim();
+      if (status === '일치') {
+        return { style: { background: '#d1e7dd' } };
+      }
+      if (status === '판매 데이터 없음' || status === '판매 데이타 없음') {
+        return { style: { background: '#fff3cd' } };
+      }
+      if (status === '불일치') {
+        return { style: { background: '#f8d7da' } };
+      }
+
+      return null;
     },
     async getDataList() {
       if (this.gridView) {
@@ -292,6 +401,14 @@ export default {
         target: this.dataGrid2Rows,
       };
       await this.$axios.api.search(param2);
+      this.$nextTick(() => {
+        this.applyAutoColumnWidths(this.gridView);
+        this.applyAutoColumnWidths(this.gridView2);
+        setTimeout(() => {
+          this.applyAutoColumnWidths(this.gridView);
+          this.applyAutoColumnWidths(this.gridView2);
+        }, 0);
+      });
       } catch (error) {
         console.error('데이터 조회 중 오류:', error);
       }
