@@ -28,12 +28,14 @@ const grid = {
     { fieldName: 'stock', dataType: 'text' },
     { fieldName: 'boh', dataType: 'number' },
     { fieldName: 'input', dataType: 'number' },
+    { fieldName: 'inputEtc', dataType: 'number' },  // 추가
     { fieldName: 'out', dataType: 'number' },
+    { fieldName: 'outEtc', dataType: 'number' },    // 추가
     { fieldName: 'eoh', dataType: 'number' },
     { fieldName: 'calcEoh', dataType: 'number' },
     { fieldName: 'diff', dataType: 'number' },
   ],
-  columns: [
+    columns: [
     {
       name: 'model',
       fieldName: 'model',
@@ -69,11 +71,29 @@ const grid = {
       styleName: 'right-column',
     },
     {
+      name: 'inputEtc',
+      fieldName: 'inputEtc',
+      type: 'data',
+      width: 120,
+      header: { text: 'INPUT_ETC' },
+      numberFormat: '#,##0',
+      styleName: 'right-column',
+    },
+    {
       name: 'out',
       fieldName: 'out',
       type: 'data',
       width: 120,
       header: { text: 'OUT' },
+      numberFormat: '#,##0',
+      styleName: 'right-column',
+    },
+    {
+      name: 'outEtc',
+      fieldName: 'outEtc',
+      type: 'data',
+      width: 120,
+      header: { text: 'OUT_ETC' },
       numberFormat: '#,##0',
       styleName: 'right-column',
     },
@@ -108,7 +128,12 @@ const grid = {
       styleName: 'right-column',
       styleCallback: function (grid, dataCell) {
         const value = dataCell.value;
-        if (Math.abs(value) > 0.01) {
+        if (value === 0) {
+          return {
+            background: '#d1e7dd',
+            foreground: '#0f5132',
+          };
+        } else {
           return {
             background: '#f8d7da',
             foreground: '#842029',

@@ -745,15 +745,17 @@
 
 	<!-- ========== 제품수불 체크 (Tab 4) ========== -->
 	<select id="selectST001Detail" resultType="CamelMap">
-	SELECT TOP 100
+	SELECT
 	MODEL,
 	STOCK,
 	BOH,
 	[INPUT],
+	INPUT_ETC,
 	[OUT],
+	OUT_ETC,
 	EOH,
-	(BOH + [INPUT] - [OUT]) AS CALC_EOH,
-	EOH - (BOH + [INPUT] - [OUT]) AS DIFF
+	(BOH + [INPUT] + INPUT_ETC - [OUT] - OUT_ETC) AS CALC_EOH,
+	EOH - (BOH + [INPUT] + INPUT_ETC - [OUT] - OUT_ETC) AS DIFF
 	FROM DOI_STOCK
 	WHERE 1=1
 	<if test="yyyymm != null and yyyymm != ''">
@@ -766,16 +768,16 @@
 	AND MODEL LIKE '%' + #{model} + '%'
 	</if>
 	<!-- 임시로 주석: 실제 데이터가 있는지 확인 -->
-	<!-- AND ABS(EOH - (BOH + [INPUT] - [OUT])) &gt; 0.01 -->
-	ORDER BY ABS(EOH - (BOH + [INPUT] - [OUT])) DESC, MODEL, STOCK
+	<!-- AND ABS(EOH - (BOH + [INPUT] + INPUT_ETC - [OUT] - OUT_ETC)) &gt; 0.01 -->
+	ORDER BY ABS(EOH - (BOH + [INPUT] + INPUT_ETC - [OUT] - OUT_ETC)) DESC, MODEL, STOCK
 	</select>
 
 	<!-- ST001: 수량수식 검증 요약 -->
 	<select id="selectST001Summary" resultType="CamelMap">
 	SELECT 
 	COUNT(*) AS TOTAL_COUNT,
-	SUM(CASE WHEN ABS(EOH - (BOH + [INPUT] - [OUT])) &lt;= 0.01 THEN 1 ELSE 0 END) AS NORMAL_COUNT,
-	SUM(CASE WHEN ABS(EOH - (BOH + [INPUT] - [OUT])) &gt; 0.01 THEN 1 ELSE 0 END) AS ERROR_COUNT
+	SUM(CASE WHEN ABS(EOH - (BOH + [INPUT] + INPUT_ETC - [OUT] - OUT_ETC)) &lt;= 0.01 THEN 1 ELSE 0 END) AS NORMAL_COUNT,
+	SUM(CASE WHEN ABS(EOH - (BOH + [INPUT] + INPUT_ETC - [OUT] - OUT_ETC)) &gt; 0.01 THEN 1 ELSE 0 END) AS ERROR_COUNT
 	FROM DOI_STOCK
 	WHERE 1=1
 	<if test="yyyymm != null and yyyymm != ''">
@@ -876,16 +878,18 @@
 
 	<!-- ST003: 금액수식 검증 상세 -->
 	<select id="selectST003Detail" resultType="CamelMap">
-	SELECT TOP 100
+	SELECT 
 	MODEL,
 	구분 AS GUBUN,
 	EXPEN_SEL,
 	BOH_AMT,
 	IN_AMT,
+	INETC_AMT,
 	EOH_AMT,
+	OUTETC_AMT,
 	OUT_AMT,
-	(BOH_AMT + IN_AMT - EOH_AMT) AS CALC_OUT_AMT,
-	OUT_AMT - (BOH_AMT + IN_AMT - EOH_AMT) AS DIFF
+	(BOH_AMT + IN_AMT + INETC_AMT - EOH_AMT -OUTETC_AMT) AS CALC_OUT_AMT,
+	OUT_AMT - (BOH_AMT + IN_AMT + INETC_AMT- EOH_AMT -OUTETC_AMT) AS DIFF --select *
 	FROM DOI_STCO
 	WHERE 1=1
 	<if test="yyyymm != null and yyyymm != ''">
@@ -899,7 +903,7 @@
 	</if>
 	<!-- 임시로 주석: 실제 데이터가 있는지 확인 -->
 	<!-- AND ABS(OUT_AMT - (BOH_AMT + IN_AMT - EOH_AMT)) &gt; 0.01 -->
-	ORDER BY ABS(OUT_AMT - (BOH_AMT + IN_AMT - EOH_AMT)) DESC, MODEL, GUBUN, EXPEN_SEL
+	ORDER BY ABS(OUT_AMT - (BOH_AMT + IN_AMT + INETC_AMT - EOH_AMT - OUTETC_AMT)) DESC, MODEL, GUBUN, EXPEN_SEL
 	</select>
 
 	<!-- ST003: 금액수식 검증 요약 -->

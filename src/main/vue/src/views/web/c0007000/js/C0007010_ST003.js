@@ -29,7 +29,9 @@ const grid = {
     { fieldName: 'expenSel', dataType: 'text' },
     { fieldName: 'bohAmt', dataType: 'number' },
     { fieldName: 'inAmt', dataType: 'number' },
+    { fieldName: 'inEtcAmt', dataType: 'number' },
     { fieldName: 'eohAmt', dataType: 'number' },
+    { fieldName: 'outEtcAmt', dataType: 'number' },
     { fieldName: 'outAmt', dataType: 'number' },
     { fieldName: 'calcOutAmt', dataType: 'number' },
     { fieldName: 'diff', dataType: 'number' },
@@ -78,11 +80,29 @@ const grid = {
       styleName: 'right-column',
     },
     {
+      name: 'inEtcAmt',
+      fieldName: 'inEtcAmt',
+      type: 'data',
+      width: 130,
+      header: { text: 'ITETC_AMT' },
+      numberFormat: '#,##0',
+      styleName: 'right-column',
+    },
+    {
       name: 'eohAmt',
       fieldName: 'eohAmt',
       type: 'data',
       width: 130,
       header: { text: 'EOH_AMT' },
+      numberFormat: '#,##0',
+      styleName: 'right-column',
+    },
+    {
+      name: 'outEtcAmt',
+      fieldName: 'outEtcAmt',
+      type: 'data',
+      width: 130,
+      header: { text: 'OUTETC_AMT' },
       numberFormat: '#,##0',
       styleName: 'right-column',
     },
@@ -117,7 +137,12 @@ const grid = {
       styleName: 'right-column',
       styleCallback: function (grid, dataCell) {
         const value = dataCell.value;
-        if (Math.abs(value) > 0.01) {
+        if (value === 0) {
+          return {
+            background: '#d1e7dd',
+            foreground: '#0f5132',
+          };
+        } else {
           return {
             background: '#f8d7da',
             foreground: '#842029',

@@ -94,7 +94,12 @@ const grid = {
       styleName: 'tr',
       styleCallback: function (grid, dataCell) {
         const value = dataCell.value;
-        if (Math.abs(value) > 0.01) {
+        if (value === 0) {
+          return {
+            background: '#d1e7dd',
+            foreground: '#0f5132',
+          };
+        } else {
           return {
             background: '#f8d7da',
             foreground: '#842029',
