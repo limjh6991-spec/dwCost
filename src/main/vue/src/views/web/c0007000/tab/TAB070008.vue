@@ -295,7 +295,22 @@ export default {
     const now = new Date();
     this.params.yyyymm = `${now.getFullYear()}-${('0' + (now.getMonth() + 1)).slice(-2)}`;
   },
-  mounted() {},
+  mounted() {
+  this.$nextTick(() => {
+    const gv1 = this.st001GridView;
+      if (gv1) {
+        gv1.setRowStyleCallback(this.rowStyleCallbackST001);
+      }
+      const gv2 = this.st002GridView;
+      if (gv2) {
+        gv2.setRowStyleCallback(this.rowStyleCallbackST002);
+      }
+      const gv3 = this.st003GridView;
+      if (gv3) {
+        gv3.setRowStyleCallback(this.rowStyleCallbackST003);
+      }
+    });
+  },
   beforeUnmount() {},
   methods: {
     onDateChange() {
@@ -466,6 +481,42 @@ export default {
       };
 
       grid.exportGrid(options);
+    },
+    rowStyleCallbackST001(grid, item, fixed) {
+      if (!item || item.index < 0) {
+        return null;
+      }
+
+      const diff = grid.getValue(item.index, 'diff');
+      if (diff === 0) {
+        return { style: { background: '#d1e7dd' } };
+      } else {
+        return { style: { background: '#f8d7da' } };
+      }
+    },
+    rowStyleCallbackST002(grid, item, fixed) {
+      if (!item || item.index < 0) {
+        return null;
+      }
+
+      const diffAmt = grid.getValue(item.index, 'diffAmt');
+      if (diffAmt === 0) {
+        return { style: { background: '#d1e7dd' } };
+      } else {
+        return { style: { background: '#f8d7da' } };
+      }
+    },
+    rowStyleCallbackST003(grid, item, fixed) {
+      if (!item || item.index < 0) {
+        return null;
+      }
+
+      const diffAmt = grid.getValue(item.index, 'diff');
+      if (diffAmt === 0) {
+        return { style: { background: '#d1e7dd' } };
+      } else {
+        return { style: { background: '#f8d7da' } };
+      }
     },
   },
 };
