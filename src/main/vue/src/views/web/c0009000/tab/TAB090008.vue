@@ -136,14 +136,14 @@ export default {
       const gridField1 = _.cloneDeep(require(`@web/c0009000/js/TAB090008.js`));
       result1.forEach((item) => {
         gridField1.fields.push({
-          fieldName: item.deptName.toLowerCase(),
+          fieldName: item.deptName,
           valueType: 'number',
           dataType: 'number',
         });
 
         gridField1.columns.push({
-          name: item.deptName.toLowerCase(),
-          fieldName: item.deptName.toLowerCase(),
+          name: item.deptName,
+          fieldName: item.deptName,
           width: 80,
           header: {
             text: item.deptName,
