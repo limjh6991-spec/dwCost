@@ -109,6 +109,16 @@ const c0009000Router = [
       requiresAuth: true,
     },
   },
+  {
+    path: '/c0009014',
+    name: '기표내역',
+    component: () => import('../views/web/c0009000/C0009014.vue'),
+    meta: {
+      upperSysResourceId: 'C0009000',
+      sysResourceId: 'C0009014',
+      requiresAuth: true,
+    },
+  },  
 ];
 
 export default c0009000Router;

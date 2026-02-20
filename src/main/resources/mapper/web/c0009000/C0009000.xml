@@ -531,4 +531,8 @@
         </if>
         ORDER BY SEL_CODE
     </select>
+
+    <select id="C0009014_Sch1" resultType="CamelMap">
+        EXEC DOI_Journal @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selCode};
+    </select> 
 </mapper>
