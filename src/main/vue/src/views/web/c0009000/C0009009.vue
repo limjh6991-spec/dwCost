@@ -45,15 +45,19 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="modelPlGrid" :uid="'modelPlGrid'" :step="'1'" :rows="modelPlGridRows" :grid="modelPlGrid" style="height: 100%" :fitLayoutWidthEnable="true" />
+        <div id="modelPlTree" ref="modelPlTree" class="top-border" style="height: 100%"></div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { TreeView, LocalTreeDataProvider } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
+import gridField from '@web/c0009000/js/C0009009.js';
+
+let modelPlTreeProvider, modelPlTreeView;
 
 export default {
   setup() {
@@ -92,7 +96,7 @@ export default {
       handler(newVal) {
         if (!newVal) return;
         this.params.site = newVal === 'VN' ? 'VINA' : '본사';
-        if (this.$refs.modelPlGrid) {
+        if (this.$refs.modelPlTree) {
           this.initialize();
           this.searchClick();
         }
@@ -105,12 +109,6 @@ export default {
       const roleList = this.userAuthInfo?.roleList || [];
       return roleList.includes('SYSADMIN');
     },
-    gridView() {
-      return this.$refs.modelPlGrid?.getGridView();
-    },
-    gridDataProvider() {
-      return this.$refs.modelPlGrid?.getGridDataProvider();
-    },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
     },
@@ -118,6 +116,9 @@ export default {
 
   created() {
     this.initialize();
+  },
+
+  mounted() {
     this.initializeGrid();
   },
 
@@ -129,7 +130,13 @@ export default {
     },
 
     initializeGrid() {
-      this.modelPlGrid = _.cloneDeep(require(`@web/c0009000/js/C0009009.js`));
+      this.modelPlGrid = _.cloneDeep(gridField);
+
+      modelPlTreeProvider = new LocalTreeDataProvider(false);
+      modelPlTreeView = new TreeView(this.$refs.modelPlTree);
+      modelPlTreeView.setDataSource(modelPlTreeProvider);
+      modelPlTreeView.setOptions(this.modelPlGrid.options);
+      modelPlTreeView.treeOptions.expanderIconStyle = 'square';
     },
 
     onDateChange() {
@@ -292,8 +299,66 @@ export default {
       });
     },
 
+    buildTreeRows(rows) {
+      let topIndex = 0;
+      let currentTopId = '';
+      let childIndex = 0;
+
+      return (rows || []).map(r => {
+        const row = { ...r };
+        const gubun = String(row.gubun ?? '').trim();
+
+        if (gubun === '매출수량') {
+          row.treeId = '0';
+          return row;
+        }
+
+        const isTop = /^([IVXLCDM]+)\./.test(gubun);
+        const isChild = /^\(\d+\)/.test(gubun) || /^\d+\./.test(gubun);
+
+        if (isTop) {
+          topIndex += 1;
+          currentTopId = String(topIndex);
+          childIndex = 0;
+          row.treeId = currentTopId;
+        } else if (isChild && currentTopId) {
+          childIndex += 1;
+          row.treeId = `${currentTopId}.${childIndex}`;
+        } else {
+          if (currentTopId) {
+            childIndex += 1;
+            row.treeId = `${currentTopId}.${childIndex}`;
+          } else {
+            topIndex += 1;
+            currentTopId = String(topIndex);
+            childIndex = 0;
+            row.treeId = currentTopId;
+          }
+        }
+
+        return row;
+      });
+    },
+
+    collapseGubun(targetLabel) {
+      const grid = modelPlTreeView;
+      const count = typeof grid?.getItemCount === 'function' ? grid.getItemCount() : 0;
+
+      for (let i = 0; i < count; i += 1) {
+        const gubun = grid.getValue(i, 'gubun')?.trim();
+        if (gubun === targetLabel) {
+          if (typeof grid.collapse === 'function') {
+            grid.collapse(i, true);
+          } else if (typeof grid.setExpanded === 'function') {
+            grid.setExpanded(i, false, true);
+          }
+          break;
+        }
+      }
+    },
+
     async getDataList() {
-      this.gridView.commit();
+      modelPlTreeView.commit();
 
       if (!this.hasSysAdmin) {
         this.params.selCode = 'ACTUAL';
@@ -321,7 +386,15 @@ export default {
 
       const displayMap = this.buildDisplayMapFromQty(qtyResp);
       const headerMeta = this.buildHeaderMetaFromSch1(amountResp, displayMap);
-      const baseGrid = _.cloneDeep(require(`@web/c0009000/js/C0009009.js`));
+      const baseGrid = _.cloneDeep(gridField);
+
+      this.ensureField(baseGrid, 'treeId', 'text');
+      this.ensureColumn(baseGrid, {
+        name: 'treeId',
+        fieldName: 'treeId',
+        width: 0,
+        visible: false,
+      });
       [
         { k:'zTotal',     text:'총합계' },
         { k:'zMassTotal', text:'양산합계' },
@@ -352,8 +425,8 @@ export default {
         });
       });
 
-      this.gridDataProvider.setFields(baseGrid.fields);
-      this.gridView.setColumns(baseGrid.columns);
+      modelPlTreeProvider.setFields(baseGrid.fields);
+      modelPlTreeView.setColumns(baseGrid.columns);
 
       const sortByModel = (a, b) => a.model.localeCompare(b.model, undefined, { sensitivity: 'base' });
       const yangsanModels = headerMeta.filter(x => x.gubun === '양산').sort(sortByModel);
@@ -362,7 +435,7 @@ export default {
       const purchaseModels = headerMeta.filter(x => x.gubun === '구매').sort(sortByModel);
 
       const layout = [
-        { header: { text: '사업구분' }, items: [{ column: 'gubun', rowSpan: 2, header: { text: '제품명' } }] },
+        { header: { text: '사업구분' }, items: [{ column: 'gubun', width: 280, rowSpan: 2, header: { text: '제품명' } }] },
         { column: 'zTotal', rowSpan: 2, header: { text: '총합계' } },
         {
           header: { text: '합계' },
@@ -379,18 +452,20 @@ export default {
         { header: { text: '구매' }, items: purchaseModels.map(m => ({ column: m.fieldId })) },
       ];
 
-      this.gridView.setColumnLayout(layout);      
+      modelPlTreeView.setColumnLayout(layout);
 
-      this.gridView.setCellStyleCallback(this.setCellStyleCallbackGrid.bind(this));
-      this.gridView.setRowStyleCallback(this.setRowStyleCallbackGrid.bind(this));
+      modelPlTreeView.setCellStyleCallback(this.setCellStyleCallbackGrid.bind(this));
+      modelPlTreeView.setRowStyleCallback(this.setRowStyleCallbackGrid.bind(this));
 
       const qtyRow = this.buildQtyRow(headerMeta, qtyResp);
       const amountRows = this.remapAmountRows(amountResp, headerMeta);
 
-      const finalRows = [qtyRow, ...amountRows];
+      const finalRows = this.buildTreeRows([qtyRow, ...amountRows]);
 
       this.modelPlGridRows = finalRows;
-      this.gridDataProvider.setRows(finalRows);
+      modelPlTreeProvider.setRows(finalRows, 'treeId');
+      modelPlTreeView.expandAll();
+      this.collapseGubun('IV. 판매비와관리비');
     },
 
     async loadSelCodeList() {
@@ -419,7 +494,7 @@ export default {
     },
 
     async excelBtnClick() {
-      const grid = this.gridView;
+      const grid = modelPlTreeView;
       if (!grid) return;
 
       const now = new Date();

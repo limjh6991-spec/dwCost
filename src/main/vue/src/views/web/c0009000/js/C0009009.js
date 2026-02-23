@@ -28,6 +28,7 @@ const grid = {
   },
 
   fields: [
+    { fieldName: 'treeId', dataType: ValueType.TEXT },
     { fieldName: 'gubun', dataType: ValueType.TEXT },
     { fieldName: 'zTotal', dataType: ValueType.NUMBER },
     { fieldName: 'zMassTotal', dataType: ValueType.NUMBER },
@@ -38,7 +39,8 @@ const grid = {
 
 
   columns: [
-    { name: 'gubun', fieldName: 'gubun', width: 180, header: { text: '제품명' }, styleName: 'tl' },
+    { name: 'treeId', fieldName: 'treeId', width: 0, visible: false },
+    { name: 'gubun', fieldName: 'gubun', width: 280, header: { text: '제품명' }, styleName: 'tl' },
     { name: 'zTotal', fieldName: 'zTotal', width: 130, header: { text: '총합계' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'zMassTotal', fieldName: 'zMassTotal', width: 130, header: { text: '양산' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'zDevTotal', fieldName: 'zDevTotal', width: 130, header: { text: '개발' }, styleName: 'tr', numberFormat: '#,##0' },
