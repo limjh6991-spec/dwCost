@@ -1070,10 +1070,10 @@ BEGIN
 					  WHEN Cur.rn = 4 THEN
 					      ((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + '))
 					      / NULLIF(((' + @SumYangsan_Qty + ')+(' + @SumDev_Qty + ')+(' + @SumCas_Qty + ')+(' + @SumPur_Qty + ')),0)
-					  WHEN Cur.rn = 78 THEN
+            		  WHEN LTRIM(Cur.gubun) = N''영업이익률'' THEN
 						  ((' + @SumYangsan_Op + ')+(' + @SumDev_Op + ')+(' + @SumCas_Op + ')+(' + @SumPur_Op +'))
 					      /NULLIF(((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + ')),0)*100
-					  WHEN Cur.rn = 80 THEN
+           			  WHEN LTRIM(Cur.gubun) = N''한계이익률'' THEN
 						  ('+@SumYangsan_FiX + ' + ' + @SumDev_Fix +')
 					      /NULLIF(((' + @SumYangsan_Bep + ')+(' + @SumDev_Bep + ')+(' + @SumCas_Bep + ')+(' + @SumPur_Bep +')),0)*100
 					       --/NULLIF(((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + ')),0)*100
@@ -1087,10 +1087,10 @@ BEGIN
 				CASE
 				  WHEN Cur.rn = 5 THEN 0
 				  WHEN Cur.rn = 4 THEN ((' + @SumYangsan_Sale + ') / NULLIF((' + @SumYangsan_Qty + '),0))
-					  WHEN Cur.rn = 78 THEN
+            	  WHEN LTRIM(Cur.gubun) = N''영업이익률'' THEN
 						  ((' + @SumYangsan_Op  +'))
 					      /NULLIF(((' + @SumYangsan_Sale + ')),0)*100
-				  WHEN Cur.rn = 80 THEN
+         		  WHEN LTRIM(Cur.gubun) = N''한계이익률'' THEN
 					  ('+@SumYangsan_FiX +')
 				      /NULLIF(((' + @SumYangsan_Bep +')),0)*100
 				  ELSE (' + @SumYangsan + ')
@@ -1099,10 +1099,10 @@ BEGIN
 				CASE
 				  WHEN Cur.rn = 5 THEN 0
 				  WHEN Cur.rn = 4 THEN ((' + @SumDev_Sale + ') / NULLIF((' + @SumDev_Qty + '),0))
-					  WHEN Cur.rn = 78 THEN
+            	  WHEN LTRIM(Cur.gubun) = N''영업이익률'' THEN
 						  ((' + @SumDev_Op +'))
 					      /NULLIF(((' + @SumDev_Sale + ')),0)*100
-				  WHEN Cur.rn = 80 THEN
+          		  WHEN LTRIM(Cur.gubun) = N''한계이익률'' THEN
 					  ('+ @SumDev_Fix +')
 				      /NULLIF(((' + @SumDev_Bep +')),0)*100
 				  ELSE (' + @SumDev + ')
@@ -1129,8 +1129,8 @@ BEGIN
 		FROM P Cur
 		LEFT JOIN P Sales ON Sales.rn = 1 
 		LEFT JOIN P Qty   ON Qty.rn   = 3
-		LEFT JOIN P Op    ON Op.rn    = 77 -- 영업이익  : Operating Profit
-		LEFT JOIN P Bep   ON Bep.rn   = 81 -- 손익분기점 : Break-Even Point (BEP) Operating Profit
+    	LEFT JOIN P Op    ON LTRIM(Op.gubun) = N''VIII. 영업이익''
+    	LEFT JOIN P Bep   ON LTRIM(Bep.gubun) LIKE N''X. 손익분기점%''
 		ORDER BY TRY_CONVERT(INT, Cur.rn);
 		';
 		
