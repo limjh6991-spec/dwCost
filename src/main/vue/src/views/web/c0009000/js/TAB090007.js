@@ -112,7 +112,7 @@ const grid = {
       items: [
         { 
           name: 'grpMat',
-          header: { text: '자재' },
+          header: { text: '생산' },
           direction: 'horizontal',
           items: [
             { column: 'inMatQty' },

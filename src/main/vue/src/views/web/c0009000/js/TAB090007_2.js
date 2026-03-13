@@ -112,7 +112,7 @@ const grid = {
       items: [
         { 
           name: 'grpMat',
-          header: { text: '자재' },
+          header: { text: '생산' },
           direction: 'horizontal',
           items: [
             { column: 'inMatQty' },
@@ -172,6 +172,7 @@ const grid = {
     width: 80,
     header: { text: '구분' },
     styleName: 'tc',
+    autoFilter: true,    
     mergeRule: { 
       criteria: gubunMergeCriteria,
     } 
@@ -182,6 +183,7 @@ const grid = {
     width: 100,
     header: { text: '모델' },
     styleName: 'tc',
+    autoFilter: true,
     mergeRule: { 
       criteria: commonMergeCriteria,
     } 
