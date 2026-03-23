@@ -17,7 +17,7 @@
         </b-col>
       </b-row>
       <div class="btn_area">
-        <b-button @click="executeClick"><span class="ico_search"></span>실행</b-button>
+        <b-button v-show="!isClosedMonth" @click="executeClick"><span class="ico_search"></span>실행</b-button>
       </div>
     </div>
      <div 
@@ -77,12 +77,16 @@ export default {
       },
       isProcessing: false,
       resultMessage: '',
+      isClosedMonth: false,
     };
   },
   watch: { 
-    'params.yyyymm': function(newVal) {
+    'params.yyyymm': async function(newVal) {
       if (newVal) {
         this.onDateChange();
+        await this.checkClosingMonth();
+      } else {
+        this.isClosedMonth = false;
       }
     },
     'srchInfo.yyyymm': {
@@ -136,6 +140,7 @@ export default {
   },
   created() {
     this.initialize();
+    this.checkClosingMonth();
     //this.initializeGrid();
   },
   mounted() {},
@@ -153,6 +158,29 @@ export default {
     onDateChange() {
       this.resultMessage = `실행 버튼을 클릭하면 ${this.params.yyyymm}월 ${this.params.site} 기준정보 데이터 이월 실행 합니다`;
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
+    },
+    async checkClosingMonth() {
+      const yyyymm = this.params.yyyymm
+        ? this.params.yyyymm.replaceAll('-', '')
+        : null;
+
+      if (!yyyymm) {
+        this.isClosedMonth = false;
+        return;
+      }
+
+      try {
+        const res = await this.$axios.get('/api/common/closing-month/check', {
+          params: { yyyymm },
+        });
+
+        this.isClosedMonth =
+          res?.data?.isClosed === true || res?.data?.isClosed === 'Y';
+
+      } catch (e) {
+        console.error('마감월 조회 실패', e);
+        this.isClosedMonth = false;
+      }
     },
     async getDataList() {
       //this.gridView.commit();

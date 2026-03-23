@@ -27,9 +27,9 @@
       <div class="left_box">
         <div class="btn_wrap ms-auto">
           <div>
-            <b-button @click="addViewRow" class="sub"> 추가</b-button>
-            <b-button class="second" @click="deleteRmaData"> 삭제</b-button>
-            <b-button class="main" @click="updateRmaData">저장</b-button>  
+            <b-button v-show="!isClosedMonth" @click="addViewRow" class="sub"> 추가</b-button>
+            <b-button v-show="!isClosedMonth" class="second" @click="deleteRmaData"> 삭제</b-button>
+            <b-button v-show="!isClosedMonth" class="main" @click="updateRmaData">저장</b-button>  
           </div>
         </div>  
       </div>
@@ -88,6 +88,7 @@ export default {
       selectedModel: '',
       selectedModelInfo: null,
       selectedRowIndex: null,
+      isClosedMonth: false,
     };
   },
   computed: {
@@ -102,9 +103,12 @@ export default {
     },
   },
   watch: {
-    'params.yyyymm'(newVal) {
+    'params.yyyymm': async function(newVal) {
       if (newVal) {
         this.onDateChange();
+        await this.checkClosingMonth();
+      } else {
+        this.isClosedMonth = false;
       }
     },
     'srchInfo.yyyymm': {
@@ -131,7 +135,8 @@ export default {
     this.params.yyyymm = this.srchInfo.yyyymm;
     this.params.site = this.srchInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
 
-    this.$nextTick(() => {
+    this.$nextTick(async () => {
+      await this.checkClosingMonth();
       const gv = this.viewGridView;
       if (!gv) return;
 
@@ -148,7 +153,30 @@ export default {
   methods: {
     initializeGrid() {
       this.modelGrid = _.cloneDeep(gridField);
-    },    
+    },
+    async checkClosingMonth() {
+      const yyyymm = this.params.yyyymm
+        ? this.params.yyyymm.replaceAll('-', '')
+        : null;
+
+      if (!yyyymm) {
+        this.isClosedMonth = false;
+        return;
+      }
+
+      try {
+        const res = await this.$axios.get('/api/common/closing-month/check', {
+          params: { yyyymm },
+        });
+
+        this.isClosedMonth =
+          res?.data?.isClosed === true || res?.data?.isClosed === 'Y';
+
+      } catch (e) {
+        console.error('마감월 조회 실패', e);
+        this.isClosedMonth = false;
+      }
+    },
     reInitScreen() {
       this.params.yyyymm = this.srchInfo.yyyymm;
       this.params.site = this.srchInfo.curProdCtg === 'VN' ? 'VINA' : '본사';

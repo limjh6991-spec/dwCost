@@ -186,7 +186,25 @@ export default {
           // });
       }
     },
-    executeClick() {
+    async executeClick() {
+      const yyyymm = this.params.yyyymm
+        ? this.params.yyyymm.replaceAll('-', '')
+        : null;
+
+      if (yyyymm) {
+        try {
+          const res = await this.$axios.get('/api/common/closing-month/check', {
+            params: { yyyymm },
+          });
+          if (res?.data?.isClosed === true || res?.data?.isClosed === 'Y') {
+            this.$toast && this.$toast('warning', `${this.params.yyyymm}월은 결산이 마감되었습니다.`);
+            return;
+          }
+        } catch (e) {
+          console.error('마감월 조회 실패', e);
+        }
+      }
+
       this.getDataList();
       //this.resultMessage = 'ㅆㄸㄴㅆ -- 긴영현 테스트 입니다';
     },

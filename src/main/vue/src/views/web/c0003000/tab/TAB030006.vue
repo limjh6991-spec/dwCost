@@ -20,6 +20,12 @@
         <b-button @click="executeClick"><span class="ico_search"></span>실행</b-button>
       </div>
     </div>
+    <div class="grid_box search_onerow">
+      <div class="left_box">
+        <div class="btn_wrap ms-auto">
+          <b-button class="second" @click="openExecLog">로그 보기</b-button>
+        </div>
+      </div>    
      <div 
       class="log-display"
       contenteditable="false"
@@ -43,17 +49,20 @@
       </div>
     </div>
     <CmDialog1 ref="cmDialog1C00008002" /-->
+    </div>
+    <ExeclogPopup ref="execlogPopup" style="margin-top: 100px;" />        
   </div>
 </template>
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
+import ExeclogPopup from '@web/c0003000/tab/ExeclogPopup.vue';
 //import gridField from '@web/c0008000/js/C0008002.js';
 
 export default {
   props: {},
-  components: {},
+  components: { ExeclogPopup },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -158,6 +167,15 @@ export default {
       console.log('onMonthChange ---c0003009'+this.params.yyyymm);
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
+    openExecLog() {
+      const queryParams = {
+        yyyymm: this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : null,
+        site: this.params.site ? this.siteMap[this.params.site] : null,
+        selcode: 'ACTUAL',
+        procName: 'UP_DOI_STOCK_BOH',
+      };
+      this.$refs.execlogPopup.open(queryParams);
+    },     
     async getDataList() {
       //this.gridView.commit();
 
@@ -196,7 +214,25 @@ export default {
           // });
       }
     },
-    executeClick() {
+    async executeClick() {
+      const yyyymm = this.params.yyyymm
+        ? this.params.yyyymm.replaceAll('-', '')
+        : null;
+
+      if (yyyymm) {
+        try {
+          const res = await this.$axios.get('/api/common/closing-month/check', {
+            params: { yyyymm },
+          });
+          if (res?.data?.isClosed === true || res?.data?.isClosed === 'Y') {
+            this.$toast && this.$toast('warning', `${this.params.yyyymm}월은 결산이 마감되었습니다.`);
+            return;
+          }
+        } catch (e) {
+          console.error('마감월 조회 실패', e);
+        }
+      }
+
       this.getDataList();
       //this.resultMessage = 'ㅆㄸㄴㅆ -- 긴영현 테스트 입니다';
     },

@@ -23,6 +23,7 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <b-button v-show="!isClosedMonth" class="second" @click="genData">데이터 생성</b-button>       
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
         </div>
       </div>
@@ -63,12 +64,16 @@ export default {
         HQ: 'HQ',
         VN: 'VN',
       },
+      isClosedMonth: false,
     };
   },
   watch: {
-    'params.yyyymm': function (newVal) {
+    'params.yyyymm': async function (newVal) {
       if (newVal) {
         this.onDateChange();
+        await this.checkClosingMonth();
+      } else {
+        this.isClosedMonth = false;
       }
     },
     'srchInfo.yyyymm': {
@@ -106,7 +111,8 @@ export default {
   mounted() {
     this.params.yyyymm = this.srchInfo.yyyymm;
     this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
-    this.$nextTick(() => {
+    this.$nextTick(async () => {
+      await this.checkClosingMonth();
       this.searchClick();
     });
   },
@@ -114,6 +120,29 @@ export default {
   methods: {
     initializeGrid() {
       this.prodSubGrid = _.cloneDeep(gridField);
+    },
+    async checkClosingMonth() {
+      const yyyymm = this.params.yyyymm
+        ? this.params.yyyymm.replaceAll('-', '')
+        : null;
+
+      if (!yyyymm) {
+        this.isClosedMonth = false;
+        return;
+      }
+
+      try {
+        const res = await this.$axios.get('/api/common/closing-month/check', {
+          params: { yyyymm },
+        });
+
+        this.isClosedMonth =
+          res?.data?.isClosed === true || res?.data?.isClosed === 'Y';
+
+      } catch (e) {
+        console.error('마감월 조회 실패', e);
+        this.isClosedMonth = false;
+      }
     },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });

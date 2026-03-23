@@ -30,21 +30,31 @@
         <b-button @click="generateClick" variant="primary"><span class="ico_save"></span>생성</b-button>
       </div>
     </div>
+    <div class="grid_box search_onerow">
+      <div class="left_box">
+        <div class="btn_wrap ms-auto">
+          <b-button class="second" @click="openExecLog">로그 보기</b-button>
+        </div>
+      </div>    
     <div 
       class="log-display"
       contenteditable="false"
       v-html="formattedLog">
     </div>
+    </div>
+    <ExeclogPopup ref="execlogPopup" style="margin-top: 100px;" />      
   </div>
 </template>
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
+import ExeclogPopup from '@web/c0003000/tab/ExeclogPopup.vue';
 
 export default {
   name: 'C0003008',
   props: {},
+  components: { ExeclogPopup },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -59,7 +69,7 @@ export default {
         yyyymm: null,
         site: 'HQ',
         gubun: { value: '전체', text: '전체' },
-        sel_code: 'ACTUAL',
+        selCode: 'ACTUAL',
       },
       gubunList: [
         { value: '전체', text: '전체' },
@@ -131,6 +141,15 @@ export default {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
       this.resultMessage = `생성 버튼을 클릭하면 ${this.params.yyyymm}월 ${this.params.site} 매출원가를 생성 합니다`;
     },
+    openExecLog() {
+      const queryParams = {
+        yyyymm: this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : null,
+        site: this.params.site ? this.siteMap[this.params.site] : null,
+        selCode: 'ACTUAL',
+        procName: 'UP_DOI_SALE_COST',
+      };
+      this.$refs.execlogPopup.open(queryParams);
+    },       
     addLog(message) {
       this.resultMessage += message + '\n';
     },
@@ -145,6 +164,19 @@ export default {
         return;
       }
 
+      const closingYyyymm = this.params.yyyymm.replaceAll('-', '');
+      try {
+        const res = await this.$axios.get('/api/common/closing-month/check', {
+          params: { yyyymm: closingYyyymm },
+        });
+        if (res?.data?.isClosed === true || res?.data?.isClosed === 'Y') {
+          this.$toast && this.$toast('warning', `${this.params.yyyymm}월은 결산이 마감되었습니다.`);
+          return;
+        }
+      } catch (e) {
+        console.error('마감월 조회 실패', e);
+      }
+
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
       const gubunText = this.params.gubun?.text || '전체';
       const siteText = this.params.site;
@@ -156,7 +188,7 @@ export default {
         let params = {
           yyyymm: yyyymm,
           site: this.siteMap[this.params.site],
-          selCode: this.params.sel_code,
+          selCode: this.params.selCode,
         };
 
         let param = [{
