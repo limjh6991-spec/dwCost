@@ -9,9 +9,9 @@
     <template #tab-content-TAB070002>
       <TAB070002 tabId="TAB070002" />
     </template>
-    <!-- Tab 1 연구개발 수불 -->
+    <!-- Tab 2 MES 수불 -->
     <template #tab-content-TAB070013>
-      <TAB070002 tabId="TAB070013" />
+      <TAB070013 tabId="TAB070013" />
     </template>
   </auth-tabs>
 </template>
