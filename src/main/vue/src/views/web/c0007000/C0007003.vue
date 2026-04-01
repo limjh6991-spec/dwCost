@@ -9,12 +9,17 @@
     <template #tab-content-TAB070002>
       <TAB070002 tabId="TAB070002" />
     </template>
+    <!-- Tab 1 연구개발 수불 -->
+    <template #tab-content-TAB070013>
+      <TAB070002 tabId="TAB070013" />
+    </template>
   </auth-tabs>
 </template>
 
 <script>
 import TAB070001 from './tab/TAB070001.vue';
 import TAB070002 from './tab/TAB070002.vue';
+import TAB070013 from './tab/TAB070013.vue';
 
 export default {
   name: 'DOI_C0007003',
@@ -22,6 +27,7 @@ export default {
   components: {
     TAB070001,
     TAB070002,
+    TAB070013,
   },
   watch: {},
   data() {

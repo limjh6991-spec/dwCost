@@ -39,8 +39,30 @@
 		order BY 도우코드,도우모델,구분_ord;
 	</select>
 
+	<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007003Mapper">
+		<select id="C0007003_Sch3" resultType="CamelMap">
+			select
+			YYYYMM,SEL_CODE
+			,SITE as SITE_ORG
+			,CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' end as SITE
+			,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,DW_SITE,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH			from
+				DOI_MES_SUBUL
+			where 1=1
+			<if test="yyyymm != null and yyyymm != ''">
+				and yyyymm = #{yyyymm}
+			</if>
+			<if test="site != null and site != ''">
+				and SITE = #{site}
+			</if>
+			order BY 도우코드,도우모델,구분_ord;
+		</select>	
+
 	<select id="uploadProdSubul" resultType="CamelMap">
 		EXEC UP_DOI_PROD_SUBUL #{yyyymm}, #{site};
+	</select>
+
+	<select id="uploadMesSubul" resultType="CamelMap">
+		EXEC UP_DOI_MES_SUBUL #{yyyymm}, #{site};
 	</select>
 
 	<select id="checkTab2DuplicateOrgList" parameterType="java.util.List" resultType="CamelMap">
@@ -284,5 +306,86 @@
 		AND code NOT IN ('15','02','04')
 		ORDER BY code
 	</select>
+
+	<insert id="tab3UploadExcel" parameterType="java.util.List">
+		CREATE TABLE #TempTable (
+			seq_no INT IDENTITY (1, 1) NOT NULL,
+			YYYYMM varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SEL_CODE varchar(6) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			SITE varchar(2) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			구분 varchar(4) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			구분_ord varchar(1) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			도우코드 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			도우모델 varchar(8) COLLATE Korean_Wansung_CI_AS NULL,
+			작업구분 varchar(2) COLLATE Korean_Wansung_CI_AS NULL,
+			org작업구분 varchar(10) COLLATE Korean_Wansung_CI_AS NULL,
+			model varchar(30) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			Inch varchar(30) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			DW_SITE varchar(50) COLLATE Korean_Wansung_CI_AS NOT NULL,
+			BOH_MONTH float NULL,
+			IN_MONTH int NULL,
+			BONUS_MONTH int NULL,
+			EOH_MONTH float NULL,
+			OUT_MONTH int NULL,
+			LOSS_MONTH int NULL,
+			NG_MONTH int NULL,
+			수율제외_MONTH int NULL,
+			REWORK진행_MONTH int NULL,
+			SHIPPING_PLAN_MONTH int NOT NULL,
+			SHIPPING_ACTUAL_MONTH int NOT NULL
+		);
+
+		INSERT INTO #TempTable
+		(
+			YYYYMM,SEL_CODE,SITE,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,DW_SITE,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss
+		)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.field2}
+			, #{item.field3}
+			, #{item.field4}
+			, #{item.field5}
+			, #{item.field6}
+			, #{item.field7}
+			, #{item.field8}
+			, #{item.field9}
+			, #{item.field10}
+			, #{item.field11}
+			, #{item.field12}
+			, #{item.field13}
+			, #{item.field14}
+			, #{item.field15}
+			, #{item.field16}
+			, #{item.field17}
+			, #{item.field18}
+			, #{item.field19}
+			, #{item.field20}
+			, #{item.field21}
+			, #{item.field22}
+			, #{item.field23}
+			, #{item.field24}
+			)
+		</foreach>;
+
+		INSERT INTO DOI_MES_SUBUL (YYYYMM,SEL_CODE,SITE,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,DW_SITE,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH)
+		SELECT YYYYMM,SEL_CODE,SITE,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,DW_SITE,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH
+		FROM (
+		SELECT *, MAX(seq_no) over (partition by YYYYMM, SEL_CODE, SITE, 도우코드) max_seq_no FROM #TempTable
+		) A
+		WHERE 1=1
+		AND seq_no = max_seq_no
+		AND NOT EXISTS (
+			SELECT 1
+			FROM DOI_MES_SUBUL b
+			WHERE 1=1
+			AND b.YYYYMM = a.YYYYMM
+			AND b.SEL_CODE = a.SEL_CODE
+			AND b.SITE = a.SITE
+			AND b.도우코드 = a.도우코드
+		);
+
+		DROP TABLE #TempTable;
+	</insert>
 
 </mapper>
