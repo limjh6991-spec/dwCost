@@ -39,23 +39,23 @@
 		order BY 도우코드,도우모델,구분_ord;
 	</select>
 
-	<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007003Mapper">
-		<select id="C0007003_Sch3" resultType="CamelMap">
-			select
-			YYYYMM,SEL_CODE
-			,SITE as SITE_ORG
-			,CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' end as SITE
-			,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,DW_SITE,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH			from
-				DOI_MES_SUBUL
-			where 1=1
-			<if test="yyyymm != null and yyyymm != ''">
-				and yyyymm = #{yyyymm}
-			</if>
-			<if test="site != null and site != ''">
-				and SITE = #{site}
-			</if>
-			order BY 도우코드,도우모델,구분_ord;
-		</select>	
+	<select id="C0007003_Sch3" resultType="CamelMap">
+		select
+		YYYYMM,SEL_CODE
+		,SITE as SITE_ORG
+		,CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' end as SITE
+		,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,DW_SITE,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH
+		from
+			DOI_MES_SUBUL
+		where 1=1
+		<if test="yyyymm != null and yyyymm != ''">
+			and yyyymm = #{yyyymm}
+		</if>
+		<if test="site != null and site != ''">
+			and SITE = #{site}
+		</if>
+		order BY 도우코드,도우모델,구분_ord;
+	</select>
 
 	<select id="uploadProdSubul" resultType="CamelMap">
 		EXEC UP_DOI_PROD_SUBUL #{yyyymm}, #{site};
