@@ -483,6 +483,30 @@ export default {
         result.push(this.makeSubtotalRowByGroup(subtotalRow, g));
       });
 
+      // 총합계 BOH: 1월 BOH 합산, EOH: 마지막 데이터월 EOH 합산
+      const janRows = rows.filter(r => this.parseMonthNumber(r['월']) === 1);
+      let bohQtySum = 0, bohAmtSum = 0;
+      janRows.forEach(r => {
+        bohQtySum += Number(r.bohQty) || 0;
+        bohAmtSum += Number(r.bohAmt) || 0;
+      });
+
+      let maxMonth = 0;
+      rows.forEach(r => {
+        const mm = this.parseMonthNumber(r['월']);
+        if (mm && mm > maxMonth) maxMonth = mm;
+      });
+      const lastMonthRows = rows.filter(r => this.parseMonthNumber(r['월']) === maxMonth);
+      let eohQtySum = 0, eohAmtSum = 0;
+      lastMonthRows.forEach(r => {
+        eohQtySum += Number(r.eohQty) || 0;
+        eohAmtSum += Number(r.eohAmt) || 0;
+      });
+
+      grandTotalRow.bohQty = bohQtySum;
+      grandTotalRow.bohAmt = bohAmtSum;
+      grandTotalRow.eohQty = eohQtySum;
+      grandTotalRow.eohAmt = eohAmtSum;
 
       result.push(this.makeGrandTotalRow(grandTotalRow));
 
@@ -619,7 +643,7 @@ export default {
       return {
         ...row,
         rowType: 'GRAND_TOTAL',
-        구분: '총 합계',
+        구분: '총 합계 (1월 BOH / 최종 결산월 EOH)',
         월: '',
         mergeKey: 'GRAND_TOTAL',
         mergeKeyGubun: 'GRAND_TOTAL',
