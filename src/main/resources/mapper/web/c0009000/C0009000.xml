@@ -533,6 +533,22 @@
     </select>
 
     <select id="C0009014_Sch1" resultType="CamelMap">
-        EXEC DOI_Journal @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selCode};
+        SELECT 
+            YYYYMM,
+            차변명,
+            차변금액,
+            대변명,
+            대변금액
+        FROM DOI_POST
+        WHERE 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            AND YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+        and SITE = #{site}
+        </if>
+        <if test="selCode != null and selCode != ''">
+            and SEL_CODE = #{selCode}
+        </if>
     </select> 
 </mapper>
