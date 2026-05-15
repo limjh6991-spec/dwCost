@@ -1,0 +1,26 @@
+
+--기초
+select * from d21_제조지시VLR where 공정코드='010' and 작업시작+시작시각 < '20260101080000' and  작업시작+시작시각 >= '20240504000000'
+; 불량,pallet구성 된것을 뺀다
+ 수량 = Cell수량
+
+--투입
+select * from d21_제조지시VLR where 공정코드='010' and 작업시작 between '20260101' and '20260131';
+수량 = Cell수량
+
+--불량
+select * from d21_제조지시VLR where 작업시작 between '20260101' and '20260131'; (FRONT)
+불량수량 = 불량수량(블락수) * 20 (모델의 블록당 CEll수 - 기준정보)
+
+select  * from d22_RUN제조VLR  where 작업시작 between '20260101' and '20260131'; -- (BACK);
+불량수량 = 불량수량
+
+--OUT (대기작업시각은  PALLET구성 시각임)
+select * from d27_내포장MST where 대기작업시각 between '20260101 080000' and '20260201 075959';
+OUT수량 = Cell수량
+
+--기말 = (기초+투입) - (불량+OUT)
+
+--공통
+모델(제품) : RUN_ID,RUN_NO,LOT_NO 의 앞 4자리 
+제품구분 :  RUN_ID,RUN_NO,LOT_NO 의 '-' 1자리
