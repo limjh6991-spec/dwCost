@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007011Mapper">
+
+	<!-- ========== 스냅샷 생성 (수동 버튼) ========== -->
+	<update id="createSnapshot">
+		-- 1. 기존 스냅샷 삭제
+		DELETE FROM d21_제조지시VLR_SNAPSHOT WHERE YYYYMM = #{yyyymm} AND SITE = #{site};
+		DELETE FROM d22_RUN제조VLR_SNAPSHOT WHERE YYYYMM = #{yyyymm} AND SITE = #{site};
+		DELETE FROM d27_내포장MST_SNAPSHOT WHERE YYYYMM = #{yyyymm} AND SITE = #{site};
+
+		-- 2. d21 스냅샷 (투입: 공정코드='010', 불량FRONT: 전체공정)
+		--    작업시작 BETWEEN 해당월 범위
+		INSERT INTO d21_제조지시VLR_SNAPSHOT (
+			YYYYMM, SITE, SNAPSHOT_DT,
+			공장코드, LOT_NO, 공정코드, 순서, 레시피, RUN_NO,
+			BEF_공정코드, NXT_공정코드,
+			작업시작, 시작시각, 작업종료, 종료시각, 작업일자,
+			작업자, 작업조, Shift, Machine_Code, P_CODE, 공정_비고,
+			작업구분, 투입수량, 검사수량, 불량수량, 양품수량, CELL수량,
+			확인자, 특이사항, 재공적용_여부
+		)
+		SELECT
+			#{yyyymm}, #{site}, GETDATE(),
+			공장코드, LOT_NO, 공정코드, 순서, 레시피, RUN_NO,
+			BEF_공정코드, NXT_공정코드,
+			작업시작, 시작시각, 작업종료, 종료시각, 작업일자,
+			작업자, 작업조, Shift, Machine_Code, P_CODE, 공정_비고,
+			작업구분, 투입수량, 검사수량, 불량수량, 양품수량, CELL수량,
+			확인자, 특이사항, 재공적용_여부
+		FROM d21_제조지시VLR
+		WHERE 작업시작 BETWEEN #{yyyymm} + '01'
+				AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','');
+
+		-- 3. d22 스냅샷 (불량BACK)
+		--    작업시작 BETWEEN 해당월 범위
+		INSERT INTO d22_RUN제조VLR_SNAPSHOT (
+			YYYYMM, SITE, SNAPSHOT_DT,
+			공장코드, RUN_NO, 공정코드, 레시피, LOT_NO, LOT_등분,
+			작업시작, 시작시각, 작업종료, 종료시각, 작업일자,
+			작업자, 작업조, Machine_Code, SHIFT,
+			책임자, 책임자시작, 책임자종료, 선임자, P_CODE,
+			작업구분, 투입수량, 검사수량, 불량수량, 양품수량,
+			확인자, 특이사항, 차수, 시료수량, IS_AUTO, BATCH_NO
+		)
+		SELECT
+			#{yyyymm}, #{site}, GETDATE(),
+			공장코드, RUN_NO, 공정코드, 레시피, LOT_NO, LOT_등분,
+			작업시작, 시작시각, 작업종료, 종료시각, 작업일자,
+			작업자, 작업조, Machine_Code, SHIFT,
+			책임자, 책임자시작, 책임자종료, 선임자, P_CODE,
+			작업구분, 투입수량, 검사수량, 불량수량, 양품수량,
+			확인자, 특이사항, 차수, 시료수량, IS_AUTO, BATCH_NO
+		FROM d22_RUN제조VLR
+		WHERE 작업시작 BETWEEN #{yyyymm} + '01'
+				AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','');
+
+		-- 4. d27 스냅샷 (OUT - 대기작업시각 기준, 080000~075959)
+		INSERT INTO d27_내포장MST_SNAPSHOT (
+			YYYYMM, SITE, SNAPSHOT_DT,
+			발행일자, 발행구분, PACK_QRNO, 소포장_QRNO, 대포장_QRNO,
+			RUN_ID, 상태코드, PACK상태, 일련번호,
+			Cell수량, Tray수량, Start_Time, End_Time,
+			유효기간, 유효일자, 발행자,
+			출하대기여부, 대기작업시각, 대기발행자, 대기승인자,
+			PALLET_NO, 출하여부, 출하작업시각,
+			재공적용_여부, 생산지시번호, 특이사항
+		)
+		SELECT
+			#{yyyymm}, #{site}, GETDATE(),
+			발행일자, 발행구분, PACK_QRNO, 소포장_QRNO, 대포장_QRNO,
+			RUN_ID, 상태코드, PACK상태, 일련번호,
+			Cell수량, Tray수량, Start_Time, End_Time,
+			유효기간, 유효일자, 발행자,
+			출하대기여부, 대기작업시각, 대기발행자, 대기승인자,
+			PALLET_NO, 출하여부, 출하작업시각,
+			재공적용_여부, 생산지시번호, 특이사항
+		FROM d27_내포장MST
+		WHERE 대기작업시각 BETWEEN #{yyyymm} + '01 080000'
+				AND FORMAT(DATEADD(MONTH, 1, DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)), 'yyyyMMdd') + ' 075959';
+	</update>
+
+
+	<!-- ========== 요약 통계 ========== -->
+	<select id="selectVerifySummary" resultType="CamelMap">
+		SELECT
+			(SELECT TOP 1 CONVERT(VARCHAR(19), SNAPSHOT_DT, 120) FROM d21_제조지시VLR_SNAPSHOT
+			 WHERE YYYYMM = #{yyyymm} AND SITE = #{site}) AS SNAPSHOT_DT,
+			(SELECT COUNT(*) FROM d21_제조지시VLR_SNAPSHOT WHERE YYYYMM = #{yyyymm} AND SITE = #{site}) AS D21_SNAP_CNT,
+			(SELECT COUNT(*) FROM d22_RUN제조VLR_SNAPSHOT WHERE YYYYMM = #{yyyymm} AND SITE = #{site}) AS D22_SNAP_CNT,
+			(SELECT COUNT(*) FROM d27_내포장MST_SNAPSHOT WHERE YYYYMM = #{yyyymm} AND SITE = #{site}) AS D27_SNAP_CNT,
+			(SELECT COUNT(*) FROM d21_제조지시VLR
+			 WHERE 작업시작 BETWEEN #{yyyymm} + '01'
+			   AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','')) AS D21_CURR_CNT,
+			(SELECT COUNT(*) FROM d22_RUN제조VLR
+			 WHERE 작업시작 BETWEEN #{yyyymm} + '01'
+			   AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','')) AS D22_CURR_CNT,
+			(SELECT COUNT(*) FROM d27_내포장MST
+			 WHERE 대기작업시각 BETWEEN #{yyyymm} + '01 080000'
+			   AND FORMAT(DATEADD(MONTH, 1, DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)), 'yyyyMMdd') + ' 075959') AS D27_CURR_CNT
+	</select>
+
+
+	<!-- ========== d21 기초데이터 비교 (레코드 단위) ========== -->
+	<!-- 투입: 공정코드='010' + CELL수량, 불량FRONT: 전체공정 + 불량수량 -->
+	<select id="selectCompareD21" resultType="CamelMap">
+		WITH SNAP AS (
+			SELECT 공장코드, LOT_NO, 공정코드, 순서, RUN_NO, 작업구분, 작업시작,
+			       투입수량, 검사수량, 불량수량, 양품수량, CELL수량
+			FROM d21_제조지시VLR_SNAPSHOT
+			WHERE YYYYMM = #{yyyymm} AND SITE = #{site}
+		),
+		CURR AS (
+			SELECT 공장코드, LOT_NO, 공정코드, 순서, RUN_NO, 작업구분, 작업시작,
+			       투입수량, 검사수량, 불량수량, 양품수량, CELL수량
+			FROM d21_제조지시VLR
+			WHERE 작업시작 BETWEEN #{yyyymm} + '01'
+			  AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','')
+		)
+		SELECT
+			'd21_제조지시VLR' AS SOURCE_TABLE,
+			COALESCE(S.공장코드, C.공장코드) AS 공장코드,
+			COALESCE(S.LOT_NO, C.LOT_NO) AS LOT_NO,
+			COALESCE(S.공정코드, C.공정코드) AS 공정코드,
+			COALESCE(S.순서, C.순서) AS 순서,
+			COALESCE(S.RUN_NO, C.RUN_NO) AS RUN_NO,
+			COALESCE(S.작업구분, C.작업구분) AS 작업구분,
+			COALESCE(S.작업시작, C.작업시작) AS 작업시작,
+			-- 스냅샷 수량
+			ISNULL(S.CELL수량, 0) AS SNAP_CELL, ISNULL(S.불량수량, 0) AS SNAP_불량, ISNULL(S.양품수량, 0) AS SNAP_양품,
+			-- 현재 수량
+			ISNULL(C.CELL수량, 0) AS CURR_CELL, ISNULL(C.불량수량, 0) AS CURR_불량, ISNULL(C.양품수량, 0) AS CURR_양품,
+			-- 차이
+			ISNULL(C.CELL수량, 0) - ISNULL(S.CELL수량, 0) AS DIFF_CELL,
+			ISNULL(C.불량수량, 0) - ISNULL(S.불량수량, 0) AS DIFF_불량,
+			ISNULL(C.양품수량, 0) - ISNULL(S.양품수량, 0) AS DIFF_양품,
+			-- 상태
+			CASE
+				WHEN S.LOT_NO IS NULL THEN '추가'
+				WHEN C.LOT_NO IS NULL THEN '삭제'
+				WHEN ABS(ISNULL(S.CELL수량,0) - ISNULL(C.CELL수량,0)) > 0.01
+				  OR ABS(ISNULL(S.불량수량,0) - ISNULL(C.불량수량,0)) > 0.01
+				  OR ABS(ISNULL(S.양품수량,0) - ISNULL(C.양품수량,0)) > 0.01
+				THEN '변경'
+				ELSE '정상'
+			END AS STATUS
+		FROM SNAP S
+		FULL OUTER JOIN CURR C ON S.공장코드 = C.공장코드 AND S.LOT_NO = C.LOT_NO
+		                       AND S.공정코드 = C.공정코드 AND S.순서 = C.순서
+		ORDER BY
+			CASE
+				WHEN S.LOT_NO IS NULL THEN 0
+				WHEN C.LOT_NO IS NULL THEN 0
+				WHEN ABS(ISNULL(S.CELL수량,0) - ISNULL(C.CELL수량,0)) > 0.01 THEN 0
+				ELSE 1
+			END,
+			COALESCE(S.작업시작, C.작업시작), COALESCE(S.LOT_NO, C.LOT_NO)
+	</select>
+
+
+	<!-- ========== d22 기초데이터 비교 (레코드 단위) ========== -->
+	<!-- 불량BACK: 불량수량 그대로 비교 -->
+	<select id="selectCompareD22" resultType="CamelMap">
+		WITH SNAP AS (
+			SELECT 공장코드, RUN_NO, 공정코드, 차수, LOT_NO, 작업구분, 작업시작,
+			       투입수량, 검사수량, 불량수량, 양품수량
+			FROM d22_RUN제조VLR_SNAPSHOT
+			WHERE YYYYMM = #{yyyymm} AND SITE = #{site}
+		),
+		CURR AS (
+			SELECT 공장코드, RUN_NO, 공정코드, 차수, LOT_NO, 작업구분, 작업시작,
+			       투입수량, 검사수량, 불량수량, 양품수량
+			FROM d22_RUN제조VLR
+			WHERE 작업시작 BETWEEN #{yyyymm} + '01'
+			  AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','')
+		)
+		SELECT
+			'd22_RUN제조VLR' AS SOURCE_TABLE,
+			COALESCE(S.공장코드, C.공장코드) AS 공장코드,
+			COALESCE(S.RUN_NO, C.RUN_NO) AS RUN_NO,
+			COALESCE(S.공정코드, C.공정코드) AS 공정코드,
+			COALESCE(S.차수, C.차수) AS 차수,
+			COALESCE(S.LOT_NO, C.LOT_NO) AS LOT_NO,
+			COALESCE(S.작업구분, C.작업구분) AS 작업구분,
+			COALESCE(S.작업시작, C.작업시작) AS 작업시작,
+			-- 스냅샷 수량
+			ISNULL(S.불량수량, 0) AS SNAP_불량, ISNULL(S.양품수량, 0) AS SNAP_양품,
+			-- 현재 수량
+			ISNULL(C.불량수량, 0) AS CURR_불량, ISNULL(C.양품수량, 0) AS CURR_양품,
+			-- 차이
+			ISNULL(C.불량수량, 0) - ISNULL(S.불량수량, 0) AS DIFF_불량,
+			ISNULL(C.양품수량, 0) - ISNULL(S.양품수량, 0) AS DIFF_양품,
+			-- 상태
+			CASE
+				WHEN S.RUN_NO IS NULL THEN '추가'
+				WHEN C.RUN_NO IS NULL THEN '삭제'
+				WHEN ABS(ISNULL(S.불량수량,0) - ISNULL(C.불량수량,0)) > 0.01
+				  OR ABS(ISNULL(S.양품수량,0) - ISNULL(C.양품수량,0)) > 0.01
+				THEN '변경'
+				ELSE '정상'
+			END AS STATUS
+		FROM SNAP S
+		FULL OUTER JOIN CURR C ON S.공장코드 = C.공장코드 AND S.RUN_NO = C.RUN_NO
+		                       AND S.공정코드 = C.공정코드 AND S.차수 = C.차수
+		ORDER BY
+			CASE
+				WHEN S.RUN_NO IS NULL THEN 0
+				WHEN C.RUN_NO IS NULL THEN 0
+				WHEN ABS(ISNULL(S.불량수량,0) - ISNULL(C.불량수량,0)) > 0.01 THEN 0
+				ELSE 1
+			END,
+			COALESCE(S.작업시작, C.작업시작), COALESCE(S.RUN_NO, C.RUN_NO)
+	</select>
+
+
+	<!-- ========== d27 기초데이터 비교 (레코드 단위) ========== -->
+	<!-- OUT: 대기작업시각 기준 (080000~075959), 비교수량 = Cell수량 -->
+	<select id="selectCompareD27" resultType="CamelMap">
+		WITH SNAP AS (
+			SELECT PACK_QRNO, RUN_ID, 발행일자, 발행구분, 상태코드, PACK상태,
+			       Cell수량, Tray수량, 대기작업시각, 재공적용_여부
+			FROM d27_내포장MST_SNAPSHOT
+			WHERE YYYYMM = #{yyyymm} AND SITE = #{site}
+		),
+		CURR AS (
+			SELECT PACK_QRNO, RUN_ID, 발행일자, 발행구분, 상태코드, PACK상태,
+			       Cell수량, Tray수량, 대기작업시각, 재공적용_여부
+			FROM d27_내포장MST
+			WHERE 대기작업시각 BETWEEN #{yyyymm} + '01 080000'
+			  AND FORMAT(DATEADD(MONTH, 1, DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)), 'yyyyMMdd') + ' 075959'
+		)
+		SELECT
+			'd27_내포장MST' AS SOURCE_TABLE,
+			COALESCE(S.PACK_QRNO, C.PACK_QRNO) AS PACK_QRNO,
+			COALESCE(S.RUN_ID, C.RUN_ID) AS RUN_ID,
+			COALESCE(S.발행일자, C.발행일자) AS 발행일자,
+			COALESCE(S.발행구분, C.발행구분) AS 발행구분,
+			COALESCE(S.대기작업시각, C.대기작업시각) AS 대기작업시각,
+			-- 스냅샷 수량 (OUT = Cell수량)
+			ISNULL(S.Cell수량, 0) AS SNAP_CELL, ISNULL(S.Tray수량, 0) AS SNAP_TRAY,
+			-- 현재 수량
+			ISNULL(C.Cell수량, 0) AS CURR_CELL, ISNULL(C.Tray수량, 0) AS CURR_TRAY,
+			-- 차이
+			ISNULL(C.Cell수량, 0) - ISNULL(S.Cell수량, 0) AS DIFF_CELL,
+			ISNULL(C.Tray수량, 0) - ISNULL(S.Tray수량, 0) AS DIFF_TRAY,
+			-- 상태코드 변경 비교
+			S.상태코드 AS SNAP_상태코드,
+			C.상태코드 AS CURR_상태코드,
+			S.PACK상태 AS SNAP_PACK상태,
+			C.PACK상태 AS CURR_PACK상태,
+			-- 상태
+			CASE
+				WHEN S.PACK_QRNO IS NULL THEN '추가'
+				WHEN C.PACK_QRNO IS NULL THEN '삭제'
+				WHEN ABS(ISNULL(S.Cell수량,0) - ISNULL(C.Cell수량,0)) > 0.01
+				  OR ABS(ISNULL(S.Tray수량,0) - ISNULL(C.Tray수량,0)) > 0.01
+				  OR ISNULL(S.상태코드,'') != ISNULL(C.상태코드,'')
+				  OR ISNULL(S.PACK상태,'') != ISNULL(C.PACK상태,'')
+				THEN '변경'
+				ELSE '정상'
+			END AS STATUS
+		FROM SNAP S
+		FULL OUTER JOIN CURR C ON S.PACK_QRNO = C.PACK_QRNO
+		ORDER BY
+			CASE
+				WHEN S.PACK_QRNO IS NULL THEN 0
+				WHEN C.PACK_QRNO IS NULL THEN 0
+				WHEN ABS(ISNULL(S.Cell수량,0) - ISNULL(C.Cell수량,0)) > 0.01 THEN 0
+				ELSE 1
+			END,
+			COALESCE(S.대기작업시각, C.대기작업시각), COALESCE(S.PACK_QRNO, C.PACK_QRNO)
+	</select>
+
+
+	<!-- ================================================================ -->
+	<!-- ========== Tab2: 수불 산출 검증 ========== -->
+	<!-- ================================================================ -->
+
+	<!-- 도우모델별 뷰값 + 역산값 비교 -->
+	<select id="selectSubulByModel" resultType="CamelMap">
+		WITH SUBUL AS (
+			SELECT 구분, 도우모델,
+				SUM(ISNULL(BOH_MONTH, 0)) AS V_BOH,
+				SUM(ISNULL(IN_MONTH, 0))  AS V_IN,
+				SUM(ISNULL(NG_MONTH, 0))  AS V_NG,
+				SUM(ISNULL(OUT_MONTH, 0)) AS V_OUT,
+				SUM(ISNULL(EOH_MONTH, 0)) AS V_EOH,
+				SUM(ISNULL(LOSS_MONTH, 0)) AS V_LOSS
+			FROM V_DOI_PROD_SUBUL
+			WHERE YYYYMM = #{yyyymm}
+			GROUP BY 구분, 도우모델
+		),
+		CALC_IN AS (
+			SELECT LEFT(LOT_NO, 4) AS 도우모델,
+				SUM(ISNULL(CELL수량, 0)) AS R_IN
+			FROM d21_제조지시VLR
+			WHERE 공정코드 = '010'
+			  AND 작업시작 BETWEEN #{yyyymm} + '01'
+			  AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','')
+			GROUP BY LEFT(LOT_NO, 4)
+		),
+		CALC_NG_FRONT AS (
+			SELECT LEFT(LOT_NO, 4) AS 도우모델,
+				SUM(ISNULL(불량수량, 0)) AS R_NG_FRONT
+			FROM d21_제조지시VLR
+			WHERE 작업시작 BETWEEN #{yyyymm} + '01'
+			  AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','')
+			  AND ISNULL(불량수량, 0) > 0
+			GROUP BY LEFT(LOT_NO, 4)
+		),
+		CALC_NG_BACK AS (
+			SELECT LEFT(RUN_NO, 4) AS 도우모델,
+				SUM(ISNULL(불량수량, 0)) AS R_NG_BACK
+			FROM d22_RUN제조VLR
+			WHERE 작업시작 BETWEEN #{yyyymm} + '01'
+			  AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','')
+			  AND ISNULL(불량수량, 0) > 0
+			GROUP BY LEFT(RUN_NO, 4)
+		),
+		CALC_OUT AS (
+			SELECT LEFT(RUN_ID, 4) AS 도우모델,
+				SUM(ISNULL(Cell수량, 0)) AS R_OUT
+			FROM d27_내포장MST
+			WHERE 대기작업시각 BETWEEN #{yyyymm} + '01 080000'
+			  AND FORMAT(DATEADD(MONTH, 1, DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)), 'yyyyMMdd') + ' 075959'
+			GROUP BY LEFT(RUN_ID, 4)
+		)
+		SELECT
+			COALESCE(S.구분, '미분류') AS 구분,
+			COALESCE(S.도우모델, I.도우모델, NF.도우모델, NB.도우모델, O.도우모델) AS 도우모델,
+			-- 뷰 값
+			ISNULL(S.V_BOH, 0) AS V_BOH, ISNULL(S.V_IN, 0) AS V_IN,
+			ISNULL(S.V_NG, 0) AS V_NG, ISNULL(S.V_OUT, 0) AS V_OUT,
+			ISNULL(S.V_EOH, 0) AS V_EOH, ISNULL(S.V_LOSS, 0) AS V_LOSS,
+			-- 역산 값
+			ISNULL(I.R_IN, 0) AS R_IN,
+			ISNULL(NF.R_NG_FRONT, 0) + ISNULL(NB.R_NG_BACK, 0) AS R_NG,
+			ISNULL(O.R_OUT, 0) AS R_OUT,
+			-- 검산: BOH + IN - NG - OUT - LOSS
+			ISNULL(S.V_BOH,0) + ISNULL(I.R_IN,0)
+				- (ISNULL(NF.R_NG_FRONT,0) + ISNULL(NB.R_NG_BACK,0))
+				- ISNULL(O.R_OUT,0)
+				- ISNULL(S.V_LOSS,0) AS R_EOH,
+			-- 차이
+			ISNULL(S.V_IN, 0) - ISNULL(I.R_IN, 0) AS DIFF_IN,
+			ISNULL(S.V_OUT, 0) - ISNULL(O.R_OUT, 0) AS DIFF_OUT,
+			ISNULL(S.V_EOH, 0) - (
+				ISNULL(S.V_BOH,0) + ISNULL(I.R_IN,0)
+				- (ISNULL(NF.R_NG_FRONT,0) + ISNULL(NB.R_NG_BACK,0))
+				- ISNULL(O.R_OUT,0)
+				- ISNULL(S.V_LOSS,0)
+			) AS DIFF_EOH,
+			-- 상태
+			CASE
+				WHEN ABS(ISNULL(S.V_IN,0) - ISNULL(I.R_IN,0)) > 0.01
+				  OR ABS(ISNULL(S.V_OUT,0) - ISNULL(O.R_OUT,0)) > 0.01
+				THEN '불일치'
+				ELSE '일치'
+			END AS STATUS
+		FROM SUBUL S
+		LEFT JOIN CALC_IN I ON S.도우모델 = I.도우모델
+		LEFT JOIN CALC_NG_FRONT NF ON S.도우모델 = NF.도우모델
+		LEFT JOIN CALC_NG_BACK NB ON S.도우모델 = NB.도우모델
+		LEFT JOIN CALC_OUT O ON S.도우모델 = O.도우모델
+		ORDER BY S.구분, S.도우모델
+	</select>
+
+
+	<!-- IN 드릴다운: 해당 도우모델의 d21 투입 상세 -->
+	<select id="selectDetailIN" resultType="CamelMap">
+		SELECT LOT_NO, 공정코드, 순서, RUN_NO, 작업구분, 작업시작, CELL수량, 양품수량
+		FROM d21_제조지시VLR
+		WHERE 공정코드 = '010'
+		  AND 작업시작 BETWEEN #{yyyymm} + '01'
+		  AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','')
+		  AND LEFT(LOT_NO, 4) = #{model}
+		ORDER BY 작업시작, LOT_NO
+	</select>
+
+
+	<!-- OUT 드릴다운: 해당 도우모델의 d27 출하 상세 -->
+	<select id="selectDetailOUT" resultType="CamelMap">
+		SELECT PACK_QRNO, RUN_ID, 발행일자, 상태코드, PACK상태, Cell수량, Tray수량, 대기작업시각
+		FROM d27_내포장MST
+		WHERE 대기작업시각 BETWEEN #{yyyymm} + '01 080000'
+		  AND FORMAT(DATEADD(MONTH, 1, DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)), 'yyyyMMdd') + ' 075959'
+		  AND LEFT(RUN_ID, 4) = #{model}
+		ORDER BY 대기작업시각, PACK_QRNO
+	</select>
+
+
+	<!-- ================================================================ -->
+	<!-- ========== HISTORY 변경 이력 조회 ========== -->
+	<!-- ================================================================ -->
+
+	<!-- d21 변경 이력 -->
+	<select id="selectHistoryD21" resultType="CamelMap">
+		SELECT HIST_SEQ, CHANGE_DT, CHANGE_TYPE, CHANGE_USER, CHANGE_REASON,
+			공장코드, LOT_NO, 공정코드, 순서, 작업구분, 작업시작,
+			투입수량, 검사수량, 불량수량, 양품수량, CELL수량
+		FROM d21_제조지시VLR_HISTORY
+		WHERE YYYYMM = #{yyyymm}
+		  AND LOT_NO = #{lotNo}
+		  AND 공정코드 = #{gongjeong}
+		ORDER BY CHANGE_DT DESC
+	</select>
+
+	<!-- d22 변경 이력 -->
+	<select id="selectHistoryD22" resultType="CamelMap">
+		SELECT HIST_SEQ, CHANGE_DT, CHANGE_TYPE, CHANGE_USER, CHANGE_REASON,
+			공장코드, RUN_NO, 공정코드, 차수, 작업구분, 작업시작,
+			투입수량, 검사수량, 불량수량, 양품수량
+		FROM d22_RUN제조VLR_HISTORY
+		WHERE YYYYMM = #{yyyymm}
+		  AND RUN_NO = #{runNo}
+		  AND 공정코드 = #{gongjeong}
+		ORDER BY CHANGE_DT DESC
+	</select>
+
+	<!-- d27 변경 이력 -->
+	<select id="selectHistoryD27" resultType="CamelMap">
+		SELECT HIST_SEQ, CHANGE_DT, CHANGE_TYPE, CHANGE_USER, CHANGE_REASON,
+			PACK_QRNO, RUN_ID, 발행일자, 상태코드, PACK상태,
+			Cell수량, Tray수량, 대기작업시각
+		FROM d27_내포장MST_HISTORY
+		WHERE YYYYMM = #{yyyymm}
+		  AND PACK_QRNO = #{packQrno}
+		ORDER BY CHANGE_DT DESC
+	</select>
+
+</mapper>
