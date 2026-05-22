@@ -113,6 +113,14 @@ tail -f /tmp/vue-dev.log
 
 ## 🗄️ 데이터베이스 연결 정보
 
+### LOCAL 환경 (현재 사용중 - application.yml)
+```
+서버: 10.100.40.17:14233
+데이터베이스: 도우제조원가시스템
+사용자: cost
+비밀번호: Dowoo1234!
+```
+
 ### DEV 환경 (application-dev.yml)
 ```
 서버: 172.16.200.204:1433
@@ -129,11 +137,19 @@ tail -f /tmp/vue-dev.log
 비밀번호: Dowinsys0125
 ```
 
+### TEST 환경 (application.yml 주석)
+```
+서버: 10.100.40.250
+데이터베이스: 도우제조MES시스템TEST
+사용자: bs
+비밀번호: ehdndlstltm1!
+```
+
 ### DBeaver 연결 설정
 1. Database: SQL Server
-2. Server: `172.16.200.204`
-3. Port: `1433`
-4. Database: 위 환경별 DB 이름
+2. Server: `10.100.40.17`
+3. Port: `14233`
+4. Database: 도우제조원가시스템
 5. Authentication: SQL Server
 6. Username/Password: 위 정보 참조
 7. 고급 설정:
