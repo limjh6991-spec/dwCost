@@ -48,9 +48,6 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
-          <b-button :class="expandState.loss ? 'primary' : 'second'" size="sm" @click="toggleExpand('loss')" style="margin-right:4px;">LOSS {{ expandState.loss ? '⊟' : '⊞' }}</b-button>
-          <b-button :class="expandState.rmaIn ? 'primary' : 'second'" size="sm" @click="toggleExpand('rmaIn')" style="margin-right:4px;">타계정입고 {{ expandState.rmaIn ? '⊟' : '⊞' }}</b-button>
-          <b-button :class="expandState.rmaOut ? 'primary' : 'second'" size="sm" @click="toggleExpand('rmaOut')" style="margin-right:4px;">타계정출고 {{ expandState.rmaOut ? '⊟' : '⊞' }}</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
         </div>
       </div>
@@ -61,6 +58,7 @@
           :grid="activeGrid"
           :step="'1'"
           :rows="manuCostGridRows"
+          :fitLayoutWidthEnable="false"
           style="height: 100%"
         />
       </div>
@@ -113,7 +111,7 @@ export default {
         { value: '12', text: '12월' },
       ],
       selCodeList: [],
-      expandState: { loss: false, rmaIn: false, rmaOut: false },
+
 
       params: {
         year: null,
@@ -262,28 +260,7 @@ export default {
   },
   beforeUnmount() {},
   methods: {
-    // ✅ 컬럼 헤더 클릭 → 확장/접기 토글 (RealGrid 컴포넌트 컨벤션: onXxxGridId)
-    onColumnHeaderClickedManuCostGrid(grid, column) {
-      const expandMap = {
-        'grpLoss': 'loss',
-        'grpRmaIn': 'rmaIn',
-        'grpRmaOut': 'rmaOut',
-      };
-      const type = expandMap[column.name];
-      if (type) {
-        this.toggleExpand(type);
-      }
-    },
-    toggleExpand(type) {
-      this.expandState[type] = !this.expandState[type];
-      const gridDef = require('@web/c0009000/js/TAB090006.js');
-      const layout = gridDef.buildLayout(
-        this.expandState.loss,
-        this.expandState.rmaIn,
-        this.expandState.rmaOut
-      );
-      this.gridView.setColumnLayout(layout);
-    },
+
     initialize() {
       const baseYyyymm = this.srchInfo.yyyymm;
       const defaultYear = baseYyyymm 
@@ -309,7 +286,8 @@ export default {
       const g = mode === 'MONTH' ? this.manuCostDtlGrid : this.manuCostGrid;
 
       if (g?.columns) gv.setColumns(g.columns);
-      if (g?.columnLayout) gv.setColumnLayout(g.columnLayout);
+      if (g?.layout) gv.setColumnLayout(g.layout);
+      else if (g?.columnLayout) gv.setColumnLayout(g.columnLayout);
       
       // 월상세 모드에서만 footer 활성화
       if (mode === 'MONTH') {
