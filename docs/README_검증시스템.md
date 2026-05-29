@@ -33,7 +33,7 @@
 
 ### Step 1: 현황 진단 (30분)
 ```bash
-sqlcmd -S 172.16.200.204 -d 도우제조MES시스템TEST -U TEST_MES_USER -P Dowoo1! -i src/sql/Validation_CurrentStatus_Analysis.sql -o diagnosis_report.txt
+PGPASSWORD='qkdlsjfl!35' psql -h binarysoft.hopto.org -p 5433 -U wavice_user -d dowoo_mes_test -f src/sql/Validation_CurrentStatus_Analysis.sql -o diagnosis_report.txt
 ```
 
 ### Step 2: 결과 분석 (1시간)

@@ -1,7 +1,7 @@
 # 로컬 개발 환경 구축 완료
 
 ## 📅 구축 일자
-2025년 11월 3일
+2025년 11월 3일 (최종 업데이트: 2026년 5월 29일)
 
 ## 💻 시스템 환경
 - **OS**: Ubuntu 24.04 LTS
@@ -13,8 +13,8 @@
 ## ✅ 설치 완료 항목
 
 ### 1. Java 개발 환경
-- **Java 17**: `/home/roarm_m3/.jdk/jdk-17.0.16` (프로젝트 사용 버전)
-- **Java 21**: `/usr/lib/jvm/java-21-openjdk-amd64` (향후 업그레이드 대비)
+- **Java 21**: `/usr/lib/jvm/java-21-openjdk-amd64` (시스템 기본, 현재 사용)
+- **Java 17**: `/home/roarm_m3/.jdk/jdk-17.0.16` (레거시 호환용)
 - **Maven**: 3.9.9 (Maven Wrapper 사용)
 
 ### 2. Node.js & 프론트엔드
@@ -29,7 +29,7 @@
 ### 4. VPN
 - **FortiClient VPN**: 7.4.3.1736
 - **연결 상태**: dowoo VPN 연결됨
-- **VPN IP**: 10.212.134.103
+- **VPN IP**: 10.212.134.101
 
 ### 5. VS Code 확장 프로그램
 
@@ -83,7 +83,7 @@ npm run serve > /tmp/vue-dev.log 2>&1 &
 **실행 정보:**
 - **포트**: 4300
 - **URL**: http://localhost:4300
-- **네트워크**: http://172.30.1.54:4300
+- **네트워크**: http://172.30.1.100:4300
 - **로그**: `/tmp/vue-dev.log`
 
 ### 서비스 중지
@@ -113,7 +113,16 @@ tail -f /tmp/vue-dev.log
 
 ## 🗄️ 데이터베이스 연결 정보
 
-### LOCAL 환경 (현재 사용중 - application.yml)
+### 현재 사용중 — PostgreSQL (wavCOST / wavdev 스키마)
+```
+서버: binarysoft.hopto.org:5433
+데이터베이스: dowoo_mes_test
+스키마: wavdev
+사용자: wavice_user
+비밀번호: qkdlsjfl!35
+```
+
+### 레거시 MSSQL — dwisCOST Spring Boot 원본 (application.yml)
 ```
 서버: 10.100.40.17:14233
 데이터베이스: 도우제조원가시스템
@@ -121,7 +130,7 @@ tail -f /tmp/vue-dev.log
 비밀번호: Dowoo1234!
 ```
 
-### DEV 환경 (application-dev.yml)
+### 레거시 MSSQL — DEV 환경 (application-dev.yml)
 ```
 서버: 172.16.200.204:1433
 데이터베이스: 도우제조MES시스템TEST
@@ -129,7 +138,7 @@ tail -f /tmp/vue-dev.log
 비밀번호: Dowoo1!
 ```
 
-### DEV1 환경 (application-dev1.yml)
+### 레거시 MSSQL — DEV1 환경 (application-dev1.yml)
 ```
 서버: 172.16.200.204:1433
 데이터베이스: dwisDev
@@ -137,7 +146,7 @@ tail -f /tmp/vue-dev.log
 비밀번호: Dowinsys0125
 ```
 
-### TEST 환경 (application.yml 주석)
+### 레거시 MSSQL — TEST 환경 (application.yml 주석)
 ```
 서버: 10.100.40.250
 데이터베이스: 도우제조MES시스템TEST
@@ -145,16 +154,14 @@ tail -f /tmp/vue-dev.log
 비밀번호: ehdndlstltm1!
 ```
 
-### DBeaver 연결 설정
-1. Database: SQL Server
-2. Server: `10.100.40.17`
-3. Port: `14233`
-4. Database: 도우제조원가시스템
-5. Authentication: SQL Server
-6. Username/Password: 위 정보 참조
-7. 고급 설정:
-   - ✅ Encrypt: true
-   - ✅ Trust Server Certificate: true
+### DBeaver 연결 설정 (현재 사용 DB)
+1. Database: PostgreSQL
+2. Host: `binarysoft.hopto.org`
+3. Port: `5433`
+4. Database: `dowoo_mes_test`
+5. Username: `wavice_user`
+6. Password: `qkdlsjfl!35`
+7. Schema: `wavdev`
 
 ---
 
@@ -216,7 +223,7 @@ sudo systemctl restart forticlient
 ### 전체 빌드
 ```bash
 cd /home/roarm_m3/dwisCOST
-JAVA_HOME=/home/roarm_m3/.jdk/jdk-17.0.16 ./mvnw clean package
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./mvnw clean package
 ```
 
 ### 테스트 제외 빌드
@@ -415,4 +422,5 @@ npm install
 - API 서버: http://localhost:9090
 
 **작성일**: 2025년 11월 3일
+**최종 업데이트**: 2026년 5월 29일
 **구축자**: roarm_m3

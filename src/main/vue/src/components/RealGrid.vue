@@ -45,12 +45,12 @@ export default {
 	},
 	methods: {
 		getGridView(){
-			const { gridView } = gridInstances[this.gridId];
-			return gridView;
+			const instance = gridInstances[this.gridId];
+			return instance ? instance.gridView : null;
 		},
 		getGridDataProvider(){
-			const { dataProvider } = gridInstances[this.gridId];
-			return dataProvider;
+			const instance = gridInstances[this.gridId];
+			return instance ? instance.dataProvider : null;
 		},
 		created() {
 

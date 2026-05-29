@@ -13,13 +13,14 @@
 
 ## 🚀 즉시 실행 방법
 
-### Step 1: SQL Server Management Studio (SSMS) 실행
+### Step 1: DBeaver 또는 psql 연결
 
 ```
-서버: 172.16.200.204
-데이터베이스: 도우제조MES시스템TEST  
-사용자: TEST_MES_USER
-비밀번호: Dowoo1!
+서버: binarysoft.hopto.org:5433
+데이터베이스: dowoo_mes_test
+스키마: wavdev
+사용자: wavice_user
+비밀번호: qkdlsjfl!35
 ```
 
 ### Step 2: 빠른 진단 SQL 열기
@@ -181,8 +182,8 @@ scripts/
 ### Q2: 연결이 안 돼요
 ```
 1. VPN 연결 확인
-2. 방화벽 확인: telnet 172.16.200.204 1433
-3. 네트워크 확인: ping 172.16.200.204
+2. 네트워크 확인: ping binarysoft.hopto.org
+3. 포트 확인: telnet binarysoft.hopto.org 5433
 ```
 
 ### Q3: 실행이 너무 느려요
@@ -219,6 +220,6 @@ scripts/
 
 ---
 
-**작성일**: 2025-11-04  
+**작성일**: 2025-11-04 (최종 업데이트: 2026-05-29)  
 **버전**: 1.0  
 **상태**: ✅ 즉시 실행 가능
