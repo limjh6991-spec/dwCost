@@ -1,5 +1,5 @@
 /**
- * 재공,제품원가 - 매출원가(제품)
+ * 재공,제품원가 - 매출원가(제품) — 특정월(MONTH) 모드
  */
 
 const { ValueType } = require('realgrid');
@@ -19,14 +19,12 @@ const grid = {
       showEmptyMessage: true,
       headerDepth: 3,
      },
-    edit: { editable: false },
     footer: { visible: false },
     paste: { enabled: false },
     rowIndicator: { visible: true },
     sorting: { enabled: true },
     stateBar: { visible: false },
     filtering: { enabled: true },
-    // fixed: { colBarWidth: 1, colCount: 4 },
   },
   fields: [
   { fieldName: '구분', dataType: ValueType.TEXT },
@@ -45,16 +43,36 @@ const grid = {
   { fieldName: 'outAmt', dataType: ValueType.NUMBER },
   { fieldName: 'eohQty', dataType: ValueType.NUMBER },
   { fieldName: 'eohAmt', dataType: ValueType.NUMBER },
+  // 입고상세
   { fieldName: 'inMatQty', dataType: ValueType.NUMBER },
   { fieldName: 'inMatAmt', dataType: ValueType.NUMBER },
   { fieldName: 'inEtcQty', dataType: ValueType.NUMBER },
   { fieldName: 'inEtcAmt', dataType: ValueType.NUMBER },
   { fieldName: 'rmaInQty', dataType: ValueType.NUMBER },
   { fieldName: 'rmaInAmt', dataType: ValueType.NUMBER },
+  { fieldName: 'inOtherQty', dataType: ValueType.NUMBER },
+  { fieldName: 'inOtherAmt', dataType: ValueType.NUMBER },
+  // 출고상세
   { fieldName: 'outGoodQty', dataType: ValueType.NUMBER },
   { fieldName: 'outGoodAmt', dataType: ValueType.NUMBER },
   { fieldName: 'outEtcQty', dataType: ValueType.NUMBER },
   { fieldName: 'outEtcAmt', dataType: ValueType.NUMBER },
+  { fieldName: 'outRmaQty', dataType: ValueType.NUMBER },
+  { fieldName: 'outRmaAmt', dataType: ValueType.NUMBER },
+  { fieldName: 'outReworkQty', dataType: ValueType.NUMBER },
+  { fieldName: 'outReworkAmt', dataType: ValueType.NUMBER },
+  { fieldName: 'outRndQty', dataType: ValueType.NUMBER },
+  { fieldName: 'outRndAmt', dataType: ValueType.NUMBER },
+  { fieldName: 'outTechEvalQty', dataType: ValueType.NUMBER },
+  { fieldName: 'outTechEvalAmt', dataType: ValueType.NUMBER },
+  { fieldName: 'outShipInspQty', dataType: ValueType.NUMBER },
+  { fieldName: 'outShipInspAmt', dataType: ValueType.NUMBER },
+  { fieldName: 'outDisposeQty', dataType: ValueType.NUMBER },
+  { fieldName: 'outDisposeAmt', dataType: ValueType.NUMBER },
+  { fieldName: 'outInvAdjQty', dataType: ValueType.NUMBER },
+  { fieldName: 'outInvAdjAmt', dataType: ValueType.NUMBER },
+  { fieldName: 'outOtherQty', dataType: ValueType.NUMBER },
+  { fieldName: 'outOtherAmt', dataType: ValueType.NUMBER },
   ],
   columnLayout: [
     { column: '구분' },
@@ -71,145 +89,89 @@ const grid = {
           name: 'grpBOH',
           header: { text: '기초(BOH)' },
           direction: 'horizontal',
-          items: [
-            { column: 'bohQty' },
-            { column: 'bohAmt' }
-          ],
+          items: [{ column: 'bohQty' }, { column: 'bohAmt' }],
         },
         {
           name: 'grpIN',
           header: { text: '입고(IN)' },
           direction: 'horizontal',
-          items: [
-            { column: 'inQty' },
-            { column: 'inAmt' }
-          ],
+          items: [{ column: 'inQty' }, { column: 'inAmt' }],
         }, 
         {
           name: 'grpOUT',
           header: { text: '출고(OUT)' },
           direction: 'horizontal',
-          items: [
-            { column: 'outQty' },
-            { column: 'outAmt' }
-          ],
+          items: [{ column: 'outQty' }, { column: 'outAmt' }],
         }, 
         {
           name: 'grpEOH',
           header: { text: '재고(EOH)' },
           direction: 'horizontal',
-          items: [
-            { column: 'eohQty' },
-            { column: 'eohAmt' }
-          ],
+          items: [{ column: 'eohQty' }, { column: 'eohAmt' }],
         }, 
       ],
     },
+    // 입고상세 — expandable (+/- 버튼)
     {
       name: 'grpInDetail',
       header: { text: '입고상세' },
+      expandable: true,
+      expanded: false,
       direction: 'horizontal',
       items: [
-        { 
-          name: 'grpMat',
-          header: { text: '생산' },
-          direction: 'horizontal',
-          items: [
-            { column: 'inMatQty' },
-            { column: 'inMatAmt' }
-          ] 
-        },
-        { 
-          name: 'grpInEtc',
-          header: { text: '타계정' },
-          direction: 'horizontal',
-          items: [
-            { column: 'inEtcQty' },
-            { column: 'inEtcAmt' }
-          ] 
-        },
-        { 
-          name: 'grpRma',
-          header: { text: 'RMA' },
-          direction: 'horizontal',
-          items: [
-            { column: 'rmaInQty' },
-            { column: 'rmaInAmt' }
-          ]
-        },
+        { name: 'grpMat', header: { text: '생산' }, groupShowMode: 'always',
+          direction: 'horizontal', items: [{ column: 'inMatQty' }, { column: 'inMatAmt' }] },
+        { name: 'grpInEtc', header: { text: '타계정' }, groupShowMode: 'always',
+          direction: 'horizontal', items: [{ column: 'inEtcQty' }, { column: 'inEtcAmt' }] },
+        { name: 'grpRmaIn', header: { text: 'RMA(반품입고)' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'rmaInQty' }, { column: 'rmaInAmt' }] },
+        { name: 'grpInOther', header: { text: '기타' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'inOtherQty' }, { column: 'inOtherAmt' }] },
       ],
     },
+    // 출고상세 — expandable (+/- 버튼)
     {
       name: 'grpOutDetail',
       header: { text: '출고상세' },
+      expandable: true,
+      expanded: false,
       direction: 'horizontal',
       items: [
-        {
-          name: 'grpOutGood',
-          header: { text: '양품' },
-          direction: 'horizontal',
-          items: [
-            { column: 'outGoodQty' },
-            { column: 'outGoodAmt' }
-          ],
-        },
-        {
-          name: 'grpOutEtc',
-          header: { text: '타계정' },
-          direction: 'horizontal',
-          items: [
-            { column: 'outEtcQty' },
-            { column: 'outEtcAmt' }
-          ]
-        },
-      ]
+        { name: 'grpOutGood', header: { text: '양품' }, groupShowMode: 'always',
+          direction: 'horizontal', items: [{ column: 'outGoodQty' }, { column: 'outGoodAmt' }] },
+        { name: 'grpOutEtc', header: { text: '타계정' }, groupShowMode: 'always',
+          direction: 'horizontal', items: [{ column: 'outEtcQty' }, { column: 'outEtcAmt' }] },
+        { name: 'grpOutRma', header: { text: 'RMA(반품입고)' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'outRmaQty' }, { column: 'outRmaAmt' }] },
+        { name: 'grpOutRework', header: { text: '공정재투입' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'outReworkQty' }, { column: 'outReworkAmt' }] },
+        { name: 'grpOutRnd', header: { text: '연구개발' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'outRndQty' }, { column: 'outRndAmt' }] },
+        { name: 'grpOutTechEval', header: { text: '기술평가' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'outTechEvalQty' }, { column: 'outTechEvalAmt' }] },
+        { name: 'grpOutShipInsp', header: { text: '출하검사' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'outShipInspQty' }, { column: 'outShipInspAmt' }] },
+        { name: 'grpOutDispose', header: { text: '폐기' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'outDisposeQty' }, { column: 'outDisposeAmt' }] },
+        { name: 'grpOutInvAdj', header: { text: '재고실사 조정' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'outInvAdjQty' }, { column: 'outInvAdjAmt' }] },
+        { name: 'grpOutOther', header: { text: '기타' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'outOtherQty' }, { column: 'outOtherAmt' }] },
+      ],
     },
   ],
   columns: [
-  { 
-    name: '구분',
-    fieldName: '구분',
-    width: 80,
-    header: { text: '구분' },
-    styleName: 'tc',
-    autoFilter: true,    
-    mergeRule: { 
-      criteria: gubunMergeCriteria,
-    } 
-  },
-  { 
-    name: '모델',
-    fieldName: '모델',
-    width: 100,
-    header: { text: '모델' },
-    styleName: 'tc',
-    autoFilter: true,
-    mergeRule: { 
-      criteria: commonMergeCriteria,
-    } 
-  },
-  { 
-    name: 'inch',
-    fieldName: 'inch', 
-    width: 60, 
-    header: { text: '인치' }, 
-    styleName: 'tc', 
-    mergeRule: {
-      criteria: commonMergeCriteria,
-    } 
-  },
-  { 
-    name: '판매처', 
-    fieldName: '판매처', 
-    width: 60, 
-    header: { text: '판매처' }, 
-    styleName: 'tc', 
-    mergeRule: { 
-      criteria: commonMergeCriteria,
-    } 
-  },
+  { name: '구분', fieldName: '구분', width: 80, header: { text: '구분' }, styleName: 'tc',
+    autoFilter: true, mergeRule: { criteria: gubunMergeCriteria } },
+  { name: '모델', fieldName: '모델', width: 100, header: { text: '모델' }, styleName: 'tc',
+    autoFilter: true, mergeRule: { criteria: commonMergeCriteria } },
+  { name: 'inch', fieldName: 'inch', width: 60, header: { text: '인치' }, styleName: 'tc',
+    mergeRule: { criteria: commonMergeCriteria } },
+  { name: '판매처', fieldName: '판매처', width: 60, header: { text: '판매처' }, styleName: 'tc',
+    mergeRule: { criteria: commonMergeCriteria } },
   { name: 'rowType', fieldName: 'rowType', visible: false },
   { name: '월', fieldName: '월', width: 60, header: { text: '' }, styleName: 'tc' },
+  // 매출원가
   { name: 'bohQty', fieldName: 'bohQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'bohAmt', fieldName: 'bohAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'inQty', fieldName: 'inQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
@@ -218,16 +180,36 @@ const grid = {
   { name: 'outAmt', fieldName: 'outAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'eohQty', fieldName: 'eohQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'eohAmt', fieldName: 'eohAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+  // 입고상세
   { name: 'inMatQty', fieldName: 'inMatQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'inMatAmt', fieldName: 'inMatAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'inEtcQty', fieldName: 'inEtcQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'inEtcAmt', fieldName: 'inEtcAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'rmaInQty', fieldName: 'rmaInQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'rmaInAmt', fieldName: 'rmaInAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'inOtherQty', fieldName: 'inOtherQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'inOtherAmt', fieldName: 'inOtherAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+  // 출고상세
   { name: 'outGoodQty', fieldName: 'outGoodQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'outGoodAmt', fieldName: 'outGoodAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'outEtcQty', fieldName: 'outEtcQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
   { name: 'outEtcAmt', fieldName: 'outEtcAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outRmaQty', fieldName: 'outRmaQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outRmaAmt', fieldName: 'outRmaAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outReworkQty', fieldName: 'outReworkQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outReworkAmt', fieldName: 'outReworkAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outRndQty', fieldName: 'outRndQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outRndAmt', fieldName: 'outRndAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outTechEvalQty', fieldName: 'outTechEvalQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outTechEvalAmt', fieldName: 'outTechEvalAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outShipInspQty', fieldName: 'outShipInspQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outShipInspAmt', fieldName: 'outShipInspAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outDisposeQty', fieldName: 'outDisposeQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outDisposeAmt', fieldName: 'outDisposeAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outInvAdjQty', fieldName: 'outInvAdjQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outInvAdjAmt', fieldName: 'outInvAdjAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outOtherQty', fieldName: 'outOtherQty', width: 80, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+  { name: 'outOtherAmt', fieldName: 'outOtherAmt', width: 100, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
   ],
 };
 

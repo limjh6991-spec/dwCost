@@ -387,8 +387,17 @@ export default {
         'inMatQty','inMatAmt',
         'inEtcQty','inEtcAmt',
         'rmaInQty','rmaInAmt',
+        'inOtherQty','inOtherAmt',
         'outGoodQty','outGoodAmt',
         'outEtcQty','outEtcAmt',
+        'outRmaQty','outRmaAmt',
+        'outReworkQty','outReworkAmt',
+        'outRndQty','outRndAmt',
+        'outTechEvalQty','outTechEvalAmt',
+        'outShipInspQty','outShipInspAmt',
+        'outDisposeQty','outDisposeAmt',
+        'outInvAdjQty','outInvAdjAmt',
+        'outOtherQty','outOtherAmt',
       ];
       const groupMap = {};
 
@@ -530,9 +539,18 @@ export default {
         eohQty: 0, eohAmt: 0,
         inMatQty: 0, inMatAmt: 0,
         inEtcQty: 0, inEtcAmt: 0,
-        inRmaQty: 0, inRmaAmt: 0,
+        rmaInQty: 0, rmaInAmt: 0,
+        inOtherQty: 0, inOtherAmt: 0,
         outGoodQty: 0, outGoodAmt: 0,
         outEtcQty: 0, outEtcAmt: 0,
+        outRmaQty: 0, outRmaAmt: 0,
+        outReworkQty: 0, outReworkAmt: 0,
+        outRndQty: 0, outRndAmt: 0,
+        outTechEvalQty: 0, outTechEvalAmt: 0,
+        outShipInspQty: 0, outShipInspAmt: 0,
+        outDisposeQty: 0, outDisposeAmt: 0,
+        outInvAdjQty: 0, outInvAdjAmt: 0,
+        outOtherQty: 0, outOtherAmt: 0,
       };
     },
     buildMonthDetailRowsWithTotal(rows, selectedYYYYMM) {
@@ -547,8 +565,17 @@ export default {
         ['IN_MAT_QTY','inMatQty'],['IN_MAT_AMT','inMatAmt'],
         ['IN_ETC_QTY','inEtcQty'],['IN_ETC_AMT','inEtcAmt'],
         ['RMA_IN_QTY','rmaInQty'], ['RMA_IN_AMT','rmaInAmt'],
+        ['IN_OTHER_QTY','inOtherQty'], ['IN_OTHER_AMT','inOtherAmt'],
         ['OUT_GOOD_QTY','outGoodQty'], ['OUT_GOOD_AMT','outGoodAmt'],
         ['OUT_ETC_QTY','outEtcQty'],   ['OUT_ETC_AMT','outEtcAmt'],
+        ['OUT_RMA_QTY','outRmaQty'], ['OUT_RMA_AMT','outRmaAmt'],
+        ['OUT_REWORK_QTY','outReworkQty'], ['OUT_REWORK_AMT','outReworkAmt'],
+        ['OUT_RND_QTY','outRndQty'], ['OUT_RND_AMT','outRndAmt'],
+        ['OUT_TECH_EVAL_QTY','outTechEvalQty'], ['OUT_TECH_EVAL_AMT','outTechEvalAmt'],
+        ['OUT_SHIP_INSP_QTY','outShipInspQty'], ['OUT_SHIP_INSP_AMT','outShipInspAmt'],
+        ['OUT_DISPOSE_QTY','outDisposeQty'], ['OUT_DISPOSE_AMT','outDisposeAmt'],
+        ['OUT_INV_ADJ_QTY','outInvAdjQty'], ['OUT_INV_ADJ_AMT','outInvAdjAmt'],
+        ['OUT_OTHER_QTY','outOtherQty'], ['OUT_OTHER_AMT','outOtherAmt'],
       ];
 
       rows.forEach((r, idx) => {
