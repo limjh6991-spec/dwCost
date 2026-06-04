@@ -585,7 +585,16 @@ export default {
         ['IN_QTY', 'inQty'],   ['IN_AMT', 'inAmt'],
         ['OUT_QTY','outQty'],  ['OUT_AMT','outAmt'],
         ['LOSS_QTY','lossQty'],['LOSS_AMT','lossAmt'],
+        ['LOSS_DEFECT_QTY','lossDefectQty'], ['LOSS_DEFECT_AMT','lossDefectAmt'],
+        ['LOSS_SALE_QTY','lossSaleQty'], ['LOSS_SALE_AMT','lossSaleAmt'],
         ['RMA_IN_QTY','rmaInQty'], ['RMA_IN_AMT','rmaInAmt'],
+        ['ETC_IN_LOT_QTY','etcInLotQty'], ['ETC_IN_LOT_AMT','etcInLotAmt'],
+        ['ETC_IN_RMA_QTY','etcInRmaQty'], ['ETC_IN_RMA_AMT','etcInRmaAmt'],
+        ['ETC_IN_PREV_DEF_QTY','etcInPrevDefQty'], ['ETC_IN_PREV_DEF_AMT','etcInPrevDefAmt'],
+        ['ETC_IN_CUR_DEF_QTY','etcInCurDefQty'], ['ETC_IN_CUR_DEF_AMT','etcInCurDefAmt'],
+        ['OUT_ETC_QTY','outEtcQty'], ['OUT_ETC_AMT','outEtcAmt'],
+        ['ETC_OUT_LOT_QTY','etcOutLotQty'], ['ETC_OUT_LOT_AMT','etcOutLotAmt'],
+        ['ETC_OUT_ETC_QTY','etcOutEtcQty'], ['ETC_OUT_ETC_AMT','etcOutEtcAmt'],
         ['EOH_QTY','eohQty'],  ['EOH_AMT','eohAmt'],
       ];
 
