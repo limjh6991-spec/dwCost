@@ -46,6 +46,8 @@ const grid = {
     { fieldName: 'rmaInAmt', dataType: ValueType.NUMBER },
     { fieldName: 'etcInLotQty', dataType: ValueType.NUMBER },
     { fieldName: 'etcInLotAmt', dataType: ValueType.NUMBER },
+    { fieldName: 'etcInDefRwQty', dataType: ValueType.NUMBER },
+    { fieldName: 'etcInDefRwAmt', dataType: ValueType.NUMBER },
     { fieldName: 'etcInRmaQty', dataType: ValueType.NUMBER },
     { fieldName: 'etcInRmaAmt', dataType: ValueType.NUMBER },
     { fieldName: 'etcInPrevDefQty', dataType: ValueType.NUMBER },
@@ -112,6 +114,8 @@ const grid = {
           direction: 'horizontal', items: [{ column: 'rmaInQty' }, { column: 'rmaInAmt' }] },
         { name: 'grpEtcInLot', header: { text: '기타입고(LOT변환)' }, groupShowMode: 'expand',
           direction: 'horizontal', items: [{ column: 'etcInLotQty' }, { column: 'etcInLotAmt' }] },
+        { name: 'grpEtcInDefRw', header: { text: '기타입고(불량 R/W)' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'etcInDefRwQty' }, { column: 'etcInDefRwAmt' }] },
         { name: 'grpEtcInRma', header: { text: '기타입고(RMA R/W)' }, groupShowMode: 'expand',
           direction: 'horizontal', items: [{ column: 'etcInRmaQty' }, { column: 'etcInRmaAmt' }] },
         { name: 'grpEtcInPrevDef', header: { text: '기타입고(전월 불량)' }, groupShowMode: 'expand',
@@ -180,6 +184,9 @@ const grid = {
     // 기타입고(LOT변환)
     { name: 'etcInLotQty', fieldName: 'etcInLotQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'etcInLotAmt', fieldName: 'etcInLotAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+    // 기타입고(불량 R/W)
+    { name: 'etcInDefRwQty', fieldName: 'etcInDefRwQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'etcInDefRwAmt', fieldName: 'etcInDefRwAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
     // 기타입고(RMA R/W)
     { name: 'etcInRmaQty', fieldName: 'etcInRmaQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'etcInRmaAmt', fieldName: 'etcInRmaAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },

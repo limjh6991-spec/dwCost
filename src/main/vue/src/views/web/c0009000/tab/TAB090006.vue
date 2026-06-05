@@ -589,6 +589,7 @@ export default {
         ['LOSS_SALE_QTY','lossSaleQty'], ['LOSS_SALE_AMT','lossSaleAmt'],
         ['RMA_IN_QTY','rmaInQty'], ['RMA_IN_AMT','rmaInAmt'],
         ['ETC_IN_LOT_QTY','etcInLotQty'], ['ETC_IN_LOT_AMT','etcInLotAmt'],
+        ['ETC_IN_DEF_RW_QTY','etcInDefRwQty'], ['ETC_IN_DEF_RW_AMT','etcInDefRwAmt'],
         ['ETC_IN_RMA_QTY','etcInRmaQty'], ['ETC_IN_RMA_AMT','etcInRmaAmt'],
         ['ETC_IN_PREV_DEF_QTY','etcInPrevDefQty'], ['ETC_IN_PREV_DEF_AMT','etcInPrevDefAmt'],
         ['ETC_IN_CUR_DEF_QTY','etcInCurDefQty'], ['ETC_IN_CUR_DEF_AMT','etcInCurDefAmt'],
