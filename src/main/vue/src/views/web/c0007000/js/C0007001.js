@@ -119,4 +119,7 @@ const grid = {
   ],
 };
 
+// VINA 통화 환산 대상 금액 컬럼 (fieldName 기준)
+grid.currencyFields = ['차변금액', '대변금액'];
+
 module.exports = grid;

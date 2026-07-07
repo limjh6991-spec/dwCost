@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 타시스템 > 환율관리 (월평균, VINA USD → KRW/VND 환산 기준) -->
+<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007012Mapper">
+
+	<!-- 환율 목록 조회 (환율관리 팝업) -->
+	<select id="C0007012_Sch1" resultType="CamelMap">
+		select
+			YYYYMM,
+			통화,
+			환율
+		from
+			DOI_EXCHANGE_RATE
+		where 1=1
+		<if test="yyyymm != null and yyyymm != ''">
+			and YYYYMM = #{yyyymm}
+		</if>
+		<if test="currency != null and currency != ''">
+			and 통화 = #{currency}
+		</if>
+		order by YYYYMM desc, 통화
+	</select>
+
+	<!-- 단건 월평균 환율 조회 (USD 1 = N 통화) : 화면 환산용 (수동 입력값) -->
+	<select id="C0007012_Rate" resultType="CamelMap">
+		select
+			YYYYMM,
+			통화,
+			환율
+		from
+			DOI_EXCHANGE_RATE
+		where 1=1
+			and YYYYMM = #{yyyymm}
+			and 통화 = #{currency}
+	</select>
+
+	<insert id="C0007012_Insert1">
+		INSERT INTO DOI_EXCHANGE_RATE
+		(
+		YYYYMM
+		, 통화
+		, 환율
+		, 등록자
+		, 등록일시
+		)
+		VALUES
+		(
+		#{yyyymm}
+		, #{통화}
+		, #{환율}
+		, #{dowInsysUserId}
+		, GETDATE()
+		);
+	</insert>
+
+	<update id="C0007012_Update1">
+		UPDATE DOI_EXCHANGE_RATE
+		SET 환율 = #{환율}
+		, 등록자 = #{dowInsysUserId}
+		, 등록일시 = GETDATE()
+		WHERE 1=1
+		and YYYYMM = #{yyyymm}
+		and 통화 = #{통화}
+		;
+	</update>
+
+	<delete id="C0007012_Delete1">
+		DELETE FROM DOI_EXCHANGE_RATE
+		WHERE 1=1
+		and YYYYMM = #{yyyymm}
+		and 통화 = #{통화}
+		;
+	</delete>
+</mapper>

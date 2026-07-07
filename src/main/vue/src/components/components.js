@@ -12,6 +12,7 @@ import CmDialog1   from './CmDialog1.vue';
 import CmDialog2   from './CmDialog2.vue';
 
 import UploadPopup   from './UploadPopup.vue';
+import ExchangeRatePopup from './ExchangeRatePopup.vue';
 
 import FileAttachComponent   from './FileAttachComponent.vue';
 import FileAttachPopup   from './FileAttachPopup.vue';
@@ -34,6 +35,7 @@ export default {
 	app.component('CmDialog2', CmDialog2); // 검색조건이있는 팝업
 
 	app.component('UploadPopup', UploadPopup);
+	app.component('ExchangeRatePopup', ExchangeRatePopup); // 환율관리 팝업 (VINA USD 환산)
     app.component('FileAttachComponent', FileAttachComponent);
     app.component('FileAttachPopup', FileAttachPopup);
     

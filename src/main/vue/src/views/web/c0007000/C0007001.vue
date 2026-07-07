@@ -15,6 +15,26 @@
             <label for="floating">사업장</label>
           </div>
         </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <select class="form-select label-60" id="currencySelect" :value="currency" @change="onCurrencyChange($event.target.value)">
+              <option value="USD">USD</option>
+              <option value="KRW">KRW</option>
+              <option value="VND">VND</option>
+            </select>
+            <label for="currencySelect">통화</label>
+          </div>
+        </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <input autocomplete="off" type="text" class="form-control label-60" id="baseRate" :value="baseRateDisplay" placeholder="기준환율" :disabled="true" />
+            <label for="baseRate">기준환율</label>
+          </div>
+        </b-col>
+        <b-col cols="3" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
+          <b-button class="second" size="sm" @click="openExchangeRate">환율관리</b-button>
+          <span class="ms-2 text-primary" style="font-size: 12px">{{ appliedRateLabel }}</span>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -23,11 +43,11 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
-          <b-button v-show="!isClosedMonth" class="second" @click="uploadClick">업로드</b-button>
+          <b-button v-show="!isClosedMonth && !isCurrencyReadonly" class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
-          <b-button v-show="!isClosedMonth" class="sub" @click="addBtnClick">추가</b-button>
-          <b-button v-show="!isClosedMonth" @click="delBtnClick">삭제</b-button>
-          <b-button v-show="!isClosedMonth" class="main" @click="saveBtnClick">저장</b-button>
+          <b-button v-show="!isClosedMonth && !isCurrencyReadonly" class="sub" @click="addBtnClick">추가</b-button>
+          <b-button v-show="!isClosedMonth && !isCurrencyReadonly" @click="delBtnClick">삭제</b-button>
+          <b-button v-show="!isClosedMonth && !isCurrencyReadonly" class="main" @click="saveBtnClick">저장</b-button>
         </div>
       </div>
       <div class="grid-border-none">
@@ -35,6 +55,7 @@
       </div>
     </div>
     <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
+    <ExchangeRatePopup ref="exchangeRatePopup" @closePopup="onExchangeRateClosed" />
   </div>
 </template>
 <script>
@@ -42,9 +63,11 @@ import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007001.js';
+import currencyConvert from '@web/c0007000/js/currencyConvert.js';
 
 export default {
   components: {},
+  mixins: [currencyConvert],
   props: {},
   setup() {
     const srchInfo = useC0001001();
@@ -93,6 +116,7 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
+          if (newVal !== 'VN') this.setCurrency('USD'); // VINA 외 사업장은 USD 고정
           if (this.$refs.modelGrid != null) {
             this.searchClick();
           }
@@ -117,6 +141,7 @@ export default {
   mounted() {
     this.params.yyyymm = this.srchInfo.yyyymm;
     this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
+    if (this.params.site !== 'VINA') this.setCurrency('USD'); // VINA 외 사업장은 USD 고정
     this.$nextTick(async () => {
       await this.checkClosingMonth();
       this.searchClick();
@@ -125,6 +150,7 @@ export default {
   methods: {
     initializeGrid() {
       this.modelGrid = _.cloneDeep(gridField);
+      this.currencyFields = gridField.currencyFields || [];
     },
     async checkClosingMonth() {
       const yyyymm = this.params.yyyymm
@@ -162,13 +188,28 @@ export default {
         site: this.siteMap[this.params.site],
       };
 
-      let param = {
+      // USD 원본으로 조회 후, 선택통화(KRW/VND)면 월평균 환율로 환산하여 표시
+      const rows = [];
+      await this.$axios.api.search({
         menuId: 'c0007001',
         queryId: 'C0007001_Sch1',
         queryParams: params,
-        target: this.modelGridRows,
-      };
-      let resp = await this.$axios.api.search(param);
+        target: rows,
+      });
+      const displayRows = await this.buildCurrencyRows(rows);
+      this.modelGridRows.splice(0, this.modelGridRows.length, ...displayRows);
+      this.$nextTick(() => this.applyCurrencyEditLock());
+    },
+    onCurrencyChange(currency) {
+      this.setCurrency(currency);
+      this.searchClick();
+    },
+    openExchangeRate() {
+      this.$refs.exchangeRatePopup.openDialog({ yyyymm: this.params.yyyymm });
+    },
+    onExchangeRateClosed() {
+      // 환율 등록/수정 후, 비-USD 표시 중이면 갱신된 환율로 재환산
+      if (this.isCurrencyReadonly) this.searchClick();
     },
     searchClick() {
       if (!this.params.yyyymm) {
