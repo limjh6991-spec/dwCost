@@ -680,9 +680,9 @@
 			, #{item.field23}
 			, #{item.field24}
 			, #{item.field25}
-			, #{item.field26}
+			, #{item.field26, jdbcType=DATE}
 			, #{item.field27}
-			, #{item.field28}
+			, #{item.field28, jdbcType=DATE}
 			, #{item.field29}
 			)
 		</foreach>;
@@ -763,9 +763,9 @@
 			, #{item.field23}
 			, #{item.field24}
 			, #{item.field25}
-			, #{item.field26}
+			, #{item.field26, jdbcType=DATE}
 			, #{item.field27}
-			, #{item.field28}
+			, #{item.field28, jdbcType=DATE}
 			, #{item.field29}
 			)
 		</foreach>;

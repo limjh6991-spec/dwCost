@@ -54,6 +54,11 @@ app.config.warnHandler = () => {};
 
 //전역 에러 처리
 app.config.errorHandler = (err, instance, info) => {
+  // RealGrid 라이선스 만료 에러는 개발환경에서 무시 (워터마크만 표시됨)
+  if (err && err.toString().includes('LicenseError')) {
+    console.warn('[RealGrid] 라이선스 만료 - 개발환경에서는 워터마크가 표시됩니다.');
+    return;
+  }
   console.error(`전역 에러 처리: ${err}`);
   showToast("error","시스템 관리자에게 문의하십시오.\n"+err);
 };

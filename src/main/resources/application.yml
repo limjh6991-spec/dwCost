@@ -13,12 +13,12 @@ spring:
 #    url: jdbc:p6spy:sqlserver://10.100.40.244:1433;databaseName=도우제조MES시스템TEST;encrypt=true;trustServerCertificate=true
 #    username: TEST_MES_USER
 #    password: Dowoo1!
-#    url: jdbc:p6spy:sqlserver://10.100.40.250;databaseName=도우제조MES시스템TEST;encrypt=true;trustServerCertificate=true
-#    username: bs
-#    password: ehdndlstltm1!
-    url: jdbc:p6spy:sqlserver://10.100.40.17:14233;databaseName=도우제조원가시스템;encrypt=true;trustServerCertificate=true
-    username: cost
-    password: Dowoo1234!	
+    url: jdbc:p6spy:sqlserver://10.100.40.250:1433;databaseName=도우제조MES시스템TEST;encrypt=true;trustServerCertificate=true
+    username: bs
+    password: ehdndlstltm1!
+#    url: jdbc:p6spy:sqlserver://10.100.40.17:14233;databaseName=도우제조원가시스템;encrypt=true;trustServerCertificate=true
+#    username: cost
+#    password: Dowoo1234!	
     driver-class-name: com.p6spy.engine.spy.P6SpyDriver
     hikari:
       minimum-idle: 2 # 최소 유휴 커넥션 수 (풀에서 항상 유지)

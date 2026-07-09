@@ -370,84 +370,42 @@ export default {
     // },
     pushQueryRouter(url, callback = null) {
     try {
-      let queryObj = this.$utils.parseQueryParams(url); 
-      console.log('1. Original URL:', url); 
-      console.log('2. Parsed Query:', queryObj);
-      
-      // URL에서 경로와 쿼리 분리
-      const [cleanPath, queryString] = url.split('?');
-      console.log('3. Clean Path:', cleanPath); 
-      console.log('4. Query String:', queryString);
-      
-      // 라우터 인스턴스 확인
-      console.log('5. Router Instance:', this.$router);
-      console.log('6. Current Route:', this.$route);
-      
-      // 등록된 모든 라우트 확인
-      const allRoutes = this.$router.getRoutes();
-      console.log('7. Total Registered Routes:', allRoutes.length);
-      
-      // c0001004 관련 라우트 찾기
-      const c0001004Routes = allRoutes.filter(route => 
-        route.path.includes('c0001004') || 
-        route.name?.includes('c0001004') ||
-        route.meta?.sysResourceId === 'C0001004'
-      );
-      
-      console.log('8. Found c0001004 routes:', c0001004Routes);
+      let queryObj = this.$utils.parseQueryParams(url);
 
-      // c0001009 관련 라우트 찾기
-      const c0001009Routes = allRoutes.filter(route => 
-        route.path.includes('c0001009') || 
-        route.name?.includes('c0001009') ||
-        route.meta?.sysResourceId === 'C0001009'
-      );
-      
-      console.log('8. Found c0001009 routes:', c0001009Routes);
-      
-      // 정확한 경로 매칭 확인
+      // URL에서 경로와 쿼리 분리
+      const [rawPath, queryString] = url.split('?');
+
+      // DB 메뉴 URL이 /w로 시작하는 경우 /c로 변환 (라우터는 /c 기준)
+      let cleanPath = rawPath;
+      if (/^\/w\d/.test(cleanPath)) {
+        cleanPath = cleanPath.replace(/^\/w/, '/c');
+        console.log(`[MenuTabs] URL 변환: ${rawPath} → ${cleanPath}`);
+      }
+
+      // 라우트 존재 여부 확인
+      const allRoutes = this.$router.getRoutes();
       const routeExists = allRoutes.some(route => {
-        const pathMatch = route.path === cleanPath;
-        const nameMatch = route.name === cleanPath.replace('/', '');
-        console.log(`   Checking: ${route.path} (${route.name}) -> pathMatch: ${pathMatch}, nameMatch: ${nameMatch}`);
-        return pathMatch || nameMatch;
+        return route.path === cleanPath || route.name === cleanPath.replace('/', '');
       });
-      
-      console.log('9. Route exists:', routeExists);
-      
+
       if (!routeExists) {
-        console.error(`10. ERROR: 경로 ${cleanPath}가 라우터에 등록되어 있지 않습니다.`);
-        
-        // 등록된 모든 경로 출력 (참고용)
-        console.log('All available paths:');
-        allRoutes.forEach(route => {
-          console.log(`   - ${route.path} (${route.name})`);
-        });
-        
+        console.warn(`[MenuTabs] 경로 ${cleanPath}가 라우터에 등록되어 있지 않습니다.`);
         if (callback) callback(new Error(`경로를 찾을 수 없음: ${cleanPath}`));
         return;
       }
-      
-      console.log('11. Attempting router push...');
-      
-      // 실제 네비게이션 시도
-      this.$router.push({ 
+
+      // 네비게이션
+      this.$router.push({
         path: cleanPath,
-        query: queryObj 
+        query: queryObj
       }).then(() => {
-        console.log('12. ✅ Navigation successful');
         if(callback != null) callback();
       }).catch(err => {
-        console.error('13. ❌ Navigation failed:', err);
-        console.error('Error details:', {
-          message: err.message,
-          stack: err.stack,
-          name: err.name
-        });
+        console.error('[MenuTabs] Navigation failed:', err.message);
       });
-      
+
     } catch (error) {
-      console.error('14. 💥 Outer catch block error:', error);
+      console.error('[MenuTabs] pushQueryRouter error:', error);
     }
   },
     scrollLeft() {
