@@ -7,7 +7,8 @@ CREATE                   Procedure DOI_SalesAdminByModel(
 AS
 BEGIN
 	BEGIN TRY
-		BEGIN TRANSACTION;
+		-- [FIX] 읽기전용 집계(동적 PIVOT) 프로시저: 불필요한 트랜잭션 제거
+		--       (CATCH의 무조건 ROLLBACK이 오류를 마스킹해 resultset 미반환처럼 보이던 원인)
 		--declare @YYYYMM varchar(10)=@yyyymm , @SITE varchar(4)=@site;
 		DECLARE @Columns VARCHAR(3000);
 		DECLARE @Null_Columns VARCHAR(3000);
@@ -354,13 +355,14 @@ order by 1,2 desc;';
 		-- 동적 SQL 실행
 		--select @SQL;
 		EXEC sp_executesql @SQL;
-		COMMIT TRANSACTION;
+		-- [FIX] COMMIT 제거(트랜잭션 미사용)
 -- 임시 테이블 정리
 --DROP TABLE #sourceTable;	
 	END TRY
 	
 	BEGIN CATCH
-	    ROLLBACK TRANSACTION;
+	    -- [FIX] 트랜잭션 미사용이므로 무조건 ROLLBACK 제거(안전을 위해 잔여 트랜잭션만 정리)
+	    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
 	    SELECT ERROR_MESSAGE() AS ErrorMessage;
 	END CATCH;
 END;

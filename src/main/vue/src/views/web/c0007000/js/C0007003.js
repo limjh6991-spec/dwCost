@@ -1,5 +1,6 @@
 /*
  * 타시스템 > 생산정보 > 생산수불
+ * 컬럼은 C0007003.xml 의 C0007003_Sch1 (DOI_PROD_SUBUL) 반환 컬럼과 일치해야 함
  */
 const { ValueType } = require('realgrid');
 
@@ -33,16 +34,19 @@ const grid = {
     { fieldName: 'dwSite', dataType: ValueType.TEXT },
     { fieldName: 'bohMonth', dataType: ValueType.NUMBER },
     { fieldName: 'inMonth', dataType: ValueType.NUMBER },
-    { fieldName: 'bonusMonth', dataType: ValueType.NUMBER },
-    { fieldName: 'eohMonth', dataType: ValueType.NUMBER },
     { fieldName: 'outMonth', dataType: ValueType.NUMBER },
     { fieldName: 'lossMonth', dataType: ValueType.NUMBER },
-    { fieldName: 'ngMonth', dataType: ValueType.NUMBER },
-    { fieldName: '수율제외Month', dataType: ValueType.NUMBER },
-    { fieldName: 'rework진행Month', dataType: ValueType.NUMBER },
-    { fieldName: 'shippingPlanMonth', dataType: ValueType.NUMBER },
-    { fieldName: 'shippingActualMonth', dataType: ValueType.NUMBER },
-    { fieldName: 'materialLoss', dataType: ValueType.NUMBER },
+    { fieldName: '공정발생불량', dataType: ValueType.NUMBER },
+    { fieldName: '불량판매', dataType: ValueType.NUMBER },
+    { fieldName: '타계정입고', dataType: ValueType.NUMBER },
+    { fieldName: '기타입고Lot변환', dataType: ValueType.NUMBER },
+    { fieldName: '기타입고RmaRw', dataType: ValueType.NUMBER },
+    { fieldName: '기타입고전월불량', dataType: ValueType.NUMBER },
+    { fieldName: '기타입고당월불량', dataType: ValueType.NUMBER },
+    { fieldName: '타계정출고', dataType: ValueType.NUMBER },
+    { fieldName: '기타출고Lot변환', dataType: ValueType.NUMBER },
+    { fieldName: '기타출고기타', dataType: ValueType.NUMBER },
+    { fieldName: 'eohMonth', dataType: ValueType.NUMBER },
   ],
 
   columns: [
@@ -61,16 +65,19 @@ const grid = {
     { name: 'dwSite', fieldName: 'dwSite', width: '80', header: { text: '판매처' }, autoFilter: true, styleName: 'tl' },
     { name: 'bohMonth', fieldName: 'bohMonth', width: '90', header: { text: 'BOH_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'inMonth', fieldName: 'inMonth', width: '80', header: { text: 'IN_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'bonusMonth', fieldName: 'bonusMonth', width: '110', header: { text: 'BONUS_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'eohMonth', fieldName: 'eohMonth', width: '90', header: { text: 'EOH_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'outMonth', fieldName: 'outMonth', width: '90', header: { text: 'OUT_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'lossMonth', fieldName: 'lossMonth', width: '100', header: { text: 'LOSS_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'ngMonth', fieldName: 'ngMonth', width: '80', header: { text: 'NG_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: '수율제외Month', fieldName: '수율제외Month', width: '180', header: { text: '수율제외_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'rework진행Month', fieldName: 'rework진행Month', width: '180', header: { text: 'REWORK진행_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'shippingPlanMonth', fieldName: 'shippingPlanMonth', width: '190', header: { text: 'SHIPPING_PLAN_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'shippingActualMonth', fieldName: 'shippingActualMonth', width: '210', header: { text: 'SHIPPING_ACTUAL_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
-    { name: 'materialLoss', fieldName: 'materialLoss', width: '130', header: { text: 'MATERIAL_LOSS' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '공정발생불량', fieldName: '공정발생불량', width: '110', header: { text: '공정발생불량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '불량판매', fieldName: '불량판매', width: '90', header: { text: '불량판매' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '타계정입고', fieldName: '타계정입고', width: '100', header: { text: '타계정입고' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '기타입고Lot변환', fieldName: '기타입고Lot변환', width: '130', header: { text: '기타입고_LOT변환' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '기타입고RmaRw', fieldName: '기타입고RmaRw', width: '130', header: { text: '기타입고_RMA_RW' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '기타입고전월불량', fieldName: '기타입고전월불량', width: '140', header: { text: '기타입고_전월불량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '기타입고당월불량', fieldName: '기타입고당월불량', width: '140', header: { text: '기타입고_당월불량' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '타계정출고', fieldName: '타계정출고', width: '100', header: { text: '타계정출고' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '기타출고Lot변환', fieldName: '기타출고Lot변환', width: '130', header: { text: '기타출고_LOT변환' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: '기타출고기타', fieldName: '기타출고기타', width: '110', header: { text: '기타출고_기타' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'eohMonth', fieldName: 'eohMonth', width: '90', header: { text: 'EOH_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };
 

@@ -66,7 +66,7 @@ BEGIN
 		            ELSE N'개발'
 		          END AS 구분
 		        , A.품번
-		        , A.품명 AS model
+		        , CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END AS model
 		        , N'국내' AS 매출구분
 		        , CASE WHEN MI.품번 IS NOT NULL THEN N'상품' ELSE N'제품' END AS 매출대분류
 		        , CAST(A.원화판매금액 AS DECIMAL(18,2)) AS amt
@@ -87,7 +87,7 @@ BEGIN
 		            ELSE N'개발'
 		          END AS 구분
 		        , B.품번
-		        , B.품명 AS model
+		        , CASE WHEN @SITE = N'VN' AND LEN(B.품번) > 1 THEN LEFT(B.품번, LEN(B.품번) - 1) ELSE B.품명 END AS model
 		        , N'해외' AS 매출구분
 		        , CASE WHEN MI.품번 IS NOT NULL THEN N'상품' ELSE N'제품' END AS 매출대분류
 		        , CAST(B.원화판매금액 AS DECIMAL(18,2)) AS amt
@@ -380,7 +380,7 @@ BEGIN
 		              WHEN RIGHT(A.품번, 1) = 'P' THEN N'양산'
 		              ELSE N'개발'
 		          END AS 구분
-		        , A.품명 AS model
+		        , CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END AS model
 		        , SUM(A.수량) AS qty
 		    FROM (
                 SELECT YYYYMM, SITE, 품번, 품명, 수량 FROM DOI_SALE_RESC WHERE YYYYMM = @YYYYMM AND SITE = @SITE
@@ -395,7 +395,7 @@ BEGIN
                     WHEN RIGHT(A.품번, 1) = 'P' THEN N'양산'
                     ELSE N'개발'
                 END,
-                A.품명
+                CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END
 		),
 		QTY_FACT AS (
 		    SELECT
@@ -414,7 +414,7 @@ BEGIN
 		              WHEN RIGHT(A.품번, 1) = 'P' THEN N'양산'
 		              ELSE N'개발'
 		          END AS 구분
-		        , A.품명 AS model
+		        , CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END AS model
 		        , SUM(A.매출금액) AS sale_amt
 		        , SUM(A.수량)     AS qty
 		    FROM (
@@ -430,7 +430,7 @@ BEGIN
 		            WHEN RIGHT(A.품번, 1) = 'P' THEN N'양산'
 		            ELSE N'개발'
 		        END,
-		        A.품명
+		        CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END
 		),
 		PRICE_FACT AS (
 		    SELECT
@@ -591,7 +591,7 @@ BEGIN
              AND R.SITE   = @SITE
              AND R.SEL_CODE = @SELCODE
              AND R.품목자산분류 = N'상품'
-             AND R.품명 = M.model
+             AND (CASE WHEN @SITE = N'VN' AND LEN(R.품번) > 1 THEN LEFT(R.품번, LEN(R.품번) - 1) ELSE R.품명 END) = M.model
             WHERE M.구분 = N'구매'
             GROUP BY M.구분, M.model
         ),				

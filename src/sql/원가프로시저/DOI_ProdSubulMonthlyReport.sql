@@ -49,44 +49,27 @@ BEGIN
             ) t
             --WHERE t.rn = 1
         )
-        SELECT *
+        -- [FIX] UNION ALL 컬럼 수 불일치 방지:
+        --   기존 SELECT *(뷰 전체컬럼+rn)는 V_DOI_PROD_SUBUL 컬럼 수 변동 시 2분기와 어긋나 오류 발생.
+        --   downstream(#CODE_BASE·#AGG)이 실제 사용하는 컬럼만 양쪽 분기에 동일 순서로 명시하여 안정화.
+        SELECT
+              YYYYMM, SITE, 구분, 도우모델, Inch, DW_Site,
+              BOH_MONTH, IN_MONTH, OUT_MONTH, LOSS_MONTH, EOH_MONTH, OUTETC_MONTH,
+              NG_MONTH, 수율제외_MONTH, REWORK진행_MONTH, BONUS_MONTH,
+              material_loss, recall_loss, SHIPPING_PLAN_MONTH, SHIPPING_ACTUAL_MONTH
         INTO #BASE
         FROM BASE
         UNION ALL
-		select
-			YYYYMM,
-			'ACTUAL' SEL_CODE,
-			SITE,
-			구분,
-			1 구분_ord,
-			품명,
-			품번,
-			'-' 작업구분,
-			'-' org작업구분,
-			'-' model,
-			'-' Inch,
-			'VINA' DW_Site,
-			0 BOH_MONTH,
-			수량 IN_MONTH,
-			0 BONUS_MONTH,
-			0 EOH_MONTH,
-			수량 OUT_MONTH,
-			0 LOSS_MONTH,
-			0 NG_MONTH,
-			0 수율제외_MONTH,
-			0 REWORK진행_MONTH,
-			0 SHIPPING_PLAN_MONTH,
-			0 SHIPPING_ACTUAL_MONTH,
-			0 material_loss,
-			0 recall_loss,
-			'Y' Adj_YN,
-			1 rn,
-			0 OUTETC_MONTH
-		from
-			doi_sale
-		WHERE
-			SUBSTRING(YYYYMM, 1, 4) = @YYYY
-			and 구분 = '카세트';
+        SELECT
+              YYYYMM, SITE, 구분, '-' 도우모델, '-' Inch, 'VINA' DW_Site,
+              0 BOH_MONTH, 수량 IN_MONTH, 수량 OUT_MONTH, 0 LOSS_MONTH, 0 EOH_MONTH, 0 OUTETC_MONTH,
+              0 NG_MONTH, 0 수율제외_MONTH, 0 REWORK진행_MONTH, 0 BONUS_MONTH,
+              0 material_loss, 0 recall_loss, 0 SHIPPING_PLAN_MONTH, 0 SHIPPING_ACTUAL_MONTH
+        FROM
+            doi_sale
+        WHERE
+            SUBSTRING(YYYYMM, 1, 4) = @YYYY
+            and 구분 = '카세트';
 
 
         ------------------------------------------------------------

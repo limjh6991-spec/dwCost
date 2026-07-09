@@ -31,7 +31,7 @@
             <label for="baseRate">기준환율</label>
           </div>
         </b-col>
-        <b-col cols="3" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
+        <b-col cols="2" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
           <b-button class="second" size="sm" @click="openExchangeRate">환율관리</b-button>
           <span class="ms-2 text-primary" style="font-size: 12px">{{ appliedRateLabel }}</span>
         </b-col>

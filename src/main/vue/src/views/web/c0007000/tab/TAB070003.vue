@@ -15,6 +15,26 @@
             <label for="floating">사업장</label>
           </div>
         </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <select class="form-select label-60" id="currencySelect" :value="currency" @change="onCurrencyChange($event.target.value)">
+              <option value="USD">USD</option>
+              <option value="KRW">KRW</option>
+              <option value="VND">VND</option>
+            </select>
+            <label for="currencySelect">통화</label>
+          </div>
+        </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <input autocomplete="off" type="text" class="form-control label-60" id="baseRate" :value="baseRateDisplay" placeholder="기준환율" :disabled="true" />
+            <label for="baseRate">기준환율</label>
+          </div>
+        </b-col>
+        <b-col cols="2" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
+          <b-button class="second" size="sm" @click="openExchangeRate">환율관리</b-button>
+          <span class="ms-2 text-primary" style="font-size: 12px">{{ appliedRateLabel }}</span>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -35,6 +55,7 @@
       </div>
     </div>
     <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
+    <ExchangeRatePopup ref="exchangeRatePopup" @closePopup="onExchangeRateClosed" />
   </div>
 </template>
 
@@ -43,10 +64,13 @@ import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007005.js';
+import currencyConvert from '@web/c0007000/js/currencyConvert.js';
+import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
 
 export default {
   props: {},
-  components: {},
+  mixins: [currencyConvert],
+  components: { ExchangeRatePopup },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -169,6 +193,28 @@ export default {
         target: this.saleRescGridRows,
       };
       let resp = await this.$axios.api.search(param);
+      await this.refreshRate();
+    },
+    async refreshRate() {
+      // 매출정보는 행별 통화·환율 체계 → 그리드 환산 없이 기준환율만 표시
+      this.appliedRate = null;
+      this.appliedRateMonth = null;
+      if (!this.isVinaSite || this.currency === 'USD') return;
+      const rate = await this.fetchExchangeRate(this.params.yyyymm, this.currency);
+      if (rate) {
+        this.appliedRate = rate;
+        this.appliedRateMonth = this._normalizeYyyymm(this.params.yyyymm);
+      }
+    },
+    onCurrencyChange(currency) {
+      this.setCurrency(currency);
+      this.refreshRate();
+    },
+    openExchangeRate() {
+      this.$refs.exchangeRatePopup.openDialog({ yyyymm: this.params.yyyymm });
+    },
+    onExchangeRateClosed() {
+      this.refreshRate();
     },
     searchClick() {
       if (!this.params.yyyymm) {

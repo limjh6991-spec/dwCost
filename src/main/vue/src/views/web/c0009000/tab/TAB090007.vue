@@ -16,7 +16,7 @@
               <label for="floatingSelect" class="select">기준월</label>
             </div>
           </b-col>
-        <b-col cols="2" class="ms-3">
+        <b-col cols="1" class="ms-3">
           <div class="form-floating">
             <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" :disabled="true" />
             <label for="floating">사업장</label>
@@ -50,7 +50,13 @@
             <label for="currencySelect">통화</label>
           </div>
         </b-col>
-        <b-col cols="3" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <input autocomplete="off" type="text" class="form-control label-60" id="baseRate" :value="baseRateDisplay" placeholder="기준환율" :disabled="true" />
+            <label for="baseRate">기준환율</label>
+          </div>
+        </b-col>
+        <b-col cols="2" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
           <b-button class="second" size="sm" @click="openExchangeRate">환율관리</b-button>
           <span class="ms-2 text-primary" style="font-size: 12px">{{ appliedRateLabel }}</span>
         </b-col>

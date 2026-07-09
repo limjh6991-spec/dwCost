@@ -38,7 +38,7 @@ BEGIN
 		          WHEN RIGHT(A.품번,1)='P' THEN N'양산'
 		          ELSE N'개발'
 		        END AS 구분,
-		        A.품명 AS model
+		        CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END AS model
 		    FROM DOI_SALE_RESC A
 		    LEFT JOIN MERCH_ITEM MI
 		      ON MI.품번 = A.품번
@@ -55,7 +55,7 @@ BEGIN
 		          WHEN RIGHT(B.품번,1)='P' THEN N'양산'
 		          ELSE N'개발'
 		        END AS 구분,
-		        B.품명 AS model
+		        CASE WHEN @SITE = N'VN' AND LEN(B.품번) > 1 THEN LEFT(B.품번, LEN(B.품번) - 1) ELSE B.품명 END AS model
 		    FROM DOI_INVOICE_RESC B
 		    LEFT JOIN MERCH_ITEM MI
 		      ON MI.품번 = B.품번
@@ -100,7 +100,7 @@ BEGIN
 		          	ELSE N'개발'
 		          END AS 구분
 		        , A.품번
-		        , A.품명          AS model
+		        , CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END AS model
 		        , N'국내'          AS 매출구분
 		        , CASE WHEN MI.품번 IS NOT NULL THEN N'상품' ELSE N'제품' END AS 매출대분류
 		        , A.원화판매금액   AS amt
@@ -122,7 +122,7 @@ BEGIN
 		          	ELSE N'개발'
 		          END AS 구분
 		        , B.품번
-		        , B.품명          AS model
+		        , CASE WHEN @SITE = N'VN' AND LEN(B.품번) > 1 THEN LEFT(B.품번, LEN(B.품번) - 1) ELSE B.품명 END AS model
 		        , N'해외'          AS 매출구분
 		        , CASE WHEN MI.품번 IS NOT NULL THEN N'상품' ELSE N'제품' END AS 매출대분류
 		        , B.원화판매금액   AS amt
