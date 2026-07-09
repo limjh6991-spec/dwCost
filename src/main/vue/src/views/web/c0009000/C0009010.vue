@@ -25,6 +25,20 @@
             <label for="selCodeSelect" class="select">SEL_CODE</label>
           </div>
         </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <select class="form-select label-60" id="currencySelect" :value="currency" @change="onCurrencyChange($event.target.value)">
+              <option value="USD">USD</option>
+              <option value="KRW">KRW</option>
+              <option value="VND">VND</option>
+            </select>
+            <label for="currencySelect">통화</label>
+          </div>
+        </b-col>
+        <b-col cols="3" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
+          <b-button class="second" size="sm" @click="openExchangeRate">환율관리</b-button>
+          <span class="ms-2 text-primary" style="font-size: 12px">{{ appliedRateLabel }}</span>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -40,6 +54,7 @@
         <div id="totalCostGrid" ref="totalCostGrid" class="top-border" style="height: 100%" :fitLayoutWidthEnable="true"></div>
       </div>
     </div>
+    <ExchangeRatePopup ref="exchangeRatePopup" @closePopup="onExchangeRateClosed" />
   </div>
 </template>
 
@@ -47,12 +62,16 @@
 import { TreeView, LocalTreeDataProvider } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
+import { applyAmtFormatLive } from '@/utils/gridUtils';
+import currencyConvert from '@web/c0007000/js/currencyConvert.js';
+import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
 import gridField from '@web/c0009000/js/C0009010.js';
 
 let tcmTreeProvider, tcmTreeView;
 export default {
   props: {},
-  components: {},
+  mixins: [currencyConvert],
+  components: { ExchangeRatePopup },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -350,6 +369,8 @@ export default {
       
       tcmTreeView.setCellStyleCallback(this.setCellStyleCallbackGrid.bind(this));
       tcmTreeView.setRowStyleCallback(this.setRowStyleCallbackGrid.bind(this));
+
+      applyAmtFormatLive(tcmTreeView, this.userAuthInfo.curProdCtg, this.currency);
     },
 
     async getDataList() {
@@ -372,7 +393,10 @@ export default {
         target: this.totalCostGridRows,
       });
       this.buildGridColumnsFromResult(this.totalCostGridRows);
-      tcmTreeProvider.setRows(this.totalCostGridRows, 'treeId');
+      // VINA·비USD: 금액 컬럼을 월평균 환율로 환산하여 표시(원본 USD 유지)
+      this.currencyFields = tcmTreeView.getColumns().filter((c) => c.numberFormat).map((c) => c.fieldName);
+      const displayRows = await this.buildCurrencyRows(this.totalCostGridRows);
+      tcmTreeProvider.setRows(displayRows, 'treeId');
       tcmTreeView.expandAll();
       this.collapseGubun('II. 재료비');
       this.collapseGubun('III. 노무비');
@@ -397,6 +421,16 @@ export default {
       }
     },
 
+    onCurrencyChange(currency) {
+      this.setCurrency(currency);
+      this.searchClick();
+    },
+    openExchangeRate() {
+      this.$refs.exchangeRatePopup.openDialog({ yyyymm: this.params.yyyymm });
+    },
+    onExchangeRateClosed() {
+      if (this.isCurrencyReadonly) this.searchClick();
+    },
     async loadSelCodeList() {
       const list = [];
 

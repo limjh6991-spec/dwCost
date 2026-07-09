@@ -42,6 +42,7 @@ import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/TAB070010.js';
+import { applyAmtFormat } from '@/utils/gridUtils';
 
 export default {
   components: {},
@@ -154,6 +155,8 @@ export default {
     },
     async getDataList() {
       if (!this.gridView) return;
+      // VINA(USD): 금액 컬럼 소수점 2자리 표시 (본사는 정수 유지)
+      applyAmtFormat(this.gridView, this.dataGrid.columns, this.userAuthInfo.curProdCtg);
 
       this.gridView.commit();
 

@@ -184,4 +184,6 @@ const grid = {
   ],
 };
 
+grid.currencyFields = ['amt1','amt2','amt3','amt4','amt5','amt6','amt7','amt8','amt9','amt10','amt11','amt12','매출계획'];
+
 module.exports = grid;

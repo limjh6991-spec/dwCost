@@ -64,6 +64,7 @@ import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007001.js';
 import currencyConvert from '@web/c0007000/js/currencyConvert.js';
+import { applyAmtFormat } from '@/utils/gridUtils';
 
 export default {
   components: {},
@@ -197,6 +198,8 @@ export default {
         target: rows,
       });
       const displayRows = await this.buildCurrencyRows(rows);
+      // 통화별 금액 표시: USD면 2자리, KRW/VND·본사면 정수
+      applyAmtFormat(this.gridView, this.modelGrid.columns, this.userAuthInfo.curProdCtg, this.currency);
       this.modelGridRows.splice(0, this.modelGridRows.length, ...displayRows);
       this.$nextTick(() => this.applyCurrencyEditLock());
     },

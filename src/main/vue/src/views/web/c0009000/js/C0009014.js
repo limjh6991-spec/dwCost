@@ -52,4 +52,6 @@ const grid = {
   ],
 };
 
+grid.currencyFields = ['차변금액','대변금액'];
+
 module.exports = grid;

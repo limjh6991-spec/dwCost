@@ -33,6 +33,20 @@
             <label for="selCodeSelect" class="select">SEL_CODE</label>
           </div>
         </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <select class="form-select label-60" id="currencySelect" :value="currency" @change="onCurrencyChange($event.target.value)">
+              <option value="USD">USD</option>
+              <option value="KRW">KRW</option>
+              <option value="VND">VND</option>
+            </select>
+            <label for="currencySelect">통화</label>
+          </div>
+        </b-col>
+        <b-col cols="3" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
+          <b-button class="second" size="sm" @click="openExchangeRate">환율관리</b-button>
+          <span class="ms-2 text-primary" style="font-size: 12px">{{ appliedRateLabel }}</span>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -48,6 +62,7 @@
         <div id="modelPlTree" ref="modelPlTree" class="top-border" style="height: 100%"></div>
       </div>
     </div>
+    <ExchangeRatePopup ref="exchangeRatePopup" @closePopup="onExchangeRateClosed" />
   </div>
 </template>
 
@@ -55,11 +70,16 @@
 import { TreeView, LocalTreeDataProvider } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
+import { applyAmtFormatLive } from '@/utils/gridUtils';
+import currencyConvert from '@web/c0007000/js/currencyConvert.js';
+import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
 import gridField from '@web/c0009000/js/C0009009.js';
 
 let modelPlTreeProvider, modelPlTreeView;
 
 export default {
+  mixins: [currencyConvert],
+  components: { ExchangeRatePopup },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -457,8 +477,13 @@ export default {
       modelPlTreeView.setCellStyleCallback(this.setCellStyleCallbackGrid.bind(this));
       modelPlTreeView.setRowStyleCallback(this.setRowStyleCallbackGrid.bind(this));
 
+      applyAmtFormatLive(modelPlTreeView, this.userAuthInfo.curProdCtg, this.currency);
+
       const qtyRow = this.buildQtyRow(headerMeta, qtyResp);
-      const amountRows = this.remapAmountRows(amountResp, headerMeta);
+      let amountRows = this.remapAmountRows(amountResp, headerMeta);
+      // VINA·비USD: 금액행만 월평균 환율로 환산(수량행 '매출수량'은 원본 유지)
+      this.currencyFields = baseGrid.columns.filter((c) => c.numberFormat).map((c) => c.fieldName);
+      amountRows = await this.buildCurrencyRows(amountRows);
 
       const finalRows = this.buildTreeRows([qtyRow, ...amountRows]);
 
@@ -468,6 +493,16 @@ export default {
       this.collapseGubun('IV. 판매비와관리비');
     },
 
+    onCurrencyChange(currency) {
+      this.setCurrency(currency);
+      this.searchClick();
+    },
+    openExchangeRate() {
+      this.$refs.exchangeRatePopup.openDialog({ yyyymm: this.params.yyyymm });
+    },
+    onExchangeRateClosed() {
+      if (this.isCurrencyReadonly) this.searchClick();
+    },
     async loadSelCodeList() {
       const list = [];
 
@@ -518,9 +553,14 @@ export default {
     setCellStyleCallbackGrid(grid, dataCell) {
       var ret = {};
       if (dataCell.dataColumn.name != 'gubun') {
+        // 매출수량 행은 수량 → VINA·USD 2자리 적용 제외(정수 표시)
+        const r = dataCell.index.dataRow;
+        if (r >= 0 && String(grid.getValue(r, 'gubun') ?? '').trim() === '매출수량') {
+          ret.numberFormat = '#,##0';
+        }
         return ret;
       }
-      var gubun = dataCell.value.trim();
+      var gubun = String(dataCell.value ?? '').trim();
       if (/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\./.test(gubun)) {
         ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF' };
       } else if (gubun === '매출수량') {
@@ -532,7 +572,7 @@ export default {
     },
     setRowStyleCallbackGrid(grid, item, fixed) {
       var ret = {};
-      var gubun = grid.getValue(item.index, 'gubun').trim();
+      var gubun = String(grid.getValue(item.index, 'gubun') ?? '').trim();
       if (/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\./.test(gubun)) {
         ret.style = { background: '#BFBFBF' };
       } else if (gubun === '매출수량') {

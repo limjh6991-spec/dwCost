@@ -15,6 +15,20 @@
             <label for="floating">사업장</label>
           </div>
         </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <select class="form-select label-60" id="currencySelect" :value="currency" @change="onCurrencyChange($event.target.value)">
+              <option value="USD">USD</option>
+              <option value="KRW">KRW</option>
+              <option value="VND">VND</option>
+            </select>
+            <label for="currencySelect">통화</label>
+          </div>
+        </b-col>
+        <b-col cols="3" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
+          <b-button class="second" size="sm" @click="openExchangeRate">환율관리</b-button>
+          <span class="ms-2 text-primary" style="font-size: 12px">{{ appliedRateLabel }}</span>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -30,16 +44,21 @@
         <RealGrid ref="grid" :uid="'grid'" :step="'1'" :rows="gridRows" style="height: 100%" />
       </div>
     </div>
+    <ExchangeRatePopup ref="exchangeRatePopup" @closePopup="onExchangeRateClosed" />
   </div>
 </template>
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
+import { applyAmtFormatLive } from '@/utils/gridUtils';
+import currencyConvert from '@web/c0007000/js/currencyConvert.js';
+import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
 import { useC0001001 } from '@web/store/C0001001.js';
 
 export default {
   props: {},
-  components: {},
+  mixins: [currencyConvert],
+  components: { ExchangeRatePopup },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -134,6 +153,8 @@ export default {
 
       let result1 = await this.$axios.api.search(searchParam);
       const gridField1 = _.cloneDeep(require(`@web/c0009000/js/TAB090004.js`));
+      const isVinaUsd = this.userAuthInfo.curProdCtg === 'VN' && (this.currency === 'USD' || this.currency == null);
+      const amtFmt = isVinaUsd ? '#,##0.00' : '#,##0';
       result1.forEach((item) => {
         gridField1.fields.push({
           fieldName: item.deptName.toLowerCase(),
@@ -149,24 +170,40 @@ export default {
             text: item.deptName,
           },
           autoFilter: false,
-          numberFormat: '#,##0',
+          numberFormat: amtFmt,
           styleName: 'tr',
         });
       });
 
       this.gridDataProvider.setFields(gridField1.fields);
       this.gridView.setColumns(gridField1.columns);
+      applyAmtFormatLive(this.gridView, this.userAuthInfo.curProdCtg, this.currency);
+      // 환산 대상 금액 컬럼(고정 + 동적 부서 컬럼) 수집
+      this.currencyFields = gridField1.columns.filter((c) => c.numberFormat).map((c) => c.fieldName);
 
+      const rows = [];
       let param = {
         menuId: 'c0009000',
         queryId: 'C0009005_Tab090004',
         queryParams: params,
-        target: this.gridRows,
+        target: rows,
       };
-      let resp = await this.$axios.api.search(param);
+      await this.$axios.api.search(param);
+      const displayRows = await this.buildCurrencyRows(rows);
+      this.gridRows.splice(0, this.gridRows.length, ...displayRows);
     },
     searchClick() {
       this.getDataList();
+    },
+    onCurrencyChange(currency) {
+      this.setCurrency(currency);
+      this.searchClick();
+    },
+    openExchangeRate() {
+      this.$refs.exchangeRatePopup.openDialog({ yyyymm: this.params.yyyymm });
+    },
+    onExchangeRateClosed() {
+      if (this.isCurrencyReadonly) this.searchClick();
     },
     async excelBtnClick() {
       const grid = this.gridView;

@@ -15,6 +15,20 @@
             <label for="floating">사업장</label>
           </div>
         </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <select class="form-select label-60" id="currencySelect" :value="currency" @change="onCurrencyChange($event.target.value)">
+              <option value="USD">USD</option>
+              <option value="KRW">KRW</option>
+              <option value="VND">VND</option>
+            </select>
+            <label for="currencySelect">통화</label>
+          </div>
+        </b-col>
+        <b-col cols="3" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
+          <b-button class="second" size="sm" @click="openExchangeRate">환율관리</b-button>
+          <span class="ms-2 text-primary" style="font-size: 12px">{{ appliedRateLabel }}</span>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -30,16 +44,21 @@
         <RealGrid ref="sgaGrid" :uid="'sgaGrid'" :step="'1'" :rows="sgaGridRows" style="height: 100%" />
       </div>
     </div>
+    <ExchangeRatePopup ref="exchangeRatePopup" @closePopup="onExchangeRateClosed" />
   </div>
 </template>
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
+import { applyAmtFormatLive } from '@/utils/gridUtils';
 import { useC0001001 } from '@web/store/C0001001.js';
+import currencyConvert from '@web/c0007000/js/currencyConvert.js';
+import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
 
 export default {
   props: {},
-  components: {},
+  mixins: [currencyConvert],
+  components: { ExchangeRatePopup },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -134,6 +153,9 @@ export default {
 
       let result1 = await this.$axios.api.search(searchParam);
       const gridField1 = _.cloneDeep(require(`@web/c0009000/js/TAB090008.js`));
+      // 통화별 금액 표시: VINA·USD면 2자리, KRW/VND·본사면 정수
+      const isVinaUsd = this.userAuthInfo.curProdCtg === 'VN' && (this.currency === 'USD' || this.currency == null);
+      const amtFmt = isVinaUsd ? '#,##0.00' : '#,##0';
       result1.forEach((item) => {
         gridField1.fields.push({
           fieldName: item.deptName,
@@ -149,24 +171,41 @@ export default {
             text: item.deptName,
           },
           autoFilter: false,
-          numberFormat: '#,##0.##',
+          numberFormat: amtFmt,
           styleName: 'tr',
         });
       });
 
       this.gridDataProvider.setFields(gridField1.fields);
       this.gridView.setColumns(gridField1.columns);
+      applyAmtFormatLive(this.gridView, this.userAuthInfo.curProdCtg, this.currency);
+      // 환산 대상 금액 컬럼(고정 + 동적 부서 컬럼) 수집
+      this.currencyFields = gridField1.columns.filter((c) => c.numberFormat).map((c) => c.fieldName);
 
-      let param = {
+      const rows = [];
+      await this.$axios.api.search({
         menuId: 'c0009000',
         queryId: 'C0009008_Tab090008',
         queryParams: params,
-        target: this.sgaGridRows,
-      };
-      let resp = await this.$axios.api.search(param);
+        target: rows,
+      });
+      // 선택 통화(KRW/VND)면 월평균 환율로 금액 환산 표시 (USD면 원본)
+      const displayRows = await this.buildCurrencyRows(rows);
+      this.sgaGridRows.splice(0, this.sgaGridRows.length, ...displayRows);
     },
     searchClick() {
       this.getDataList();
+    },
+    onCurrencyChange(currency) {
+      this.setCurrency(currency);
+      this.searchClick();
+    },
+    openExchangeRate() {
+      this.$refs.exchangeRatePopup.openDialog({ yyyymm: this.params.yyyymm });
+    },
+    onExchangeRateClosed() {
+      // 환율 등록/수정 후, 비-USD 표시 중이면 갱신된 환율로 재환산
+      if (this.isCurrencyReadonly) this.searchClick();
     },
     async excelBtnClick() {
       const grid = this.gridView;

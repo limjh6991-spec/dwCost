@@ -31,6 +31,7 @@ public class DwisCostApplication {
             	for (String line : s.split("\\r?\\n")) {
                     logger.error(line);
                 }
+            	
             }
         });
         

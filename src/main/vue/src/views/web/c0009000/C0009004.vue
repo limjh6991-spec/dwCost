@@ -15,6 +15,20 @@
             <label for="floating">사업장</label>
           </div>
         </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <select class="form-select label-60" id="currencySelect" :value="currency" @change="onCurrencyChange($event.target.value)">
+              <option value="USD">USD</option>
+              <option value="KRW">KRW</option>
+              <option value="VND">VND</option>
+            </select>
+            <label for="currencySelect">통화</label>
+          </div>
+        </b-col>
+        <b-col cols="3" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
+          <b-button class="second" size="sm" @click="openExchangeRate">환율관리</b-button>
+          <span class="ms-2 text-primary" style="font-size: 12px">{{ appliedRateLabel }}</span>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -30,6 +44,7 @@
         <RealGrid ref="matSubulGrid" :uid="'matSubulGrid'" :step="'1'" :rows="matSubulGridRows" style="height: 100%" />
       </div>
     </div>
+    <ExchangeRatePopup ref="exchangeRatePopup" @closePopup="onExchangeRateClosed" />
   </div>
 </template>
 
@@ -37,10 +52,14 @@
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0009000/js/C0009004.js';
+import { applyAmtFormat } from '@/utils/gridUtils';
+import currencyConvert from '@web/c0007000/js/currencyConvert.js';
+import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
 
 export default {
   props: {},
-  components: {},
+  mixins: [currencyConvert],
+  components: { ExchangeRatePopup },
     setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -113,6 +132,7 @@ export default {
     },
     initializeGrid() {
       this.matSubulGrid = _.cloneDeep(gridField);
+      this.currencyFields = gridField.currencyFields || [];
     },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
@@ -120,21 +140,37 @@ export default {
     async getDataList() {
       this.gridView.commit();
 
+      // VINA(USD): 금액 컬럼 소수점 2자리 표시 (본사는 정수 유지)
+      applyAmtFormat(this.gridView, this.matSubulGrid.columns, this.userAuthInfo.curProdCtg, this.currency);
+
       let params = {
         yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
 
+      const rows = [];
       let param = {
         menuId: 'c0009000',
         queryId: 'C0009004_Sch1',
         queryParams: params,
-        target: this.matSubulGridRows,
+        target: rows,
       };
-      let resp = await this.$axios.api.search(param);
+      await this.$axios.api.search(param);
+      const displayRows = await this.buildCurrencyRows(rows);
+      this.matSubulGridRows.splice(0, this.matSubulGridRows.length, ...displayRows);
     },
     searchClick() {
       this.getDataList();
+    },
+    onCurrencyChange(currency) {
+      this.setCurrency(currency);
+      this.searchClick();
+    },
+    openExchangeRate() {
+      this.$refs.exchangeRatePopup.openDialog({ yyyymm: this.params.yyyymm });
+    },
+    onExchangeRateClosed() {
+      if (this.isCurrencyReadonly) this.searchClick();
     },
     async excelBtnClick() {
       const grid = this.gridView;

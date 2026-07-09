@@ -249,6 +249,12 @@ export default {
         ret.style = {
           background: '#fff9e6',
         };
+        // VINA·USD: 금액 행(순서=1)만 소수점 2자리 (수량 행/본사는 정수)
+        const ctg = useUserAuthInfo().curProdCtg;
+        const cur = useC0001001().currency;
+        if (ctg === 'VN' && (cur === 'USD' || cur == null)) {
+          ret.numberFormat = '#,##0.00';
+        }
       }
 
       return ret;

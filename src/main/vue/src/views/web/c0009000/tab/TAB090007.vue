@@ -40,6 +40,20 @@
             <label for="selCodeSelect" class="select">SEL_CODE</label>
           </div>
         </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <select class="form-select label-60" id="currencySelect" :value="currency" @change="onCurrencyChange($event.target.value)">
+              <option value="USD">USD</option>
+              <option value="KRW">KRW</option>
+              <option value="VND">VND</option>
+            </select>
+            <label for="currencySelect">통화</label>
+          </div>
+        </b-col>
+        <b-col cols="3" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
+          <b-button class="second" size="sm" @click="openExchangeRate">환율관리</b-button>
+          <span class="ms-2 text-primary" style="font-size: 12px">{{ appliedRateLabel }}</span>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -55,16 +69,21 @@
         <RealGrid ref="prodCogsGrid" :uid="'prodCogsGrid'" :grid="activeGrid" :layout="prodCogsGrid.columnLayout" :step="'1'" :rows="prodCogsGridRows" style="height: 100%" />
       </div>
     </div>
+    <ExchangeRatePopup ref="exchangeRatePopup" @closePopup="onExchangeRateClosed" />
   </div>
 </template>
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
+import { applyAmtFormatLive } from '@/utils/gridUtils';
+import currencyConvert from '@web/c0007000/js/currencyConvert.js';
+import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
 import { useC0001001 } from '@web/store/C0001001.js';
 
 export default {
   props: {},
-  components: {},
+  mixins: [currencyConvert],
+  components: { ExchangeRatePopup },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -255,6 +274,8 @@ export default {
       const g = mode === 'MONTH' ? this.prodCogsDtlGrid : this.prodCogsGrid;
 
       if (g?.columns) gv.setColumns(g.columns);
+      // VINA(USD): 금액 컬럼 소수점 2자리 표시 (본사는 정수 유지)
+      applyAmtFormatLive(gv, this.userAuthInfo.curProdCtg, this.currency);
       if (g?.columnLayout) gv.setColumnLayout(g.columnLayout);
 
       this.applySpanCallbacks();
@@ -647,7 +668,10 @@ export default {
       };
     },
     async searchClick() {
-      const yearRows = await this.fetchYearRowsIfNeeded();
+      const yearRowsRaw = await this.fetchYearRowsIfNeeded();
+      // VINA·비USD: 원본(USD) 행의 금액(*Amt)을 각 행 소속 월(YYYYMM) 환율로 환산 후 집계
+      this.currencyFields = yearRowsRaw.length ? Object.keys(yearRowsRaw[0]).filter((k) => /Amt$/i.test(k)) : [];
+      const yearRows = await this.buildCurrencyRowsByMonth(yearRowsRaw, (r) => this._normalizeYyyymm(r.YYYYMM ?? r.yyyymm));
 
       if (this.params.viewMode === 'YEAR') {
         await this.applyGridMode('YEAR');
@@ -678,6 +702,16 @@ export default {
       this.$nextTick(() => {
         this.applyRowFixing();
       });
+    },
+    onCurrencyChange(currency) {
+      this.setCurrency(currency);
+      this.searchClick();
+    },
+    openExchangeRate() {
+      this.$refs.exchangeRatePopup.openDialog({ yyyymm: this.params.yyyymm || (this.params.year ? `${this.params.year}01` : null) });
+    },
+    onExchangeRateClosed() {
+      if (this.isCurrencyReadonly) this.searchClick();
     },
     applyRowFixing() {
       const gv = this.gridView;

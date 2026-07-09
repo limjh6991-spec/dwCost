@@ -88,4 +88,6 @@ const grid = {
   ],
 };
 
+grid.currencyFields = ['상계금액','finalAmt','최종결산월재고단가'];
+
 module.exports = grid;
