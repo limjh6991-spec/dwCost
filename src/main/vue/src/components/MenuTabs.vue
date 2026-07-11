@@ -83,7 +83,7 @@
           </select>
           <label for="floatingSelect" class="select">{{ $trans("사이트") }}:</label>
       </div>
-      <div class="form-floating" style="margin-left: 5px; margin-right: 5px;">
+      <div class="form-floating" v-if="selectdProdCtg === 'VN'" style="margin-left: 5px; margin-right: 5px;">
           <select class="form-select label-60 " id="floatingLangSelect" aria-label="Language select" v-model="selectedLocale" @change="onLocaleChange">
               <option value="ko">한국어</option>
               <option value="vi">Tiếng Việt</option>
