@@ -371,8 +371,8 @@ export default {
     createMenuData(menu, subMenu = null, childMenu = null) {
       return this.$utils.createMenuData(menu, subMenu, childMenu);
     },
-    onProdCtgChange(evt){
-			this.userAuthInfo.changeProdCtg(evt.target.value);
+    async onProdCtgChange(evt){
+			await this.userAuthInfo.changeProdCtg(evt.target.value);
 			localStorage.setItem('locale', 'ko');
 			window.location.reload();
 		},  
