@@ -188,7 +188,10 @@ export default {
     //document.addEventListener("click", this.handleOutsideClick);
     this.userAuthInfo.loadAuthInfo();
     this.selectdProdCtg = this.userAuthInfo.curProdCtg;
-    const initialLocale = localStorage.getItem('locale') || (this.selectdProdCtg === 'VN' ? 'vi' : 'ko');
+    let initialLocale = localStorage.getItem('locale') || 'ko';
+    if (this.selectdProdCtg !== 'VN') {
+      initialLocale = 'ko';
+    }
     localStorage.setItem('locale', initialLocale);
     this.selectedLocale = initialLocale;
     this.$nextTick(()=>{
@@ -370,8 +373,7 @@ export default {
     },
     onProdCtgChange(evt){
 			this.userAuthInfo.changeProdCtg(evt.target.value);
-			const locale = evt.target.value === 'VN' ? 'vi' : 'ko';
-			localStorage.setItem('locale', locale);
+			localStorage.setItem('locale', 'ko');
 			window.location.reload();
 		},  
     onLocaleChange(evt){
