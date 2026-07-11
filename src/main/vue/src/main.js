@@ -23,6 +23,7 @@ import popup from './plugins/popup';
 import "@assets/style/realgrid.css";
 import "@assets/style/font.css";
 import zIndexManager from "@/utils/zIndexManager";
+import koToVi from '@/assets/i18n/ko_to_vi.json';
 
 //import * as ionicons5 from '@vicons/ionicons5';
 //import { LogInOutline } from '@vicons/ionicons5';
@@ -97,5 +98,14 @@ app.config.globalProperties.$uuid = uuidv4;
 app.config.globalProperties.$eventBus = eventBus;
 app.config.globalProperties.$moment = moment;
 app.config.globalProperties.$zIndexManager = zIndexManager;
+app.config.globalProperties.$trans = (text) => {
+  if (!text) return '';
+  const currentLang = localStorage.getItem('locale') || 'ko';
+  if (currentLang === 'vi') {
+    const key = text.toString().trim();
+    return koToVi[key] || text;
+  }
+  return text;
+};
 
 app.mount('#app');

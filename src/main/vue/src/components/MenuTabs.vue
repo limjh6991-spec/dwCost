@@ -18,10 +18,10 @@
               menuClick(createMenuData(menu))
             "
           >
-            <span>{{ menu.sysResourceName }}</span>
+            <span>{{ $trans(menu.sysResourceName) }}</span>
           </a>
           <a v-else role="button">
-            <span>{{ menu.sysResourceName }}</span>
+            <span>{{ $trans(menu.sysResourceName) }}</span>
           </a>
 
           <!-- Depth 2 -->
@@ -39,10 +39,10 @@
                   menuClick(createMenuData(menu, subMenu))
                 "
               >
-                <span>{{ subMenu.sysResourceName }}</span>
+                <span>{{ $trans(subMenu.sysResourceName) }}</span>
               </a>
               <a v-else role="button">
-                <span>{{ subMenu.sysResourceName }}</span>
+                <span>{{ $trans(subMenu.sysResourceName) }}</span>
               </a>
 
               <!-- Depth 3 -->
@@ -62,10 +62,10 @@
                       menuClick(createMenuData(menu, subMenu, childMenu))
                     "
                   >
-                    <span>{{ childMenu.sysResourceName }}</span>
+                    <span>{{ $trans(childMenu.sysResourceName) }}</span>
                   </a>
                   <a v-else role="button">
-                    <span>{{ childMenu.sysResourceName }}</span>
+                    <span>{{ $trans(childMenu.sysResourceName) }}</span>
                   </a>
                 </li>
               </ul>
@@ -79,20 +79,27 @@
       <div class="cur_time"><i class="bi bi-alarm"></i><span>{{curDateStr}}</span></div>
       <div class="form-floating">
           <select class="form-select label-60 " id="floatingSelect" aria-label="Floating label select example" v-model="selectdProdCtg" @change="onProdCtgChange">
-              <option v-for="(pc,index) in prodCtgList" :value="pc.prodCategory" :key="index">{{pc.prodCategory==="HQ"? "본사" : "VINA"}}</option>
+              <option v-for="(pc,index) in prodCtgList" :value="pc.prodCategory" :key="index">{{pc.prodCategory==="HQ"? $trans("본사") : "VINA"}}</option>
           </select>
-          <label for="floatingSelect" class="select">사이트:</label>
+          <label for="floatingSelect" class="select">{{ $trans("사이트") }}:</label>
+      </div>
+      <div class="form-floating" style="margin-left: 5px; margin-right: 5px;">
+          <select class="form-select label-60 " id="floatingLangSelect" aria-label="Language select" v-model="selectedLocale" @change="onLocaleChange">
+              <option value="ko">한국어</option>
+              <option value="vi">Tiếng Việt</option>
+          </select>
+          <label for="floatingLangSelect" class="select">{{ $trans("언어") }}:</label>
       </div>
 
       <div class="logid">{{userAuthInfo.userInfo.useName}}</div>
-      <div class="logout" @click="logoutClick">logout</div>
+      <div class="logout" @click="logoutClick">{{ $trans("logout") }}</div>
     </div>
         <div class="btn-wrap" :style="closeBtnStyle">
-          <b-button class="btn-close-gnb" @click="resetMenu">닫기</b-button>
+          <b-button class="btn-close-gnb" @click="resetMenu">{{ $trans("닫기") }}</b-button>
        </div>
       <!--닫기 버튼 추가 -->
     <div class="depth_bg" :style="depthBgStyle"> 
-            <!-- <div class="btn-wrap" :style="{ top: `${depthBgHeight - 55}px` }">
+             <!-- <div class="btn-wrap" :style="{ top: `${depthBgHeight - 55}px` }">
           <b-button class="btn-close-gnb" @click="resetMenu">닫기</b-button>
        </div> -->
          <!--  마우스 오버 :메뉴 높이 계산 -->
@@ -108,8 +115,8 @@
             @click.prevent="tabClick(element.url,element)"
           >
             <template #title>
-              <div small v-b-tooltip.hover :title="element.menuFullPath" class="path"></div>
-              <div class="menu">{{ element.menuNm }}</div>
+              <div small v-b-tooltip.hover :title="$trans(element.menuFullPath)" class="path"></div>
+              <div class="menu">{{ $trans(element.menuNm) }}</div>
               <b-button @click.stop="removeTab(index)" class="btn_close" v-if="!element.noRemove"></b-button>
             </template>
           </b-tab>
@@ -146,8 +153,9 @@ export default {
       depthBgHeight: 0,
        opacity: 0,
        top: "0px",
-      selectdProdCtg:null,
-      curDateStr:'',
+       selectdProdCtg:null,
+       curDateStr:'',
+       selectedLocale: 'ko',
     };
   },
   computed:{
@@ -180,6 +188,9 @@ export default {
     //document.addEventListener("click", this.handleOutsideClick);
     this.userAuthInfo.loadAuthInfo();
     this.selectdProdCtg = this.userAuthInfo.curProdCtg;
+    const initialLocale = localStorage.getItem('locale') || (this.selectdProdCtg === 'VN' ? 'vi' : 'ko');
+    localStorage.setItem('locale', initialLocale);
+    this.selectedLocale = initialLocale;
     this.$nextTick(()=>{
       this.menuList = _.cloneDeep(this.userAuthInfo.getSysResourceMap.childSysResc);
       const localTabs = this.$utils.getLocalStorageData(localStorage, 'localTabs'+this.userAuthInfo.token);
@@ -359,7 +370,14 @@ export default {
     },
     onProdCtgChange(evt){
 			this.userAuthInfo.changeProdCtg(evt.target.value);
+			const locale = evt.target.value === 'VN' ? 'vi' : 'ko';
+			localStorage.setItem('locale', locale);
+			window.location.reload();
 		},  
+    onLocaleChange(evt){
+      localStorage.setItem('locale', evt.target.value);
+      window.location.reload();
+    },
     // pushQueryRouter(url, callback = null){
     //   let queryObj = this.$utils.parseQueryParams(url); console.log('info',url); console.log('info',queryObj);
     //   this.$router.push({ path: url,query:queryObj }).then(() => {

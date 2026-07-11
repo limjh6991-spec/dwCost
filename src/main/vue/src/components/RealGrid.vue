@@ -82,7 +82,20 @@ export default {
 
 			gridView.setDataSource(dataProvider);
 			dataProvider.setFields(this.target[this.uid].fields);
-			gridView.setColumns(this.target[this.uid].columns);		
+			
+			let cols = this.$_.cloneDeep(this.target[this.uid].columns);
+			if (cols) {
+				const currentLang = localStorage.getItem('locale') || 'ko';
+				if (currentLang === 'vi') {
+					cols.forEach(col => {
+						if (col.header && col.header.text) {
+							col.header.text = this.$trans(col.header.text);
+						}
+					});
+				}
+				gridView.setColumns(cols);
+			}
+			
 			gridView.setOptions(this.target[this.uid].options);
 			//dataProvider.addRows([{},{},{}])
 			if(this.target[this.uid].layout)gridView.setColumnLayout(this.target[this.uid].layout);
