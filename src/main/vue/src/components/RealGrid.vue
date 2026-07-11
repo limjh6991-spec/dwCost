@@ -80,20 +80,28 @@ export default {
 			if(this.target[this.uid] == undefined) return;
       const { dataProvider, gridView } = gridInstances[this.gridId];
 
-			gridView.setDataSource(dataProvider);
-			dataProvider.setFields(this.target[this.uid].fields);
-			
-			let cols = this.$_.cloneDeep(this.target[this.uid].columns);
-			if (cols) {
+			// Override gridView.setColumns to automatically translate headers
+			const originalSetColumns = gridView.setColumns.bind(gridView);
+			gridView.setColumns = (columns) => {
 				const currentLang = localStorage.getItem('locale') || 'ko';
-				if (currentLang === 'vi') {
-					cols.forEach(col => {
+				if (currentLang === 'vi' && columns) {
+					const clonedCols = this.$_.cloneDeep(columns);
+					clonedCols.forEach(col => {
 						if (col.header && col.header.text) {
 							col.header.text = this.$trans(col.header.text);
 						}
 					});
+					originalSetColumns(clonedCols);
+				} else {
+					originalSetColumns(columns);
 				}
-				gridView.setColumns(cols);
+			};
+
+			gridView.setDataSource(dataProvider);
+			dataProvider.setFields(this.target[this.uid].fields);
+			
+			if (this.target[this.uid].columns) {
+				gridView.setColumns(this.target[this.uid].columns);
 			}
 			
 			gridView.setOptions(this.target[this.uid].options);

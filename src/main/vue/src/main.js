@@ -108,4 +108,50 @@ app.config.globalProperties.$trans = (text) => {
   return text;
 };
 
+// Global Translation Mixin to automatically translate text nodes and placeholders on mount and update
+app.mixin({
+  mounted() {
+    this.translateDOM();
+  },
+  updated() {
+    this.translateDOM();
+  },
+  methods: {
+    translateDOM() {
+      const currentLang = localStorage.getItem('locale') || 'ko';
+      if (currentLang !== 'vi') return;
+      if (this.$el && this.$el.nodeType === 1) {
+        const walk = (node) => {
+          if (node.classList && (
+            node.classList.contains('realgrid') || 
+            node.classList.contains('rg-root') || 
+            (node.id && node.id.startsWith('realgrid'))
+          )) {
+            return;
+          }
+          if (node.nodeType === 3) {
+            const text = node.nodeValue.trim();
+            if (text && koToVi[text]) {
+              node.nodeValue = koToVi[text];
+            }
+          } else if (node.nodeType === 1) {
+            if (node.tagName === 'OPTION') {
+              const text = node.textContent.trim();
+              if (text && koToVi[text]) {
+                node.textContent = koToVi[text];
+              }
+            }
+            const placeholder = node.getAttribute('placeholder');
+            if (placeholder && koToVi[placeholder.trim()]) {
+              node.setAttribute('placeholder', koToVi[placeholder.trim()]);
+            }
+            node.childNodes.forEach(walk);
+          }
+        };
+        walk(this.$el);
+      }
+    }
+  }
+});
+
 app.mount('#app');
