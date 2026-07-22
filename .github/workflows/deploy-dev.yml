@@ -1,0 +1,121 @@
+name: Deploy to Dev Server
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+
+  # 수동 실행도 가능
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+    
+    env:
+      DEPLOY_DIR: C:\deploy\dev
+      SERVICE_PORT: 9091
+      SPRING_PROFILE: dev
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+        cache-dependency-path: src/main/vue/package-lock.json
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+        cache: 'maven'
+
+    - name: Install Vue dependencies
+      run: npm ci
+      working-directory: src/main/vue
+
+    - name: Build Vue (dev)
+      run: npm run builddev
+      working-directory: src/main/vue
+
+    - name: Build JAR
+      run: ./mvnw.cmd clean package -DskipTests
+      shell: cmd
+
+    - name: Stop existing service
+      shell: powershell
+      run: |
+        $proc = Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object {
+          $_.CommandLine -like "*dwisCOST*" -and $_.CommandLine -like "*${{ env.SERVICE_PORT }}*"
+        }
+        if ($proc) {
+          Write-Host "Stopping existing service (PID: $($proc.Id))..."
+          Stop-Process -Id $proc.Id -Force
+          Start-Sleep -Seconds 5
+        } else {
+          Write-Host "No existing service found."
+        }
+
+    - name: Deploy JAR
+      shell: powershell
+      run: |
+        # 배포 디렉토리 생성
+        New-Item -ItemType Directory -Force -Path "${{ env.DEPLOY_DIR }}"
+        
+        # 이전 JAR 백업
+        if (Test-Path "${{ env.DEPLOY_DIR }}\dwisCOST.jar") {
+          $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+          Copy-Item "${{ env.DEPLOY_DIR }}\dwisCOST.jar" "${{ env.DEPLOY_DIR }}\backup\dwisCOST_$timestamp.jar" -Force
+        }
+        
+        # 새 JAR 복사
+        $jar = Get-ChildItem target\*.jar -Exclude *.original | Select-Object -First 1
+        Copy-Item $jar.FullName "${{ env.DEPLOY_DIR }}\dwisCOST.jar" -Force
+        Write-Host "Deployed: $($jar.Name) -> ${{ env.DEPLOY_DIR }}\dwisCOST.jar"
+
+    - name: Start service
+      shell: powershell
+      run: |
+        $logFile = "${{ env.DEPLOY_DIR }}\logs\dwisCOST_$(Get-Date -Format 'yyyyMMdd').log"
+        New-Item -ItemType Directory -Force -Path "${{ env.DEPLOY_DIR }}\logs"
+        New-Item -ItemType Directory -Force -Path "${{ env.DEPLOY_DIR }}\backup"
+        
+        Start-Process java `
+          -ArgumentList "-jar", "${{ env.DEPLOY_DIR }}\dwisCOST.jar", `
+            "--server.port=${{ env.SERVICE_PORT }}", `
+            "--spring.profiles.active=${{ env.SPRING_PROFILE }}" `
+          -RedirectStandardOutput $logFile `
+          -NoNewWindow
+
+        Write-Host "Service started on port ${{ env.SERVICE_PORT }}"
+
+    - name: Health check
+      shell: powershell
+      run: |
+        Write-Host "Waiting for service to start..."
+        $maxRetries = 10
+        $retryCount = 0
+        
+        while ($retryCount -lt $maxRetries) {
+          Start-Sleep -Seconds 10
+          try {
+            $response = Invoke-WebRequest -Uri "http://localhost:${{ env.SERVICE_PORT }}/actuator/health" -UseBasicParsing -TimeoutSec 5
+            if ($response.StatusCode -eq 200) {
+              Write-Host "✅ Service is healthy!"
+              exit 0
+            }
+          } catch {
+            $retryCount++
+            Write-Host "Waiting... ($retryCount/$maxRetries)"
+          }
+        }
+        
+        Write-Host "⚠️ Health check timeout - service may still be starting"
+        exit 0
