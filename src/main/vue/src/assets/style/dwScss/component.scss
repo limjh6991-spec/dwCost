@@ -743,21 +743,25 @@ table{
     .form-control.label-80, .form-select.label-80 { padding-left: 108px; }
     .form-control.label-90, .form-select.label-90 { padding-left: 120px; }
   }
-  /* 기준월: 라벨은 위로 띄우지 않고, 베트남어일 때 컬럼을 넓히되(cols=2) 입력이
-     컬럼을 꽉 채우게 해 간격이 아니라 박스 자체가 넓어지도록.
-     또 라벨(Tháng cơ sở)이 날짜값과 겹치지 않게 좌측 여백 확보 */
+  /* 기준월: 컬럼을 넓히면 간격만 생기므로, 입력(box) 자체 폭을 직접 190px로 고정.
+     라벨(Tháng cơ sở)이 날짜값과 겹치지 않게 좌측 여백 90px 확보(라벨은 그 자리에 표시).
+     컬럼은 입력 폭에 맞춰 auto → 간격 없음 */
   .dw_mes .search_area .period {
-    flex: 0 0 16.666% !important;
-    width: 16.666% !important;
-    max-width: 16.666% !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: none !important;
   }
-  .dw_mes .search_area .period .form-floating { width: 100% !important; }
-  .dw_mes .search_area .period .form-datepicker { width: 100% !important; padding-left: 80px; }
-  /* 통화(currencySelect) 박스가 너무 넓어 좁힘 (환율 아님) */
+  .dw_mes .search_area .period .form-floating { width: auto !important; }
+  .dw_mes .search_area .period .form-datepicker {
+    width: 190px !important;
+    min-width: 190px !important;
+    padding-left: 90px !important;
+  }
+  /* 통화(currencySelect) 박스 폭 - USD가 온전히 보이도록 (환율 아님) */
   .dw_mes .search_area [class*="col-"]:has(#currencySelect) {
-    flex: 0 0 150px !important;
-    width: 150px !important;
-    max-width: 150px !important;
+    flex: 0 0 175px !important;
+    width: 175px !important;
+    max-width: 175px !important;
   }
   /* 고정폭 텍스트 라벨(.label_title)이 베트남어로 길어 잘리지 않도록 폭 자동 */
   .dw_mes .search_area .label_title {
