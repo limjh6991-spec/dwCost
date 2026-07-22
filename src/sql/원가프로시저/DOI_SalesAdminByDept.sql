@@ -1,9 +1,96 @@
-﻿CREATE             Procedure DOI_SalesAdminByDept(
+
+
+CREATE OR ALTER Procedure DOI_SalesAdminByDept(
 	@YYYYMM varchar(10),
  	@SITE varchar(4)
  )
 AS
 BEGIN
+		-- ============================================================
+	-- [VN 전용 동적 분기] 판매관리비 부서별집계표
+	--   doi_dept_cost(비용구분='판관', 센터채움 차변-대변) + doi_acct(상위계정과목/총원가_순서)
+	--   상위계정과목 있는 판)계열만(금융635/기타811/손익911 자동 제외), 부서없음→관리공통
+	-- ============================================================
+	IF @SITE = 'VN'
+	BEGIN
+		BEGIN TRY
+			DECLARE @vColumns NVARCHAR(4000), @vNullCols NVARCHAR(4000), @vSQL NVARCHAR(MAX);
+
+			-- 1) 항목(부서×상위계정과목) 금액
+			IF OBJECT_ID('tempdb..#vamt') IS NOT NULL DROP TABLE #vamt;
+			SELECT x.dept_name, a.상위계정과목,
+					MAX(TRY_CONVERT(int,NULLIF(a.총원가_순서,''))) 순서,
+					SUM(d.차변금액 - d.대변금액) amt
+			INTO #vamt
+			FROM doi_dept_cost d
+			JOIN doi_acct a ON a.yyyymm=d.yyyymm AND a.site=d.site AND a.ACCT=d.계정코드
+			CROSS APPLY (SELECT CASE WHEN LTRIM(RTRIM(ISNULL(d.코스트센터,'')))='' THEN N'관리공통' ELSE LTRIM(RTRIM(d.코스트센터)) END dept_name) x
+			WHERE d.yyyymm=@YYYYMM AND d.site=@SITE AND d.비용구분='판관'
+				AND LTRIM(RTRIM(ISNULL(d.코스트센터,'')))<>''
+				AND ISNULL(a.상위계정과목,'')<>''
+			GROUP BY x.dept_name, a.상위계정과목;
+
+			-- 2) 부서 목록 : 데이터에 존재하는 부서 + 합계
+			IF OBJECT_ID('tempdb..#vdept') IS NOT NULL DROP TABLE #vdept;
+			SELECT dept_name, ord INTO #vdept FROM (
+				SELECT DISTINCT dept_name, CASE WHEN dept_name=N'관리공통' THEN 0 ELSE 1 END ord FROM #vamt
+				UNION SELECT N'합계', 2
+			) t;
+
+			-- 3) 골격 : 합계행(rn=0) + 상위계정과목 항목(총원가_순서 정렬)
+			IF OBJECT_ID('tempdb..#vskel') IS NOT NULL DROP TABLE #vskel;
+			SELECT CAST(ROW_NUMBER() OVER (ORDER BY ISNULL(순서,99), 상위계정과목)*10 AS int) rn,
+					상위계정과목, N'    ' + 상위계정과목 gubun
+			INTO #vskel
+			FROM (SELECT 상위계정과목, MAX(순서) 순서 FROM #vamt GROUP BY 상위계정과목) t;
+			INSERT #vskel(rn, 상위계정과목, gubun) VALUES (0, N'__T', N'합계');
+
+			-- 4) 소스테이블 : 부서 × 골격 + 금액(항목/합계행)
+			IF OBJECT_ID('tempdb..#vsource') IS NOT NULL DROP TABLE #vsource;
+			;WITH amt_item AS (
+				SELECT v.dept_name, sk.rn, SUM(v.amt) amt
+				FROM #vamt v JOIN #vskel sk ON sk.상위계정과목=v.상위계정과목
+				GROUP BY v.dept_name, sk.rn
+			), amt_tot AS (
+				SELECT dept_name, 0 rn, SUM(amt) amt FROM #vamt GROUP BY dept_name
+			), amt_all AS (
+				SELECT * FROM amt_item UNION ALL SELECT * FROM amt_tot
+			)
+			SELECT b.dept_name, b.rn, b.gubun, CAST(ISNULL(a.amt,0) AS DECIMAL(18,2)) amt
+			INTO #vsource
+			FROM (SELECT d.dept_name, sk.rn, sk.gubun FROM #vdept d CROSS JOIN #vskel sk WHERE d.dept_name<>N'합계') b
+			LEFT JOIN amt_all a ON a.dept_name=b.dept_name AND a.rn=b.rn;
+
+			-- 5) 피벗 컬럼 동적 생성 (관리공통 → 센터명 → 합계)
+			SELECT @vColumns = COALESCE(@vColumns + N'],[', N'') + dept_name
+			FROM (SELECT TOP 500 dept_name FROM #vdept ORDER BY ord, dept_name) x;
+			SELECT @vColumns = N'[' + @vColumns + N']';
+
+			SELECT @vNullCols = COALESCE(@vNullCols, N'') + dept_name + N'],0) as [' + dept_name + N'],coalesce(['
+			FROM (SELECT TOP 500 dept_name FROM #vdept ORDER BY ord, dept_name) x;
+			SELECT @vNullCols = N'rn, gubun, ' + REPLACE(N'coalesce([' + @vNullCols + N']', N',coalesce([]', N'');
+
+			-- 6) 동적 PIVOT (합계열 포함)
+			SET @vSQL = N'
+SELECT ' + @vNullCols + N'
+FROM (
+	SELECT dept_name, rn, gubun, amt FROM #vsource
+	UNION ALL
+	SELECT N''합계'' dept_name, rn, gubun, SUM(amt) amt FROM #vsource GROUP BY rn, gubun
+) AS S
+PIVOT ( SUM(amt) FOR dept_name IN (' + @vColumns + N') ) AS P
+ORDER BY rn;';
+			EXEC sp_executesql @vSQL;
+
+			DROP TABLE #vsource; DROP TABLE #vskel; DROP TABLE #vamt; DROP TABLE #vdept;
+		END TRY
+		BEGIN CATCH
+			SELECT ERROR_MESSAGE() AS ErrorMessage;
+		END CATCH;
+		RETURN;
+	END;
+
+
 	BEGIN TRY
 		BEGIN TRANSACTION;
 		--declare @YYYYMM varchar(10)='202510', @SITE varchar(4)='HQ';

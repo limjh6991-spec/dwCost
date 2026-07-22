@@ -1,13 +1,130 @@
-﻿CREATE                     Procedure DOI_ManufacturingExpenseByDept(
+
+
+CREATE OR ALTER Procedure DOI_ManufacturingExpenseByDept(
 	@YYYYMM varchar(10),
  	@SITE varchar(4),
  	@SEL_CODE varchar(10)
  )
 AS
 BEGIN
+		-- ============================================================
+	-- [VN 전용 동적 분기] doi_acct(상위계정과목/총원가_순서) + doi_dept_cost(코스트센터) 기반
+	--   섹션: 재료비/노무비/경비 (상위계정과목 계열로 판정, 제)직원급여=노무비 통합)
+	--   부서: 코스트센터(없으면 제조공통), 금액: 센터채움 차변-대변, 원재료=doi_mat_amt
+	-- ============================================================
+	IF @SITE = 'VN'
+	BEGIN
+		BEGIN TRY
+			DECLARE @vColumns NVARCHAR(4000), @vNullCols NVARCHAR(4000), @vSQL NVARCHAR(MAX);
+
+			-- 1) 부서(코스트센터) 목록 : 제조 발생센터 + 제조공통(부서없음) + 합계
+			IF OBJECT_ID('tempdb..#vdept') IS NOT NULL DROP TABLE #vdept;
+			SELECT dept_name, ord INTO #vdept FROM (
+				SELECT DISTINCT LTRIM(RTRIM(코스트센터)) dept_name, 1 ord
+					FROM doi_dept_cost
+					WHERE yyyymm=@YYYYMM AND site=@SITE AND 비용구분='제조'
+						AND LTRIM(RTRIM(ISNULL(코스트센터,'')))<>''
+				UNION SELECT N'제조공통', 0
+				UNION SELECT N'합계', 2
+			) t;
+
+			-- 2) 항목(상위계정과목) 금액 : 원재료(doi_mat_amt) + 부재료/노무/경비(doi_dept_cost 센터채움 차변-대변)
+			IF OBJECT_ID('tempdb..#vamt') IS NOT NULL DROP TABLE #vamt;
+			SELECT dept_name, 상위계정과목, sec, SUM(amt) amt
+			INTO #vamt
+			FROM (
+				SELECT N'제조공통' dept_name, N'원재료비' 상위계정과목, 1 sec, SUM(in_amt) amt
+					FROM doi_mat_amt
+					WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE
+				UNION ALL
+				SELECT CASE WHEN LTRIM(RTRIM(ISNULL(d.코스트센터,'')))='' THEN N'제조공통' ELSE LTRIM(RTRIM(d.코스트센터)) END dept_name,
+						a.상위계정과목,
+						CASE WHEN a.상위계정과목 IN (N'원재료비',N'부재료비',N'부재료비 (6272)') THEN 1
+							WHEN a.상위계정과목 IN (N'제)임원급여',N'제)직원급여',N'제)상여금',N'제)제수당',N'제)퇴직급여',N'제)주식보상비용') THEN 2
+							ELSE 3 END sec,
+						d.차변금액 - d.대변금액 amt
+					FROM doi_dept_cost d
+					JOIN doi_acct a ON a.yyyymm=d.yyyymm AND a.site=d.site AND a.ACCT=d.계정코드
+					WHERE d.yyyymm=@YYYYMM AND d.site=@SITE AND d.비용구분='제조'
+						AND LTRIM(RTRIM(ISNULL(d.코스트센터,'')))<>''
+						AND ISNULL(a.상위계정과목,'')<>''
+			) s
+			GROUP BY dept_name, 상위계정과목, sec;
+
+			-- 3) 골격(섹션 헤더 + 항목행) : 데이터에 존재하는 상위계정과목으로 동적 구성
+			IF OBJECT_ID('tempdb..#vskel') IS NOT NULL DROP TABLE #vskel;
+			;WITH items AS (
+				SELECT DISTINCT sec, 상위계정과목 FROM #vamt WHERE ISNULL(상위계정과목,'')<>''
+			), ordv AS (
+				SELECT i.sec, i.상위계정과목,
+					CASE i.sec
+						WHEN 1 THEN CASE WHEN i.상위계정과목=N'원재료비' THEN 1 WHEN i.상위계정과목 LIKE N'부재료%' THEN 2 ELSE 3 END
+						WHEN 2 THEN CASE i.상위계정과목 WHEN N'제)임원급여' THEN 1 WHEN N'제)직원급여' THEN 2 WHEN N'제)상여금' THEN 3 WHEN N'제)제수당' THEN 4 WHEN N'제)퇴직급여' THEN 5 WHEN N'제)주식보상비용' THEN 6 ELSE 9 END
+						ELSE ISNULL((SELECT TRY_CONVERT(int,NULLIF(MAX(a.총원가_순서),'')) FROM doi_acct a WHERE a.yyyymm=@YYYYMM AND a.site=@SITE AND a.상위계정과목=i.상위계정과목),99)
+					END wi
+				FROM items i
+			)
+			SELECT CAST(sec*10000 + ROW_NUMBER() OVER (PARTITION BY sec ORDER BY wi, 상위계정과목)*10 AS int) rn,
+					sec, 상위계정과목, N'    ' + 상위계정과목 gubun
+			INTO #vskel FROM ordv;
+			INSERT #vskel(rn, sec, 상위계정과목, gubun) VALUES
+				(10000, 1, N'__H1', N'  I. 재료비'),
+				(20000, 2, N'__H2', N'  II. 노무비'),
+				(30000, 3, N'__H3', N'  III. 경비'),
+				(90000, 9, N'__T',  N'  IV. 당기총제조원가');
+
+			-- 4) 소스테이블 : 부서 × 골격 크로스 + 금액(항목/헤더/총계)
+			IF OBJECT_ID('tempdb..#vsource') IS NOT NULL DROP TABLE #vsource;
+			;WITH amt_item AS (
+				SELECT v.dept_name, sk.rn, SUM(v.amt) amt
+				FROM #vamt v JOIN #vskel sk ON sk.sec=v.sec AND sk.상위계정과목=v.상위계정과목
+				GROUP BY v.dept_name, sk.rn
+			), amt_hdr AS (
+				SELECT v.dept_name, sk.rn, SUM(v.amt) amt
+				FROM #vamt v JOIN #vskel sk ON sk.rn IN (10000,20000,30000) AND sk.sec=v.sec
+				GROUP BY v.dept_name, sk.rn
+			), amt_tot AS (
+				SELECT dept_name, 90000 rn, SUM(amt) amt FROM #vamt GROUP BY dept_name
+			), amt_all AS (
+				SELECT * FROM amt_item UNION ALL SELECT * FROM amt_hdr UNION ALL SELECT * FROM amt_tot
+			)
+			SELECT b.dept_name, b.rn, b.gubun, CAST(ISNULL(a.amt,0) AS DECIMAL(18,2)) amt
+			INTO #vsource
+			FROM (SELECT d.dept_name, sk.rn, sk.gubun FROM #vdept d CROSS JOIN #vskel sk WHERE d.dept_name<>N'합계') b
+			LEFT JOIN amt_all a ON a.dept_name=b.dept_name AND a.rn=b.rn;
+
+			-- 5) 피벗 컬럼 동적 생성 (부서 순서: 제조공통 → 센터명 → 합계)
+			SELECT @vColumns = COALESCE(@vColumns + N'],[', N'') + dept_name
+			FROM (SELECT TOP 500 dept_name FROM #vdept ORDER BY ord, dept_name) x;
+			SELECT @vColumns = N'[' + @vColumns + N']';
+
+			SELECT @vNullCols = COALESCE(@vNullCols, N'') + dept_name + N'],0) as [' + dept_name + N'],coalesce(['
+			FROM (SELECT TOP 500 dept_name FROM #vdept ORDER BY ord, dept_name) x;
+			SELECT @vNullCols = N'rn, gubun, ' + REPLACE(N'coalesce([' + @vNullCols + N']', N',coalesce([]', N'');
+
+			-- 6) 동적 PIVOT (합계행 포함)
+			SET @vSQL = N'
+SELECT ' + @vNullCols + N'
+FROM (
+	SELECT dept_name, rn, gubun, amt FROM #vsource
+	UNION ALL
+	SELECT N''합계'' dept_name, rn, gubun, SUM(amt) amt FROM #vsource GROUP BY rn, gubun
+) AS S
+PIVOT ( SUM(amt) FOR dept_name IN (' + @vColumns + N') ) AS P
+ORDER BY rn;';
+			EXEC sp_executesql @vSQL;
+
+			DROP TABLE #vsource; DROP TABLE #vskel; DROP TABLE #vamt; DROP TABLE #vdept;
+		END TRY
+		BEGIN CATCH
+			SELECT ERROR_MESSAGE() AS ErrorMessage;
+		END CATCH;
+		RETURN;
+	END;
+
+
 	BEGIN TRY
-		-- [FIX] 읽기전용 집계(동적 PIVOT) 프로시저: 불필요한 트랜잭션 제거
-		--       (BEGIN/COMMIT 불일치·CATCH ROLLBACK 2차오류로 VN 실행 실패하던 원인)
+--		BEGIN TRANSACTION;
 		--declare @YYYYMM varchar(10)='202510', @SITE varchar(4)='HQ';
 		DECLARE @Columns VARCHAR(3000);
 		DECLARE @Null_Columns VARCHAR(3000);
@@ -18,7 +135,7 @@ BEGIN
 				FROM (		
 					select distinct dept, dept_name from (
 						select A.*, B.dept from (
-							select distinct 코스트센터 dept_name from doi_dept_cost where YYYYMM = @YYYYMM and site = @SITE and 비용구분 = '제조' 
+							select distinct 코스트센터 dept_name from doi_dept_cost where YYYYMM = @YYYYMM and site = @SITE and 비용구분 = '제조' and LTRIM(RTRIM(ISNULL(코스트센터,''))) != '' 
 							union 
 							select '제조공통' dept_name 
 							union 
@@ -41,7 +158,7 @@ BEGIN
 				FROM (		
 					select distinct dept, dept_name from (
 						select A.*, B.dept from (
-							select distinct 코스트센터 dept_name from doi_dept_cost where YYYYMM = @YYYYMM and site = @SITE and 비용구분 = '제조' 
+							select distinct 코스트센터 dept_name from doi_dept_cost where YYYYMM = @YYYYMM and site = @SITE and 비용구분 = '제조' and LTRIM(RTRIM(ISNULL(코스트센터,''))) != '' 
 							union 
 							select '제조공통' dept_name 
 							union 
@@ -66,7 +183,7 @@ with sourceTable as (
 		select * from (
 			select distinct dept_name from (
 				select A.*, B.dept from (
-					select distinct 코스트센터 dept_name from doi_dept_cost where YYYYMM = @YYYYMM and site = @SITE and 비용구분 = '제조' 
+					select distinct 코스트센터 dept_name from doi_dept_cost where YYYYMM = @YYYYMM and site = @SITE and 비용구분 = '제조' and LTRIM(RTRIM(ISNULL(코스트센터,''))) != '' 
 					union 
 					select '제조공통' dept_name 
 					union 
@@ -106,7 +223,7 @@ with sourceTable as (
 		union all select 24 rn, '    (1) 제)복리후생비' gubun
 /*		union all select 25 rn, '      1. 제)복리후생비-건강,장기요양보험' gubun
 		union all select 26 rn, '      2. 제)복리후생비-사내식대' gubun
-		union all select 27 rn, '      3. 제)복리후생비-외부식대등' gubun
+		union all select 27 rn, '  3. 제)복리후생비-외부식대등' gubun
 		union all select 28 rn, '      4. 제)복리후생비-경조사비' gubun
 		union all select 29 rn, '      5. 제)복리후생비-일반' gubun
 		union all select 30 rn, '      6. 제)복리후생비-의료' gubun*/
@@ -195,25 +312,26 @@ with sourceTable as (
 		)
 		union all 
 		select 2 rn, '    (1) 원재료_원장' gubun,'제조공통' dept_name, sum(in_amt) amt from doi_mat_amt where yyyymm = @YYYYMM and site = @SITE and sel_code = @SEL_CODE
-		and /*mat_gubun='제품' and*/ mat_class='원자재'
+		and /*mat_gubun='제품' and mat_class='원자재' */ 원가자재분류 ='원장'
 		union all 
 		select 3 rn, '    (2) 원재료_카세트 부품' gubun,'카세트팀' dept_name, sum(in_amt) amt from doi_mat_amt where yyyymm = @YYYYMM and site = @SITE and sel_code = @SEL_CODE
-		and mat_gubun='카세트제품' and mat_class='원자재'
+		and (( mat_gubun='카세트제품' and mat_class='원자재') OR 원가자재분류 ='카세트' )
 		union all 
 		select 4 rn, '    (3) 원재료_필름' gubun,'제조공통' dept_name, sum(in_amt) amt from doi_mat_amt where yyyymm = @YYYYMM and site = @SITE and sel_code = @SEL_CODE
-		and 자재대분류='필름'
+		and (자재대분류='필름' OR 원가자재분류 ='필름')
 		union all 
 		select 5 rn, '    (4) 원재료_약액' gubun,'제조공통' dept_name, sum(in_amt) amt from doi_mat_amt where yyyymm = @YYYYMM and site = @SITE and sel_code = @SEL_CODE
-		and (mat_class='약액' or 자재대분류='약액')		
+		and (mat_class='약액' or 자재대분류='약액'  OR 원가자재분류 ='약액')		
 		union all 
 		select 6 rn, '    (5) 부재료_트레이' gubun,'제조공통' dept_name, sum(in_amt) amt from doi_mat_amt where yyyymm = @YYYYMM and site = @SITE and sel_code = @SEL_CODE
-		and 자재대분류='트레이'
+		and ( 자재대분류='트레이' OR 원가자재분류 ='트레이' )
 		union all
 		select 7 rn, '    (6) 부재료_기타' gubun,'제조공통' dept_name, sum(in_amt) amt from doi_mat_amt where yyyymm = @YYYYMM and site = @SITE and sel_code = @SEL_CODE
-		and MAT_GUBUN+mat_class+coalesce(자재대분류,'1') IN ('제품'+'부자재'+'1','제품'+'부자재'+'부자재','제품'+'더미글라스'+'부자재','부자재'+'더미글라스'+'부자재','부자재'+'부자재'+'타부서 구매품')
+		and (MAT_GUBUN+mat_class+coalesce(자재대분류,'1') IN ('제품'+'부자재'+'1','제품'+'부자재'+'부자재','제품'+'더미글라스'+'부자재','부자재'+'더미글라스'+'부자재','부자재'+'부자재'+'타부서 구매품')
+		    AND COALESCE(NULLIF(LTRIM(RTRIM(원가자재분류)),''), N'기타') = N'기타')
 		union all
 		select 7 rn, '    (6) 부재료_기타' gubun,'카세트팀' dept_name, sum(in_amt) amt from doi_mat_amt where yyyymm = @YYYYMM and site = @SITE and sel_code = @SEL_CODE
-		and MAT_GUBUN+mat_class+coalesce(자재대분류,'1') = '카세트제품'+'부자재'+'1'
+		and ((MAT_GUBUN+mat_class+coalesce(자재대분류,'1') = '카세트제품'+'부자재'+'1' AND COALESCE(NULLIF(LTRIM(RTRIM(원가자재분류)),''), N'기타') = N'기타'))
 		union all 
 		select 8 rn, '  II. 노무비' gubun,코스트센터 dept_name, sum(차변금액-대변금액) amt from doi_dept_cost where yyyymm = @YYYYMM and site = @SITE and sel_code = @SEL_CODE
 		and 계정과목 in ('제)급여-임원','제)급여-직원','제)상여금-직원','제)제수당-연차','제)제수당-일반','제)퇴직급여-임원','제)퇴직급여-직원')
@@ -358,7 +476,7 @@ with sourceTable as (
 		union all 
 /*		select 75 rn, '      1. 제)소모품비-비품' gubun,코스트센터 dept_name, sum(차변금액-대변금액) amt from doi_dept_cost where yyyymm = @YYYYMM and site = @SITE and 계정과목='제)소모품비-비품' group by 코스트센터
 		union all 
-		select 76 rn, '      2. 제)소모품비-사무용품' gubun,코스트센터 dept_name, sum(차변금액-대변금액) amt from doi_dept_cost where yyyymm = @YYYYMM and site = @SITE and 계정과목='제)소모품비-사무용품' group by 코스트센터
+		select 76 rn, '     2. 제)소모품비-사무용품' gubun,코스트센터 dept_name, sum(차변금액-대변금액) amt from doi_dept_cost where yyyymm = @YYYYMM and site = @SITE and 계정과목='제)소모품비-사무용품' group by 코스트센터
 		union all 
 		select 77 rn, '      3. 제)소모품비-일반' gubun,코스트센터 dept_name, sum(차변금액-대변금액) amt from doi_dept_cost where yyyymm = @YYYYMM and site = @SITE and 계정과목='제)소모품비-일반' group by 코스트센터
 		union all */
@@ -449,15 +567,14 @@ order by 1,2 desc;';
 		-- 동적 SQL 실행
 		--select @SQL;
 		EXEC sp_executesql @SQL;
-		-- [FIX] COMMIT 제거(트랜잭션 미사용)
+--		COMMIT TRANSACTION;
 		
 -- 임시 테이블 정리
 DROP TABLE #sourceTable;
 	END TRY
 	
 	BEGIN CATCH
-	    -- [FIX] 트랜잭션 미사용이므로 무조건 ROLLBACK 제거(안전을 위해 잔여 트랜잭션만 정리)
-	    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+--	    ROLLBACK TRANSACTION;
 	    SELECT ERROR_MESSAGE() AS ErrorMessage;
 	END CATCH;
 END;
