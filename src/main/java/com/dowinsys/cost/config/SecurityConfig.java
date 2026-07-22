@@ -36,7 +36,7 @@ public class SecurityConfig{
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // WebMvcConfigurer 통합
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-            	.requestMatchers(HttpMethod.GET, "/", "/login", "/main", "/home/**", "/web/**", "/sample/**").permitAll() // Vue 라우팅 허용
+            	.requestMatchers(HttpMethod.GET, "/", "/index.html", "/login", "/main", "/WorkStatus", "/home/**", "/web/**", "/sample/**", "/c0*", "/c0*/**", "/m0*", "/m0*/**").permitAll() // Vue 라우팅(history 모드) 허용 - 페이지 라우트는 공개, 데이터는 /api/**로 보호
             	.requestMatchers("/login").permitAll()
             	.requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
