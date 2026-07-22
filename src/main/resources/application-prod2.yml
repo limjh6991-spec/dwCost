@@ -58,3 +58,6 @@ batch:
     enabled: false
   matScheduler:
     enabled: false		
+
+server:
+  port: 9090

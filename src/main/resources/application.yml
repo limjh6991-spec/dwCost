@@ -59,7 +59,7 @@ file:
     dir: C:/attach
 
 pdf:
-  base-uri: http://localhost:9090
+  base-uri: http://localhost:9091
 
 batch:
   scheduler:
@@ -68,5 +68,5 @@ batch:
     enabled: false
 
 server:
-  port: 9090
+  port: 9091
 
