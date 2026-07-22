@@ -199,7 +199,7 @@
         ORDER BY dept
     </select>
 
-    <select id="C0009005_Tab090004" resultType="CamelMap">
+    <select id="C0009005_Tab090004" resultType="Map">
         EXEC DOI_ManufacturingExpenseByDept @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE='ACTUAL';
     </select>
 

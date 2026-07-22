@@ -150,32 +150,48 @@ export default {
         site: this.params.site != null ? this.siteMap[this.params.site] : null,
       };
 
-      let searchParam = {
+      // 데이터를 먼저 조회하고, 결과 행의 키에서 동적 부서 컬럼을 도출한다.
+      // (별도 Col 쿼리에 의존하지 않으므로 HQ/VN 프로시저 출력과 항상 일치하고,
+      //  VN의 빈 코스트센터로 인한 'fieldName must be exists' 크래시가 발생하지 않는다.)
+      const rows = [];
+      await this.$axios.api.search({
         menuId: 'c0009000',
-        queryId: 'C0009008_Tab090008_Col',
+        queryId: 'C0009008_Tab090008',
         queryParams: params,
-        target: null,
-      };
+        target: rows,
+      });
 
-      let result1 = await this.$axios.api.search(searchParam);
       const gridField1 = _.cloneDeep(require(`@web/c0009000/js/TAB090008.js`));
       // 통화별 금액 표시: VINA·USD면 2자리, KRW/VND·본사면 정수
       const isVinaUsd = this.userAuthInfo.curProdCtg === 'VN' && (this.currency === 'USD' || this.currency == null);
       const amtFmt = isVinaUsd ? '#,##0.00' : '#,##0';
-      result1.forEach((item) => {
-        gridField1.fields.push({
-          fieldName: item.deptName,
-          valueType: 'number',
-          dataType: 'number',
-        });
 
+      // 기준 필드(gubun/합계/계획)와 rn을 제외한 나머지 키 = 부서 컬럼
+      const exclude = new Set([...gridField1.fields.map((f) => f.fieldName), 'rn']);
+      const deptCols = [];
+      const seen = new Set();
+      rows.forEach((r) => {
+        Object.keys(r).forEach((k) => {
+          if (k && !exclude.has(k) && !seen.has(k)) {
+            seen.add(k);
+            deptCols.push(k);
+          }
+        });
+      });
+
+      // 표시 순서 결정적으로: 관리공통/제조공통 먼저, 이후 이름순
+      deptCols.sort((a, b) => {
+        const rank = (n) => (n === '제조공통' || n === '관리공통' ? 0 : 1);
+        return rank(a) - rank(b) || String(a).localeCompare(String(b));
+      });
+
+      deptCols.forEach((name) => {
+        gridField1.fields.push({ fieldName: name, valueType: 'number', dataType: 'number' });
         gridField1.columns.push({
-          name: item.deptName,
-          fieldName: item.deptName,
+          name,
+          fieldName: name,
           width: 80,
-          header: {
-            text: item.deptName,
-          },
+          header: { text: name },
           autoFilter: false,
           numberFormat: amtFmt,
           styleName: 'tr',
@@ -188,13 +204,6 @@ export default {
       // 환산 대상 금액 컬럼(고정 + 동적 부서 컬럼) 수집
       this.currencyFields = gridField1.columns.filter((c) => c.numberFormat).map((c) => c.fieldName);
 
-      const rows = [];
-      await this.$axios.api.search({
-        menuId: 'c0009000',
-        queryId: 'C0009008_Tab090008',
-        queryParams: params,
-        target: rows,
-      });
       // 선택 통화(KRW/VND)면 월평균 환율로 금액 환산 표시 (USD면 원본)
       const displayRows = await this.buildCurrencyRows(rows);
       this.sgaGridRows.splice(0, this.sgaGridRows.length, ...displayRows);
