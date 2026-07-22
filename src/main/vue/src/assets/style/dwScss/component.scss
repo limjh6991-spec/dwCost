@@ -753,11 +753,11 @@ table{
   }
   .dw_mes .search_area .period .form-floating { width: 100% !important; }
   .dw_mes .search_area .period .form-datepicker { width: 100% !important; padding-left: 80px; }
-  /* 기준환율(baseRate) 박스가 너무 넓어 라벨 폭에 맞게 좁힘 */
-  .dw_mes .search_area [class*="col-"]:has(#baseRate) {
-    flex: 0 0 190px !important;
-    width: 190px !important;
-    max-width: 190px !important;
+  /* 통화(currencySelect) 박스가 너무 넓어 좁힘 (환율 아님) */
+  .dw_mes .search_area [class*="col-"]:has(#currencySelect) {
+    flex: 0 0 150px !important;
+    width: 150px !important;
+    max-width: 150px !important;
   }
   /* 고정폭 텍스트 라벨(.label_title)이 베트남어로 길어 잘리지 않도록 폭 자동 */
   .dw_mes .search_area .label_title {
