@@ -726,3 +726,26 @@ table{
  
   } 
 }
+/************************************
+*  베트남어(VI) 조회영역 라벨 폭 보정  *
+*  - 기준월/사업장/통화/기준환율 등 floating 라벨이 베트남어로 3~7배 길어져
+*    입력값/인접 필드와 겹침. 폰트 크기는 그대로 두고(가독성 유지)
+*    줄바꿈 방지 + 라벨 예약폭 확대로만 겹침을 완화(HQ 무변경).
+*  - [data-app-lang="vi"]일 때만 적용
+/************************************/
+[data-app-lang="vi"] {
+  .dw_mes .form-floating {
+    /* 폰트 크기는 유지, 줄바꿈만 방지 */
+    label { white-space: nowrap; }
+    /* 라벨 예약 폭이 좁아 값과 겹치므로 확대(폰트는 그대로) */
+    .form-control.label-60, .form-select.label-60 { padding-left: 84px; }
+    .form-control.label-70, .form-select.label-70 { padding-left: 96px; }
+    .form-control.label-80, .form-select.label-80 { padding-left: 108px; }
+    .form-control.label-90, .form-select.label-90 { padding-left: 120px; }
+  }
+  /* 고정폭 텍스트 라벨(.label_title)이 베트남어로 길어 잘리지 않도록 폭 자동 */
+  .dw_mes .search_area .label_title {
+    width: auto;
+    min-width: 100px;
+  }
+}
