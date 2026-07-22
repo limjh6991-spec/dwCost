@@ -119,6 +119,10 @@ app.mixin({
   methods: {
     translateDOM() {
       const currentLang = localStorage.getItem('locale') || 'ko';
+      // 언어별 CSS 스코프용: 루트에 현재 언어 표시(베트남어 폭/줄바꿈 조정 등)
+      if (document.documentElement.getAttribute('data-app-lang') !== currentLang) {
+        document.documentElement.setAttribute('data-app-lang', currentLang);
+      }
       if (currentLang !== 'vi') return;
       if (this.$el && this.$el.nodeType === 1) {
         const walk = (node) => {
@@ -153,5 +157,8 @@ app.mixin({
     }
   }
 });
+
+// 초기 페인트부터 언어 스코프가 적용되도록 루트 속성 설정
+document.documentElement.setAttribute('data-app-lang', localStorage.getItem('locale') || 'ko');
 
 app.mount('#app');

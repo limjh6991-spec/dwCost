@@ -305,3 +305,37 @@
     }
 }
 
+/************************************
+*  베트남어(VI) 상단 메뉴/탭 폭 보정   *
+*  - 베트남어는 라벨이 길어 고정폭 안에서 줄바꿈되며 겹침
+*  - [data-app-lang="vi"]일 때만 적용(한국어/HQ 레이아웃 무변경)
+/************************************/
+[data-app-lang="vi"] {
+    .gnb nav ul.depth1 {
+        > li {
+            min-width: auto;          // 200px 고정 해제 → 내용 폭
+            padding: 12px 16px;
+            font-size: 13px;
+            white-space: nowrap;      // 줄바꿈 방지 → 세로 겹침 제거
+            > a span {
+                white-space: nowrap;
+                letter-spacing: -0.3px;
+            }
+            &:hover { padding: 12px 20px; }
+            // 2뎁스 드롭다운은 폭 여유가 있으므로 줄바꿈 허용, 글자만 축소
+            ul.depth2 li {
+                font-size: 13px;
+                > a span { white-space: normal; }
+            }
+        }
+    }
+    // 펼쳐진(hover) 상태의 확장 패딩도 축소
+    .gnb nav.on ul.depth1 > li { padding: 12px 18px; }
+
+    // 열린 탭: 베트남어 탭명이 길어도 한 줄 유지(겹침/줄바꿈 방지)
+    .tab_wrap .custom-tab .menu,
+    .two_depth_tab .menu {
+        white-space: nowrap;
+    }
+}
+
