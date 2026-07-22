@@ -8,9 +8,9 @@ spring:
       password: Loved1113
 
   datasource:
-    url: jdbc:p6spy:sqlserver://10.100.40.244:1433;databaseName=도우제조MES시스템TEST;encrypt=true;trustServerCertificate=true
-    username: TEST_MES_USER
-    password: Dowoo1!
+    url: jdbc:p6spy:sqlserver://10.100.40.250:1433;databaseName=도우제조MES시스템TEST;encrypt=true;trustServerCertificate=true
+    username: bs
+    password: ehdndlstltm1!
 #    url: jdbc:p6spy:sqlserver://172.16.0.208;databaseName=도우제조MES시스템DB;encrypt=true;trustServerCertificate=true
 #    username: bs
 #    password: ehdndlstltm1!  
