@@ -1,4 +1,4 @@
-﻿CREATE       PROCEDURE DOI_PL_ByModel
+CREATE OR ALTER PROCEDURE DOI_PL_ByModel --운영
 (
     @YYYYMM VARCHAR(6),
     @SITE VARCHAR(4),
@@ -12,9 +12,13 @@ BEGIN
         BEGIN TRAN;
 
        	DECLARE @PivotColumns NVARCHAR(MAX);
-        DECLARE @Columns     VARCHAR(3000);
+        DECLARE @Columns     NVARCHAR(MAX);
         DECLARE @SQL         NVARCHAR(MAX);
        	DECLARE @SCOFTotal DECIMAL(18,2) = 0;
+		DECLARE @CostAdj     DECIMAL(18,2) = 0;
+		DECLARE @LossAdj     DECIMAL(18,2) = 0;    	
+
+       	DROP TABLE IF EXISTS #MODEL;
 
         ----------------------------------------------------------------------
         -- 1. 모델 목록 (#MODEL)
@@ -61,7 +65,35 @@ BEGIN
 		      ON MI.품번 = B.품번
 		    WHERE B.YYYYMM = @YYYYMM
 		      AND B.SITE   = @SITE
-		)
+		      
+		 UNION
+		 
+		 SELECT C.구분, C.MODEL
+		 FROM DOI_STCO C
+		    WHERE C.YYYYMM = @YYYYMM
+		      AND C.SITE   = @SITE
+		      AND C.SEL_CODE = @SEL_CODE
+		      AND C.MODEL = 'EXTRA'
+		UNION 
+		SELECT 구분, MODEL
+		FROM DOI_STCO
+		WHERE 1=1
+		   AND YYYYMM = @YYYYMM
+		   AND SITE   = @SITE
+		   AND SEL_CODE = @SEL_CODE
+		   AND ACCT_NAME LIKE '기타출고'
+		
+		UNION
+		
+		SELECT
+			O.구분,O.모델 AS model
+		FROM DOI_원장상계 O
+		WHERE 1=1
+		   AND YYYYMM = @YYYYMM
+		   AND SITE   = @SITE
+		   AND SEL_CODE = @SEL_CODE
+		   AND COALESCE(O.매출상계,0) <> 0
+		)  
 		SELECT DISTINCT
 		    model, 구분
 		INTO #MODEL
@@ -73,6 +105,21 @@ BEGIN
 		  AND site     = @SITE
 		  AND SEL_CODE = @SEL_CODE;
 
+		SELECT @CostAdj = COALESCE(ABS(SUM(ISNULL(대변금액,0))), 0)
+		FROM DOI_DEPT_COST WITH(NOLOCK)
+		WHERE YYYYMM   = @YYYYMM
+		  AND SITE     = @SITE
+		  AND SEL_CODE = @SEL_CODE
+		  AND 계정과목 = N'제품매출원가'
+		  AND 대변금액 <> 0;		 
+		 
+		SELECT @LossAdj = COALESCE(SUM(COALESCE(LOSS,0)), 0)
+		FROM DOI_COST WITH(NOLOCK)
+		WHERE YYYYMM   = @YYYYMM
+		  AND SITE     = @SITE
+		  AND SEL_CODE = @SEL_CODE; 
+		 
+		DROP TABLE IF EXISTS #sourceTable;
 		 ;WITH MERCH_ITEM AS (
 		    -- 당월/사업장/SEL 기준 "상품" 품번 목록
 		    SELECT DISTINCT M.품번
@@ -108,7 +155,7 @@ BEGIN
 		    LEFT JOIN MERCH_ITEM MI
 		      ON MI.품번 = A.품번
 		    WHERE A.YYYYMM = @YYYYMM
-		      AND A.SITE   = @SITE
+		 AND A.SITE   = @SITE
 		
 		    UNION ALL
 		
@@ -118,7 +165,7 @@ BEGIN
 		        , CASE 
 			          WHEN B.품번 LIKE N'VN%' THEN N'카세트'
 			          WHEN MI.품번 IS NOT NULL THEN N'구매'
-			          WHEN RIGHT(B.품번,1)='P' THEN N'양산'
+			       WHEN RIGHT(B.품번,1)='P' THEN N'양산'
 		          	ELSE N'개발'
 		          END AS 구분
 		        , B.품번
@@ -132,7 +179,7 @@ BEGIN
 		    WHERE B.YYYYMM = @YYYYMM
 		      AND B.SITE   = @SITE
 		
-		    UNION ALL
+		    /*UNION ALL
 		
 		    -- 기타매출(원천이 DOI_SLCO면 품번이 없으니 별도 라벨)
 		    SELECT
@@ -147,7 +194,7 @@ BEGIN
 		    WHERE S.YYYYMM = @YYYYMM
 		      AND S.SITE   = @SITE
 		      AND S.SEL_CODE = @SEL_CODE
-		      AND S.expen_sel명 = N'기타매출'
+		      AND S.expen_sel명 = N'기타매출'*/
         )
         , SALES_BASE AS (
             ------------------------------------------------------------------
@@ -155,15 +202,15 @@ BEGIN
             ------------------------------------------------------------------
             SELECT
 		          구분
-		        , model
+		        , model, 매출대분류
 		        , SUM(CASE WHEN 매출대분류 = N'제품' THEN amt ELSE 0 END) AS prod_sale_amt
 		        , SUM(CASE WHEN 매출대분류 = N'상품' THEN amt ELSE 0 END) AS merch_sale_amt
-		        , SUM(CASE WHEN 매출대분류 = N'기타' THEN amt ELSE 0 END) AS etc_sale_amt
+		        --, SUM(CASE WHEN 매출대분류 = N'기타' THEN amt ELSE 0 END) AS etc_sale_amt
 		        , SUM(amt) AS total_sale_amt
 		        , SUM(CASE WHEN 매출구분 = N'국내' THEN amt ELSE 0 END) AS domestic_sale_amt
 		        , SUM(CASE WHEN 매출구분 = N'해외' THEN amt ELSE 0 END) AS export_sale_amt
 		    FROM SALES_RAW
-		    GROUP BY 구분, model
+		    GROUP BY 구분, model, 매출대분류
         )
 		, MERCH_SALES AS (
 		    SELECT
@@ -212,12 +259,31 @@ BEGIN
 		        , SUM(ISNULL(S.IN_AMT, 0))  AS cur_mfg_cost_amt
 		        , CAST(NULL AS DECIMAL(18,2)) AS trans_out_amt
 		        , SUM(ISNULL(S.EOH_AMT, 0)) AS end_fg_amt
-		        , SUM(S.out_amt) AS prod_cogs_amt
+		        , SUM(S.out_amt) AS prod_cogs_amt --select *
 		    FROM DOI_STCO S
 		    WHERE S.YYYYMM   = @YYYYMM
 		      AND S.SITE     = @SITE
 		      AND S.SEL_CODE = @SEL_CODE
+		      AND S.COST_TYPE != 'LOSS'
 		    GROUP BY S.구분, S.MODEL
+		)
+		, STCO_OUTETC AS (
+			SELECT
+			      구분
+			    , MODEL AS model
+			    , SUM(
+			        CASE
+			            WHEN 구분 = N'양산'
+			            THEN -ISNULL(OUTETC_AMT,0)
+			            ELSE  ISNULL(OUTETC_AMT,0)
+			        END
+			      ) AS outetc_amt
+			FROM DOI_STCO
+			WHERE YYYYMM = @YYYYMM
+			  AND SITE = @SITE
+			  AND SEL_CODE = @SEL_CODE
+			  AND ISNULL(OUTETC_AMT,0) <> 0
+			GROUP BY 구분, MODEL
 		)
 		, COGS_BASE AS (
 		    -- 1) STCO 있는 모델: 상품원가 붙이기
@@ -233,8 +299,8 @@ BEGIN
 		        , S.prod_cogs_amt
 		    FROM STCO_BASE S
 		    LEFT JOIN MERCH_COGS_ALLOC MCA
-		      ON MCA.구분  = S.구분
-		     AND MCA.model = S.model
+		      ON MCA.구분  = S.구분   
+		      AND MCA.model = S.model
 		
 		    UNION ALL
 		
@@ -254,7 +320,7 @@ BEGIN
 		        SELECT 1
 		        FROM STCO_BASE S
 		        WHERE S.구분 = MCA.구분
-		    AND S.model = MCA.model
+		      AND S.model = MCA.model
 		    )
 		)
 		, COGS_ADJ AS (
@@ -268,7 +334,7 @@ BEGIN
 		      AND a.SEL_CODE = @SEL_CODE
 		      AND a.expen_sel명 = N'기타매출'
 		    GROUP BY a.구분, a.model
-		)                
+		)
         , SGNA_BASE AS (
             ------------------------------------------------------------------
             -- (4) 판관비
@@ -294,6 +360,27 @@ BEGIN
             FROM SGNA_BASE
             GROUP BY 구분, model
         )
+		, SCOF_BASE AS (
+		    SELECT
+		          M.구분
+		        , M.model
+		        , CAST(COALESCE(XX.scof_amt,0) AS DECIMAL(18,2)) AS scof_amt
+		    FROM #MODEL M
+		    LEFT JOIN (
+		        SELECT
+		              구분
+		            , 모델 AS model
+		            , SUM(COALESCE(매출상계,0)) AS scof_amt
+		        FROM DOI_원장상계
+		        where  1=1
+				   AND YYYYMM = @YYYYMM
+				   AND SITE   = @SITE
+				   AND SEL_CODE = @SEL_CODE
+		        GROUP BY 구분, 모델
+		    ) XX
+		       ON XX.model = M.model
+		      AND XX.구분 = M.구분
+		)        
 
         ----------------------------------------------------------------------
         -- 6. PL 헤더(I~III, IV 합계, V 영업이익) : PL_HEAD
@@ -302,14 +389,16 @@ BEGIN
             ------------------------------------------------------------------
             --  I. 매출액
             ------------------------------------------------------------------
-            SELECT 1 rn, '  I. 매출액' AS gubun, M.구분, M.model, ISNULL(S.total_sale_amt,0) amt FROM #MODEL M 
+            SELECT 1 rn, '  I. 매출액' AS gubun, M.구분, M.model, ISNULL(S.total_sale_amt,0) - ISNULL(SC.scof_amt,0) AS amt FROM #MODEL M 
+        LEFT JOIN SALES_BASE S ON S.model = M.model and S.구분 = M.구분
+			LEFT JOIN SCOF_BASE  SC ON SC.model = M.model AND SC.구분 = M.구분
+ 			-- WHERE S.매출대분류 != '기타'			
+            UNION ALL
+   			SELECT 2 rn, '    (1) 제품매출' gubun, M.구분, M.model, ISNULL(S.prod_sale_amt,0) FROM #MODEL M 
             LEFT JOIN SALES_BASE S ON S.model = M.model and S.구분 = M.구분
             UNION ALL
-            SELECT 2 rn, '    (1) 제품매출' gubun, M.구분, M.model, ISNULL(S.prod_sale_amt,0) FROM #MODEL M 
-            LEFT JOIN SALES_BASE S ON S.model = M.model and S.구분 = M.구분
-            UNION ALL
-            SELECT 3 rn, '    (2) 유상사급' gubun, M.구분, M.model, CAST(0 AS DECIMAL(18,2)) AS amt FROM #MODEL M 
-            LEFT JOIN SALES_BASE S ON S.model = M.model and S.구분 = M.구분
+            SELECT 3 rn, '    (2) 유상사급' gubun, M.구분, M.model, ISNULL(SC.scof_amt,0) AS amt FROM #MODEL M 
+			LEFT JOIN SCOF_BASE SC ON SC.model = M.model AND SC.구분 = M.구분
             UNION ALL
             SELECT 4 rn, '    (3) 상품매출' gubun, M.구분, M.model, ISNULL(S.merch_sale_amt,0) FROM #MODEL M
             LEFT JOIN SALES_BASE S ON S.model = M.model and S.구분 = M.구분
@@ -318,32 +407,34 @@ BEGIN
             --  II. 매출원가
             ------------------------------------------------------------------
             UNION ALL
-            SELECT 5 rn, '  II. 매출원가' gubun, M.구분, M.model, ISNULL(C.prod_cogs_amt,0) + ISNULL(C.merch_cogs_amt,0) amt FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분
+            SELECT 5 rn, '  II. 매출원가' gubun, M.구분, M.model, ISNULL(C.prod_cogs_amt,0) + ISNULL(C.merch_cogs_amt,0) + ISNULL(E.outetc_amt,0) /*- ISNULL(SC.scof_amt,0)*/ AS amt 
+            FROM #MODEL M 
+            LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분
+ 			LEFT JOIN STCO_OUTETC E ON E.model = M.model AND E.구분  = M.구분
+-- 			LEFT JOIN SCOF_BASE SC ON SC.model = M.model AND SC.구분 = M.구분
             UNION ALL
-            SELECT 6 rn, '    (1) 제품매출원가' gubun, M.구분, M.model, ISNULL(C.prod_cogs_amt,0)  + ISNULL(A.adj_amt,0) AS amt FROM #MODEL M 
+            SELECT 6 rn, '    (1) 제품매출원가' gubun, M.구분, M.model, ISNULL(C.prod_cogs_amt,0)  + ISNULL(A.adj_amt,0) + ISNULL(E.outetc_amt,0)  AS amt FROM #MODEL M 
             LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분 and C.구분 = M.구분
             LEFT JOIN COGS_ADJ  A ON A.model = M.model AND A.구분 = M.구분
-/*            UNION ALL
-          SELECT 7 rn, '      1. 기초제품재고액' gubun, M.구분, M.model, ISNULL(C.begin_fg_amt,0) FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분
-            UNION ALL
-            SELECT 8 rn, '      2. 당기제품제조원가' gubun, M.구분, M.model, ISNULL(C.cur_mfg_cost_amt,0) FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분
-            UNION ALL
-            SELECT 9 rn, '      3. 타계정으로제품대체액' gubun, M.구분, M.model, C.trans_out_amt FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분
-            UNION ALL
-            SELECT 10 rn, '      4. 기말제품재고액' gubun,  M.구분, M.model, ISNULL(C.end_fg_amt,0) FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분*/
+            LEFT JOIN STCO_OUTETC E ON E.model = M.model AND E.구분  = M.구분
             UNION ALL
             SELECT 11 rn, '    (2) 상품매출원가' gubun, M.구분, M.model, C.merch_cogs_amt FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분
-            /*UNION ALL
-            SELECT 12 rn, '      1. 당기상품매입액' gubun, M.구분, M.model, C.merch_purchase_amt FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분*/
-
+            UNION ALL
+            SELECT 12 rn, '    (3) 제품매출원가조정' gubun, M.구분, M.model, ISNULL(A.adj_amt,0) AS amt FROM #MODEL M
+            LEFT JOIN COGS_ADJ  A ON A.model = M.model AND A.구분 = M.구분       
             ------------------------------------------------------------------
             --  III. 매출총이익 = 매출액 - 매출원가
             ------------------------------------------------------------------
             UNION ALL
-            SELECT 13 rn, '  III. 매출총이익' gubun, M.구분, M.model, ISNULL(S.total_sale_amt,0) - ( ISNULL(C.prod_cogs_amt,0) + ISNULL(C.merch_cogs_amt,0) )  AS amt FROM #MODEL M
-            LEFT JOIN SALES_BASE S ON S.model = M.model and S.구분 = M.구분
-			LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분
-            ------------------------------------------------------------------
+            SELECT 13 rn, '  III. 매출총이익' gubun, M.구분, M.model, ISNULL(S.total_sale_amt,0) - ISNULL(SC.scof_amt,0)
+            - ( ISNULL(C.prod_cogs_amt,0) + ISNULL(C.merch_cogs_amt,0) + ISNULL(E.outetc_amt,0) + ISNULL(D.adj_amt,0) )  AS amt
+			FROM #MODEL M
+            LEFT JOIN SALES_BASE S ON S.model = M.model and S.구분 = M.구분            
+			LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분  --where M.model='818U'
+			LEFT JOIN COGS_ADJ D ON D.model = M.model and D.구분 = M.구분
+			LEFT JOIN STCO_OUTETC E ON E.model = M.model AND E.구분 = M.구분
+			LEFT JOIN SCOF_BASE SC ON SC.model = M.model AND SC.구분 = M.구분
+			------------------------------------------------------------------
             --  IV. 판매비와관리비 (전체 합계)
             ------------------------------------------------------------------
             UNION ALL
@@ -353,277 +444,55 @@ BEGIN
             --  V. 영업이익 = 매출총이익 - 판관비
             ------------------------------------------------------------------
             UNION ALL
-            SELECT 141 rn, '  V. 영업이익'+ REPLICATE(NCHAR(0x3000), 7) gubun, M.구분, M.model, ISNULL(S.total_sale_amt,0) - ( ISNULL(C.prod_cogs_amt,0) + ISNULL(C.merch_cogs_amt,0) ) - ISNULL(G.sgna_amt,0) amt FROM #MODEL M
-            LEFT JOIN SALES_BASE S ON S.model = M.model and S.구분 = M.구분
+            SELECT 141 rn, '  V. 영업이익'+REPLICATE(NCHAR(0x3000),7) gubun, M.구분, M.model, ISNULL(S.total_sale_amt,0) - ISNULL(SC.scof_amt,0)
+        - ( ISNULL(C.prod_cogs_amt,0) + ISNULL(C.merch_cogs_amt,0) + ISNULL(D.adj_amt,0) + ISNULL(E.outetc_amt,0) ) - ISNULL(G.sgna_amt,0)  AS amt 
+            FROM #MODEL M
+            LEFT JOIN SALES_BASE S ON S.model = M.model and S.구분 = M.구분           
             LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분
+			LEFT JOIN COGS_ADJ D ON D.model = M.model and D.구분 = M.구분
             LEFT JOIN SGNA_SUM G ON G.model = M.model and G.구분 = M.구분
+            LEFT JOIN STCO_OUTETC E ON E.model = M.model AND E.구분 = M.구분
+			LEFT JOIN SCOF_BASE SC ON SC.model = M.model AND SC.구분 = M.구분
         )
 
         ----------------------------------------------------------------------
         -- 7. 판관비 세부 항목(이미지 기준 풀버전) : PL_SGNA
         ----------------------------------------------------------------------
         , PL_SGNA AS (
-            SELECT 15 rn, '    (1) 판)임원급여' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)급여-임원' GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 16 rn, '      1. 판)급여-임원' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)급여-임원' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 17 rn, '    (2) 판)직원급여' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)급여-직원' GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 18 rn, '      1. 판)급여-직원' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)급여-직원' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 19 rn, '    (3) 판)상여금' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)상여금-직원' GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 20 rn, '      1. 판)상여금-직원' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)상여금-직원' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 21 rn, '    (4) 판)제수당' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME IN ('판)제수당-연차', '판)제수당-일반') GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 22 rn, '      1. 판)제수당-연차' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)제수당-연차' GROUP BY 구분, model
-            UNION ALL
-            SELECT 23 rn, '      2. 판)제수당-일반' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)제수당-일반' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 24 rn, '    (5) 판)퇴직급여' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME IN ('판)퇴직급여-임원', '판)퇴직급여-직원') GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 25 rn, '      1. 판)퇴직급여-임원' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)퇴직급여-임원' GROUP BY 구분, model
-            UNION ALL
-            SELECT 26 rn, '      2. 판)퇴직급여-직원' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)퇴직급여-직원' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 27 rn, '    (6) 판)복리후생비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE  WHERE SUB_NAME IN ('판)복리후생비-건강,장기요양보험', '판)복리후생비-사내식대', '판)복리후생비-외부식대등', '판)복리후생비-경조사비', '판)복리후생비-일반', '판)복리후생비-의료')  GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 28 rn, '      1. 판)복리후생비-건강,장기요양보험' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)복리후생비-건강,장기요양보험' GROUP BY 구분, model
-            UNION ALL
-            SELECT 29 rn, '      2. 판)복리후생비-사내식대' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)복리후생비-사내식대' GROUP BY 구분, model
-            UNION ALL
-    		SELECT 30 rn, '      3. 판)복리후생비-외부식대등' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE  WHERE SUB_NAME = '판)복리후생비-외부식대등' GROUP BY 구분, model
-            UNION ALL
-            SELECT 31 rn, '      4. 판)복리후생비-경조사비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)복리후생비-경조사비' GROUP BY 구분, model
-            UNION ALL
-            SELECT 32 rn, '      5. 판)복리후생비-일반' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)복리후생비-일반' GROUP BY 구분, model
-            UNION ALL
-            SELECT 33 rn, '      6. 판)복리후생비-의료' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)복리후생비-의료' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 34 rn, '    (7) 판)여비교통비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME IN ('판)여비교통비-국내출장경비(법인)', '판)여비교통비-국내출장경비(기타)', '판)여비교통비-해외출장경비', '판)여비교통비-기타') GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 35 rn, '      1. 판)여비교통비-국내출장경비(법인)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)여비교통비-국내출장경비(법인)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 36 rn, '      2. 판)여비교통비-국내출장경비(기타)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)여비교통비-국내출장경비(기타)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 37 rn, '      3. 판)여비교통비-해외출장경비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)여비교통비-해외출장경비' GROUP BY 구분, model
-            UNION ALL
-            SELECT 38 rn, '      4. 판)여비교통비-기타' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)여비교통비-기타' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 39 rn, '    (8) 판)접대비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME IN ('판)접대비-식대', '판)접대비-경조금', '판)접대비-일반') GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 40 rn, '      1. 판)접대비-식대' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)접대비-식대' GROUP BY 구분, model
-            UNION ALL
-            SELECT 41 rn, '      2. 판)접대비-경조금' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)접대비-경조금' GROUP BY 구분, model
-            UNION ALL
-            SELECT 42 rn, '      3. 판)접대비-일반' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)접대비-일반' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 43 rn, '    (9) 판)통신비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)통신비' GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 44 rn, '      1. 판)통신비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)통신비' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 45 rn, '    (10) 판)수도광열비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)수도광열비-수도료' GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 46, '      1. 판)수도광열비-수도료' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)수도광열비-수도료' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 47 rn, '    (11) 판)세금과공과' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE
-            WHERE SUB_NAME IN ('판)세금과공과-연금보험', '판)세금과공과-사업소세', '판)세금과공과-재산세종부세', '판)세금과공과-일반') GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 48 rn, '      1. 판)세금과공과-연금보험' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)세금과공과-연금보험' GROUP BY 구분, model
-   UNION ALL
-            SELECT 49 rn, '      2. 판)세금과공과-사업소세' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)세금과공과-사업소세' GROUP BY 구분, model
-UNION ALL
-           SELECT 50 rn, '      3. 판)세금과공과-재산세종부세' gubun, 구분, model, SUM(amt) AS amt FROM SGNA_BASE WHERE SUB_NAME = '판)세금과공과-재산세종부세' GROUP BY 구분, model
-            UNION ALL
-            SELECT 51 rn, '      4. 판)세금과공과-일반' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)세금과공과-일반' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 52 rn, '    (12) 판)감가상각비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE
-    		WHERE SUB_NAME IN ('판)감가상각비-건물', '판)감가상각비-기계장치', '판)감가상각비-차량운반구', '판)감가상각비-비품', '판)감가상각비-시설장치' ) GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 53 rn, '      1. 판)감가상각비-건물' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)감가상각비-건물' GROUP BY 구분, model
-            UNION ALL
-            SELECT 54 rn, '      2. 판)감가상각비-기계장치' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)감가상각비-기계장치' GROUP BY 구분, model
-            UNION ALL
-       		SELECT 55 rn, '      3. 판)감가상각비-차량운반구' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)감가상각비-차량운반구' GROUP BY 구분, model
-            UNION ALL
-            SELECT 56 rn, '      4. 판)감가상각비-비품' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)감가상각비-비품' GROUP BY 구분, model
-            UNION ALL
-            SELECT 57 rn, '      5. 판)감가상각비-시설장치' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)감가상각비-시설장치' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 58 rn, '    (13) 판)지급임차료' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME IN ('판)지급임차료-건물', '판)지급임차료-차량', '판)지급임차료-비품', '판)지급임차료-일반') GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 59 rn, '      1. 판)지급임차료-건물' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)지급임차료-건물' GROUP BY 구분, model
-            UNION ALL
-            SELECT 60 rn, '      2. 판)지급임차료-차량' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)지급임차료-차량' GROUP BY 구분, model
-            UNION ALL
-            SELECT 61 rn, '      3. 판)지급임차료-비품' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)지급임차료-비품' GROUP BY 구분, model
-            UNION ALL
-            SELECT 62 rn, '      4. 판)지급임차료-일반' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)지급임차료-일반' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 63 rn, '    (14) 판)수선비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)수선비' GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 64 rn, '      1. 판)수선비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)수선비' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 65 rn, '    (15) 판)보험료' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE  WHERE SUB_NAME IN ('판)보험료-산재.고용보험', '판)보험료-차량', '판)보험료-건물', '판)보험료-일반') GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 66 rn, '      1. 판)보험료-산재.고용보험' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)보험료-산재.고용보험' GROUP BY 구분, model
-     UNION ALL
-            SELECT 67 rn, '      2. 판)보험료-차량' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)보험료-차량' GROUP BY 구분, model
-            UNION ALL
-            SELECT 68 rn, '      3. 판)보험료-건물' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)보험료-건물' GROUP BY 구분, model
-            UNION ALL
-            SELECT 69 rn, '      4. 판)보험료-일반' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)보험료-일반' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 70 rn, '    (16) 판)차량유지비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME IN ('판)차량유지비-유류비', '판)차량유지비-관리비', '판)차량유지비-일반', '판)차량유지비-자동차세') GROUP BY 구분, model
-UNION ALL
-/*            SELECT 71 rn, '      1. 판)차량유지비-유류비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)차량유지비-유류비' GROUP BY 구분, model
-            UNION ALL
-            SELECT 72 rn, '      2. 판)차량유지비-관리비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)차량유지비-관리비' GROUP BY 구분, model
-            UNION ALL
-            SELECT 73 rn, '      3. 판)차량유지비-일반' gubun, 구분, model, SUM(amt) AS amt FROM SGNA_BASE WHERE SUB_NAME = '판)차량유지비-일반' GROUP BY 구분, model
-            UNION ALL
-            SELECT 74 rn, '      4. 판)차량유지비-자동차세' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)차량유지비-자동차세' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 75 rn, '    (17) 판)경상연구개발비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE
-            WHERE SUB_NAME IN ('판)경상연구개발비-일반', '판)경상연구개발비-개발소모품', '판)경상연구개발비-지급수수료', '판)경상연구개발비-국내출장경비(법인)', '판)경상연구개발비-국내출장경비(기타)', '판)경상연구개발비-해외출장경비', 
-            '판)경상연구개발비-해외출장경비(여비)', '판)경상연구개발비-사내식대', '판)경상연구개발비-외부식대등', '판)경상연구개발비-경조사비', '판)경상연구개발비(차량유지비-유류비)', '판)경상연구개발비(차량유지비-보험료)', '판)경상연구개발비(차량유지비-관리비)', 
-            '판)경상연구개발비(차량유지비-일반)', '판)경상연구개발비(차량유지비-자동차세)', '판)경상연구개발비(급여-임원)', '판)경상연구개발비(급여-직원)', '판)경상연구개발비(상여금-직원)', '판)경상연구개발비(제수당-연차)', '판)경상연구개발비(제수당-일반)', 
-            '판)경상연구개발비(잡급)', '판)경상연구개발비(퇴직급여-임원)', '판)경상연구개발비(퇴직급여-직원)', '판)경상연구개발비-건강,장기요양보험', '판)경상연구개발비-연금보험', '판)경상연구개발비-산재.고용보험', '판)경상연구개발비(지급임차료-건물)', 
-            '판)경상연구개발비(지급임차료-일반)', '판)경상연구개발비(지급임차료-차량)', '판)경상연구개발비-특허.심사료') GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 76 rn, '      1. 판)경상연구개발비-일반' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-일반' GROUP BY 구분, model
-            UNION ALL
-            SELECT 77 rn, '      2. 판)경상연구개발비-개발소모품' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-개발소모품' GROUP BY 구분, model
-            UNION ALL
-            SELECT 78 rn, '      3. 판)경상연구개발비-지급수수료' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-지급수수료' GROUP BY 구분, model
-            UNION ALL
-            SELECT 79 rn, '      4. 판)경상연구개발비-국내출장경비(법인)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-국내출장경비(법인)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 80 rn, '      5. 판)경상연구개발비-국내출장경비(기타)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-국내출장경비(기타)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 81 rn, '      6. 판)경상연구개발비-해외출장경비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-해외출장경비' GROUP BY 구분, model
-            UNION ALL
-            SELECT 82 rn, '      7. 판)경상연구개발비-해외출장경비(여비)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-해외출장경비(여비)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 83 rn, '      8. 판)경상연구개발비-사내식대' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-사내식대' GROUP BY 구분, model
-            UNION ALL
-            SELECT 84 rn, '      9. 판)경상연구개발비-외부식대등' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-외부식대등' GROUP BY 구분, model
-            UNION ALL
-            SELECT 85 rn, '     10. 판)경상연구개발비-경조사비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-경조사비' GROUP BY 구분, model
-            UNION ALL
-            SELECT 86 rn, '     11. 판)경상연구개발비(차량유지비-유류비)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(차량유지비-유류비)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 87 rn, '     12. 판)경상연구개발비(차량유지비-보험료)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(차량유지비-보험료)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 88 rn, '     13. 판)경상연구개발비(차량유지비-관리비)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(차량유지비-관리비)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 89 rn, '     14. 판)경상연구개발비(차량유지비-일반)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(차량유지비-일반)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 90 rn, '     15. 판)경상연구개발비(차량유지비-자동차세)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(차량유지비-자동차세)' GROUP BY 구분, model
-            UNION ALL
- SELECT 91 rn, '     16. 판)경상연구개발비(급여-임원)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(급여-임원)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 92 rn, '     17. 판)경상연구개발비(급여-직원)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(급여-직원)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 93 rn, '     18. 판)경상연구개발비(상여금-직원)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(상여금-직원)' GROUP BY 구분, model
-   			UNION ALL
-   			SELECT 94 rn, '     19. 판)경상연구개발비(제수당-연차)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(제수당-연차)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 95 rn, '     20. 판)경상연구개발비(제수당-일반)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(제수당-일반)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 96 rn, '     21. 판)경상연구개발비(잡급)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(잡급)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 97 rn, '     22. 판)경상연구개발비(퇴직급여-임원)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(퇴직급여-임원)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 98 rn, '     23. 판)경상연구개발비(퇴직급여-직원)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(퇴직급여-직원)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 99 rn, '     24. 판)경상연구개발비-건강,장기요양보험' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-건강,장기요양보험' GROUP BY 구분, model
-            UNION ALL
-            SELECT 100 rn, '     25. 판)경상연구개발비-연금보험' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-연금보험' GROUP BY 구분, model
-            UNION ALL
-            SELECT 101 rn, '    26. 판)경상연구개발비-산재.고용보험' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-산재.고용보험' GROUP BY 구분, model
-            UNION ALL
-            SELECT 102 rn, '    27. 판)경상연구개발비(지급임차료-건물)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(지급임차료-건물)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 103 rn, '    28. 판)경상연구개발비(지급임차료-일반)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(지급임차료-일반)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 104 rn, '    29. 판)경상연구개발비(지급임차료-차량)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비(지급임차료-차량)' GROUP BY 구분, model
-            UNION ALL
-            SELECT 105 rn, '    30. 판)경상연구개발비-특허.심사료' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)경상연구개발비-특허.심사료' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 106 rn, '    (18) 판)운반비' gubun, 구분, model, SUM(amt)amt FROM SGNA_BASE WHERE SUB_NAME IN ('판)운반비-국내운송료', '판)운반비-해외운송료') GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 107 rn, '      1. 판)운반비-국내운송료' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)운반비-국내운송료' GROUP BY 구분, model
-            UNION ALL
-            SELECT 108 rn, '      2. 판)운반비-해외운송료' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)운반비-해외운송료' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 109 rn, '    (19) 판)교육훈련비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)교육훈련비-사외' GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 110 rn, '      1. 판)교육훈련비-사외' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)교육훈련비-사외' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 111 rn, '    (20) 판)도서인쇄비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)도서인쇄비' GROUP BY 구분, model
-     UNION ALL
-/*            SELECT 112 rn, '      1. 판)도서인쇄비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)도서인쇄비' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 113 rn, '    (21) 판)소모품비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME IN ('판)소모품비-비품', '판)소모품비-사무용품', '판)소모품비-전산용품', '판)소모품비-일반') GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 114 rn, '      1. 판)소모품비-비품' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)소모품비-비품' GROUP BY 구분, model
-            UNION ALL
-            SELECT 115 rn, '      2. 판)소모품비-사무용품' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)소모품비-사무용품' GROUP BY 구분, model
-            UNION ALL
-            SELECT 116 rn, '      3. 판)소모품비-전산용품' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)소모품비-전산용품' GROUP BY 구분, model
-            UNION ALL
-            SELECT 117 rn, '      4. 판)소모품비-일반' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)소모품비-일반' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 118 rn, '    (22) 판)지급수수료' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME IN ('판)지급수수료-건물관리비', '판)지급수수료-보안용역료', '판)지급수수료-유지보수료', '판)지급수수료-금융.제증명', 
-            '판)지급수수료-감사.법률.자문', '판)지급수수료-특허.심사료', '판)지급수수료-일반') GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 119 rn, '      1. 판)지급수수료-건물관리비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)지급수수료-건물관리비' GROUP BY 구분, model
-            UNION ALL
-            SELECT 120 rn, '      2. 판)지급수수료-보안용역료' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)지급수수료-보안용역료' GROUP BY 구분, model
-            UNION ALL
-            SELECT 121 rn, '      3. 판)지급수수료-유지보수료' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)지급수수료-유지보수료' GROUP BY 구분, model
-            UNION ALL
-            SELECT 122 rn, '      4. 판)지급수수료-금융.제증명' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)지급수수료-금융.제증명' GROUP BY 구분, model
-            UNION ALL
-            SELECT 123 rn, '      5. 판)지급수수료-감사.법률.자문' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)지급수수료-감사.법률.자문' GROUP BY 구분, model
-            UNION ALL
-            SELECT 124 rn, '      6. 판)지급수수료-특허.심사료' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)지급수수료-특허.심사료' GROUP BY 구분, model
-            UNION ALL
-            SELECT 125 rn, '      7. 판)지급수수료-일반' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)지급수수료-일반' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 126 rn, '    (23) 판)광고선전비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME IN ('판)광고선전비-IR', '판)광고선전비-일반') GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 127 rn, '      1. 판)광고선전비-IR' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)광고선전비-IR' GROUP BY 구분, model
-            UNION ALL
-            SELECT 128 rn, '      2. 판)광고선전비-일반' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)광고선전비-일반' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 129 rn, '    (24) 판)무형자산상각비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)무형자산상각비' GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 130 rn, '  1. 판)무형자산상각비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)무형자산상각비' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 131 rn, '    (25) 판)견본비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)견본비' GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 132 rn, '      1. 판)견본비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)견본비' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 133 rn, '    (26) 판)사용권자산감가상각비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME IN ('판)사용권자산감가상각비-건물', '판)사용권자산감가상각비-차량') GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 134 rn, '      1. 판)사용권자산상각비-건물' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)사용권자산상각비-건물' GROUP BY 구분, model
-            UNION ALL
-SELECT 135 rn, '      2. 판)사용권자산상각비-차량' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)사용권자산상각비-차량' GROUP BY 구분, model
-           UNION ALL*/
-            SELECT 136 rn, '    (27) 판)주식보상비용' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)주식보상비용' GROUP BY 구분, model
-            UNION ALL
-/*            SELECT 137 rn, '      1. 판)주식보상비용' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE 
-            WHERE SUB_NAME = '판)주식보상비용' GROUP BY 구분, model
-            UNION ALL*/
-            SELECT 138 rn, '    (28) 판)해외시장개척비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME IN ('판)해외시장개척비', '판)해외시장개척비(여비)') GROUP BY 구분, model
-/*       		UNION ALL
-     		SELECT 139 rn, '  1. 판)해외시장개척비' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)해외시장개척비' GROUP BY 구분, model
-            UNION ALL
-            SELECT 140 rn, '      2. 판)해외시장개척비(여비)' gubun, 구분, model, SUM(amt) amt FROM SGNA_BASE WHERE SUB_NAME = '판)해외시장개척비(여비)' GROUP BY 구분, model*/
-        )
+        	SELECT
+			    14 + A.총원가_순서 AS rn,
+			    N'    (' + CAST(A.총원가_순서 AS varchar(2)) + N') ' + A.상위계정과목 AS gubun,
+			    M.구분,
+			    M.model,
+			    CAST(ISNULL(SUM(B.dist_amt), 0) AS DECIMAL(18, 2)) AS amt
+			FROM doi_acct A WITH (NOLOCK)
+			CROSS JOIN #MODEL M
+			-- VN: doi_smce_cost.sub_name(원장명)은 doi_acct.acct_name과 매칭 안 되므로
+			--     doi_dept_cost(판관)를 브리지로 sub_name→계정과목→계정코드→doi_acct.acct 연결
+			LEFT JOIN (SELECT DISTINCT yyyymm, site, 계정과목, 계정코드 FROM doi_dept_cost WHERE 비용구분 = N'판관') dc
+			    ON @SITE = N'VN' AND dc.yyyymm = A.yyyymm AND dc.site = A.site AND dc.계정코드 = A.acct
+			LEFT JOIN doi_smce_cost B WITH (NOLOCK)
+			    ON B.yyyymm   = A.yyyymm
+			   AND B.site     = A.site
+			   AND B.sel_code = A.sel_code
+			   AND ( (@SITE <> N'VN' AND B.sub_name = A.acct_name)
+			         OR (@SITE = N'VN' AND B.sub_name = dc.계정과목) )
+			   AND B.구분      = M.구분
+			   AND B.model    = M.model
+			WHERE A.YYYYMM = @YYYYMM
+		      AND A.SITE   = @SITE
+		      AND A.SEL_CODE = @SEL_CODE
+			  AND ( (@SITE <> N'VN' AND A.상위계정과목 IN (
+			    '판)임원급여','판)직원급여','판)상여금','판)제수당','판)퇴직급여','판)복리후생비',
+			    '판)여비교통비','판)접대비','판)통신비','판)수도광열비','판)세금과공과','판)감가상각비',
+			    '판)지급임차료','판)수선비','판)보험료','판)차량유지비','판)경상연구개발비','판)운반비',
+			    '판)교육훈련비','판)도서인쇄비','판)소모품비','판)지급수수료','판)광고선전비',
+			    '판)무형자산상각비','판)견본비','판)사용권자산감가상각비','판)주식보상비용','판)해외시장개척비'
+			  ))
+			    OR (@SITE = N'VN' AND A.상위계정과목 LIKE N'판)%' AND NULLIF(A.총원가_순서, N'') IS NOT NULL) )
+			GROUP BY
+			    M.구분, M.model, A.상위계정과목, A.총원가_순서
+		)
 
         ----------------------------------------------------------------------
         -- 8. PL_HEAD + PL_SGNA 통합 소스 : PL_SOURCE
@@ -634,7 +503,7 @@ SELECT 135 rn, '      2. 판)사용권자산상각비-차량' gubun, 구분, mod
 
             UNION ALL
 
-            SELECT rn, gubun, 구분, model, amt
+   SELECT rn, gubun, 구분, model, amt
             FROM PL_SGNA
         )
 
@@ -661,7 +530,25 @@ SELECT 135 rn, '      2. 판)사용권자산상각비-차량' gubun, 구분, mod
 		    , gubun
             , SUM(amt) AS amt
         FROM #sourceTable
-        GROUP BY rn, gubun;
+        GROUP BY rn, gubun order by rn;
+       
+--		INSERT INTO #sourceTable (구분, model, rn, gubun, amt)
+--		VALUES (N'', N'Z합계', 12, N'    (3) 제품매출원가조정', @CostAdj + @LossAdj);
+		
+		UPDATE #sourceTable
+		SET amt = COALESCE(amt,0) /*+ @CostAdj + @LossAdj*/
+		WHERE model = N'Z합계'
+		  AND rn = 5;
+		
+--		UPDATE #sourceTable
+--		SET amt = COALESCE(amt,0) - @SCOFTotal--- (@CostAdj + @LossAdj)
+--		WHERE model = N'Z합계'
+--		  AND rn = 13;
+		
+		UPDATE #sourceTable
+		SET amt = COALESCE(amt,0) -- - (@CostAdj + @LossAdj)
+		WHERE model = N'Z합계'
+		  AND rn = 141;	
 
        -- 개발 모델 합계
 		INSERT INTO #sourceTable (구분, model, rn, gubun, amt)
@@ -709,14 +596,14 @@ SELECT 135 rn, '      2. 판)사용권자산상각비-차량' gubun, 구분, mod
 		WHERE 구분 = N'구매'
 		GROUP BY rn, gubun;	
 	
-		INSERT INTO #sourceTable (구분, model, rn, gubun, amt)
+/*		INSERT INTO #sourceTable (구분, model, rn, gubun, amt)
 		VALUES (N'', N'Z합계', 3, N'    (2) 유상사급', @SCOFTotal);
 	
 		UPDATE #sourceTable
 		SET amt = COALESCE(amt,0) - @SCOFTotal
 		WHERE model = N'Z합계'
 		  AND rn    = 1
-		  AND gubun = N'  I. 매출액';
+		  AND gubun = N'  I. 매출액';*/
        
         ----------------------------------------------------------------------
         -- 11. PIVOT용 컬럼
@@ -733,10 +620,11 @@ SELECT 135 rn, '      2. 판)사용권자산상각비-차량' gubun, 구분, mod
 		        model_sort = model,
 		        col_name = 구분 + model
 		    FROM #MODEL
+		    WHERE model != ''  --202604월 이전 유상사급 때문에 
 		
 		    UNION ALL SELECT 910, N'ZZZ', N'양산Z합계양산'
 		    UNION ALL SELECT 920, N'ZZZ', N'개발Z합계개발'
-		    UNION ALL SELECT 930, N'ZZZ', N'카세트Z합계카세트'
+		   UNION ALL SELECT 930, N'ZZZ', N'카세트Z합계카세트'
 		    UNION ALL SELECT 940, N'ZZZ', N'구매Z합계구매'
 		    UNION ALL SELECT 999, N'ZZZ', N'Z합계'
 		)
