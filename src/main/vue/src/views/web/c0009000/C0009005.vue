@@ -9,12 +9,17 @@
     <template #tab-content-TAB090005>
       <TAB090005 />
     </template>
+    <!-- Tab 3 부서별 집계표(누적) -->
+    <template #tab-content-TAB090004_Cum>
+      <TAB090004Cum />
+    </template>
   </auth-tabs>
 </template>
 
 <script>
 import TAB090004 from '@web/c0009000/tab/TAB090004.vue';
 import TAB090005 from '@web/c0009000/tab/TAB090005.vue';
+import TAB090004Cum from '@web/c0009000/tab/TAB090004_Cum.vue';
 
 export default {
   name: 'DW_C0009005',
@@ -22,6 +27,7 @@ export default {
   components: {
     TAB090004,
     TAB090005,
+    TAB090004Cum,
   },
   watch: {},
   data() {
@@ -34,3 +40,4 @@ export default {
   methods: {},
 };
 </script>
+

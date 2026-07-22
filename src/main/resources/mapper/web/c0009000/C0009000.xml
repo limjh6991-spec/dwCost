@@ -550,5 +550,86 @@
         <if test="selCode != null and selCode != ''">
             and SEL_CODE = #{selCode}
         </if>
-    </select> 
+    </select>
+
+    <!-- 제조경비 부서별 집계표(누적) - 컬럼 조회 -->
+    <select id="C0009005_Tab090004_Cum_Col" resultType="CamelMap">
+        SELECT TOP 500 dept_name
+        FROM (
+            select distinct dept, dept_name from (
+                select A.*, B.dept from (
+                select distinct 코스트센터 dept_name from doi_dept_cost
+                where 1=1
+                <if test="fromYyyymm != null and fromYyyymm != '' and toYyyymm != null and toYyyymm != ''">
+                    AND YYYYMM BETWEEN #{fromYyyymm} AND #{toYyyymm}
+                </if>
+                <if test="site != null and site != ''">
+                    AND SITE = #{site}
+                </if>
+                and 비용구분 = '제조'
+                union
+                select '제조공통' dept_name
+                union
+                select '카세트팀' dept_name
+            ) A
+            left join (
+                select MIN(dept) dept, dept_name from doi_dept
+                where 1=1
+                <if test="fromYyyymm != null and fromYyyymm != '' and toYyyymm != null and toYyyymm != ''">
+                    AND YYYYMM BETWEEN #{fromYyyymm} AND #{toYyyymm}
+                </if>
+                <if test="site != null and site != ''">
+                    AND SITE = #{site}
+                </if>
+                GROUP BY dept_name
+            ) B
+            on A.dept_name = B.dept_name
+            ) A
+        )A
+        ORDER BY dept
+    </select>
+
+    <!-- 제조경비 부서별 집계표(누적) - 데이터 조회 -->
+    <select id="C0009005_Tab090004_Cum" resultType="CamelMap">
+        EXEC DOI_ManufacturingExpenseByDept_Cum @FROM_YYYYMM=#{fromYyyymm}, @TO_YYYYMM=#{toYyyymm}, @SITE=#{site}, @SEL_CODE='ACTUAL';
+    </select>
+
+    <!-- 판매관리비 부서별 집계표(누적) - 컬럼 조회 -->
+    <select id="C0009008_Tab090008_Cum_Col" resultType="CamelMap">
+        SELECT TOP 500 dept_name
+        FROM (
+            select distinct dept, dept_name from (
+                select A.*, B.dept from (
+                select distinct 코스트센터 dept_name from doi_dept_cost
+                where 1=1
+                <if test="fromYyyymm != null and fromYyyymm != '' and toYyyymm != null and toYyyymm != ''">
+                    AND YYYYMM BETWEEN #{fromYyyymm} AND #{toYyyymm}
+                </if>
+                <if test="site != null and site != ''">
+                    AND SITE = #{site}
+                </if>
+                and 비용구분 = '판관'
+            ) A
+            left join (
+                select MIN(dept) dept, dept_name from doi_dept
+                where 1=1
+                <if test="fromYyyymm != null and fromYyyymm != '' and toYyyymm != null and toYyyymm != ''">
+                    AND YYYYMM BETWEEN #{fromYyyymm} AND #{toYyyymm}
+                </if>
+                <if test="site != null and site != ''">
+                    AND SITE = #{site}
+                </if>
+                GROUP BY dept_name
+            ) B
+            on A.dept_name = B.dept_name
+            ) A
+        )A
+        ORDER BY dept
+    </select>
+
+    <!-- 판매관리비 부서별 집계표(누적) - 데이터 조회 -->
+    <select id="C0009008_Tab090008_Cum" resultType="Map">
+        EXEC DOI_SalesAdminByDept_Cum @FROM_YYYYMM=#{fromYyyymm}, @TO_YYYYMM=#{toYyyymm}, @SITE=#{site};
+    </select>
+ 
 </mapper>
