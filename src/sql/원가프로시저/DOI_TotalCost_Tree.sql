@@ -1,4 +1,4 @@
-﻿CREATE     PROCEDURE DOI_TotalCost_Tree
+CREATE OR ALTER PROCEDURE DOI_TotalCost_Tree
 (
     @YYYYMM VARCHAR(6),
     @SITE   VARCHAR(4),
@@ -535,7 +535,12 @@ BEGIN
          SELECT 15+총원가_순서 rn, N'    ('+CAST(총원가_순서 as varchar(1))+') '+b.상위계정과목 as gubun, a.구분, a.model,
                    SUM(out_amt) AS amt
             FROM doi_stco a WITH(NOLOCK)
-            inner join doi_acct b on(a.yyyymm=b.yyyymm and a.site=b.site and a.acct_name=b.acct_name )
+            LEFT JOIN (SELECT DISTINCT yyyymm, site, 계정과목, 계정코드 FROM doi_dept_cost) dc
+                   ON dc.yyyymm=a.yyyymm AND dc.site=a.site AND dc.계정과목=a.acct_name
+            inner join doi_acct b on(a.yyyymm=b.yyyymm and a.site=b.site
+                   and ( b.acct_name = a.acct_name
+                         OR ( b.acct = dc.계정코드
+                              AND NOT EXISTS (SELECT 1 FROM doi_acct bx WHERE bx.yyyymm=a.yyyymm AND bx.site=a.site AND bx.acct_name=a.acct_name) ) ) )
             WHERE a.yyyymm = @YYYYMM
               AND a.site   = @SITE
               AND a.sel_code = @SELCODE
@@ -552,7 +557,12 @@ BEGIN
                  SELECT 22+총원가_순서 rn, N'    ('+CAST(총원가_순서 as varchar(2))+') '+b.상위계정과목 as gubun, a.구분, a.model,
                    SUM(out_amt) AS amt
             FROM doi_stco a WITH(NOLOCK)
-            inner join doi_acct b on(a.yyyymm=b.yyyymm and a.site=b.site and a.acct_name=b.acct_name )
+            LEFT JOIN (SELECT DISTINCT yyyymm, site, 계정과목, 계정코드 FROM doi_dept_cost) dc
+                   ON dc.yyyymm=a.yyyymm AND dc.site=a.site AND dc.계정과목=a.acct_name
+            inner join doi_acct b on(a.yyyymm=b.yyyymm and a.site=b.site
+                   and ( b.acct_name = a.acct_name
+                         OR ( b.acct = dc.계정코드
+                              AND NOT EXISTS (SELECT 1 FROM doi_acct bx WHERE bx.yyyymm=a.yyyymm AND bx.site=a.site AND bx.acct_name=a.acct_name) ) ) )
             WHERE a.yyyymm = @YYYYMM
               AND a.site   = @SITE
               AND a.sel_code = @SELCODE
@@ -680,48 +690,31 @@ BEGIN
 		),
     /* ====== VI 판관비 ====== */
 		SGA_BASE AS (
-			SELECT 47+총원가_순서 rn,
-			       N'    ('+CAST(총원가_순서 as varchar(2))+') '+b.상위계정과목 as gubun,
+			SELECT 47+b.총원가_순서 rn,
+			       N'    ('+CAST(b.총원가_순서 as varchar(2))+') '+b.상위계정과목 as gubun,
 			       a.구분,
 			       a.model,
-			       SUM(dist_amt) AS amt --select *
+			       SUM(a.dist_amt) AS amt
 			FROM doi_smce_cost a WITH(NOLOCK)
+			-- VN: sub_name(원장명)은 doi_acct.acct_name과 매칭 안 되므로 doi_dept_cost(판관) 브리지
+			left join (select distinct yyyymm, site, 계정과목, 계정코드 from doi_dept_cost where 비용구분=N'판관') dc
+			  on @SITE=N'VN' and dc.yyyymm=a.yyyymm and dc.site=a.site and dc.계정과목=a.sub_name
 			inner join doi_acct b
-			  on (a.yyyymm=b.yyyymm and a.site=b.site and a.sub_name=b.	acct_name)
-			WHERE a.yyyymm = '202508'
-			  AND a.site   = 'HQ'
-			  AND a.sel_code = 'ACTUAL'
-			  AND b.상위계정과목 in (
-				'판)임원급여',
-				'판)직원급여',
-				'판)상여금',
-				'판)제수당',
-				'판)퇴직급여',
-				'판)복리후생비',
-				'판)여비교통비',  
-			    '판)접대비',
-			    '판)통신비',
-			    '판)수도광열비',
-			    '판)세금과공과',
-			    '판)감가상각비',
-			    '판)지급임차료',
-			    '판)수선비',
-			    '판)보험료',
-			    '판)차량유지비',
-			    '판)경상연구개발비',
-			    '판)운반비',
-			    '판)교육훈련비',
-			    '판)도서인쇄비',
-			    '판)소모품비',
-			    '판)지급수수료',
-			    '판)광고선전비',
-			    '판)무형자산상각비',
-			    '판)견본비',
-			    '판)사용권자산감가상각비',
-			    '판)주식보상비용',
-			    '판)해외시장개척비'
-			  )
-			GROUP BY a.구분, a.model, b.상위계정과목, b.총원가_순서 --order by 1
+			  on (a.yyyymm=b.yyyymm and a.site=b.site
+			      and ( (@SITE<>N'VN' and a.sub_name=b.acct_name)
+			            or (@SITE=N'VN' and b.acct=dc.계정코드) ))
+			WHERE a.yyyymm = CASE WHEN @SITE=N'VN' THEN @YYYYMM ELSE '202508' END
+			  AND a.site   = CASE WHEN @SITE=N'VN' THEN @SITE  ELSE 'HQ' END
+			  AND a.sel_code = CASE WHEN @SITE=N'VN' THEN @SELCODE ELSE 'ACTUAL' END
+			  AND ( (@SITE<>N'VN' AND b.상위계정과목 in (
+				'판)임원급여','판)직원급여','판)상여금','판)제수당','판)퇴직급여','판)복리후생비',
+				'판)여비교통비','판)접대비','판)통신비','판)수도광열비','판)세금과공과','판)감가상각비',
+				'판)지급임차료','판)수선비','판)보험료','판)차량유지비','판)경상연구개발비','판)운반비',
+				'판)교육훈련비','판)도서인쇄비','판)소모품비','판)지급수수료','판)광고선전비',
+				'판)무형자산상각비','판)견본비','판)사용권자산감가상각비','판)주식보상비용','판)해외시장개척비'
+			  ))
+			    OR (@SITE=N'VN' AND b.상위계정과목 LIKE N'판)%' AND NULLIF(b.총원가_순서,N'') IS NOT NULL) )
+			GROUP BY a.구분, a.model, b.상위계정과목, b.총원가_순서
 		),
         SGA AS (
       	SELECT

@@ -129,7 +129,13 @@ const api = {
         if(typeof params.callback === "function"){
           params.callback(data);
         }else if(params.target != undefined && Array.isArray(params.target)) {
-          params.target.splice(0, params.target.length, ...data);
+          // 대용량 결과에서 splice(...data) 스프레드가 인자 한계를 넘겨
+          // "Maximum call stack size exceeded"가 나므로 청크로 나눠 채운다.
+          params.target.splice(0, params.target.length);
+          const CHUNK = 5000;
+          for (let i = 0; i < data.length; i += CHUNK) {
+            params.target.push(...data.slice(i, i + CHUNK));
+          }
         }else if(params.target != undefined && typeof params.target === 'object') {
           Object.assign(params.target, data[0] || {});
         }
