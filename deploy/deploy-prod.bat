@@ -18,7 +18,7 @@ setlocal
 set REPO=C:\DCIS\build\dwCost-prod
 set DEPLOY=C:\DCIS\webapp\api_prod
 set BRANCH=master
-set PROFILE=prod1
+set PROFILE=prod2
 set PORT=9090
 set MVN=C:\apache-maven-3.9.9\bin\mvn.cmd
 
