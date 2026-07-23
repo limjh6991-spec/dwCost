@@ -66,6 +66,7 @@ jobs:
       run: |
         # Task Scheduler 가 서비스를 소유 → 러너 잡과 완전 분리:
         #   (1) 잡 cleanup hang 방지  (2) 잡 종료 후에도 서비스 유지
+        $ErrorActionPreference = 'Continue'   # schtasks stderr 로 스텝이 죽지 않도록
         $dir  = $env:DEPLOY_DIR
         $jar  = $env:SERVICE_JAR
         $prof = $env:SPRING_PROFILE
@@ -77,9 +78,11 @@ jobs:
         @('@echo off', "cd /d `"$dir`"", "$java >> `"$dir\app.log`" 2>&1") |
           Set-Content -Path $launcher -Encoding ASCII
         $task = "dwisCOST-$prof"
-        schtasks /delete /tn $task /f 2>$null
+        # /f 로 기존 작업이 있으면 덮어씀 (별도 /delete 불필요)
         schtasks /create /tn $task /tr "$launcher" /sc ONCE /st 00:00 /rl HIGHEST /ru SYSTEM /f
+        if ($LASTEXITCODE -ne 0) { throw "schtasks /create 실패 (exit $LASTEXITCODE) - 러너 계정 관리자 권한 필요할 수 있음" }
         schtasks /run /tn $task
+        if ($LASTEXITCODE -ne 0) { throw "schtasks /run 실패 (exit $LASTEXITCODE)" }
         Write-Host "Launched via scheduled task '$task' (log: $dir\app.log)"
 
     - name: Health check
