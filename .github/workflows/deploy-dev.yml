@@ -23,99 +23,69 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'npm'
-        cache-dependency-path: src/main/vue/package-lock.json
-
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '21'
-        cache: 'maven'
+    - name: Check environment
+      shell: cmd
+      run: |
+        echo === Java ===
+        java -version
+        echo === Node ===
+        node --version
+        echo === npm ===
+        npm --version
 
     - name: Install Vue dependencies
-      run: npm ci
+      shell: cmd
+      run: npm install
       working-directory: src/main/vue
 
     - name: Build Vue (dev)
+      shell: cmd
       run: npm run builddev
       working-directory: src/main/vue
 
     - name: Build JAR
-      run: ./mvnw.cmd clean package -DskipTests
       shell: cmd
+      run: mvnw.cmd clean package -DskipTests
 
     - name: Stop existing service
-      shell: powershell
+      shell: cmd
       run: |
-        $proc = Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object {
-          $_.CommandLine -like "*dwisCOST*" -and $_.CommandLine -like "*${{ env.SERVICE_PORT }}*"
-        }
-        if ($proc) {
-          Write-Host "Stopping existing service (PID: $($proc.Id))..."
-          Stop-Process -Id $proc.Id -Force
-          Start-Sleep -Seconds 5
-        } else {
-          Write-Host "No existing service found."
-        }
+        echo Stopping existing service...
+        taskkill /F /FI "WINDOWTITLE eq dwisCOST-dev" 2>nul
+        timeout /t 3 /nobreak >nul
+        echo Done.
+      continue-on-error: true
 
     - name: Deploy JAR
-      shell: powershell
+      shell: cmd
       run: |
-        # 배포 디렉토리 생성
-        New-Item -ItemType Directory -Force -Path "${{ env.DEPLOY_DIR }}"
+        if not exist "%DEPLOY_DIR%" mkdir "%DEPLOY_DIR%"
+        if not exist "%DEPLOY_DIR%\backup" mkdir "%DEPLOY_DIR%\backup"
+        if not exist "%DEPLOY_DIR%\logs" mkdir "%DEPLOY_DIR%\logs"
         
-        # 이전 JAR 백업
-        if (Test-Path "${{ env.DEPLOY_DIR }}\dwisCOST.jar") {
-          $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-          Copy-Item "${{ env.DEPLOY_DIR }}\dwisCOST.jar" "${{ env.DEPLOY_DIR }}\backup\dwisCOST_$timestamp.jar" -Force
-        }
+        REM 이전 JAR 백업
+        if exist "%DEPLOY_DIR%\dwisCOST.jar" (
+          for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set dt=%%I
+          copy "%DEPLOY_DIR%\dwisCOST.jar" "%DEPLOY_DIR%\backup\dwisCOST_%dt:~0,8%_%dt:~8,6%.jar"
+        )
         
-        # 새 JAR 복사
-        $jar = Get-ChildItem target\*.jar -Exclude *.original | Select-Object -First 1
-        Copy-Item $jar.FullName "${{ env.DEPLOY_DIR }}\dwisCOST.jar" -Force
-        Write-Host "Deployed: $($jar.Name) -> ${{ env.DEPLOY_DIR }}\dwisCOST.jar"
+        REM 새 JAR 복사
+        for %%f in (target\*.jar) do (
+          echo %%f | findstr /v ".original" >nul && (
+            copy "%%f" "%DEPLOY_DIR%\dwisCOST.jar"
+            echo Deployed: %%f
+          )
+        )
 
     - name: Start service
-      shell: powershell
+      shell: cmd
       run: |
-        $logFile = "${{ env.DEPLOY_DIR }}\logs\dwisCOST_$(Get-Date -Format 'yyyyMMdd').log"
-        New-Item -ItemType Directory -Force -Path "${{ env.DEPLOY_DIR }}\logs"
-        New-Item -ItemType Directory -Force -Path "${{ env.DEPLOY_DIR }}\backup"
-        
-        Start-Process java `
-          -ArgumentList "-jar", "${{ env.DEPLOY_DIR }}\dwisCOST.jar", `
-            "--server.port=${{ env.SERVICE_PORT }}", `
-            "--spring.profiles.active=${{ env.SPRING_PROFILE }}" `
-          -RedirectStandardOutput $logFile `
-          -NoNewWindow
-
-        Write-Host "Service started on port ${{ env.SERVICE_PORT }}"
+        start "dwisCOST-dev" java -jar "%DEPLOY_DIR%\dwisCOST.jar" --server.port=%SERVICE_PORT% --spring.profiles.active=%SPRING_PROFILE%
+        echo Service starting on port %SERVICE_PORT%...
 
     - name: Health check
-      shell: powershell
+      shell: cmd
       run: |
-        Write-Host "Waiting for service to start..."
-        $maxRetries = 10
-        $retryCount = 0
-        
-        while ($retryCount -lt $maxRetries) {
-          Start-Sleep -Seconds 10
-          try {
-            $response = Invoke-WebRequest -Uri "http://localhost:${{ env.SERVICE_PORT }}/actuator/health" -UseBasicParsing -TimeoutSec 5
-            if ($response.StatusCode -eq 200) {
-              Write-Host "✅ Service is healthy!"
-              exit 0
-            }
-          } catch {
-            $retryCount++
-            Write-Host "Waiting... ($retryCount/$maxRetries)"
-          }
-        }
-        
-        Write-Host "⚠️ Health check timeout - service may still be starting"
-        exit 0
+        echo Waiting 30 seconds for startup...
+        timeout /t 30 /nobreak >nul
+        curl -s -o nul -w "HTTP Status: %%{http_code}" http://localhost:%SERVICE_PORT%/actuator/health || echo Service may still be starting...
