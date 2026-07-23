@@ -92,9 +92,10 @@ jobs:
         @('@echo off', "cd /d `"$dir`"", "$java >> `"$dir\app.log`" 2>&1") |
           Set-Content -Path $launcher -Encoding ASCII
         $task = "dwisCOST-$prof"
+        # 현재 사용자(러너 계정)로 실행되는 예약작업 — SYSTEM/관리자 권한 불필요.
         # /f 로 기존 작업이 있으면 덮어씀 (별도 /delete 불필요)
-        schtasks /create /tn $task /tr "$launcher" /sc ONCE /st 00:00 /rl HIGHEST /ru SYSTEM /f
-        if ($LASTEXITCODE -ne 0) { throw "schtasks /create 실패 (exit $LASTEXITCODE) - 러너 계정 관리자 권한 필요할 수 있음" }
+        schtasks /create /tn $task /tr "$launcher" /sc ONCE /st 00:00 /f
+        if ($LASTEXITCODE -ne 0) { throw "schtasks /create 실패 (exit $LASTEXITCODE)" }
         schtasks /run /tn $task
         if ($LASTEXITCODE -ne 0) { throw "schtasks /run 실패 (exit $LASTEXITCODE)" }
         Write-Host "Launched via scheduled task '$task' (log: $dir\app.log)"
