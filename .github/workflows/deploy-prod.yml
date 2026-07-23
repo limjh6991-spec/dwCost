@@ -75,18 +75,26 @@ jobs:
           )
         )
 
-    - name: Start prod service
+    - name: Start prod service (Scheduled Task, detached)
       shell: powershell
       run: |
-        $jvm = '-Xms1g -Xmx1g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 ' +
-               '-Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 ' +
-               '-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=C:\DCIS\webapp\api_prod\heapdump.hprof'
-        $cmd = "java $jvm -jar `"$env:SERVICE_JAR`" --spring.profiles.active=$env:SPRING_PROFILE"
-        Write-Host "Starting: $cmd"
-        # Win32_Process.Create 로 띄우면 러너 잡 종료 시에도 서비스가 계속 살아있음
-        $res = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd }
-        Write-Host "ProcessId=$($res.ProcessId) ReturnValue=$($res.ReturnValue)"
-        if ($res.ReturnValue -ne 0) { throw "Failed to start process (rc=$($res.ReturnValue))" }
+        # Task Scheduler 가 서비스를 소유 → 러너 잡과 완전 분리:
+        #   (1) 잡 cleanup hang 방지  (2) 잡 종료 후에도 서비스 유지
+        $dir  = $env:DEPLOY_DIR
+        $jar  = $env:SERVICE_JAR
+        $prof = $env:SPRING_PROFILE
+        $launcher = Join-Path $dir 'run-service.cmd'
+        $java = "java -Xms1g -Xmx1g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 " +
+                "-Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 " +
+                "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$dir\heapdump.hprof " +
+                "-jar `"$jar`" --spring.profiles.active=$prof"
+        @('@echo off', "cd /d `"$dir`"", "$java >> `"$dir\app.log`" 2>&1") |
+          Set-Content -Path $launcher -Encoding ASCII
+        $task = "dwisCOST-$prof"
+        schtasks /delete /tn $task /f 2>$null
+        schtasks /create /tn $task /tr "$launcher" /sc ONCE /st 00:00 /rl HIGHEST /ru SYSTEM /f
+        schtasks /run /tn $task
+        Write-Host "Launched via scheduled task '$task' (log: $dir\app.log)"
 
     - name: Health check
       shell: powershell
