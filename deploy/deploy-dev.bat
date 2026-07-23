@@ -7,7 +7,7 @@ REM  - must run as the user whose .m2 has the deps (offline build)
 REM ============================================================
 setlocal enabledelayedexpansion
 
-set REPO=C:\DCIS\build\dwCost
+set REPO=C:\DCIS\build\dwCost-dev
 set DEPLOY=C:\DCIS\webapp\api_dev
 set BRANCH=master
 set PROFILE=dev
@@ -26,7 +26,7 @@ echo [%date% %time%] deploying new commit: !REMOTE!
 git reset --hard origin/%BRANCH%
 
 echo [build] mvn -o (offline) ...
-call "%MVN%" -o clean package -DskipTests -B
+call "%MVN%" -o clean package -Dmaven.test.skip=true -B
 if errorlevel 1 (echo [ERR] build failed & exit /b 1)
 
 echo [stop] port %PORT% ...

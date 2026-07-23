@@ -15,7 +15,7 @@ if %errorlevel% neq 0 (
 
 setlocal
 
-set REPO=C:\DCIS\build\dwCost
+set REPO=C:\DCIS\build\dwCost-prod
 set DEPLOY=C:\DCIS\webapp\api_prod
 set BRANCH=master
 set PROFILE=prod1
@@ -30,8 +30,8 @@ cd /d "%REPO%" || (echo [ERR] repo not found: %REPO% & exit /b 1)
 git fetch origin %BRANCH% 1>nul 2>nul
 git reset --hard origin/%BRANCH%
 
-echo [build] mvn -o (offline) ...
-call "%MVN%" -o clean package -DskipTests -B
+echo [build] mvn -o (offline, revision=prod) ...
+call "%MVN%" -o -Drevision=prod clean package -Dmaven.test.skip=true -B
 if errorlevel 1 (echo [ERR] build failed & exit /b 1)
 
 echo [stop] port %PORT% ...
