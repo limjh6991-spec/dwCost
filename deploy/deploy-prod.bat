@@ -35,7 +35,7 @@ call "%MVN%" -o -Drevision=prod clean package -Dmaven.test.skip=true -B
 if errorlevel 1 (echo [ERR] build failed & exit /b 1)
 
 echo [stop] port %PORT% ...
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr :%PORT% ^| findstr LISTENING') do taskkill /F /PID %%p 1>nul 2>nul
+powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort %PORT% -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Write-Host ('  killing PID ' + $_.OwningProcess); Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
 timeout /t 3 >nul
 
 echo [deploy] jar -> %DEPLOY% ...
