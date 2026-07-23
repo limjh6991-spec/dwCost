@@ -9,52 +9,87 @@ on:
 
   workflow_dispatch:
 
+# ------------------------------------------------------------------------------
+# 러너(SPS008)는 인터넷(Maven Central)에 접속 불가 → 오프라인 빌드 전제.
+#  - 빌드: 설치된 Maven( %MVN% )으로 'mvn -o' (오프라인)
+#  - 의존성은 러너 %USERPROFILE%\.m2\repository 에 미리 캐시되어 있어야 함
+#  - pom.xml 에 새 의존성을 추가하면, 인터넷 되는 PC에서 받아 러너 .m2 에 시딩 필요
+# ------------------------------------------------------------------------------
 jobs:
   build-and-deploy:
     runs-on: self-hosted
-    
+
     env:
-      DEPLOY_DIR: C:\deploy\dev
-      SERVICE_PORT: 9091
+      MVN: C:\apache-maven-3.9.9\bin\mvn.cmd
+      DEPLOY_DIR: C:\DCIS\webapp\api_dev
+      SERVICE_JAR: C:\DCIS\webapp\api_dev\dwisCOST-dev.jar
+      SERVICE_PORT: "9091"
       SPRING_PROFILE: dev
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build JAR
+    - name: Build JAR (offline)
       shell: cmd
-      run: mvnw.cmd clean package -DskipTests
+      run: '"%MVN%" -o clean package -DskipTests -B'
 
-    - name: Stop existing service
-      shell: cmd
-      run: |
-        taskkill /F /FI "WINDOWTITLE eq dwisCOST-dev" 2>nul
-        timeout /t 3 /nobreak >nul
+    - name: Stop existing dev service (port 9091)
+      shell: powershell
       continue-on-error: true
+      run: |
+        # dev 서비스만 정확히 종료 (운영 9090 은 건드리지 않음)
+        $procs = Get-CimInstance Win32_Process -Filter "name='java.exe'" |
+                 Where-Object { $_.CommandLine -like '*C:\DCIS\webapp\api_dev*' }
+        if (-not $procs) { Write-Host "No running dev service found." }
+        foreach ($p in $procs) {
+          Write-Host "Stopping PID $($p.ProcessId)"
+          Stop-Process -Id $p.ProcessId -Force
+        }
+        Start-Sleep -Seconds 3
 
     - name: Deploy JAR
       shell: cmd
       run: |
         if not exist "%DEPLOY_DIR%" mkdir "%DEPLOY_DIR%"
         if not exist "%DEPLOY_DIR%\backup" mkdir "%DEPLOY_DIR%\backup"
-        if not exist "%DEPLOY_DIR%\logs" mkdir "%DEPLOY_DIR%\logs"
-        for %%f in (target\*.jar) do (
+        for %%f in (target\dwisCOST-*.jar) do (
           echo %%f | findstr /v ".original" >nul && (
-            copy "%%f" "%DEPLOY_DIR%\dwisCOST.jar" /Y
-            echo Deployed: %%f
+            copy "%%f" "%SERVICE_JAR%" /Y
+            copy "%%f" "%DEPLOY_DIR%\backup\" /Y
+            echo Deployed: %%f  -^>  %SERVICE_JAR%
           )
         )
 
-    - name: Start service
-      shell: cmd
+    - name: Start dev service
+      shell: powershell
       run: |
-        start "dwisCOST-dev" java -jar "%DEPLOY_DIR%\dwisCOST.jar" --server.port=%SERVICE_PORT% --spring.profiles.active=%SPRING_PROFILE%
-        echo Service starting on port %SERVICE_PORT%...
+        $jvm = '-Xms1g -Xmx1g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 ' +
+               '-Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 ' +
+               '-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=C:\DCIS\webapp\api_dev\heapdump.hprof'
+        $cmd = "java $jvm -jar `"$env:SERVICE_JAR`" --spring.profiles.active=$env:SPRING_PROFILE"
+        Write-Host "Starting: $cmd"
+        # Win32_Process.Create 로 띄우면 러너 잡(job) 종료 시에도 서비스가 계속 살아있음
+        $res = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd }
+        Write-Host "ProcessId=$($res.ProcessId) ReturnValue=$($res.ReturnValue)"
+        if ($res.ReturnValue -ne 0) { throw "Failed to start process (rc=$($res.ReturnValue))" }
 
     - name: Health check
-      shell: cmd
+      shell: powershell
       run: |
-        echo Waiting 30 seconds for startup...
-        timeout /t 30 /nobreak >nul
-        curl -s -o nul -w "HTTP Status: %%{http_code}" http://localhost:%SERVICE_PORT%/actuator/health || echo Service may still be starting...
+        # 포트가 실제로 열렸는지로 기동 성공 판정 (최대 ~120초 대기)
+        $ok = $false
+        for ($i=1; $i -le 24; $i++) {
+          $t = Test-NetConnection -ComputerName localhost -Port $env:SERVICE_PORT -WarningAction SilentlyContinue
+          if ($t.TcpTestSucceeded) { $ok = $true; break }
+          Write-Host "waiting for port $env:SERVICE_PORT ... ($i)"
+          Start-Sleep -Seconds 5
+        }
+        if (-not $ok) { throw "Service did NOT open port $env:SERVICE_PORT (start failed)" }
+        Write-Host "Service is listening on port $env:SERVICE_PORT"
+        try {
+          $r = Invoke-WebRequest -UseBasicParsing "http://localhost:$env:SERVICE_PORT/actuator/health" -TimeoutSec 5
+          Write-Host "Health: $($r.StatusCode) $($r.Content)"
+        } catch {
+          Write-Host "Health endpoint not reachable/secured (service is up on port anyway)"
+        }
