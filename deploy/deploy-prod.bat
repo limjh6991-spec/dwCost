@@ -4,6 +4,15 @@ REM  dwisCOST PROD - manual build/deploy (server-side, no CI)
 REM  - run by hand (double-click). Asks for DEPLOY confirmation.
 REM  - must run as the user whose .m2 has the deps (offline build)
 REM ============================================================
+
+REM --- auto-elevate: 운영 java 가 관리자 레벨로 떠 있어, 종료/재기동에 관리자 권한 필요 ---
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+  echo [info] 관리자 권한으로 다시 실행합니다...
+  powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+  exit /b
+)
+
 setlocal
 
 set REPO=C:\DCIS\build\dwCost
