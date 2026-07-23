@@ -35,7 +35,9 @@ jobs:
 
     - name: Install Vue dependencies
       shell: cmd
-      run: npm install
+      run: |
+        if exist node_modules rmdir /s /q node_modules
+        npm install
       working-directory: src/main/vue
 
     - name: Build Vue (dev)
