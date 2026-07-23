@@ -7,7 +7,6 @@ on:
       - 'src/**'
       - 'pom.xml'
 
-  # 수동 실행도 가능
   workflow_dispatch:
 
 jobs:
@@ -23,28 +22,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Check environment
-      shell: cmd
-      run: |
-        echo === Java ===
-        java -version
-        echo === Node ===
-        node --version
-        echo === npm ===
-        npm --version
-
-    - name: Install Vue dependencies
-      shell: cmd
-      run: |
-        if exist node_modules rmdir /s /q node_modules
-        npm install
-      working-directory: src/main/vue
-
-    - name: Build Vue (dev)
-      shell: cmd
-      run: npm run builddev
-      working-directory: src/main/vue
-
     - name: Build JAR
       shell: cmd
       run: mvnw.cmd clean package -DskipTests
@@ -52,10 +29,8 @@ jobs:
     - name: Stop existing service
       shell: cmd
       run: |
-        echo Stopping existing service...
         taskkill /F /FI "WINDOWTITLE eq dwisCOST-dev" 2>nul
         timeout /t 3 /nobreak >nul
-        echo Done.
       continue-on-error: true
 
     - name: Deploy JAR
@@ -64,17 +39,9 @@ jobs:
         if not exist "%DEPLOY_DIR%" mkdir "%DEPLOY_DIR%"
         if not exist "%DEPLOY_DIR%\backup" mkdir "%DEPLOY_DIR%\backup"
         if not exist "%DEPLOY_DIR%\logs" mkdir "%DEPLOY_DIR%\logs"
-        
-        REM 이전 JAR 백업
-        if exist "%DEPLOY_DIR%\dwisCOST.jar" (
-          for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set dt=%%I
-          copy "%DEPLOY_DIR%\dwisCOST.jar" "%DEPLOY_DIR%\backup\dwisCOST_%dt:~0,8%_%dt:~8,6%.jar"
-        )
-        
-        REM 새 JAR 복사
         for %%f in (target\*.jar) do (
           echo %%f | findstr /v ".original" >nul && (
-            copy "%%f" "%DEPLOY_DIR%\dwisCOST.jar"
+            copy "%%f" "%DEPLOY_DIR%\dwisCOST.jar" /Y
             echo Deployed: %%f
           )
         )
