@@ -1,0 +1,109 @@
+name: Deploy to Prod Server
+
+# 운영 배포는 자동 트리거 없이 "수동 실행"만 (실수 배포 방지)
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: '운영 프로파일'
+        type: choice
+        options:
+          - prod1
+          - prod2
+        default: prod1
+      confirm:
+        description: "운영 배포 확인 — 진행하려면 DEPLOY 입력"
+        required: true
+        default: ''
+
+# ------------------------------------------------------------------------------
+# 러너(SPS008)는 인터넷 접속 불가 → 오프라인 빌드('mvn -o').
+#  - dev 와 같은 장비. 운영=포트 9090, 경로=C:\DCIS\webapp\api_prod
+#  - pom.xml 에 새 의존성 추가 시, 러너 %USERPROFILE%\.m2 에 시딩 필요
+# ------------------------------------------------------------------------------
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    env:
+      MVN: C:\apache-maven-3.9.9\bin\mvn.cmd
+      DEPLOY_DIR: C:\DCIS\webapp\api_prod
+      SERVICE_JAR: C:\DCIS\webapp\api_prod\dwisCOST-prod.jar
+      SERVICE_PORT: "9090"
+      SPRING_PROFILE: ${{ inputs.profile }}
+
+    steps:
+    - name: Confirm production deploy
+      shell: powershell
+      run: |
+        if ('${{ inputs.confirm }}' -ne 'DEPLOY') {
+          throw "운영 배포가 확인되지 않았습니다. 'confirm' 입력란에 DEPLOY 를 입력해야 진행됩니다."
+        }
+        Write-Host "운영 배포 확인됨. profile=$env:SPRING_PROFILE port=$env:SERVICE_PORT"
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build JAR (offline)
+      shell: cmd
+      run: '"%MVN%" -o clean package -DskipTests -B'
+
+    - name: Stop existing prod service (port 9090)
+      shell: powershell
+      continue-on-error: true
+      run: |
+        # 운영(api_prod) 프로세스만 정확히 종료 (dev 9091 은 건드리지 않음)
+        $procs = Get-CimInstance Win32_Process -Filter "name='java.exe'" |
+                 Where-Object { $_.CommandLine -like '*C:\DCIS\webapp\api_prod*' }
+        if (-not $procs) { Write-Host "No running prod service found." }
+        foreach ($p in $procs) {
+          Write-Host "Stopping PID $($p.ProcessId)"
+          Stop-Process -Id $p.ProcessId -Force
+        }
+        Start-Sleep -Seconds 3
+
+    - name: Deploy JAR
+      shell: cmd
+      run: |
+        if not exist "%DEPLOY_DIR%" mkdir "%DEPLOY_DIR%"
+        if not exist "%DEPLOY_DIR%\backup" mkdir "%DEPLOY_DIR%\backup"
+        for %%f in (target\dwisCOST-*.jar) do (
+          echo %%f | findstr /v ".original" >nul && (
+            copy "%%f" "%SERVICE_JAR%" /Y
+            copy "%%f" "%DEPLOY_DIR%\backup\" /Y
+            echo Deployed: %%f  -^>  %SERVICE_JAR%
+          )
+        )
+
+    - name: Start prod service
+      shell: powershell
+      run: |
+        $jvm = '-Xms1g -Xmx1g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 ' +
+               '-Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 ' +
+               '-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=C:\DCIS\webapp\api_prod\heapdump.hprof'
+        $cmd = "java $jvm -jar `"$env:SERVICE_JAR`" --spring.profiles.active=$env:SPRING_PROFILE"
+        Write-Host "Starting: $cmd"
+        # Win32_Process.Create 로 띄우면 러너 잡 종료 시에도 서비스가 계속 살아있음
+        $res = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd }
+        Write-Host "ProcessId=$($res.ProcessId) ReturnValue=$($res.ReturnValue)"
+        if ($res.ReturnValue -ne 0) { throw "Failed to start process (rc=$($res.ReturnValue))" }
+
+    - name: Health check
+      shell: powershell
+      run: |
+        # 포트가 실제로 열렸는지로 기동 성공 판정 (최대 ~120초 대기)
+        $ok = $false
+        for ($i=1; $i -le 24; $i++) {
+          $t = Test-NetConnection -ComputerName localhost -Port $env:SERVICE_PORT -WarningAction SilentlyContinue
+          if ($t.TcpTestSucceeded) { $ok = $true; break }
+          Write-Host "waiting for port $env:SERVICE_PORT ... ($i)"
+          Start-Sleep -Seconds 5
+        }
+        if (-not $ok) { throw "Service did NOT open port $env:SERVICE_PORT (start failed)" }
+        Write-Host "Service is listening on port $env:SERVICE_PORT"
+        try {
+          $r = Invoke-WebRequest -UseBasicParsing "http://localhost:$env:SERVICE_PORT/actuator/health" -TimeoutSec 5
+          Write-Host "Health: $($r.StatusCode) $($r.Content)"
+        } catch {
+          Write-Host "Health endpoint not reachable/secured (service is up on port anyway)"
+        }
