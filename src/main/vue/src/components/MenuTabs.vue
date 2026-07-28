@@ -76,7 +76,7 @@
 
     </nav>
     <div class="user_info dw_mes">
-      <div class="cur_time"><i class="bi bi-alarm"></i><span>{{curDateStr}}</span></div>
+      <!-- <div class="cur_time"><i class="bi bi-alarm"></i><span>{{curDateStr}}</span></div> -->
       <div class="form-floating">
           <select class="form-select label-60 " id="floatingSelect" aria-label="Floating label select example" v-model="selectdProdCtg" @change="onProdCtgChange">
               <option v-for="(pc,index) in prodCtgList" :value="pc.prodCategory" :key="index">{{pc.prodCategory==="HQ"? $trans("본사") : "VINA"}}</option>
@@ -154,7 +154,7 @@ export default {
        opacity: 0,
        top: "0px",
        selectdProdCtg:null,
-       curDateStr:'',
+      //  curDateStr:'',
        selectedLocale: 'ko',
     };
   },
@@ -184,7 +184,7 @@ export default {
     this.$eventBus.on("menuMoveClick", this.menuMoveClick);
   },
   mounted() {
-    this.startClock();
+    // this.startClock();
     //document.addEventListener("click", this.handleOutsideClick);
     this.userAuthInfo.loadAuthInfo();
     this.selectdProdCtg = this.userAuthInfo.curProdCtg;
@@ -211,14 +211,14 @@ export default {
     this.$eventBus.off("menuMoveClick");
 	},
   methods: {
-    startClock() {
-      setInterval(() => {
-        const now = new Date();
-        now.setHours(now.getHours() + 9); // UTC+9 적용
-        const formattedTime = now.toISOString().slice(0, 19).replace("T", " ");
-        this.curDateStr = formattedTime;
-      }, 1000);
-    },
+    // startClock() {
+    //   setInterval(() => {
+    //     const now = new Date();
+    //     now.setHours(now.getHours() + 9); // UTC+9 적용
+    //     const formattedTime = now.toISOString().slice(0, 19).replace("T", " ");
+    //     this.curDateStr = formattedTime;
+    //   }, 1000);
+    // },
     /*handleOutsideClick(event) {
       const gnb = this.$refs.gnb;
       // gnb 영역 외부를 클릭했을 때만 실행

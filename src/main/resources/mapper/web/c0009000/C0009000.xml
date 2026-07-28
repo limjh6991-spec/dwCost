@@ -200,7 +200,14 @@
     </select>
 
     <select id="C0009005_Tab090004" resultType="Map">
-        EXEC DOI_ManufacturingExpenseByDept @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE='ACTUAL';
+        <choose>
+            <when test="site != null and site == 'VN'">
+                EXEC VN_ManufacturingExpenseByDept @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE='ACTUAL';
+            </when>
+            <otherwise>
+                EXEC DOI_ManufacturingExpenseByDept @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE='ACTUAL';
+            </otherwise>
+        </choose>
     </select>
 
     <select id="C0009005_Tab090005_Col" resultType="CamelMap">
@@ -263,7 +270,14 @@
     </select>
 
     <select id="C0009005_Tab090005" resultType="CamelMap">
-        EXEC DOI_ManufacturingExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selcode};
+        <choose>
+            <when test="site != null and site == 'VN'">
+                EXEC VN_ManufacturingExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selcode};
+            </when>
+            <otherwise>
+                EXEC DOI_ManufacturingExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selcode};
+            </otherwise>
+        </choose>
     </select>
 
     <select id="C0009006_Sch1_Col" resultType="CamelMap">
@@ -317,11 +331,25 @@
     </select>
 
     <select id="C0009008_Tab090008" resultType="Map">
-        EXEC DOI_SalesAdminByDept @YYYYMM=#{yyyymm}, @SITE=#{site};
+        <choose>
+            <when test="site != null and site == 'VN'">
+                EXEC VN_SalesAdminByDept @YYYYMM=#{yyyymm}, @SITE=#{site};
+            </when>
+            <otherwise>
+                EXEC DOI_SalesAdminByDept @YYYYMM=#{yyyymm}, @SITE=#{site};
+            </otherwise>
+        </choose>
     </select>
     
     <select id="C0009008_Tab090009" resultType="Map">
-        EXEC DOI_SalesAdminByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selCode};
+        <choose>
+            <when test="site != null and site == 'VN'">
+                EXEC VN_SalesAdminByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selCode};
+            </when>
+            <otherwise>
+                EXEC DOI_SalesAdminByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selCode};
+            </otherwise>
+        </choose>
     </select>
     
     <select id="C0009008_Tab090009_Col" resultType="CamelMap">
@@ -360,7 +388,14 @@
     </select>
 
     <select id="C0009009_Sch1" resultType="CamelMap">
-        EXEC DOI_PL_ByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selCode};
+        <choose>
+            <when test="site != null and site == 'VN'">
+                EXEC VN_PL_ByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selCode};
+            </when>
+            <otherwise>
+                EXEC DOI_PL_ByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selCode};
+            </otherwise>
+        </choose>
     </select>
 
     <select id="C0009009_Qty" resultType="CamelMap">
@@ -425,7 +460,14 @@
     </select>
 
     <select id="C0009010_Sch1" resultType="CamelMap">
-        EXEC DOI_TotalCost_Tree @YYYYMM=#{yyyymm}, @SITE=#{site}, @SELCODE=#{selCode};
+        <choose>
+            <when test="site != null and site == 'VN'">
+                EXEC VN_TotalCost_Tree @YYYYMM=#{yyyymm}, @SITE=#{site}, @SELCODE=#{selCode};
+            </when>
+            <otherwise>
+                EXEC DOI_TotalCost_Tree @YYYYMM=#{yyyymm}, @SITE=#{site}, @SELCODE=#{selCode};
+            </otherwise>
+        </choose>
     </select>
 
     <select id="C0009010_SelectSelCode" resultType="CamelMap">
@@ -591,7 +633,14 @@
 
     <!-- 제조경비 부서별 집계표(누적) - 데이터 조회 -->
     <select id="C0009005_Tab090004_Cum" resultType="CamelMap">
-        EXEC DOI_ManufacturingExpenseByDept_Cum @FROM_YYYYMM=#{fromYyyymm}, @TO_YYYYMM=#{toYyyymm}, @SITE=#{site}, @SEL_CODE='ACTUAL';
+        <choose>
+            <when test="site != null and site == 'VN'">
+                EXEC VN_ManufacturingExpenseByDept_Cum @FROM_YYYYMM=#{fromYyyymm}, @TO_YYYYMM=#{toYyyymm}, @SITE=#{site}, @SEL_CODE='ACTUAL';
+            </when>
+            <otherwise>
+                EXEC DOI_ManufacturingExpenseByDept_Cum @FROM_YYYYMM=#{fromYyyymm}, @TO_YYYYMM=#{toYyyymm}, @SITE=#{site}, @SEL_CODE='ACTUAL';
+            </otherwise>
+        </choose>
     </select>
 
     <!-- 판매관리비 부서별 집계표(누적) - 컬럼 조회 -->
@@ -629,9 +678,14 @@
 
     <!-- 판매관리비 부서별 집계표(누적) - 데이터 조회 -->
     <select id="C0009008_Tab090008_Cum" resultType="Map">
-        EXEC DOI_SalesAdminByDept_Cum @FROM_YYYYMM=#{fromYyyymm}, @TO_YYYYMM=#{toYyyymm}, @SITE=#{site};
+        <choose>
+            <when test="site != null and site == 'VN'">
+                EXEC VN_SalesAdminByDept_Cum @FROM_YYYYMM=#{fromYyyymm}, @TO_YYYYMM=#{toYyyymm}, @SITE=#{site};
+            </when>
+            <otherwise>
+                EXEC DOI_SalesAdminByDept_Cum @FROM_YYYYMM=#{fromYyyymm}, @TO_YYYYMM=#{toYyyymm}, @SITE=#{site};
+            </otherwise>
+        </choose>
     </select>
  
 </mapper>
-
-

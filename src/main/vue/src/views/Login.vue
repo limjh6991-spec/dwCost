@@ -4,7 +4,7 @@
       <div class="col login_visu">
                 <div class="header">
                   <h1 class="logo">
-                    <span>원가관리시스템</span>
+                    <span>원가관리시스템 테스트</span>
                   </h1>
               </div>
         </div>
