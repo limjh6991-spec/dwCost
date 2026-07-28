@@ -27,8 +27,7 @@ git reset --hard origin/%BRANCH%
 echo.
 
 echo [2/3] mvn build (offline) ...
-if exist "%REPO%\target" rmdir /s /q "%REPO%\target" 2>nul
-call "%MVN%" -o -Drevision=prod clean package -Dmaven.test.skip=true -B
+call "%MVN%" -o -Drevision=prod package -Dmaven.test.skip=true -B
 if errorlevel 1 (echo [ERR] 빌드 실패! & pause & exit /b 1)
 echo.
 
