@@ -1,7 +1,7 @@
 @echo off
 REM ============================================================
-REM  dwisCOST PROD - 수동 빌드/배포
-REM  git pull -> 빌드 -> JAR 복사 (서비스 종료/기동은 수동)
+REM  dwisCOST PROD - Build/Deploy (Manual)
+REM  git pull -> build -> JAR copy
 REM ============================================================
 setlocal
 
@@ -12,11 +12,11 @@ set PROFILE=prod
 set MVN=C:\apache-maven-3.9.9\bin\mvn.cmd
 
 echo ============================================================
-echo  dwisCOST PROD 빌드/배포 (운영)
+echo  dwisCOST PROD Build/Deploy
 echo ============================================================
 echo.
-set /p OK="운영 배포를 진행하시겠습니까? DEPLOY 입력: "
-if /I not "%OK%"=="DEPLOY" (echo 취소되었습니다. & pause & exit /b 1)
+set /p OK="Type DEPLOY to proceed: "
+if /I not "%OK%"=="DEPLOY" (echo Canceled. & pause & exit /b 1)
 echo.
 
 cd /d "%REPO%" || (echo [ERR] repo not found: %REPO% & pause & exit /b 1)
@@ -28,25 +28,25 @@ echo.
 
 echo [2/3] mvn build (offline) ...
 call "%MVN%" -o -Drevision=prod package -Dmaven.test.skip=true -B
-if errorlevel 1 (echo [ERR] 빌드 실패! & pause & exit /b 1)
+if errorlevel 1 (echo [ERR] Build failed! & pause & exit /b 1)
 echo.
 
-echo [3/3] JAR 복사 -^> %DEPLOY% ...
+echo [3/3] JAR copy -^> %DEPLOY% ...
 if not exist "%DEPLOY%\backup" mkdir "%DEPLOY%\backup"
 for %%f in (target\dwisCOST-*.jar) do echo %%f| findstr /v ".original" >nul && (
     copy /Y "%%f" "%DEPLOY%\dwisCOST-%PROFILE%.jar" >nul
     copy /Y "%%f" "%DEPLOY%\backup\" >nul
-    echo   복사 완료: %%f
+    echo   copied: %%f
 )
 echo.
 
 echo ============================================================
-echo  운영 빌드/배포 완료!
+echo  PROD Build/Deploy Done!
 echo ============================================================
 echo.
-echo  [다음 단계]
-echo   1. 기존 서비스 CMD 창을 수동으로 종료하세요
-echo   2. 아래 명령어로 서비스를 기동하세요:
+echo  [Next]
+echo   1. Close existing service CMD window
+echo   2. Start service:
 echo.
 echo      cd %DEPLOY%
 echo      java -Xms1g -Xmx1g -jar dwisCOST-%PROFILE%.jar --spring.profiles.active=prod2
