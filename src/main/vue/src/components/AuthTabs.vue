@@ -36,26 +36,31 @@ export default {
     };
   },
   computed:{
+    rawTabInfoList() {
+      return this.userAuthInfo.getTabInfoListBySRI(this.route?.meta?.upperSysResourceId, this.route?.meta?.sysResourceId) || [];
+    },
     tab3List(){
-      let list = this.tabInfoList || [];
-      if (this.route?.meta?.sysResourceId === 'C0009001') {
-        if (!list.some(item => item.sysResourceId === 'TAB090014')) {
-          list = [
-            ...list,
-            { sysResourceId: 'TAB090014', sysResourceName: '재공품 공정 수불' }
-          ];
+      let list = [...this.rawTabInfoList];
+      if (this.route?.meta?.sysResourceId === 'C0009001' || this.route?.name === '생산실적') {
+        const curProd = this.userAuthInfo.curProdCtg;
+        const isVina = (curProd === 'VN' || curProd === 'VINA');
+        if (isVina) {
+          if (!list.some(item => item.sysResourceId === 'TAB090014')) {
+            list.push({ sysResourceId: 'TAB090014', sysResourceName: '재공품 공정 수불' });
+          }
+        } else {
+          list = list.filter(item => item.sysResourceId !== 'TAB090014');
         }
       }
       return list;  
     },
     tab4List(){
-      let obj = this.tabInfoList.find((resc) => resc.sysResourceId === this.pTabId);      
-      return obj['childSysResc'];
+      let obj = this.rawTabInfoList.find((resc) => resc.sysResourceId === this.pTabId);      
+      return obj ? obj['childSysResc'] : [];
     },
     tabList(){
-      return this.tabLevel === 3?this.tab3List:this.tab4List;
+      return this.tabLevel === 3 ? this.tab3List : this.tab4List;
     }
-    
   },
   watch: {    
     activeTab(newValue) {
