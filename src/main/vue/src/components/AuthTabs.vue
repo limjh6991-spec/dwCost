@@ -37,7 +37,16 @@ export default {
   },
   computed:{
     tab3List(){
-      return this.tabInfoList;  
+      let list = this.tabInfoList || [];
+      if (this.route?.meta?.sysResourceId === 'C0009001') {
+        if (!list.some(item => item.sysResourceId === 'TAB090014')) {
+          list = [
+            ...list,
+            { sysResourceId: 'TAB090014', sysResourceName: '재공품 공정 수불' }
+          ];
+        }
+      }
+      return list;  
     },
     tab4List(){
       let obj = this.tabInfoList.find((resc) => resc.sysResourceId === this.pTabId);      

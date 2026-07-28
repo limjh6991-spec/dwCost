@@ -89,6 +89,45 @@
     <select id="C0009001_Tab090003" resultType="CamelMap">
         EXEC DOI_ManufacturingQtyByMonth @YYYY=#{yyyy}, @SITE=#{site};
     </select>
+
+    <!-- TAB090014: 재공품 공정 수불 -->
+    <select id="C0009001_Tab090014" resultType="CamelMap">
+        IF OBJECT_ID('DOI_WipProcessSubulReport', 'P') IS NOT NULL
+        BEGIN
+            EXEC DOI_WipProcessSubulReport @YYYYMM=#{yyyymm}, @SITE=#{site};
+        END
+        ELSE
+        BEGIN
+            SELECT 
+                MODEL AS model,
+                'USC' AS process,
+                ISNULL(BOH_QTY, 0) AS boh,
+                ISNULL(IN_QTY, 0) AS inQty,
+                ISNULL(OUT_QTY, 0) AS outQty,
+                ISNULL(LOSS_QTY, 0) AS lossQty,
+                0 AS etcInCode,
+                0 AS etcInResort,
+                0 AS etcInRework,
+                0 AS etcInSemi,
+                0 AS etcInEtc,
+                0 AS otherAccInTotal,
+                0 AS etcOutCode,
+                0 AS etcOutSemiPaid,
+                0 AS etcOutSemiFree,
+                0 AS etcOutEtc,
+                0 AS otherAccOutTotal,
+                ISNULL(EOH_QTY, 0) AS eoh,
+                0.5 AS wipValRate
+            FROM DOI_COST
+            WHERE 1=1
+            <if test="yyyymm != null and yyyymm != ''">
+              AND YYYYMM = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+              AND SITE = #{site}
+            </if>
+        END
+    </select>
     
     <!-- C0009011: 생산실적 월별/기간별(누적) 조회 (기존 쿼리 유지) -->
     <select id="C0009011_Sch1" resultType="CamelMap">

@@ -13,6 +13,10 @@
     <template #tab-content-TAB090003>
       <TAB090003 />
     </template>
+    <!-- Tab 4 재공품 공정 수불 -->
+    <template #tab-content-TAB090014>
+      <TAB090014 />
+    </template>
   </auth-tabs>
 </template>
 
@@ -20,6 +24,7 @@
 import TAB090001 from '@web/c0009000/tab/TAB090001.vue';
 import TAB090002 from '@web/c0009000/tab/TAB090002.vue';
 import TAB090003 from '@web/c0009000/tab/TAB090003.vue';
+import TAB090014 from '@web/c0009000/tab/TAB090014.vue';
 
 export default {
   name: 'DW_C0009001',
@@ -28,6 +33,7 @@ export default {
     TAB090001,
     TAB090002,
     TAB090003,
+    TAB090014,
   },
   watch: {},
   data() {
