@@ -37,12 +37,18 @@ export default {
   },
   computed:{
     rawTabInfoList() {
-      return this.userAuthInfo.getTabInfoListBySRI(this.route?.meta?.upperSysResourceId, this.route?.meta?.sysResourceId) || [];
+      const sysResId = this.$route?.meta?.sysResourceId || this.route?.meta?.sysResourceId;
+      const upperSysResId = this.$route?.meta?.upperSysResourceId || this.route?.meta?.upperSysResourceId;
+      return this.userAuthInfo.getTabInfoListBySRI(upperSysResId, sysResId) || [];
     },
     tab3List(){
       let list = [...this.rawTabInfoList];
-      if (this.route?.meta?.sysResourceId === 'C0009001' || this.route?.name === '생산실적') {
-        const curProd = this.userAuthInfo.curProdCtg;
+      const routePath = (this.$route?.path || this.route?.path || '').toLowerCase();
+      const sysResId = this.$route?.meta?.sysResourceId || this.route?.meta?.sysResourceId;
+      const isC0009001 = sysResId === 'C0009001' || routePath.includes('c0009001');
+
+      if (isC0009001) {
+        const curProd = this.userAuthInfo?.curProdCtg;
         const isVina = (curProd === 'VN' || curProd === 'VINA');
         if (isVina) {
           if (!list.some(item => item.sysResourceId === 'TAB090014')) {
