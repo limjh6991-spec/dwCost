@@ -27,7 +27,7 @@
 		from doi_cm_role_sys_resource a
 		inner join doi_cm_user_ROLE b on (a.ROLE_ID = b.ROLE_ID)
 		where b.user_id = #{userId}
-		and (a.prod_category = #{prodCategory} or a.prod_category = 'HQ' or a.prod_category is null)
+		and a.prod_category = #{prodCategory}
 		group by UPPER_SYS_RESOURCE_ID,SYS_RESOURCE_ID
 	) 
 	,mt as (
@@ -46,7 +46,7 @@
 		from DOI_CM_SYS_RESOURCE a
 		inner join auth_sys_resc b on (a.UPPER_SYS_RESOURCE_ID = b.UPPER_SYS_RESOURCE_ID and a.sys_resource_id = b.sys_resource_id)
 		where a.upper_sys_resource_id = 'ROOT_MENU'
-		and (a.prod_category = #{prodCategory} or a.prod_category = 'HQ' or a.prod_category is null)
+		and a.prod_category = #{prodCategory}
 		and a.del_yn = 'N' 	
 		union all
 		select
@@ -64,7 +64,7 @@
 		from DOI_CM_SYS_RESOURCE a	
 		inner join auth_sys_resc b on (a.UPPER_SYS_RESOURCE_ID = b.UPPER_SYS_RESOURCE_ID and a.sys_resource_id = b.sys_resource_id)
 		inner join mt c on a.upper_sys_resource_id = c.sys_resource_id
-		where (a.prod_category = #{prodCategory} or a.prod_category = 'HQ' or a.prod_category is null)
+		where a.prod_category = #{prodCategory}
 		and a.del_yn = 'N' 		
 	)
 	select distinct 
