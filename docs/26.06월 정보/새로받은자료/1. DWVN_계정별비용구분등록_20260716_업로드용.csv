@@ -1,0 +1,370 @@
+﻿계정코드,기표여부,사용여부,계정과목,제조,판관
+6000000,0,0,"6000000 -6000000 Chi phí sản xuất, kinh doanh",0,0
+6110000,0,0,6110000 -Mua hàng,1,0
+6111000,1,0,"6111000 -Mua nguyên liệu, vật liệu",1,0
+6112000,1,0,6112000 -Mua hàng hóa,1,0
+6210000,0,0,6210000 -Chi phí nguyên vật liệu trực tiếp,1,0
+6211000,1,0,6211000 -Chi phí nguyên liệu chính,1,0
+6212000,1,0,6212000 -Chi phí nguyên liệu phụ,1,0
+6220000,0,0,6220000 -Chi phí nhân công trực tiếp,1,0
+6221000,0,0,6221000 -Chi phí nhân công trực tiếp-Lương,1,0
+6221100,1,0,6221100 -Chi phí nhân công trực tiếp-Lương,1,0
+6221200,1,0,6221200 -Chi phí nhân công trực tiếp-Bảo hiểm xã hội,1,0
+6221300,1,0,6221300 -Chi phí nhân công trực tiếp-Bảo hiểm y tế,1,0
+6221400,1,0,6221400 -Chi phí nhân công trực tiếp-Bảo hiểm thất nghiệp,1,0
+6221500,1,0,6221500 -Chi phí nhân công trực tiếp-Kinh phí công đoàn,1,0
+6221600,0,0,6221600 -Chi phí nhân công trực tiếp-Các khoản phụ cấp,1,0
+6221610,1,0,6221610 -Phụ cấp – phép năm,1,0
+6221620,1,0,6221620 -Phụ cấp – chung,1,0
+6221700,1,0,6221700 -Chi phí nhân công trực tiếp- Thuế TNCN,1,0
+6221800,1,0,6221800 -Chi phí nhân công trực tiếp- Tiền thưởng,1,0
+6222000,0,0,6222000 -Chi phí nhân công trực tiếp-Lương khác,1,0
+6222100,0,0,6222100 -Chi phí nhân công trực tiếp-Lương khác,1,0
+6222110,1,0,6222110 -Tiền lương khác – Suất ăn nội bộ (trong công ty),1,0
+6222120,1,0,"6222120 -Tiền lương khác – Ăn uống bên ngoài, v.v.",1,0
+6222130,1,0,"6222130 -Tiền lương khác – Chi phí hiếu hỷ (đám cưới, tang lễ…)",1,0
+6222140,1,0,6222140 -Tiền lương khác – Chung (chi phí thông thường),1,0
+6222150,1,0,6222150 -Tiền lương khác – Y tế,1,0
+6222200,0,0,6222200 -Chi phí nhân công trực tiếp-Lương Hỗ trợ sau thôi vc,1,0
+6222210,1,0,6222210 -Trợ cấp thôi việc – cán bộ quản lý (hoặc: lãnh đạo),1,0
+6222220,1,0,6222220 -Trợ cấp thôi việc – nhân viên,1,0
+6222300,0,0,6222300 -Chi phí bồi thường bằng cổ phiếu,1,0
+6222310,1,0,6222310 -Chi phí bồi thường bằng cổ phiếu,1,0
+6230000,0,0,6230000 -Chi phí sử dụng máy thi công,1,0
+6231000,1,0,6231000 -Chi phí nhân công,1,0
+6232000,1,0,6232000 -Chi phí vật liệu,1,0
+6233000,1,0,6233000 -Chi phí dụng cụ sản xuất,1,0
+6234000,1,0,6234000 -Chi phí khấu hao máy thi công,1,0
+6237000,1,0,6237000 -Chi phí dịch vụ mua ngoài,1,0
+6238000,1,0,6238000 -Chi phí bằng tiền khác,1,0
+6270000,0,0,6270000 -Chi phí sản xuất chung,1,0
+6271000,0,0,6271000 -Chi phí nhân viên phân xưởng,1,0
+6271100,0,0,6271100 -Chi phí nhân viên phân xưởng-Lương,1,0
+6271110,1,0,6271110 -Chi phí nhân viên phân xưởng-Lương,1,0
+6271120,1,0,6271120 -Chi phí nhân viên phân xưởng- Bảo hiểm xã hội,1,0
+6271130,1,0,6271130 -Chi phí nhân viên phân xưởng- Bảo hiểm y tế,1,0
+6271140,1,0,6271140 -Chi phí nhân viên phân xưởng- Bảo hiểm thất nghiệp,1,0
+6271150,1,0,6271150 -Chi phí nhân viên phân xưởng- Kinh phí công đoàn,1,0
+6271160,0,0,6271160 -Các khoản phụ cấp,1,0
+6271161,1,0,6271161 -Các khoản phụ cấp - Phép năm,1,0
+6271162,1,0,6271162 -Các khoản phụ cấp - Chung,1,0
+6271170,1,0,6271170 -Chi phí nhân viên phân xưởng- Thuế TNCN,1,0
+6271180,1,0,6271180 -Chi phí nhân viên phân xưởng- Thưởng,1,0
+6271200,0,0,6271200 -Chi phí nhân viên phân xưởng- CP lương khác,1,0
+6271210,1,0,6271210 -Tiền lương khác – Suất ăn nội bộ (trong công ty),1,0
+6271220,1,0,"6271220 -Tiền lương khác – Ăn uống bên ngoài, v.v.",1,0
+6271230,1,0,"6271230 -Tiền lương khác – Chi phí hiếu hỷ (đám cưới, tang lễ…)",1,0
+6271240,1,0,6271240 -Tiền lương khác – Chung (chi phí thông thường),1,0
+6271250,1,0,6271250 -Tiền lương khác – Y tế,1,0
+6271300,0,0,6271300 -Chi phí nhân viên phân xưởng- Post-employment Benefit(DB),1,0
+6271310,1,0,6271310 -Trợ cấp thôi việc – cán bộ quản lý (hoặc: lãnh đạo),1,0
+6271320,1,0,6271320 -Trợ cấp thôi việc – nhân viên,1,0
+6271400,1,0,6271400 -Chi phí nhân viên phân xưởng- Lương thời vụ,1,0
+6271500,1,0,6271500 -Chi phí nhân viên phân xưởng- Other wellfare,1,0
+6271600,0,0,6271600 -Chi phí bồi thường bằng cổ phiếu,1,0
+6271610,1,0,6271610 -Chi phí bồi thường bằng cổ phiếu,1,0
+6272000,1,0,6272000 -Chi phí vật liệu,1,0
+6273000,0,0,6273000 -Chi phí dụng cụ sản xuất,1,0
+6273110,1,0,6273110 -Chi phí dụng cụ sản xuất- Chi phí khấu hao CCDC,1,0
+6273120,1,0,6273120 -Chi phí dụng cụ sản xuất- Chi phí dụng cụ SX,1,0
+6274000,0,0,6274000 -Chi phí khấu hao TSCĐ,1,0
+6274100,0,0,"6274100 -Chi phí khấu hao – Nhà cửa, vật kiến trúc",1,0
+6274110,1,0,"6274110 -Chi phí khấu hao - Nhà cửa, vật kiến trúc",1,0
+6274120,1,0,6274120 -Chi phí khấu hao - Công trình kiến trúc,1,0
+6274130,1,0,6274130 -Chi phí khấu hao - Thiết bị phụ trợ công trình xây dựng,1,0
+6274200,0,0,"6274200 -Chi phí khấu hao – Máy móc, thiết bị",1,0
+6274210,1,0,"6274210 -Chi phí khấu hao – Máy móc, thiết bị",1,0
+6274220,1,0,6274220 -Chi phí khấu hao – Trang thiết bị,1,0
+6274300,1,0,"6274300 -CP khấu hao – Phương tiện vận tải, truyền dẫn",1,0
+6274400,0,0,"6274400 -Chi phí khấu hao – Thiết bị, dụng cụ quản lý",1,0
+6274410,1,0,"6274410 -Chi phí khấu hao -Thiết bị, dụng cụ quản lý",1,0
+6274420,1,0,6274420 -Chi phí khấu hao -Trang thiết bị,1,0
+6274500,1,0,"6274500 -Chi phí khấu hao – Cây lâu năm, súc vật làm việc và cho sản phẩm",1,0
+6274800,1,0,6274800 -Chi phí khấu hao – Tài sản hữu hình khác,1,0
+6274900,0,0,6274900 -Chi phí khấu hao – Vô hình,1,0
+6274910,1,0,6274910 -CPKH TSVH -Quyền sử dụng đất,1,0
+6274920,1,0,6274920 -CPKH TSVH -Quyền phát hành,1,0
+6274930,1,0,"6274930 -CPKH TSVH -Bản quyền, bằng sáng chế",1,0
+6274940,1,0,"6274940 -CPKH TSVH -Nhãn hiệu, tên thương mại",1,0
+6274950,1,0,6274950 -CPKH TSVH -Chương trình phần mềm,1,0
+6274960,1,0,6274960 -CPKH TSVH -Giấy phép và giấy phép nhượng quyền,1,0
+6274990,1,0,6274990 -CPKH TSVH -TSCĐ vô hình khác,1,0
+6275000,0,0,6275000 -Chi phí khấu hao tài sản quyền sử dụng,1,0
+6275100,1,0,6275100 -Chi phí khấu hao – Tài sản hữu hình khác – Khác,1,0
+6275200,1,0,6275200 -Chi phí khấu hao tài sản quyền sử dụng – Nhà cửa,1,0
+6275300,1,0,6275300 -Chi phí khấu hao tài sản quyền sử dụng – Phương tiện vận tải,1,0
+6277000,0,0,6277000 -Chi phí dịch vụ mua ngoài,1,0
+6277110,0,0,"6277110 -Chi phí dịch vụ mua ngoài - Điện, nước",1,0
+6277111,1,0,6277111 -Chi phí dịch vụ mua ngoài - Chi phí nước sạch sản xuất,1,0
+6277112,1,0,6277112 -Chi phí dịch vụ mua ngoài - Chi phí điện sản xuất,1,0
+6277120,1,0,6277120 -Chi phí dịch vụ mua ngoài - Chi phí Dịch vụ bảo vệ,1,0
+6277130,0,0,"6277130 -Chi phí dịch vụ mua ngoài - Đi lại, thuê xe, taxi, vận chuyển, di chuyển, ....sản xuất",1,0
+6277131,1,0,6277131 -CPDV mua ngoài - CP thuê vận chuyển- Đi lại công tác trong nước (COMP),1,0
+6277132,1,0,6277132 -CPDV mua ngoài - CP thuê vận chuyển- Đi lại công tác trong nước (khác),1,0
+6277133,1,0,6277133 -Chi phí dịch vụ mua ngoài - Chi phí thuê vận chuyển- Đưa đón CNV (khác),1,0
+6277134,1,0,6277134 -Chi phí dịch vụ mua ngoài - Chi phí thuê vận chuyển-Khác,1,0
+6277140,0,0,6277140 -Chi phí dịch vụ mua ngoài - Chi phí sửa chữa,1,0
+6277141,1,0,"6277141 -CP dịch vụ mua ngoài - CP sửa chữa, bảo dưỡng, Bảo trì,... SX",1,0
+6277142,1,0,6277142 -CP dịch vụ mua ngoài - CP phí sửa chữa – Kết chuyển chi phí trả trước,1,0
+6277143,1,0,6277143 -Chi phí dịch vụ mua ngoài - Chi phí sửa chữa – Khác,1,0
+6277150,1,0,6277150 -Chi phí dịch vụ mua ngoài - Dịch vụ cung ứng lao động,1,0
+6277160,1,0,6277160 -Chi phí dịch vụ mua ngoài - Chi phí mua ngoài khác,1,0
+6277170,1,0,"6277170 -Chi phí dịch vụ mua ngoài - Thuê máy photocopy, thuê thiết bị khác",1,0
+6277180,1,0,6277180 -Chi phí dịch vụ mua ngoài - Chi phí tiền thuê đất,1,0
+6277190,1,0,"6277190 -Chi phí dịch vụ mua ngoài - Tư vấn dịch vụ khác,...",1,0
+6277210,0,0,6277210 -Chi phí dịch vụ mua ngoài - Chi phí thuê gia công ngoài,1,0
+6277211,1,0,"6277211 -Chi phí gia công thuê ngoài – Xử lý, thải bỏ hóa chất",1,0
+6277212,1,0,6277212 -Chi phí gia công thuê ngoài – Đơn vị gia công ngoài,1,0
+6277213,1,0,6277213 -Chi phí gia công thuê ngoài – Đơn vị thuê gia công theo Hợp đồng,1,0
+6277214,1,0,6277214 -Chi phí gia công thuê ngoài – Khác,1,0
+6277220,0,0,6277220 -Chi phí dịch vụ mua ngoài - Chi phí bảo hiểm,1,0
+6277221,1,0,6277221 -Chi phí bảo hiểm – Phương tiện vận tải,1,0
+6277222,1,0,6277222 -Chi phí bảo hiểm – Nhà cửa,1,0
+6277223,1,0,6277223 -Chi phí bảo hiểm – Chung,1,0
+6277230,0,0,6277230 -Chi phí dịch vụ mua ngoài - Chi phí duy trì xe,1,0
+6277231,1,0,6277231 -Chi phí duy trì xe - Nhiên liệu,1,0
+6277232,1,0,6277232 -Chi phí duy trì xe - Quản lý,1,0
+6277233,1,0,6277233 -Chi phí duy trì xe - Chung,1,0
+6277234,1,0,6277234 -Chi phí duy trì xe - Thuê ôtô,1,0
+6277240,0,0,6277240 -Chi phí dịch vụ mua ngoài - Chi phí vận chuyển (LOGISTIC),1,0
+6277241,1,0,6277241 -Chi phí vận chuyển - Vận chuyển nội địa,1,0
+6277242,1,0,6277242 -Chi phí vận chuyển - Vận chuyển quốc tế,1,0
+6277250,0,0,"6277250 -Chi phí dịch vụ mua ngoài - Chi phí đào tạo, huấn luyện",1,0
+6277251,1,0,"6277251 -Chi phí đào tạo, huân luyện - Bên ngoài",1,0
+6277260,0,0,"6277260 -Chi phí dịch vụ mua ngoài - Chi phí sách, in ấn",1,0
+6277261,1,0,"6277261 -Chi phí sách, in ấn",1,0
+6277270,0,0,6277270 -Chi phí dịch vụ mua ngoài - Chi phí vật tư tiêu hao,1,0
+6277271,1,0,6277271 -Chi phí vật tư tiêu hao - Trang thiết bị,1,0
+6277272,1,0,6277272 -Chi phí vật tư tiêu hao - Văn phòng phẩm,1,0
+6277273,1,0,6277273 -Chi phí vật tư tiêu hao - Chung,1,0
+6277280,0,0,"6277280 -Chi phí dịch vụ mua ngoài - Chi phí hoa hồng, phí dịch vụ trả ngoài",1,0
+6277281,1,0,"6277281 -Chi phí hoa hồng – Phí bảo trì, bảo dưỡng",1,0
+6277282,1,0,"6277282 -Chi phí hoa hồng – Phí kiểm tra, đo lường",1,0
+6277283,1,0,6277283 -Chi phí hoa hồng – Chung,1,0
+6277290,0,0,6277290 -Chi phí dịch vụ mua ngoài - Chi phí kiểm tra,1,0
+6277291,1,0,6277291 -Chi phí dịch vụ mua ngoài - Chi phí kiểm tra,1,0
+6277310,0,0,6277310 -Chi phí dịch vụ mua ngoài - Chi phí hàng mẫu,1,0
+6277311,1,0,6277311 -Chi phí dịch vụ mua ngoài - Chi phí mẫu hàng,1,0
+6277320,0,0,6277320 -Chi phí dịch vụ mua ngoài - Chi phí thông tin liên lạc (Viễn thông),1,0
+6277321,1,0,6277321 -Chi phí thông tin liên lạc (Viễn thông),1,0
+6277410,0,0,"6277410 -Chi phí dịch vụ mua ngoài - Chi phí Chuyển giao công nghệ, Hỗ trợ kỹ thuật công nghệ",0,0
+6277411,1,0,6277411 -Chi phí dịch vụ mua ngoài - Chi phí Chuyển giao công nghệ,1,0
+6277412,1,0,6277412 -Chi phí dịch vụ mua ngoài - CP Hỗ trợ kỹ thuật công nghệ,1,0
+6278000,0,0,6278000 -Chi phí bằng tiền khác,1,0
+6278100,1,0,6278100 -Chi phí thông tin liên lạc (viễn thông),1,0
+6278200,0,0,6278200 -Chi phí bảo hiểm,1,0
+6278210,1,0,6278210 -Chi phí bảo hiểm – Phương tiện vận tải,1,0
+6278220,1,0,6278220 -Chi phí bảo hiểm – Nhà cửa,1,0
+6278230,1,0,6278230 -Chi phí bảo hiểm – Chung,1,0
+6278300,0,0,6278300 -Chi phí duy trì xe,1,0
+6278310,1,0,6278310 -Chi phí duy trì xe – Nhiên liệu,1,0
+6278320,1,0,6278320 -Chi phí duy trì xe – Quản lý,1,0
+6278330,1,0,6278330 -Chi phí duy trì xe – Chung,1,0
+6278340,1,0,6278340 -Chi phí duy trì xe – Thuế ô tô,1,0
+6278400,0,0,6278400 -Chi phí vận chuyển,1,0
+6278410,1,0,6278410 -Chi phí vận chuyển – Vận chuyển nội địa,1,0
+6278420,1,0,6278420 -Chi phí vận chuyển – Vận chuyển quốc tế,1,0
+6278500,0,0,"6278500 -Chi phí đào tạo, huấn luyện",1,0
+6278510,1,0,"6278510 -Chi phí đào tạo, huấn luyện – Bên ngoài",1,0
+6278600,0,0,"6278600 -Chi phí sách, in ấn",1,0
+6278610,1,0,"6278610 -Chi phí sách, in ấn",1,0
+6278700,0,0,6278700 -Chi phí vật tư tiêu hao,1,0
+6278710,1,0,6278710 -Chi phí vật tư tiêu hao – Trang thiết bị,1,0
+6278720,1,0,6278720 -Chi phí vật tư tiêu hao – Văn phòng phẩm,1,0
+6278730,1,0,6278730 -Chi phí vật tư tiêu hao – Chung,1,0
+6278800,0,0,"6278800 -Chi phí hoa hồng, phí dịch vụ trả ngoài",1,0
+6278810,1,0,"6278810 -Chi phí hoa hồng – Phí bảo trì, bảo dưỡng",1,0
+6278820,1,0,"6278820 -Chi phí hoa hồng – Phí kiểm tra, đo lường",1,0
+6278830,1,0,6278830 -Chi phí hoa hồng – Chung,1,0
+6278900,0,0,6278900 -Chi phí kiểm tra,1,0
+6278910,1,0,6278910 -Chi phí kiểm tra,1,0
+6279100,0,0,6279100 -Chi phí mẫu hàng,1,0
+6279110,1,0,6279110 -Chi phí mẫu hàng,1,0
+6310000,1,0,6310000 -Giá thành sản xuất,1,0
+6320000,1,0,6320000 -Giá vốn hàng bán,1,0
+6350000,0,0,6350000 -Chi phí tài chính,0,1
+6351000,0,0,6351000 -Chi phí tài chính - Lãi vay,0,1
+6351100,0,0,6351100 -Chi phí tài chính - Lãi vay ngắn hạn,0,1
+6351110,1,0,6351110 -Chi phí tài chính - Lãi vay ngắn hạn,0,1
+6351120,1,0,6351120 -Chi phí tài chính - Lãi vay ngắn hạn khác (FCT),0,1
+6351200,1,0,6351200 -Chi phí tài chính - Lãi vay dài hạn,0,1
+6352000,0,0,6352000 -Chi phí tài chính - Chênh lệch tỷ giá,0,1
+6352100,1,0,6352100 -Chi phí tài chính - Chênh lệch tỷ giá thực hiện,0,1
+6352200,1,0,6352200 -Chi phí tài chính - Chênh lệch tỷ giá chưa thực hiện,0,1
+6410000,0,0,6410000 -Chi phí bán hàng,0,1
+6411000,1,0,6411000 -Chi phí nhân viên,0,1
+6412000,1,0,"6412000 -Chi phí vật liệu, bao bì",0,1
+6413000,1,0,"6413000 -Chi phí dụng cụ, đồ dùng",0,1
+6414000,1,0,6414000 -Chi phí khấu hao TSCĐ,0,1
+6415000,1,0,6415000 -Chi phí bảo hành,0,1
+6417000,0,0,6417000 -Chi phí dịch vụ mua ngoài,0,1
+6417100,1,0,6417100 -Chi phí dịch vụ mua ngoài - Phí Logistic,0,1
+6417200,1,0,6417200 -Chi phí dịch vụ mua ngoài - Khác,0,1
+6418000,1,0,6418000 -Chi phí bằng tiền khác,0,1
+6420000,0,0,6420000 -Chi phí quản lý kinh doanh,0,1
+6421000,0,0,6421000 -Chi phí nhân viên quản lý,0,1
+6421100,0,0,6421100 -Chi phí nhân viên quản lý- Lương,0,1
+6421110,1,0,6421110 -Chi phí nhân viên quản lý- Lương,0,1
+6421120,1,0,6421120 -Chi phí nhân viên quản lý- Bảo hiểm xã hội,0,1
+6421130,1,0,6421130 -Chi phí nhân viên quản lý- Bảo hiểm y tế,0,1
+6421140,1,0,6421140 -Chi phí nhân viên quản lý- Bảo hiểm thất nghiệp,0,1
+6421150,1,0,6421150 -Chi phí nhân viên quản lý- Kinh phí công đoàn,0,1
+6421160,1,0,6421160 -Chi phí nhân viên quản lý- Lương làm thêm giờ,0,1
+6421170,1,0,6421170 -Chi phí nhân viên quản lý-Thuế TNCN(NET),0,1
+6421180,1,0,6421180 -Chi phí nhân viên quản lý-Thưởng,0,1
+6421190,0,0,6421190 -Chi phí nhân viên quản lý-Phụ cấp,0,1
+6421191,1,0,6421191 -Phụ cấp - Nghỉ phép,0,1
+6421192,1,0,6421192 -Phụ cấp - Thông thường,0,1
+6421200,0,0,6421200 -Chi phí nhân viên quản lý- CP lương khác,0,1
+6421210,1,0,6421210 -Chi phí lương - Ăn trưa nội bộ,0,1
+6421220,1,0,6421220 -Chi phí lương - Ăn ngoài và chi phí khác,0,1
+6421230,1,0,"6421230 -Chi phí lương - Chi phí lễ tang, hiếu hỷ",0,1
+6421240,1,0,6421240 -Chi phí lương - Thông thường,0,1
+6421250,1,0,6421250 -Chi phí lương - Y tế,0,1
+6421260,1,0,6421260 -Chi phí lương - Nhân viên khác,0,1
+6421300,0,0,6421300 -Chi phí nhân viên quản lý- Chi phí hỗ trợ nghỉ việc,0,1
+6421310,1,0,6421310 -Trợ cấp thôi việc – cán bộ quản lý (hoặc: lãnh đạo),0,1
+6421320,1,0,6421320 -Trợ cấp thôi việc – nhân viên,0,1
+6421400,1,0,6421400 -Chi phí nhân viên quản lý- Lương thời vụ,0,1
+6421500,1,0,6421500 -Chi phí nhân viên quản lý- Other wellfare,0,1
+6421600,0,0,6421600 -Trợ cấp hưu trí,0,1
+6421610,1,0,6421610 -Trợ cấp hưu trí - Ban giám đốc,0,1
+6421620,1,0,6421620 -Trợ cấp hưu trí - Nhân viên,0,1
+6421700,1,0,6421700 -Chi phí phúc lợi,0,1
+6422000,1,0,6422000 -Chi phí vật liệu quản lý,0,1
+6423000,1,0,6423000 -Chi phí đồ dùng văn phòng,0,1
+6424000,0,0,6424000 -Chi phí khấu hao TSCĐ,0,1
+6424100,1,0,"6424100 -Chi phí khấu hao TSCĐ- Nhà cửa, vật kiến trúc",0,1
+6424200,1,0,"6424200 -Chi phí khấu hao TSCĐ- Máy móc, thiết bị",0,1
+6424300,1,0,"6424300 -Chi phí khấu hao TSCĐ- Phương tiện vận tải, truyền dẫn",0,1
+6424400,1,0,"6424400 -Chi phí khấu hao TSCĐ- Thiết bị, dụng cụ quản lý",0,1
+6424500,1,0,6424500 -Chi phí khấu hao TSCĐ- Tài sản hữu hình khác(O/E),0,1
+6424600,1,0,6424600 -Chi phí khấu hao TSCĐ- Thuê tài chính xe,0,1
+6424700,1,0,6424700 -Chi phí khấu hao TSCĐ- Lease- Building,0,1
+6424800,1,0,6424800 -Chi phí khấu hao TSCĐ- Tài sản hữu hình khác,0,1
+6424900,0,0,6424900 -Chi phí khấu hao TSCĐ - Vô hình,0,1
+6424910,1,0,6424910 -CPKH TSVH -Quyền sử dụng đất,0,1
+6424920,1,0,6424920 -CPKH TSVH -Quyền phát hành,0,1
+6424930,1,0,"6424930 -CPKH TSVH -Bản quyền, bằng sáng chế",0,1
+6424940,1,0,"6424940 -CPKH TSVH -Nhãn hiệu, tên thương mại",0,1
+6424950,1,0,6424950 -CPKH TSVH -Chương trình phần mềm,0,1
+6424960,1,0,6424960 -CPKH TSVH -Giấy phép và giấy phép nhượng quyền,0,1
+6424990,1,0,6424990 -CPKH TSVH -TSCĐ vô hình khác,0,1
+6425000,1,0,"6425000 -Thuế, phí và lệ phí",0,1
+6426000,1,0,6426000 -Chi phí dự phòng,0,1
+6427000,0,0,6427000 -Chi phí dịch vụ mua ngoài,0,1
+6427110,0,0,"6427110 -Chi phí dịch vụ mua ngoài- Nhiên liệu, Điện, nước",0,1
+6427111,1,0,"6427111 -Chi phí nước, điện, nhiên liệu - Tiền nước",0,1
+6427112,1,0,"6427112 -Chi phí nước, điện, nhiên liệu - Tiền điện",0,1
+6427120,0,0,6427120 -Chi phí dịch vụ mua ngoài- Đi lại,0,1
+6427121,1,0,6427121 -Chi phí đi lại - Công tác trong nước (Công ty),0,1
+6427122,1,0,6427122 -Chi phí đi lại - Công tác trong nước (Khác),0,1
+6427123,1,0,6427123 -Chi phí đi lại - Công tác nước ngoài,0,1
+6427124,1,0,6427124 -Chi phí đi lại - Chi phí đi lại hàng ngày (Khác),0,1
+6427125,1,0,6427125 -Chi phí đi lại - (Khác),0,1
+6427130,1,0,"6427130 -Chi phí dịch vụ mua ngoài- Sửa chữa, bảo dưỡng, xăng dầu",0,1
+6427140,1,0,"6427140 -Chi phí dịch vụ mua ngoài- Điện thoại, mạng,...",0,1
+6427150,1,0,"6427150 -Chi phí dịch vụ mua ngoài- Tư vấn luật, kế toán, kiểm toán",0,1
+6427160,1,0,6427160 -Chi phí dịch vụ mua ngoài- Tư vấn dịch vụ khác,0,1
+6427170,1,0,6427170 -Chi phí dịch vụ mua ngoài- Thuê khách sạn,0,1
+6427180,0,0,6427180 -Chi phí dịch vụ mua ngoài- Tiếp khách,0,1
+6427181,1,0,6427181 -Chi phí tiếp khách - Ăn uống,0,1
+6427182,1,0,6427182 -Chi phí tiếp khách -Hiếu hỷ,0,1
+6427183,1,0,6427183 -Chi phí tiếp khách - Thông thường,0,1
+6427190,1,0,6427190 -Chi phí dịch vụ mua ngoài- Phí ngân hàng,0,1
+6427210,1,0,6427210 -Chi phí dịch vụ mua ngoài- Thuê văn phòng HN,0,1
+6427220,1,0,6427220 -Chi phí dịch vụ mua ngoài_Golf tiếp khách,0,1
+6427230,1,0,6427230 -Chi phí dịch vụ mua ngoài khác,0,1
+6427240,1,0,6427240 -Chi phí dịch vụ mua ngoài_Dịch vụ bảo vệ,0,1
+6427250,1,0,6427250 -Chi phí dịch vụ mua ngoài_Dịch thuật,0,1
+6427260,1,0,6427260 -Chi phí dịch vụ mua ngoài_Dịch vụ bưu chính,0,1
+6427270,1,0,"6427270 -Chi phí dịch vụ mua ngoài_Thuê máy photocopy, thuê thiết bị, thuê khác,....",0,1
+6427280,1,0,6427280 -Chi phí dịch vụ mua ngoài_Phí bảo lãnh,0,1
+6427290,1,0,6427290 -Chi phí dịch vụ mua ngoài_Chi phí chuyển phát nhanh Postage,0,1
+6427310,0,0,6427310 -Chi phí dịch vụ mua ngoài_Mạng,0,1
+6427311,1,0,6427311 -Chi phí viễn thông - Đường truyền riêng trong nước,0,1
+6427312,1,0,6427312 -Chi phí viễn thông - Bưu phí,0,1
+6427313,1,0,6427313 -Chi phí viễn thông - Khác,0,1
+6427320,1,0,6427320 -Chi phí dịch vụ mua ngoài_Chi phí tiền thuê đất,0,1
+6427330,1,0,"6427330 -Chi phí dịch vụ mua ngoài_Chi phí quan trắc, phân tích mẫu",0,1
+6427340,0,0,6427340 -Chi phí hỗ trợ kỹ thuật và chuyển giao công nghệ,0,1
+6427341,1,0,6427341 -Chi phí hỗ trợ kỹ thuật,0,1
+6427342,1,0,6427342 -Chi phí chuyển giao công nghệ,0,1
+6428000,0,0,6428000 -Chi phí bằng tiền khác,0,1
+6428110,1,0,6428110 -Chi phí bằng tiền khác,0,1
+6428120,0,0,6428120 -Chi phí bảo hiểm,0,1
+6428121,1,0,"6428121 -Chi phí bảo hiểm - Bảo hiểm tai nạn lao động, bảo hiểm thất nghiệp",0,1
+6428122,1,0,6428122 -Chi phí bảo hiểm - Xe cộ,0,1
+6428123,1,0,6428123 -Chi phí bảo hiểm - Tòa nhà,0,1
+6428124,1,0,6428124 -Chi phí bảo hiểm - Thông thường,0,1
+6428130,0,0,6428130 -Chi phí duy trì xe cộ,0,1
+6428131,1,0,6428131 -Chi phí duy trì xe cộ - Nhiên liệu,0,1
+6428132,1,0,6428132 -Chi phí duy trì xe cộ - Chi phí quản lý,0,1
+6428133,1,0,6428133 -Chi phí duy trì xe cộ - Thông thường,0,1
+6428134,1,0,6428134 -Chi phí duy trì xe cộ - Thuế ô tô,0,1
+6428140,0,0,6428140 -Chi phí vận chuyển,0,1
+6428141,1,0,6428141 -Chi phí vận chuyển - Vận chuyển nội địa,0,1
+6428142,1,0,6428142 -Chi phí vận chuyển - Vận chuyển quốc tế,0,1
+6428143,1,0,6428143 -Chi phí vận chuyển - Khác,0,1
+6428150,0,0,6428150 -Chi phí đào tạo,0,1
+6428151,1,0,6428151 -Chi phí đào tạo - Bên ngoài,0,1
+6428160,0,0,"6428160 -Chi phí sách báo, in ấn",0,1
+6428161,1,0,"6428161 -Chi phí sách báo, in ấn",0,1
+6428170,0,0,6428170 -Chi phí vật tư tiêu hao,0,1
+6428171,1,0,6428171 -Chi phí vật tư tiêu hao - Trang thiết bị,0,1
+6428172,1,0,6428172 -Chi phí vật tư tiêu hao - Văn phòng phẩm,0,1
+6428173,1,0,6428173 -Chi phí vật tư tiêu hao - Đồ dùng tin học,0,1
+6428174,1,0,6428174 -Chi phí vật tư tiêu hao - Thông thường,0,1
+6428180,0,0,"6428180 -Chi phí quảng cáo, khuyến mãi",0,1
+6428181,1,0,"6428181 -Chi phí quảng cáo, khuyến mãi - IR",0,1
+6428182,1,0,"6428182 -Chi phí quảng cáo, khuyến mãi - Thông thường",0,1
+6428210,0,0,6428210 -Chi phí mẫu hàng,0,1
+6428211,1,0,6428211 -Chi phí mẫu hàng,0,1
+6428220,0,0,6428220 -Chi phí khấu hao tài sản quyền sử dụng,0,1
+6428221,1,0,6428221 -Chi phí khấu hao tài sản quyền sử dụng - Tòa nhà,0,1
+6428222,1,0,6428222 -Chi phí khấu hao tài sản quyền sử dụng - Xe cộ,0,1
+6428230,0,0,6428230 -Chi phí phát triển thị trường nước ngoài,0,1
+6428231,1,0,6428231 -Chi phí phát triển thị trường nước ngoài,0,1
+6428232,1,0,6428232 -Chi phí phát triển thị trường nước ngoài (Chi phí đi lại),0,1
+6428240,0,0,6428240 -Chi phí bồi thường cổ phiếu,0,1
+6428241,1,0,6428241 -Chi phí bồi thường cổ phiếu,0,1
+6428250,0,0,6428250 -Tiền thuê đã trả,0,1
+6428251,1,0,6428251 -Tiền thuê đã trả - Tòa nhà,0,1
+6428252,1,0,6428252 -Tiền thuê đã trả - Xe cộ,0,1
+6428253,1,0,6428253 -Tiền thuê đã trả - Vật dụng,0,1
+6428254,1,0,6428254 -Tiền thuê đã trả - Thông thường,0,1
+6428255,1,0,6428255 -Tiền thuê đã trả - Đất đai,0,1
+6428256,1,0,6428256 -Tiền thuê đã trả - Máy photocopy,0,1
+6428260,0,0,6428260 -Chi phí sửa chữa,0,1
+6428261,1,0,6428261 -Chi phí sửa chữa,0,1
+8000000,0,0,8000000 -8000000 Chi phí khác,0,1
+8110000,0,0,8110000 -Chi phí khác,0,1
+8111000,0,0,8111000 -Chi phí khác,0,1
+8111100,1,0,"8111100 -Chi phí khác- hợp lý, hợp lệ",0,1
+8111200,1,0,"8111200 -Chi phí khác- Không hợp lý, hợp lệ",0,1
+8112000,0,0,8112000 -Chi phí khác - Thanh lý tài sản,0,1
+8112100,1,0,8112100 -Chi phí khác - Thanh lý tài sản hữu hình,0,1
+8112200,1,0,8112200 -Chi phí khác - Thanh lý tài sản vô hình,0,1
+8210000,0,0,8210000 -Chi phí thuế thu nhập doanh nghiệp,0,1
+8211000,1,0,8211000 -Chi phí thuế TNDN hiện hành,0,1
+8212000,1,0,8212000 -Chi phí thuế TNDN hoãn lại,0,1
+9000000,0,0,9000000 -9000000 Xác định kết quả kinh doanh,0,1
+9110000,1,0,9110000 -Xác định kết quả kinh doanh,0,1
+9211100,1,0,9211100-Kết chuyển nhập kho khác NVL chính(1521),0,0
+9211200,1,0,9211200-Kết chuyển nhập kho khác NVL phụ(1522),0,0
+9211300,1,0,9211300-Kết chuyển nhập kho khác TP,0,0
+9211400,1,0,9211400-Kết chuyển nhập kho khác HH,0,0
+9211500,1,0,9211500-Kết chuyển từ tài khoản khác ( Nợ TK chi phí dở dang),0,0
+9211600,1,0,9211600-Kết chuyển nhập kho khác (Bán thành phẩm),0,0
+9211700,1,0,9211700-Kết chuyển nhập kho khác CCDC,0,0
+9221100,1,0,"9221100-Kết chuyển xuất kho khác NVL chính(632 hủy, điều chỉnh)",0,0
+9221200,1,0,9221200-Kết chuyển xuất kho NVL phụ (6272),0,0
+9221300,1,0,9221300-Kết chuyển xuất kho khác TP,0,0
+9221400,1,0,9221400-Kết chuyển xuất kho khác HH,0,0
+9221500,1,0,9221500-Kết chuyển sang tài khoản khác ( Có TK chi phí dở dang),0,0
+9221600,1,0,9221600-Kết chuyển xuất kho khác (Bán thành phẩm),0,0
+9221700,1,0,9221700-Kết chuyển chi phí SX chung vượt công suất,0,0
+9221800,1,0,"9221800-Kết chuyển xuất kho khác TP (632 hủy, điều chỉnh)",0,0
+9221900,1,0,"9221900-Kết chuyển xuất kho khác CCDC (632 hủy, điều chỉnh)",0,0
+9222000,1,0,"9222000-Kết chuyển xuất kho khác NVL Phụ (632 hủy, điều chỉnh)",0,0
+9222100,1,0,9222100-Kết chuyển xuất kho trả lại hàng mua,0,0
