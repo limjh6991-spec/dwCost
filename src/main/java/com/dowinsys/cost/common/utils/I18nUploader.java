@@ -4,16 +4,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Map;
 
 public class I18nUploader {
 
     public static void main(String[] args) {
-        String dbUrl = "jdbc:sqlserver://172.16.0.208:1433;databaseName=DWCMSTEST;encrypt=true;trustServerCertificate=true";
+        String baseUrl = "jdbc:sqlserver://172.16.0.208:1433;encrypt=true;trustServerCertificate=true";
         String user = "bs";
         String pass = "ehdndlstltm1!";
 
@@ -29,9 +26,39 @@ public class I18nUploader {
             System.out.println("Loaded " + translations.size() + " translation entries.");
 
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-            System.out.println("Connecting to " + dbUrl + " ...");
-            try (Connection conn = DriverManager.getConnection(dbUrl, user, pass)) {
-                System.out.println("Connected successfully!");
+            System.out.println("Connecting to master on 172.16.0.208 ...");
+            
+            String targetDb = "DWCMSTEST";
+            try (Connection masterConn = DriverManager.getConnection(baseUrl + ";databaseName=master", user, pass);
+                 Statement stmt = masterConn.createStatement()) {
+                System.out.println("Connected to master DB!");
+
+                // Check databases
+                ResultSet rs = stmt.executeQuery("SELECT name FROM sys.databases");
+                System.out.println("--- Available Databases on 172.16.0.208 ---");
+                boolean foundDwcmsTest = false;
+                while (rs.next()) {
+                    String dbName = rs.getString("name");
+                    System.out.println("  DB: " + dbName);
+                    if (dbName.equalsIgnoreCase("DWCMSTEST")) {
+                        foundDwcmsTest = true;
+                    }
+                }
+
+                if (!foundDwcmsTest) {
+                    System.out.println("DWCMSTEST does not exist. Creating database DWCMSTEST...");
+                    stmt.execute("CREATE DATABASE DWCMSTEST");
+                    System.out.println("Database DWCMSTEST created successfully!");
+                }
+            } catch (Exception e) {
+                System.err.println("Master DB check/create warning: " + e.getMessage());
+            }
+
+            // Now connect to target DB
+            String targetUrl = baseUrl + ";databaseName=" + targetDb;
+            System.out.println("Connecting to " + targetUrl + " ...");
+            try (Connection conn = DriverManager.getConnection(targetUrl, user, pass)) {
+                System.out.println("Connected to " + targetDb + " successfully!");
 
                 // Ensure table exists
                 String createTableSql = "IF OBJECT_ID('dbo.DOI_I18N', 'U') IS NULL " +
