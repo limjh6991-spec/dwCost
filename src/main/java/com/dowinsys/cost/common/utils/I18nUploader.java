@@ -7,12 +7,17 @@ import java.io.File;
 import java.sql.*;
 import java.util.Map;
 
+/**
+ * DOI_I18N 테이블 다국어 데이터 업로더
+ * 대상: 10.100.40.17:14233 / DWCMSTEST / dbo
+ * 테이블 구조: SEQ(INT NOT NULL), KO_TEXT, VI_TEXT, CATEGORY, USE_YN, REG_DATE
+ */
 public class I18nUploader {
 
     public static void main(String[] args) {
-        String baseUrl = "jdbc:sqlserver://172.16.0.208:1433;encrypt=true;trustServerCertificate=true";
-        String user = "bs";
-        String pass = "ehdndlstltm1!";
+        String dbUrl = "jdbc:sqlserver://10.100.40.17:14233;databaseName=DWCMSTEST;encrypt=true;trustServerCertificate=true";
+        String user = "cost";
+        String pass = "Dowoo1234!";
 
         File jsonFile = new File("src/main/vue/src/assets/i18n/ko_to_vi.json");
         if (!jsonFile.exists()) {
@@ -23,92 +28,96 @@ public class I18nUploader {
         try {
             ObjectMapper mapper = new ObjectMapper();
             Map<String, String> translations = mapper.readValue(jsonFile, new TypeReference<Map<String, String>>() {});
-            System.out.println("Loaded " + translations.size() + " translation entries.");
+            System.out.println("Loaded " + translations.size() + " translation entries from ko_to_vi.json");
 
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-            System.out.println("Connecting to master on 172.16.0.208 ...");
-            
-            String targetDb = "DWCMSTEST";
-            try (Connection masterConn = DriverManager.getConnection(baseUrl + ";databaseName=master", user, pass);
-                 Statement stmt = masterConn.createStatement()) {
-                System.out.println("Connected to master DB!");
+            System.out.println("Connecting to " + dbUrl + " ...");
 
-                // Check databases
-                ResultSet rs = stmt.executeQuery("SELECT name FROM sys.databases");
-                System.out.println("--- Available Databases on 172.16.0.208 ---");
-                boolean foundDwcmsTest = false;
-                while (rs.next()) {
-                    String dbName = rs.getString("name");
-                    System.out.println("  DB: " + dbName);
-                    if (dbName.equalsIgnoreCase("DWCMSTEST")) {
-                        foundDwcmsTest = true;
+            try (Connection conn = DriverManager.getConnection(dbUrl, user, pass)) {
+                System.out.println("Connected to DWCMSTEST successfully!");
+
+                // Check table structure
+                try (Statement stmt = conn.createStatement()) {
+                    ResultSet rs = stmt.executeQuery(
+                        "SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMNPROPERTY(OBJECT_ID('dbo.DOI_I18N'), COLUMN_NAME, 'IsIdentity') AS IS_IDENTITY " +
+                        "FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'DOI_I18N' ORDER BY ORDINAL_POSITION");
+                    System.out.println("--- DOI_I18N Table Structure ---");
+                    while (rs.next()) {
+                        System.out.println("  " + rs.getString("COLUMN_NAME") +
+                            " (" + rs.getString("DATA_TYPE") + ")" +
+                            " nullable=" + rs.getString("IS_NULLABLE") +
+                            " identity=" + rs.getInt("IS_IDENTITY"));
                     }
                 }
 
-                if (!foundDwcmsTest) {
-                    System.out.println("DWCMSTEST does not exist. Creating database DWCMSTEST...");
-                    stmt.execute("CREATE DATABASE DWCMSTEST");
-                    System.out.println("Database DWCMSTEST created successfully!");
-                }
-            } catch (Exception e) {
-                System.err.println("Master DB check/create warning: " + e.getMessage());
-            }
-
-            // Now connect to target DB
-            String targetUrl = baseUrl + ";databaseName=" + targetDb;
-            System.out.println("Connecting to " + targetUrl + " ...");
-            try (Connection conn = DriverManager.getConnection(targetUrl, user, pass)) {
-                System.out.println("Connected to " + targetDb + " successfully!");
-
-                // Ensure table exists
-                String createTableSql = "IF OBJECT_ID('dbo.DOI_I18N', 'U') IS NULL " +
-                        "CREATE TABLE dbo.DOI_I18N (" +
-                        "    LANG_KEY NVARCHAR(500) NOT NULL PRIMARY KEY, " +
-                        "    KO_TEXT  NVARCHAR(MAX) NULL, " +
-                        "    VI_TEXT  NVARCHAR(MAX) NULL, " +
-                        "    USE_YN   VARCHAR(1) DEFAULT 'Y', " +
-                        "    INIT_DT  DATETIME DEFAULT GETDATE() " +
-                        ")";
+                // Check existing MAX(SEQ)
+                int maxSeq = 0;
                 try (Statement stmt = conn.createStatement()) {
-                    stmt.execute(createTableSql);
-                    System.out.println("Verified/Created dbo.DOI_I18N table.");
+                    ResultSet rs = stmt.executeQuery("SELECT ISNULL(MAX(SEQ), 0) AS maxSeq FROM dbo.DOI_I18N");
+                    if (rs.next()) {
+                        maxSeq = rs.getInt("maxSeq");
+                    }
+                    System.out.println("Existing MAX(SEQ) = " + maxSeq);
                 }
 
-                String upsertSql = "IF EXISTS (SELECT 1 FROM dbo.DOI_I18N WHERE LANG_KEY = ?) " +
-                        "    UPDATE dbo.DOI_I18N SET VI_TEXT = ?, KO_TEXT = ? WHERE LANG_KEY = ?; " +
-                        "ELSE " +
-                        "    INSERT INTO dbo.DOI_I18N (LANG_KEY, KO_TEXT, VI_TEXT, USE_YN, INIT_DT) VALUES (?, ?, ?, 'Y', GETDATE());";
+                // Check existing row count
+                try (Statement stmt = conn.createStatement()) {
+                    ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS cnt FROM dbo.DOI_I18N");
+                    if (rs.next()) {
+                        System.out.println("Existing rows in DOI_I18N: " + rs.getInt("cnt"));
+                    }
+                }
+
+                // UPSERT with SEQ
+                String upsertSql =
+                    "IF EXISTS (SELECT 1 FROM dbo.DOI_I18N WHERE KO_TEXT = ?) " +
+                    "    UPDATE dbo.DOI_I18N SET VI_TEXT = ? WHERE KO_TEXT = ?; " +
+                    "ELSE " +
+                    "    INSERT INTO dbo.DOI_I18N (SEQ, KO_TEXT, VI_TEXT, CATEGORY, USE_YN, REG_DATE) " +
+                    "    VALUES (?, ?, ?, 'COMMON', 'Y', GETDATE());";
 
                 conn.setAutoCommit(false);
                 int count = 0;
+                int seq = maxSeq;
+
                 try (PreparedStatement pstmt = conn.prepareStatement(upsertSql)) {
                     for (Map.Entry<String, String> entry : translations.entrySet()) {
                         String ko = entry.getKey();
                         String vi = entry.getValue();
+                        seq++;
 
-                        pstmt.setString(1, ko);
-                        pstmt.setString(2, vi);
-                        pstmt.setString(3, ko);
-                        pstmt.setString(4, ko);
+                        // UPDATE part params
+                        pstmt.setNString(1, ko);   // WHERE KO_TEXT = ?
+                        pstmt.setNString(2, vi);   // SET VI_TEXT = ?
+                        pstmt.setNString(3, ko);   // WHERE KO_TEXT = ?
 
-                        pstmt.setString(5, ko);
-                        pstmt.setString(6, ko);
-                        pstmt.setString(7, vi);
+                        // INSERT part params
+                        pstmt.setInt(4, seq);      // SEQ
+                        pstmt.setNString(5, ko);   // KO_TEXT
+                        pstmt.setNString(6, vi);   // VI_TEXT
 
                         pstmt.addBatch();
                         count++;
 
-                        if (count % 200 == 0) {
+                        if (count % 500 == 0) {
                             pstmt.executeBatch();
                             conn.commit();
-                            System.out.println("Uploaded " + count + " / " + translations.size() + " entries...");
+                            System.out.println("Processed " + count + " / " + translations.size() + " entries...");
                         }
                     }
                     pstmt.executeBatch();
                     conn.commit();
                 }
 
-                System.out.println("SUCCESS! Uploaded total " + count + " entries to DWCMSTEST.dbo.DOI_I18N.");
+                // Verify final count
+                try (Statement stmt = conn.createStatement()) {
+                    ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS cnt FROM dbo.DOI_I18N");
+                    if (rs.next()) {
+                        System.out.println("Final rows in DOI_I18N: " + rs.getInt("cnt"));
+                    }
+                }
+
+                System.out.println("SUCCESS! Processed total " + count + " entries to DWCMSTEST.dbo.DOI_I18N");
             }
         } catch (Exception e) {
             e.printStackTrace();
