@@ -60,6 +60,15 @@
     </div>
     <div class="grid_box search_onerow">
       <div class="left_box">
+        <!-- VN 화면 전용 탭 (HQ는 단일 트리 그리드 유지) -->
+        <ul v-if="isVN" class="nav nav-tabs model_pl_tab">
+          <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeTab === 'monthly' }" @click="switchTab('monthly')">월별</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeTab === 'vn' }" @click="switchTab('vn')">VN</a>
+          </li>
+        </ul>
         <div class="btn_wrap ms-auto">
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
         </div>
@@ -97,6 +106,7 @@ export default {
       modelPlGrid: null,
       modelPlGridRows: [],
       selCodeList: [],
+      activeTab: 'monthly',
 
       params: {
         yyyymm: null,
@@ -122,6 +132,7 @@ export default {
       handler(newVal) {
         if (!newVal) return;
         this.params.site = newVal === 'VN' ? 'VINA' : '본사';
+        this.activeTab = 'monthly';
         if (this.$refs.modelPlTree) {
           this.initialize();
           this.searchClick();
@@ -137,6 +148,9 @@ export default {
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
+    },
+    isVN() {
+      return this.siteMap[this.params.site] === 'VN';
     },
   },
 
@@ -366,6 +380,36 @@ export default {
       });
     },
 
+    // VN 상세 탭: gubun 들여쓰기(공백 2칸=1레벨)로 임의 깊이 트리 구성
+    buildTreeRowsMultiLevel(rows) {
+      const stack = []; // [{ depth, treeId }]
+      let topCount = 0;
+      const childCounters = {}; // parentTreeId -> count
+
+      return (rows || []).map(r => {
+        const row = { ...r };
+        const raw = String(row.gubun ?? '');
+        const lead = raw.length - raw.replace(/^\s+/, '').length;
+        const depth = Math.max(1, Math.floor(lead / 2));
+
+        while (stack.length && stack[stack.length - 1].depth >= depth) stack.pop();
+        const parent = stack.length ? stack[stack.length - 1].treeId : '';
+
+        let treeId;
+        if (!parent) {
+          topCount += 1;
+          treeId = String(topCount);
+        } else {
+          childCounters[parent] = (childCounters[parent] || 0) + 1;
+          treeId = `${parent}.${childCounters[parent]}`;
+        }
+
+        stack.push({ depth, treeId });
+        row.treeId = treeId;
+        return row;
+      });
+    },
+
     collapseGubun(targetLabel) {
       const grid = modelPlTreeView;
       const count = typeof grid?.getItemCount === 'function' ? grid.getItemCount() : 0;
@@ -396,9 +440,12 @@ export default {
         selCode: this.params.selCode === '' ? 'ACTUAL' : this.params.selCode
       };
 
+      // VN 화면의 'VN' 탭은 상세 포맷 프로시저(VN_PL_ByModel_Detail) 사용, 그 외(월별/HQ)는 기존 프로시저
+      const amountQueryId = this.isVN && this.activeTab === 'vn' ? 'C0009009_Detail' : 'C0009009_Sch1';
+
       const amountResp = await this.$axios.api.search({
         menuId: 'c0009000',
-        queryId: 'C0009009_Sch1',
+        queryId: amountQueryId,
         queryParams: params,
         target: null,
       });
@@ -491,12 +538,16 @@ export default {
       this.currencyFields = baseGrid.columns.filter((c) => c.numberFormat).map((c) => c.fieldName);
       amountRows = await this.buildCurrencyRows(amountRows);
 
-      const finalRows = this.buildTreeRows([qtyRow, ...amountRows]);
+      // VN 상세 탭: 매출수량 행 없이 다단계 트리 / 그 외: 기존(매출수량 + 2단계)
+      const isDetail = this.isVN && this.activeTab === 'vn';
+      const finalRows = isDetail
+        ? this.buildTreeRowsMultiLevel(amountRows)
+        : this.buildTreeRows([qtyRow, ...amountRows]);
 
       this.modelPlGridRows = finalRows;
       modelPlTreeProvider.setRows(finalRows, 'treeId');
       modelPlTreeView.expandAll();
-      this.collapseGubun('IV. 판매비와관리비');
+      if (!isDetail) this.collapseGubun('IV. 판매비와관리비');
     },
 
     onCurrencyChange(currency) {
@@ -528,6 +579,12 @@ export default {
       } else {
         this.params.selCode = this.selCodeList[0]?.value ?? '';
       }
+    },
+
+    switchTab(tab) {
+      if (this.activeTab === tab) return;
+      this.activeTab = tab;
+      this.searchClick();
     },
 
     searchClick() {
@@ -566,8 +623,11 @@ export default {
         }
         return ret;
       }
-      var gubun = String(dataCell.value ?? '').trim();
-      if (/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\./.test(gubun)) {
+      var raw = String(dataCell.value ?? '');
+      var lead = raw.length - raw.replace(/^\s+/, '').length;
+      var gubun = raw.trim();
+      // 최상위(큰 항목): 들여쓰기 2칸 이하 + 로마자(I.) 또는 번호(1.,10.) 로 시작
+      if (lead <= 2 && /^(\d+|[IVXLCDM]+)\s*(\([a-z]\))?\./.test(gubun)) {
         ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#BFBFBF' };
       } else if (gubun === '매출수량') {
         ret.style = { fontWeight: 'bold', whiteSpace: 'pre', backgroundColor: '#fff3cd' };
@@ -578,8 +638,10 @@ export default {
     },
     setRowStyleCallbackGrid(grid, item, fixed) {
       var ret = {};
-      var gubun = String(grid.getValue(item.index, 'gubun') ?? '').trim();
-      if (/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\./.test(gubun)) {
+      var raw = String(grid.getValue(item.index, 'gubun') ?? '');
+      var lead = raw.length - raw.replace(/^\s+/, '').length;
+      var gubun = raw.trim();
+      if (lead <= 2 && /^(\d+|[IVXLCDM]+)\s*(\([a-z]\))?\./.test(gubun)) {
         ret.style = { background: '#BFBFBF' };
       } else if (gubun === '매출수량') {
         ret.style = { background: '#fff3cd', fontWeight: 'bold' };
@@ -589,3 +651,28 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* VN 전용 탭 바 — 40px left_box 안에 컴팩트하게 배치 */
+.model_pl_tab {
+  border-bottom: 0;
+  margin-bottom: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.model_pl_tab .nav-link {
+  padding: 4px 16px;
+  font-size: 13px;
+  color: #555;
+  border: 1px solid transparent;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.model_pl_tab .nav-link.active {
+  color: #232f4e;
+  font-weight: 600;
+  background: #fff;
+  border-color: #bebebe #bebebe #fff;
+}
+</style>
