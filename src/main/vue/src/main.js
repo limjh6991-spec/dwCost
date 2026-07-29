@@ -23,7 +23,47 @@ import popup from './plugins/popup';
 import "@assets/style/realgrid.css";
 import "@assets/style/font.css";
 import zIndexManager from "@/utils/zIndexManager";
-import koToVi from '@/assets/i18n/ko_to_vi.json';
+// 번역 데이터는 DB API에서 동적 로드 (ko_to_vi.json 대신)
+let koToVi = {};
+
+// DB에서 번역 데이터 로드 (localStorage 캐싱)
+async function loadTranslations() {
+  const currentLang = localStorage.getItem('locale') || 'ko';
+  if (currentLang !== 'vi') return; // 한국어면 번역 불필요
+
+  // 캐시 확인
+  const cached = localStorage.getItem('i18n_translations');
+  const cachedTime = localStorage.getItem('i18n_cache_time');
+  const CACHE_TTL = 1000 * 60 * 60; // 1시간 캐시
+
+  if (cached && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_TTL) {
+    try {
+      koToVi = JSON.parse(cached);
+      console.log(`[i18n] 캐시에서 로드: ${Object.keys(koToVi).length}건`);
+      return;
+    } catch (e) {
+      localStorage.removeItem('i18n_translations');
+    }
+  }
+
+  // API에서 로드
+  try {
+    const baseURL = process.env.VUE_APP_API_URL || '';
+    const response = await fetch(`${baseURL}/api/public/i18n?lang=vi`);
+    if (response.ok) {
+      const data = await response.json();
+      koToVi = data.translations || {};
+      // 캐시 저장
+      localStorage.setItem('i18n_translations', JSON.stringify(koToVi));
+      localStorage.setItem('i18n_cache_time', Date.now().toString());
+      console.log(`[i18n] API에서 로드: ${Object.keys(koToVi).length}건`);
+    } else {
+      console.warn('[i18n] API 응답 오류, 번역 없이 진행');
+    }
+  } catch (e) {
+    console.warn('[i18n] API 연결 실패, 번역 없이 진행:', e.message);
+  }
+}
 
 //import * as ionicons5 from '@vicons/ionicons5';
 //import { LogInOutline } from '@vicons/ionicons5';
@@ -161,4 +201,7 @@ app.mixin({
 // 초기 페인트부터 언어 스코프가 적용되도록 루트 속성 설정
 document.documentElement.setAttribute('data-app-lang', localStorage.getItem('locale') || 'ko');
 
-app.mount('#app');
+// 번역 로드 후 앱 마운트
+loadTranslations().finally(() => {
+  app.mount('#app');
+});

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3.0-mapper.dtd">
+<mapper namespace="com.dowinsys.cost.common.i18n.mapper.I18nMapper">
+
+    <!-- DOI_I18N 테이블에서 번역 데이터 조회 -->
+    <select id="selectI18nList" parameterType="string" resultType="java.util.HashMap">
+        SELECT KO_TEXT, VI_TEXT
+        FROM DOI_I18N
+        WHERE USE_YN = 'Y'
+        AND VI_TEXT IS NOT NULL
+        AND VI_TEXT != ''
+        ORDER BY KO_TEXT
+    </select>
+
+</mapper>
