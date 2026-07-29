@@ -212,6 +212,40 @@
         #{selcode}
     </select>
 
+    <!-- ===== VINA 재료비 파이프라인 (제조원가 집계) 단계별 실행 ===== -->
+    <!-- ① 재고조정(6272 기타출고→투입 재분류) : DOI_VN_STOCK_ADJ -->
+    <select id="C0003001_Vn1" resultType="CamelMap">
+        DECLARE @RET_CODE INT;
+        EXEC @RET_CODE = UP_VN_STOCK_ADJ
+            #{yyyymm},
+            #{site},
+            #{selcode}
+    </select>
+    <!-- ② 재료비 원장 : doi_matl_resc -->
+    <select id="C0003001_Vn2" resultType="CamelMap">
+        DECLARE @RET_CODE INT;
+        EXEC @RET_CODE = UP_VN_MATL_RESC
+            #{yyyymm},
+            #{site},
+            #{selcode}
+    </select>
+    <!-- ③ 재료비 집계 : doi_mat_amt -->
+    <select id="C0003001_Vn3" resultType="CamelMap">
+        DECLARE @RET_CODE INT;
+        EXEC @RET_CODE = UP_VN_MAT_AMT
+            #{yyyymm},
+            #{site},
+            #{selcode}
+    </select>
+    <!-- ④ 재료비 배부(직과/공통) : doi_mat_cost -->
+    <select id="C0003001_Vn4" resultType="CamelMap">
+        DECLARE @RET_CODE INT;
+        EXEC @RET_CODE = UP_VN_MAT_COST
+            #{yyyymm},
+            #{site},
+            #{selcode}
+    </select>
+
     <select id="ExeclogPopup" resultType="CamelMap">
     SELECT
         seq_no,

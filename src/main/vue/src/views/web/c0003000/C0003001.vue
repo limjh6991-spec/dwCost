@@ -21,6 +21,19 @@
     <template #tab-content-TAB030005>
       <TAB030005 tabId="TAB030005" />
     </template>
+    <!-- VINA 재료비 파이프라인 (제조원가집계) -->
+    <template #tab-content-TAB030009>
+      <TAB030009 tabId="TAB030009" />
+    </template>
+    <template #tab-content-TAB030010>
+      <TAB030010 tabId="TAB030010" />
+    </template>
+    <template #tab-content-TAB030011>
+      <TAB030011 tabId="TAB030011" />
+    </template>
+    <template #tab-content-TAB030012>
+      <TAB030012 tabId="TAB030012" />
+    </template>
   </auth-tabs>
 </template>
 
@@ -30,6 +43,10 @@ import TAB030002 from './tab/TAB030002.vue';
 import TAB030003 from './tab/TAB030003.vue';
 import TAB030004 from './tab/TAB030004.vue';
 import TAB030005 from './tab/TAB030005.vue';
+import TAB030009 from './tab/TAB030009.vue';
+import TAB030010 from './tab/TAB030010.vue';
+import TAB030011 from './tab/TAB030011.vue';
+import TAB030012 from './tab/TAB030012.vue';
 
 export default {
   name: 'DOI_C0003001',
@@ -40,6 +57,10 @@ export default {
     TAB030003,
     TAB030004,
     TAB030005,
+    TAB030009,
+    TAB030010,
+    TAB030011,
+    TAB030012,
   },
   watch: {},
   data() {
