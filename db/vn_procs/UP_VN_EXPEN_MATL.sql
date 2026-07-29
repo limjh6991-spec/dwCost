@@ -1,5 +1,4 @@
-
-CREATE OR ALTER Procedure UP_VN_EXPEN_MATL
+CREATE OR ALTER PROCEDURE UP_VN_EXPEN_MATL
 (
     @YYYYMM varchar(10),--집계 년/월 설정
     @SITE varchar(5),  --사업장코드 (본사 : HQ, 베트남 : VN)
@@ -85,16 +84,16 @@ BEGIN
 				+ @YYYYMM + '월 '+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
 		SET @CHECK = 1;
 	END
-
-	SELECT @CNT = count(*)
-		FROM DOI_CST_RATE
-      WHERE yyyymm=@YYYYMM
-        and site  =@SITE;
-	IF @CNT = 0 BEGIN
-		SET @Message = @Message + char(10)+'[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- VINA카세트 배부비율(DOI_CST_RATE) 테이블에 '
-				+ @YYYYMM + '월 '+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
-		SET @CHECK = 1;
-	END
+--
+--	SELECT @CNT = count(*)
+--		FROM DOI_CST_RATE
+--      WHERE yyyymm=@YYYYMM
+--        and site  =@SITE;
+--	IF @CNT = 0 BEGIN
+--		SET @Message = @Message + char(10)+'[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- VINA카세트 배부비율(DOI_CST_RATE) 테이블에 '
+--				+ @YYYYMM + '월 '+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+--		SET @CHECK = 1;
+--	END
 	
 	/*SELECT @CNT = count(*)
 		FROM DOI_BOH_AMT
@@ -123,7 +122,7 @@ BEGIN
 	
 	--삭제
  BEGIN TRANSACTION;
-      DELETE FROM DOI_ACCT_EXPEN
+   DELETE FROM DOI_ACCT_EXPEN
       WHERE 1=1
         and yyyymm = @YYYYMM
         and site  = @SITE
@@ -165,7 +164,7 @@ BEGIN
       SET  @Message =  @Message + char(10) + ' [INFO] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 부서별/원가항목별 투입비용(DOI_ACCT_EXPEN) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
 
-	/* 20260514 삭제 YHKIM
+	-- [복원 260729] 20260514 삭제분 복원 (신규DB 첫달 DOI_BOH_AMT 경비/재료비 배부)
       --생산수불이 있는 물량은 기초금액을 경비와 재료비로 금액 비율로 배부한다 
      	UPDATE doi_boh_amt 
 		SET 기초수량 = 'Y'
@@ -243,7 +242,7 @@ BEGIN
       SET  @Message =  @Message + char(10) + char(10) + ' [INFO] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 재공기초금액(DOI_BOH_AMT) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + ' 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 금액비율로 경비/재료비로 설정했습니다';
  
---기초금액 배부 확인 SQL
+/*--기초금액 배부 확인 SQL
 with boh as (select 구분,model,sum(PRE_EOH_AMT) boh_amt,기초수량 from doi_boh_amt where yyyymm=@YYYYMM group by 구분,model,기초수량)
 , cost as(	select 구분,model,sum(boh+adj_boh) boh_cost from doi_cost where yyyymm=@YYYYMM and sel_code=@SEL_CODE 
 	group by 구분,model having sum(boh+adj_boh) != 0)
@@ -356,7 +355,7 @@ with boh as (select 구분,model,sum(PRE_EOH_AMT) boh_amt,기초수량 from doi_
 	          AND a.yyyymm = @YYYYMM
 	          AND a.site = @SITE
 	          AND a.sel_code = @SEL_CODE
-	          AND a.dept IN ('400','448') -- 카세트팀 
+	        AND a.dept IN ('400','448') -- 카세트팀 
 	    ) A
 	),
 	sum_expen AS ( 
@@ -519,7 +518,7 @@ with boh as (select 구분,model,sum(PRE_EOH_AMT) boh_amt,기초수량 from doi_
 	FROM (		
 		SELECT t.*,
 			COALESCE((Final_BOH + Final_IN)/ 
-					 NULLIF((eoh_qty / 2.0) + out_qty + bad_qty + transfer_qty + IIF(@SEL_CODE = 'ACTLSS',loss_qty,0), 0),0) AS unit_cost
+					 NULLIF(out_qty + ISNULL((SELECT v.CONV FROM V_VN_WIP_CONV v WHERE v.wc_ym = @YYYYMM AND v.wc_site = @SITE AND v.wc_gubun = 구분 AND v.wc_model = model), 0), 0),0) AS unit_cost
 		FROM (    
 			SELECT A.*,
 				  Base_BOH + CASE WHEN RN = 1 THEN BOH - Sum_Base_Boh ELSE 0 END Final_BOH
@@ -728,7 +727,7 @@ with boh as (select 구분,model,sum(PRE_EOH_AMT) boh_amt,기초수량 from doi_
 	DELETE FROM _dd2 WHERE _rn > 1;
 
 	UPDATE DOI_EXPEN_MATL SET unit_cost = COALESCE((BOH + [IN])/
-				 NULLIF((eoh_qty / 2.0) + out_qty + bad_qty + transfer_qty + IIF(@SEL_CODE = 'ACTLSS',loss_qty,0), 0),0)
+				 NULLIF(out_qty + ISNULL((SELECT v.CONV FROM V_VN_WIP_CONV v WHERE v.wc_ym = @YYYYMM AND v.wc_site = @SITE AND v.wc_gubun = 구분 AND v.wc_model = model), 0), 0),0)
      WHERE 1=1
        AND YYYYMM	= @YYYYMM
        AND SITE 	= @SITE
@@ -830,7 +829,7 @@ BEGIN*/                   -- [주석처리] 짝을 맞추기 위해 BEGIN도 주
               -- --------------------------------------------------------------------------
               SELECT @SOURCE_ITEM_AMT = ISNULL( SUM(ACCT_AMT),0)
                  /* ROUND(
-                      SUM(
+  SUM(
                           -- A. 일반 및 UTG 배부 계산
    (CAST(A.ACCT_AMT AS FLOAT) * CASE 
                                WHEN A.dept IN ('400','448') THEN ISNULL(B.utg, 1) 
@@ -960,3 +959,5 @@ DEALLOCATE item_cursor;
        RETURN -1;
    END CATCH;
 END;
+
+

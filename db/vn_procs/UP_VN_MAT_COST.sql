@@ -1,4 +1,3 @@
-
 CREATE OR ALTER Procedure UP_VN_MAT_COST
 (
     @YYYYMM varchar(10),--집계 년/월 설정
@@ -413,7 +412,7 @@ INSERT INTO doi_mat_cost
 SELECT yyyymm,sel_code,site,구분,도우모델,자재번호,mat_gubun,mat_class,자재대분류,in_amt,boh_qty,in_qty,eoh_qty,out_qty,loss_qty,bad_qty,
  Transfer_qty,/*outetc_qty,*/환산량,소요량,배부율,Final_BOH,배부금액,사용량,배부방식,
 	COALESCE(CAST((Final_BOH + 배부금액)  as numeric(24,12))/ 
-			 NULLIF((eoh_qty / 2.0) + out_qty + bad_qty + transfer_qty + IIF(@SEL_CODE = 'ACTLSS',loss_qty,0), 0),0) AS 단가, ADJ_YN, 원가자재분류
+			 NULLIF(out_qty + ISNULL((SELECT v.CONV FROM V_VN_WIP_CONV v WHERE v.wc_ym = @YYYYMM AND v.wc_site = @SITE AND v.wc_gubun = 구분 AND v.wc_model = 도우모델), 0), 0),0) AS 단가, ADJ_YN, 원가자재분류
 --sum(Final.Final_BOH)
 From
 (
@@ -624,7 +623,7 @@ WHERE 배부금액+Final_BOH != 0
 		
 		UPDATE DOI_MAT_COST
 		SET 단가 = COALESCE((BOH_AMT + 배부금액)
-		            / NULLIF((EOH_QTY / 2.0) + OUT_QTY + BAD_QTY + TRANSFER_QTY + IIF(@SEL_CODE = 'ACTLSS', LOSS_QTY, 0), 0), 0)
+		            / NULLIF(OUT_QTY + ISNULL((SELECT v.CONV FROM V_VN_WIP_CONV v WHERE v.wc_ym = @YYYYMM AND v.wc_site = @SITE AND v.wc_gubun = 구분 AND v.wc_model = 도우모델), 0), 0), 0)
 		WHERE 1=1 
 		  AND YYYYMM   = @YYYYMM
 		  AND SITE     = @SITE
