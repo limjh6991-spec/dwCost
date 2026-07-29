@@ -20,4 +20,11 @@ public interface I18nMapper {
      * @return KO_TEXT, VI_TEXT 포함된 맵 리스트
      */
     List<Map<String, Object>> selectI18nList(@Param("lang") String lang);
+
+    /**
+     * DOI_I18N_DICT 2차 사전 조회
+     * @param lang 언어 코드
+     * @return KO_WORD, VI_WORD 맵 리스트 (긴 단어 우선)
+     */
+    List<Map<String, Object>> selectI18nDict(@Param("lang") String lang);
 }

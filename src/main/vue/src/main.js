@@ -23,45 +23,79 @@ import popup from './plugins/popup';
 import "@assets/style/realgrid.css";
 import "@assets/style/font.css";
 import zIndexManager from "@/utils/zIndexManager";
-// 번역 데이터는 DB API에서 동적 로드 (ko_to_vi.json 대신)
-let koToVi = {};
+// 번역 데이터는 DB API에서 동적 로드 (2차 사전: 단어 단위 매칭)
+let koToVi = {};      // 1차: 전체 텍스트 매칭용
+let koToViDict = {};   // 2차: 단어 사전 (긴 단어 우선)
+let dictKeys = [];     // 사전 키 배열 (긴 단어 우선 정렬됨)
+
+// 텍스트에서 한국어 단어를 사전으로 치환
+function translateText(text) {
+  if (!text || typeof text !== 'string') return text;
+  const trimmed = text.trim();
+  if (!trimmed) return text;
+  
+  // 1. 정확 매칭 우선 (1차 테이블)
+  if (koToVi[trimmed]) return koToVi[trimmed];
+  
+  // 2. 단어 단위 치환 (2차 사전) - 긴 단어부터 매칭
+  let result = trimmed;
+  for (const ko of dictKeys) {
+    if (result.includes(ko)) {
+      result = result.split(ko).join(koToViDict[ko]);
+    }
+  }
+  return result;
+}
 
 // DB에서 번역 데이터 로드 (localStorage 캐싱)
 async function loadTranslations() {
   const currentLang = localStorage.getItem('locale') || 'ko';
-  if (currentLang !== 'vi') return; // 한국어면 번역 불필요
+  if (currentLang !== 'vi') return;
 
   // 캐시 확인
-  const cached = localStorage.getItem('i18n_translations');
+  const cached1 = localStorage.getItem('i18n_full');
+  const cached2 = localStorage.getItem('i18n_dict');
   const cachedTime = localStorage.getItem('i18n_cache_time');
-  const CACHE_TTL = 1000 * 60 * 60; // 1시간 캐시
+  const CACHE_TTL = 1000 * 60 * 60; // 1시간
 
-  if (cached && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_TTL) {
+  if (cached1 && cached2 && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_TTL) {
     try {
-      koToVi = JSON.parse(cached);
-      console.log(`[i18n] 캐시에서 로드: ${Object.keys(koToVi).length}건`);
+      koToVi = JSON.parse(cached1);
+      koToViDict = JSON.parse(cached2);
+      dictKeys = Object.keys(koToViDict);
+      console.log(`[i18n] 캐시 로드: 1차=${Object.keys(koToVi).length}건, 2차=${dictKeys.length}건`);
       return;
     } catch (e) {
-      localStorage.removeItem('i18n_translations');
+      localStorage.removeItem('i18n_full');
+      localStorage.removeItem('i18n_dict');
     }
   }
 
   // API에서 로드
   try {
     const baseURL = process.env.VUE_APP_API_URL || '';
-    const response = await fetch(`${baseURL}/api/public/i18n?lang=vi`);
-    if (response.ok) {
-      const data = await response.json();
+    const [res1, res2] = await Promise.all([
+      fetch(`${baseURL}/api/public/i18n?lang=vi`),
+      fetch(`${baseURL}/api/public/i18n/dict?lang=vi`)
+    ]);
+    
+    if (res1.ok) {
+      const data = await res1.json();
       koToVi = data.translations || {};
-      // 캐시 저장
-      localStorage.setItem('i18n_translations', JSON.stringify(koToVi));
-      localStorage.setItem('i18n_cache_time', Date.now().toString());
-      console.log(`[i18n] API에서 로드: ${Object.keys(koToVi).length}건`);
-    } else {
-      console.warn('[i18n] API 응답 오류, 번역 없이 진행');
     }
+    if (res2.ok) {
+      const data = await res2.json();
+      koToViDict = data.dict || {};
+      dictKeys = Object.keys(koToViDict); // 이미 긴 단어 우선 정렬됨
+    }
+    
+    // 캐시 저장
+    localStorage.setItem('i18n_full', JSON.stringify(koToVi));
+    localStorage.setItem('i18n_dict', JSON.stringify(koToViDict));
+    localStorage.setItem('i18n_cache_time', Date.now().toString());
+    console.log(`[i18n] API 로드: 1차=${Object.keys(koToVi).length}건, 2차=${dictKeys.length}건`);
   } catch (e) {
-    console.warn('[i18n] API 연결 실패, 번역 없이 진행:', e.message);
+    console.warn('[i18n] API 연결 실패:', e.message);
   }
 }
 
@@ -82,20 +116,11 @@ const eventBus = mitt();
 // RealGrid2 라이선스 적용
 RealGrid.setLicenseKey(process.env.VUE_APP_REAL_GRID_2LIC);
 
-// Object.keys(ionicons5).forEach((key) => {
-//   const icon = ionicons5[key];
-//   if (icon) {
-//     app.component(key, defineComponent (icon));	
-// 	}
-// });
-//app.component('LogInIcon', defineComponent(LogInOutline));
-
 // 워닝이 너무 많이 떠서 일단 콘솔 경고 비활성화
 app.config.warnHandler = () => {};
 
 //전역 에러 처리
 app.config.errorHandler = (err, instance, info) => {
-  // RealGrid 라이선스 만료 에러는 개발환경에서 무시 (워터마크만 표시됨)
   if (err && err.toString().includes('LicenseError')) {
     console.warn('[RealGrid] 라이선스 만료 - 개발환경에서는 워터마크가 표시됩니다.');
     return;
@@ -112,7 +137,6 @@ window.onunhandledrejection = (event) => {
 
 // 전역 오류 처리
 window.onerror = (message, source, lineno, colno, error) => {
-  // console.error('전역 Error:', message, source, lineno, colno, error);
   showToast("error","시스템 관리자에게 문의하십시오.\n"+message);
 };
 
@@ -142,13 +166,12 @@ app.config.globalProperties.$trans = (text) => {
   if (!text) return '';
   const currentLang = localStorage.getItem('locale') || 'ko';
   if (currentLang === 'vi') {
-    const key = text.toString().trim();
-    return koToVi[key] || text;
+    return translateText(text);
   }
   return text;
 };
 
-// Global Translation Mixin to automatically translate text nodes and placeholders on mount and update
+// Global Translation Mixin - 2차 사전 기반 단어 단위 번역
 app.mixin({
   mounted() {
     this.translateDOM();
@@ -159,7 +182,6 @@ app.mixin({
   methods: {
     translateDOM() {
       const currentLang = localStorage.getItem('locale') || 'ko';
-      // 언어별 CSS 스코프용: 루트에 현재 언어 표시(베트남어 폭/줄바꿈 조정 등)
       if (document.documentElement.getAttribute('data-app-lang') !== currentLang) {
         document.documentElement.setAttribute('data-app-lang', currentLang);
       }
@@ -175,19 +197,28 @@ app.mixin({
           }
           if (node.nodeType === 3) {
             const text = node.nodeValue.trim();
-            if (text && koToVi[text]) {
-              node.nodeValue = koToVi[text];
+            if (text) {
+              const translated = translateText(text);
+              if (translated !== text) {
+                node.nodeValue = translated;
+              }
             }
           } else if (node.nodeType === 1) {
             if (node.tagName === 'OPTION') {
               const text = node.textContent.trim();
-              if (text && koToVi[text]) {
-                node.textContent = koToVi[text];
+              if (text) {
+                const translated = translateText(text);
+                if (translated !== text) {
+                  node.textContent = translated;
+                }
               }
             }
             const placeholder = node.getAttribute('placeholder');
-            if (placeholder && koToVi[placeholder.trim()]) {
-              node.setAttribute('placeholder', koToVi[placeholder.trim()]);
+            if (placeholder) {
+              const translated = translateText(placeholder.trim());
+              if (translated !== placeholder.trim()) {
+                node.setAttribute('placeholder', translated);
+              }
             }
             node.childNodes.forEach(walk);
           }
@@ -205,3 +236,4 @@ document.documentElement.setAttribute('data-app-lang', localStorage.getItem('loc
 loadTranslations().finally(() => {
   app.mount('#app');
 });
+

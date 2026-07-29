@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3.0-mapper.dtd">
 <mapper namespace="com.dowinsys.cost.common.i18n.mapper.I18nMapper">
 
-    <!-- DOI_I18N 테이블에서 번역 데이터 조회 -->
+    <!-- 1차 테이블: DOI_I18N (원본 텍스트 전체 매칭) -->
     <select id="selectI18nList" parameterType="string" resultType="java.util.HashMap">
         SELECT KO_TEXT, VI_TEXT
         FROM DOI_I18N
@@ -10,6 +10,16 @@
         AND VI_TEXT IS NOT NULL
         AND VI_TEXT != ''
         ORDER BY KO_TEXT
+    </select>
+
+    <!-- 2차 테이블: DOI_I18N_DICT (순수 단어 사전) -->
+    <select id="selectI18nDict" parameterType="string" resultType="java.util.HashMap">
+        SELECT KO_WORD, VI_WORD
+        FROM DOI_I18N_DICT
+        WHERE USE_YN = 'Y'
+        AND VI_WORD IS NOT NULL
+        AND VI_WORD != ''
+        ORDER BY LEN(KO_WORD) DESC
     </select>
 
 </mapper>
