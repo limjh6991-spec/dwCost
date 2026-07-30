@@ -135,14 +135,39 @@ __webpack_require__.r(__webpack_exports__);
       let result1 = await this.$axios.api.search(searchParam);
       const gridField1 = _.cloneDeep(__webpack_require__(/*! @web/c0009000/js/C0009006.js */ "./src/views/web/c0009000/js/C0009006.js"));
       result1.forEach(item => {
+        const fn = item.model.toLowerCase();
+        // VN: 모델별 수량 컬럼(금액 앞) 추가
+        if (params.site === 'VN') {
+          gridField1.fields.push({
+            fieldName: fn + '_q',
+            valueType: 'number',
+            dataType: 'number'
+          });
+          gridField1.columns.push({
+            name: fn + '_q',
+            fieldName: fn + '_q',
+            width: 80,
+            header: {
+              text: '수량'
+            },
+            autoFilter: false,
+            numberFormat: '#,##0',
+            styleName: 'tr',
+            footer: {
+              expression: "sum",
+              numberFormat: "#,##0",
+              styleName: "sum-footer1"
+            }
+          });
+        }
         gridField1.fields.push({
-          fieldName: item.model.toLowerCase(),
+          fieldName: fn,
           valueType: 'number',
           dataType: 'number'
         });
         gridField1.columns.push({
-          name: item.model.toLowerCase(),
-          fieldName: item.model.toLowerCase(),
+          name: fn,
+          fieldName: fn,
           width: 80,
           header: {
             text: item.model
@@ -160,8 +185,8 @@ __webpack_require__.r(__webpack_exports__);
       this.gridDataProvider.setFields(gridField1.fields);
       this.gridView.setColumns(gridField1.columns);
       (0,_utils_gridUtils__WEBPACK_IMPORTED_MODULE_7__.applyAmtFormatLive)(this.gridView, this.userAuthInfo.curProdCtg, this.currency);
-      // 환산 대상 금액 컬럼(동적 포함) 수집
-      this.currencyFields = gridField1.columns.filter(c => c.numberFormat).map(c => c.fieldName);
+      // 환산 대상 금액 컬럼(동적 포함) 수집 — 수량 컬럼(전체수량, *_q)은 환산 제외
+      this.currencyFields = gridField1.columns.filter(c => c.numberFormat && c.fieldName !== '전체수량' && !c.fieldName.endsWith('_q')).map(c => c.fieldName);
       const rows = [];
       let param = {
         menuId: 'c0009000',
@@ -830,8 +855,14 @@ const grid = {
     fieldName: '자재번호',
     dataType: ValueType.TEXT
   }, {
+    fieldName: '거래처',
+    dataType: ValueType.TEXT
+  }, {
     fieldName: 'size',
     dataType: ValueType.TEXT
+  }, {
+    fieldName: '전체수량',
+    dataType: ValueType.NUMBER
   }, {
     fieldName: 'z합계',
     dataType: ValueType.NUMBER
@@ -882,6 +913,15 @@ const grid = {
     autoFilter: true,
     styleName: 'tl'
   }, {
+    name: '거래처',
+    fieldName: '거래처',
+    width: '80',
+    header: {
+      text: '거래처'
+    },
+    autoFilter: true,
+    styleName: 'tl'
+  }, {
     name: 'size',
     fieldName: 'size',
     width: '80',
@@ -890,6 +930,21 @@ const grid = {
     },
     autoFilter: true,
     styleName: 'tl'
+  }, {
+    name: '전체수량',
+    fieldName: '전체수량',
+    width: '90',
+    header: {
+      text: '수량'
+    },
+    autoFilter: false,
+    styleName: 'tr',
+    numberFormat: '#,##0',
+    footer: {
+      expression: 'sum',
+      numberFormat: '#,##0',
+      styleName: 'sum-footer1'
+    }
   }, {
     name: 'z합계',
     fieldName: 'z합계',
@@ -953,4 +1008,8 @@ const useC0001001 = (0,pinia__WEBPACK_IMPORTED_MODULE_0__.defineStore)('c0001001
 /***/ })
 
 }]);
+<<<<<<<< HEAD:src/main/resources/public/js/src_views_web_c0009000_C0009006_vue.c89543633a6d993d.js
 //# sourceMappingURL=src_views_web_c0009000_C0009006_vue.c89543633a6d993d.js.map
+========
+//# sourceMappingURL=src_views_web_c0009000_C0009006_vue.5b6f40d0789f2521.js.map
+>>>>>>>> df09388 (feat(vn-matcost): 원부자재 배부표 VN 전용 - 전체수량+모델별 수량 컬럼 추가):src/main/resources/public/js/src_views_web_c0009000_C0009006_vue.5b6f40d0789f2521.js

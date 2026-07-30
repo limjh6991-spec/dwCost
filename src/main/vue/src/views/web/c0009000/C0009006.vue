@@ -161,15 +161,31 @@ export default {
       let result1 = await this.$axios.api.search(searchParam);
       const gridField1 = _.cloneDeep(require(`@web/c0009000/js/C0009006.js`));
       result1.forEach((item) => {
+        const fn = item.model.toLowerCase();
+        // VN: 모델별 수량 컬럼(금액 앞) 추가
+        if (params.site === 'VN') {
+          gridField1.fields.push({ fieldName: fn + '_q', valueType: 'number', dataType: 'number' });
+          gridField1.columns.push({
+            name: fn + '_q',
+            fieldName: fn + '_q',
+            width: 80,
+            header: { text: '수량' },
+            autoFilter: false,
+            numberFormat: '#,##0',
+            styleName: 'tr',
+            footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
+          });
+        }
+
         gridField1.fields.push({
-          fieldName: item.model.toLowerCase(),
+          fieldName: fn,
           valueType: 'number',
           dataType: 'number',
         });
 
         gridField1.columns.push({
-          name: item.model.toLowerCase(),
-          fieldName: item.model.toLowerCase(),
+          name: fn,
+          fieldName: fn,
           width: 80,
           header: {
             text: item.model,
@@ -184,8 +200,10 @@ export default {
       this.gridDataProvider.setFields(gridField1.fields);
       this.gridView.setColumns(gridField1.columns);
       applyAmtFormatLive(this.gridView, this.userAuthInfo.curProdCtg, this.currency);
-      // 환산 대상 금액 컬럼(동적 포함) 수집
-      this.currencyFields = gridField1.columns.filter((c) => c.numberFormat).map((c) => c.fieldName);
+      // 환산 대상 금액 컬럼(동적 포함) 수집 — 수량 컬럼(전체수량, *_q)은 환산 제외
+      this.currencyFields = gridField1.columns
+        .filter((c) => c.numberFormat && c.fieldName !== '전체수량' && !c.fieldName.endsWith('_q'))
+        .map((c) => c.fieldName);
 
       const rows = [];
       let param = {

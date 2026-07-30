@@ -21,7 +21,9 @@ const grid = {
     { fieldName: '자재중분류', dataType: ValueType.TEXT },
     { fieldName: '자재명', dataType: ValueType.TEXT },
     { fieldName: '자재번호', dataType: ValueType.TEXT },
+    { fieldName: '거래처', dataType: ValueType.TEXT },
     { fieldName: 'size', dataType: ValueType.TEXT },
+    { fieldName: '전체수량', dataType: ValueType.NUMBER },
     { fieldName: 'z합계', dataType: ValueType.NUMBER },
   ],
   columns: [
@@ -30,7 +32,9 @@ const grid = {
     { name: '자재중분류', fieldName: '자재중분류', width: '80', header: { text: '중분류' }, autoFilter: true, styleName: 'tl' },
     { name: '자재명', fieldName: '자재명', width: '80', header: { text: '품명' }, autoFilter: true, styleName: 'tl' },
     { name: '자재번호', fieldName: '자재번호', width: '80', header: { text: '품번' }, autoFilter: true, styleName: 'tl' },
+    { name: '거래처', fieldName: '거래처', width: '80', header: { text: '거래처' }, autoFilter: true, styleName: 'tl' },
     { name: 'size', fieldName: 'size', width: '80', header: { text: '규격' }, autoFilter: true, styleName: 'tl' },
+    { name: '전체수량', fieldName: '전체수량', width: '90', header: { text: '수량' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'z합계', fieldName: 'z합계', width: '80', header: { text: '제조경비 합계' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };
