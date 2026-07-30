@@ -424,6 +424,11 @@
         EXEC DOI_StockExpenseByModel @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selCode};
     </select>
 
+    <!-- 제품 수불부 (VN) 신규 포맷: 완제품창고(WH0006) 재고수불 상세 -->
+    <select id="C0009002_Detail" resultType="CamelMap">
+        EXEC VN_StockLedger_Detail @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selCode};
+    </select>
+
     <select id="C0009003_Sch1" resultType="CamelMap">
         <choose>
             <when test="site != null and site == 'VN'">

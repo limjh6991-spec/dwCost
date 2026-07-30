@@ -40,12 +40,22 @@
     </div>
     <div class="grid_box search_onerow">
       <div class="left_box">
+        <!-- VN 화면 전용 탭 (HQ는 단일 그리드 유지) -->
+        <ul v-if="isVN" class="nav nav-tabs prod_subul_tab">
+          <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeTab === 'default' }" @click="switchTab('default')">제품 수불부</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeTab === 'vn' }" @click="switchTab('vn')">제품 수불부 (VN)</a>
+          </li>
+        </ul>
         <div class="btn_wrap ms-auto">
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :grid="prodSubulGrid" :layout="prodSubulGrid.columnLayout" :rows="prodSubulGridRows" style="height: 100%" />
+        <RealGrid v-show="activeTab === 'default'" ref="prodSubulGrid" :uid="'prodSubulGrid'" :step="'1'" :grid="prodSubulGrid" :layout="prodSubulGrid.columnLayout" :rows="prodSubulGridRows" style="height: 100%" />
+        <RealGrid v-show="activeTab === 'vn'" ref="prodSubulVnGrid" :uid="'prodSubulVnGrid'" :step="'1'" :grid="prodSubulVnGrid" :layout="prodSubulVnGrid.columnLayout" :rows="prodSubulVnGridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -55,6 +65,7 @@
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0009000/js/C0009002.js';
+import vnGridField from '@web/c0009000/js/C0009002_VN.js';
 
 export default {
   props: {},
@@ -71,6 +82,9 @@ export default {
     return {
       prodSubulGrid: null,
       prodSubulGridRows: [],
+      prodSubulVnGrid: null,
+      prodSubulVnGridRows: [],
+      activeTab: 'default',
       selCodeList: [],
       params: {
         yyyymm: null,
@@ -103,6 +117,7 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
+          this.activeTab = 'default';
           if (this.$refs.prodSubulGrid != null) {
             this.initialize();
             this.searchClick();
@@ -125,6 +140,9 @@ export default {
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
     },
+    isVN() {
+      return this.siteMap[this.params.site] === 'VN';
+    },
   },
   created() {
     this.initialize();
@@ -142,6 +160,13 @@ export default {
 
     gv.setCellStyleCallback(this.setCellStyleCallbackProd);
     gv.setRowStyleCallback(this.setRowStyleCallbackProd);
+
+    // VN 신규 포맷 그리드: 다단계 헤더 레이아웃 적용
+    const vnGv = this.$refs.prodSubulVnGrid?.getGridView();
+    if (vnGv && this.prodSubulVnGrid?.columnLayout) {
+      vnGv.setColumnLayout(this.prodSubulVnGrid.columnLayout);
+      vnGv.setFooter({ visible: true });
+    }
   },
   beforeUnmount() {},
   methods: {    initialize() {
@@ -151,12 +176,20 @@ export default {
     },
     initializeGrid() {
       this.prodSubulGrid = _.cloneDeep(gridField);
+      this.prodSubulVnGrid = _.cloneDeep(vnGridField);
+    },
+    switchTab(tab) {
+      if (this.activeTab === tab) return;
+      this.activeTab = tab;
+      this.searchClick();
     },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
     async getDataList() {
-      this.gridView.commit();
+      const isVnTab = this.isVN && this.activeTab === 'vn';
+      const activeGv = isVnTab ? this.$refs.prodSubulVnGrid?.getGridView() : this.gridView;
+      activeGv?.commit();
 
       if (!this.hasSysAdmin) {
         this.params.selCode = 'ACTUAL';
@@ -168,14 +201,26 @@ export default {
         selCode: this.params.selCode === '' ? 'ACTUAL' : this.params.selCode,
       };
 
-      let param = {
-        menuId: 'c0009000',
-        queryId: 'C0009002_Sch1',
-        queryParams: params,
-        target: this.prodSubulGridRows,
-      };
-      let resp = await this.$axios.api.search(param);
-      console.log('첫행', this.prodSubulGridRows?.[0]);
+      // 신규 VN 포맷 탭은 상세 프로시저(VN_StockLedger_Detail), 그 외는 기존 포맷
+      if (isVnTab) {
+        const rows = [];
+        await this.$axios.api.search({
+          menuId: 'c0009000',
+          queryId: 'C0009002_Detail',
+          queryParams: params,
+          target: rows,
+        });
+        this.prodSubulVnGridRows = rows;
+      } else {
+        const rows = [];
+        await this.$axios.api.search({
+          menuId: 'c0009000',
+          queryId: 'C0009002_Sch1',
+          queryParams: params,
+          target: rows,
+        });
+        this.prodSubulGridRows = rows;
+      }
     },
 
     async loadSelCodeList() {
@@ -203,7 +248,9 @@ export default {
       this.getDataList();
     },
     async excelBtnClick() {
-      const grid = this.gridView;
+      const isVnTab = this.isVN && this.activeTab === 'vn';
+      const grid = isVnTab ? this.$refs.prodSubulVnGrid?.getGridView() : this.gridView;
+      if (!grid) return;
 
       const now = new Date();
       const yyyymmdd = this.$utils.getTodayDate();
@@ -211,7 +258,8 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `제품 수불부_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const baseName = isVnTab ? '제품 수불부(VN)' : '제품 수불부';
+      const fileName = `${baseName}_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
@@ -278,3 +326,28 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* VN 전용 탭 바 — left_box 안에 컴팩트하게 배치 */
+.prod_subul_tab {
+  border-bottom: 0;
+  margin-bottom: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.prod_subul_tab .nav-link {
+  padding: 4px 16px;
+  font-size: 13px;
+  color: #555;
+  border: 1px solid transparent;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.prod_subul_tab .nav-link.active {
+  color: #232f4e;
+  font-weight: 600;
+  background: #fff;
+  border-color: #bebebe #bebebe #fff;
+}
+</style>
