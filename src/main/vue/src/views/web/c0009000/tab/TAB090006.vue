@@ -622,6 +622,8 @@ export default {
         ['OUT_ETC_QTY','outEtcQty'], ['OUT_ETC_AMT','outEtcAmt'],
         ['ETC_OUT_LOT_QTY','etcOutLotQty'], ['ETC_OUT_LOT_AMT','etcOutLotAmt'],
         ['ETC_OUT_ETC_QTY','etcOutEtcQty'], ['ETC_OUT_ETC_AMT','etcOutEtcAmt'],
+        ['PL_BEFORE','plBefore'], ['PL_AFTER','plAfter'],
+        ['PL_BEFORE_AMT','plBeforeAmt'], ['PL_AFTER_AMT','plAfterAmt'],
         ['EOH_QTY','eohQty'],  ['EOH_AMT','eohAmt'],
       ];
 
