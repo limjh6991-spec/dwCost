@@ -19,6 +19,9 @@ public enum MapperEnum {
 	C0007009("com.dowinsys.cost.web.c0007000.mapper.C0007009Mapper."), // 타시스템 > 불량반품
 	C0007010("com.dowinsys.cost.web.c0007000.mapper.C0007010Mapper."), // 타시스템 > 재공/재고기초금액 이월
 	C0007012("com.dowinsys.cost.web.c0007000.mapper.C0007012Mapper."), // 타시스템 > 환율관리(월평균, VINA USD 환산)
+	C0007013("com.dowinsys.cost.web.c0007000.mapper.C0007013Mapper."), // 타시스템 > 기타입출고금액조회(통합) VN
+	C0007014("com.dowinsys.cost.web.c0007000.mapper.C0007014Mapper."), // 타시스템 > 재고금액상세조회(통합) VN
+	C0007015("com.dowinsys.cost.web.c0007000.mapper.C0007015Mapper."), // 타시스템 > 자재조회 VN
 	C0003000("com.dowinsys.cost.web.c0003000.mapper.C0003000Mapper."), // 결산증빙 자료
 	// C0003010("com.dowinsys.cost.web.c0003000.mapper.C0003010Mapper."), // 제조매출원가 > 제품수불 체크
 	C0008000("com.dowinsys.cost.web.c0008000.mapper.C0008000Mapper."), // 결산증빙 자료
