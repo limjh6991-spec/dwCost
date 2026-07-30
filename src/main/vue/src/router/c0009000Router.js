@@ -100,6 +100,16 @@ const c0009000Router = [
     },
   },
   {
+    path: '/c0009012',
+    name: '제품 재고수불(VN)',
+    component: () => import('../views/web/c0009000/C0009012.vue'),
+    meta: {
+      upperSysResourceId: 'C0009000',
+      sysResourceId: 'C0009012',
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/c0009013',
     name: '유상사급',
     component: () => import('../views/web/c0009000/C0009013.vue'),

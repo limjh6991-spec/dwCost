@@ -75,7 +75,7 @@ export default {
       this.gridView.commit();
       let params = { yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null };
       const rows = [];
-      await this.$axios.api.search({ menuId: 'c0007012', queryId: 'C0007012_Sch1', queryParams: params, target: rows });
+      await this.$axios.api.search({ menuId: 'c0007012', queryId: 'C0007012_VN_Sch1', queryParams: params, target: rows });
       this.gridRows.splice(0, this.gridRows.length, ...rows);
     },
     searchClick() {
@@ -93,7 +93,7 @@ export default {
         checkedRows.forEach((idx) => { existingRows.push(this.gridDataProvider.getJsonRow(idx)); });
         if (existingRows.length > 0) {
           try {
-            await this.$axios.api.saveData({ menuId: 'c0007012', delete: [{ queryId: 'C0007012_Delete1', data: existingRows }] });
+            await this.$axios.api.saveData({ menuId: 'c0007012', delete: [{ queryId: 'C0007012_VN_Delete1', data: existingRows }] });
             this.searchClick();
           } catch { this.$toast('error', '삭제 중 에러가 발생했습니다.'); return; }
         }

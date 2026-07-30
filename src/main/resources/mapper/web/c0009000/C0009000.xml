@@ -352,6 +352,11 @@
         </choose>
     </select>
 
+    <!-- C0009012: 제품 재고수불(VN) - V18 신규 포맷 (더미 프로시저) -->
+    <select id="C0009012_Sch1" resultType="CamelMap">
+        EXEC VN_StockLedger_V18 @YYYYMM=#{yyyymm}, @SITE=#{site}, @SEL_CODE=#{selcode};
+    </select>
+
     <select id="C0009008_Tab090008_Col" resultType="CamelMap">
         SELECT TOP 500 dept_name
         FROM (
