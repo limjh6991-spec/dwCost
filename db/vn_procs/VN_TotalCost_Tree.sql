@@ -29,6 +29,10 @@ BEGIN
 		DECLARE @SumDev_Bep     NVARCHAR(MAX)=N'0';  --손익분기점 : Break-Even Point (BEP) Operating Profit
 		DECLARE @SumCas_Bep     NVARCHAR(MAX)=N'0';
 		DECLARE @SumPur_Bep     NVARCHAR(MAX)=N'0';
+		DECLARE @SumYangsan_Cm  NVARCHAR(MAX)=N'0';  -- 한계이익 : Contribution Margin
+		DECLARE @SumDev_Cm      NVARCHAR(MAX)=N'0';
+		DECLARE @SumCas_Cm      NVARCHAR(MAX)=N'0';
+		DECLARE @SumPur_Cm      NVARCHAR(MAX)=N'0';
         DECLARE @SumYangsan_Op NVARCHAR(MAX)=N'0';
 		DECLARE @SumDev_Op     NVARCHAR(MAX)=N'0';  -- 영업이익  : Operating Profit
 		DECLARE @SumCas_Op     NVARCHAR(MAX)=N'0';
@@ -717,16 +721,14 @@ BEGIN
             GROUP BY M.구분, M.model
         ),
         FIX_TOTAL AS (
+            -- VN: 고정비 = 총원가 - 변동비 (DOI_고정비_ByModel이 VN 미지원 → #FIX 공백이라 유도)
             SELECT
                   M.구분
                 , M.model
-                , CAST(COALESCE(SUM(F.amt),0) AS DECIMAL(18,2)) AS fix_amt
+                , CAST(COALESCE(TC.amt,0) - COALESCE(VT.var_amt,0) AS DECIMAL(18,2)) AS fix_amt
             FROM #MODEL M
-            LEFT JOIN #FIX F
-                   ON F.model = M.model
-                  AND F.구분 = M.구분
-                  --AND F.rn    = 1 -- ✅ 고정비 합계 rn
-            GROUP BY M.구분, M.model
+            LEFT JOIN TOTAL_COST TC ON TC.model = M.model AND TC.구분 = M.구분
+            LEFT JOIN VAR_TOTAL  VT ON VT.model = M.model AND VT.구분 = M.구분
         ),
         CM_PROFIT AS (
             -- IX. 한계이익 = 매출액 - 변동비
@@ -995,7 +997,28 @@ BEGIN
         SELECT @SumPur_Bep = COALESCE(
             STRING_AGG(N'COALESCE(Bep.' + QUOTENAME(pivot_key) + N',0)', N' + ')
                 WITHIN GROUP (ORDER BY sort_structure, model), N'0')
-        FROM #MODEL M WHERE M.구분 = N'구매';     
+        FROM #MODEL M WHERE M.구분 = N'구매';
+        ---------------
+        -- 한계이익(IX) 모델 합계식 (한계이익률 합계 = 한계이익/매출 계산용)
+        SELECT @SumYangsan_Cm =
+          COALESCE(STRING_AGG(N'COALESCE(Cm.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+            WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+        FROM #MODEL WHERE 구분=N'양산' AND is_cassette=0;
+
+        SELECT @SumDev_Cm =
+          COALESCE(STRING_AGG(N'COALESCE(Cm.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+            WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+        FROM #MODEL WHERE 구분=N'개발' AND is_cassette=0;
+
+        SELECT @SumCas_Cm = COALESCE(
+            STRING_AGG(N'COALESCE(Cm.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+                WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+        FROM #MODEL M WHERE M.구분 = N'카세트' OR is_cassette = 1;
+
+        SELECT @SumPur_Cm = COALESCE(
+            STRING_AGG(N'COALESCE(Cm.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+                WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+        FROM #MODEL M WHERE M.구분 = N'구매';
         ---------------
 		SELECT @SumYangsan_Op =
 		  COALESCE(STRING_AGG(N'COALESCE(Op.' + QUOTENAME(pivot_key) + N',0)', N' + ')
@@ -1049,9 +1072,8 @@ BEGIN
 						  ((' + @SumYangsan_Op + ')+(' + @SumDev_Op + ')+(' + @SumCas_Op + ')+(' + @SumPur_Op +'))
 					      /NULLIF(((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + ')),0)*100
            			  WHEN LTRIM(Cur.gubun) = N''한계이익률'' THEN
-						  ('+@SumYangsan_FiX + ' + ' + @SumDev_Fix +')
-					      /NULLIF(((' + @SumYangsan_Bep + ')+(' + @SumDev_Bep + ')+(' + @SumCas_Bep + ')+(' + @SumPur_Bep +')),0)*100
-					       --/NULLIF(((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + ')),0)*100
+						  ((' + @SumYangsan_Cm + ')+(' + @SumDev_Cm + ')+(' + @SumCas_Cm + ')+(' + @SumPur_Cm + '))
+					      /NULLIF(((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + ')),0)*100
 					  WHEN Cur.rn = 1 THEN ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) - @SCOF
 					  ELSE ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + '))
 					END
@@ -1066,8 +1088,8 @@ BEGIN
 						  ((' + @SumYangsan_Op  +'))
 					      /NULLIF(((' + @SumYangsan_Sale + ')),0)*100
          		  WHEN LTRIM(Cur.gubun) = N''한계이익률'' THEN
-					  ('+@SumYangsan_FiX +')
-				      /NULLIF(((' + @SumYangsan_Bep +')),0)*100
+					  (' + @SumYangsan_Cm + ')
+				      /NULLIF((' + @SumYangsan_Sale + '),0)*100
 				  ELSE (' + @SumYangsan + ')
 				END AS DECIMAL(18,2)) AS [양산합계]
 			, CAST(
@@ -1078,8 +1100,8 @@ BEGIN
 						  ((' + @SumDev_Op +'))
 					      /NULLIF(((' + @SumDev_Sale + ')),0)*100
           		  WHEN LTRIM(Cur.gubun) = N''한계이익률'' THEN
-					  ('+ @SumDev_Fix +')
-				      /NULLIF(((' + @SumDev_Bep +')),0)*100
+					  (' + @SumDev_Cm + ')
+				      /NULLIF((' + @SumDev_Sale + '),0)*100
 				  ELSE (' + @SumDev + ')
 				END AS DECIMAL(18,2)) AS [개발합계]
 			, CAST(	
@@ -1105,6 +1127,7 @@ BEGIN
 		LEFT JOIN P Sales ON Sales.rn = 1 
 		LEFT JOIN P Qty   ON Qty.rn   = 3
     	LEFT JOIN P Op    ON LTRIM(Op.gubun) = N''VIII. 영업이익''
+    	LEFT JOIN P Cm    ON LTRIM(Cm.gubun) = N''IX. 한계이익''
     	LEFT JOIN P Bep   ON LTRIM(Bep.gubun) LIKE N''X. 손익분기점%''
 		ORDER BY TRY_CONVERT(INT, Cur.rn);
 		';
@@ -1135,3 +1158,4 @@ BEGIN
     THROW;   
     END CATCH
 END;
+
