@@ -2340,6 +2340,12 @@ const grid = {
     fieldName: '불량률',
     dataType: ValueType.NUMBER
   }, {
+    fieldName: 'plBefore',
+    dataType: ValueType.NUMBER
+  }, {
+    fieldName: 'plAfter',
+    dataType: ValueType.NUMBER
+  }, {
     fieldName: 'eohQty',
     dataType: ValueType.NUMBER
   }, {
@@ -2578,6 +2584,17 @@ const grid = {
     }]
   }, {
     column: '불량률'
+  }, {
+    name: 'grpPL',
+    header: {
+      text: 'PL(완성환산)'
+    },
+    direction: 'horizontal',
+    items: [{
+      column: 'plBefore'
+    }, {
+      column: 'plAfter'
+    }]
   }, {
     name: 'grpEOH',
     header: {
@@ -2958,6 +2975,24 @@ const grid = {
     },
     styleName: 'tr',
     numberFormat: '#,##0.00'
+  }, {
+    name: 'plBefore',
+    fieldName: 'plBefore',
+    width: 70,
+    header: {
+      text: 'PL전'
+    },
+    styleName: 'tr',
+    numberFormat: '#,##0'
+  }, {
+    name: 'plAfter',
+    fieldName: 'plAfter',
+    width: 70,
+    header: {
+      text: 'PL후'
+    },
+    styleName: 'tr',
+    numberFormat: '#,##0'
   }, {
     name: 'eohQty',
     fieldName: 'eohQty',
@@ -5604,4 +5639,8 @@ const useC0001001 = (0,pinia__WEBPACK_IMPORTED_MODULE_0__.defineStore)('c0001001
 /***/ })
 
 }]);
+<<<<<<<< HEAD:src/main/resources/public/js/src_views_web_c0009000_C0009007_vue.a39b5bffbcbab436.js
 //# sourceMappingURL=src_views_web_c0009000_C0009007_vue.a39b5bffbcbab436.js.map
+========
+//# sourceMappingURL=src_views_web_c0009000_C0009007_vue.def81dcbc8ce799a.js.map
+>>>>>>>> 21754a5 (fix(vn-prodsubul): 생산실적 월별집계 500 해소 + 생산수불/제조원가(재공) 컬럼 보강):src/main/resources/public/js/src_views_web_c0009000_C0009007_vue.def81dcbc8ce799a.js

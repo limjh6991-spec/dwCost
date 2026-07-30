@@ -6,7 +6,14 @@
     
     <!-- TAB090001: 월별 집계 (수량) -->
     <select id="C0009001_Tab090001" resultType="CamelMap">
+    <choose>
+      <when test="site == 'VN'">
+    EXEC VN_ProdSubulMonthlyReport @YYYY=#{yyyy}, @SITE=#{site};
+      </when>
+      <otherwise>
     EXEC DOI_ProdSubulMonthlyReport @YYYY=#{yyyy}, @SITE=#{site};
+      </otherwise>
+    </choose>
         <!-- SELECT
             구분,
             도우코드 AS 코드,

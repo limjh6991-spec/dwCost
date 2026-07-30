@@ -61,6 +61,8 @@ const grid = {
     { fieldName: 'etcOutEtcQty', dataType: ValueType.NUMBER },
     { fieldName: 'etcOutEtcAmt', dataType: ValueType.NUMBER },
     { fieldName: '불량률', dataType: ValueType.NUMBER },
+    { fieldName: 'plBefore', dataType: ValueType.NUMBER },
+    { fieldName: 'plAfter', dataType: ValueType.NUMBER },
     { fieldName: 'eohQty', dataType: ValueType.NUMBER },
     { fieldName: 'eohAmt', dataType: ValueType.NUMBER },
   ],
@@ -142,6 +144,12 @@ const grid = {
     },
     { column: '불량률' },
     {
+      name: 'grpPL',
+      header: { text: 'PL(완성환산)' },
+      direction: 'horizontal',
+      items: [{ column: 'plBefore' }, { column: 'plAfter' }],
+    },
+    {
       name: 'grpEOH',
       header: { text: '기말재공품재고(EOH)' },
       direction: 'horizontal',
@@ -207,6 +215,8 @@ const grid = {
     { name: 'etcOutEtcAmt', fieldName: 'etcOutEtcAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
     // 불량률, EOH
     { name: '불량률', fieldName: '불량률', width: 50, header: { text: '불량률(%)' }, styleName: 'tr', numberFormat: '#,##0.00' },
+    { name: 'plBefore', fieldName: 'plBefore', width: 70, header: { text: 'PL전' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'plAfter', fieldName: 'plAfter', width: 70, header: { text: 'PL후' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'eohQty', fieldName: 'eohQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'eohAmt', fieldName: 'eohAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
   ],
