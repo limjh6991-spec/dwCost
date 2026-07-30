@@ -1,4 +1,3 @@
-
 CREATE OR ALTER PROCEDURE DOI_TotalCost_Tree
 (
     @YYYYMM VARCHAR(6),
@@ -1466,26 +1465,26 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 			    END
 			  AS DECIMAL(18,2)) AS [회계합계]
 			
-			-- 회계-제품-비가동보상 : 제품매출 행(rn=2)
+			-- 회계-제품-비가동보상 : 매출액(rn=1) 합계 + 제품매출 행(rn=2)
 			, CAST(
 			    CASE
-			        WHEN Cur.rn = 2 THEN @ACC_IDLE_COMP
+			        WHEN Cur.rn IN (1,2) THEN @ACC_IDLE_COMP
 			        ELSE 0
 			    END
 			  AS DECIMAL(18,2)) AS [회계_비가동보상]
 
-			-- 회계-제품-조정 : 제품매출 행(rn=2)
+			-- 회계-제품-조정 : 매출액(rn=1) 합계 + 제품매출 행(rn=2)
 			, CAST(
 			    CASE
-			        WHEN Cur.rn = 2 THEN @ACC_ADJ
+			        WHEN Cur.rn IN (1,2) THEN @ACC_ADJ
 			        ELSE 0
 			    END
 			  AS DECIMAL(18,2)) AS [회계_조정]
 
-			-- 회계-기타-이전가격 : 기타매출 행(rn=7)
+			-- 회계-기타-이전가격 : 매출액(rn=1) 합계 + 기타매출 행(rn=7)
 			, CAST(
 			    CASE
-			        WHEN Cur.rn = 7 THEN @ACC_PREV_PRICE
+			        WHEN Cur.rn IN (1,7) THEN @ACC_PREV_PRICE
 			        ELSE 0
 			    END
 			  AS DECIMAL(18,2)) AS [회계_이전가격]
@@ -1534,6 +1533,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
     THROW;   
     END CATCH
 END;
+
 
 
 
