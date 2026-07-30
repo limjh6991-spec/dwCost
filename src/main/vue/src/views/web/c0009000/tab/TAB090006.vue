@@ -767,7 +767,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `매출원가(제품)_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `제조원가(재공)_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',

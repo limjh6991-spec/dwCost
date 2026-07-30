@@ -41,6 +41,11 @@ module.exports = defineConfig({
     },
   },
   chainWebpack: (config) => {
+    // 정적 index.html 타이틀을 모드별 VUE_APP_TITLE로 설정 (개발/운영 구분). 예: dev='Dev COST SYSTEM'
+    config.plugin('html').tap((args) => {
+      args[0].title = process.env.VUE_APP_TITLE || 'COST SYSTEM';
+      return args;
+    });
     config.module
       .rule('excel')
       .test(/\.(xlsx|xls)$/)

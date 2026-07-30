@@ -228,7 +228,7 @@ let tcmTreeProvider, tcmTreeView;
       if (!rows || !rows.length) return;
       const first = rows[0];
       const keys = Object.keys(first);
-      const ignore = new Set(['treeId', 'rn', 'gubun', '총합계', '양산합계', '개발합계', '카세트합계', '구매합계', '상품매출', '기타매출']);
+      const ignore = new Set(['treeId', 'rn', 'gubun', '총합계', '양산합계', '개발합계', '카세트합계', '구매합계', '상품매출', '기타매출', '회계합계', '회계비가동보상', '회계조정', '회계이전가격']);
       const modelKeys = keys.filter(k => !ignore.has(k));
       const baseGrid = _.cloneDeep(this.totalCostGrid);
       this.ensureField(baseGrid, 'gubun', 'text');
@@ -270,6 +270,37 @@ let tcmTreeProvider, tcmTreeView;
           },
           numberFormat: '#,##0',
           width: 60,
+          styleName: 'tr'
+        });
+      });
+
+      // 회계 컬럼(HQ 전용): 회계합계 + 회계군(제품:비가동보상/조정, 기타:이전가격). VN 결과엔 없으므로 keys 존재 시에만 생성.
+      [{
+        k: '회계합계',
+        text: '회계합계'
+      }, {
+        k: '회계비가동보상',
+        text: '비가동보상'
+      }, {
+        k: '회계조정',
+        text: '조정'
+      }, {
+        k: '회계이전가격',
+        text: '이전가격'
+      }].forEach(({
+        k,
+        text
+      }) => {
+        if (!keys.includes(k)) return;
+        this.ensureField(baseGrid, k, 'number');
+        this.ensureColumn(baseGrid, {
+          name: k,
+          fieldName: k,
+          header: {
+            text
+          },
+          numberFormat: '#,##0',
+          width: 90,
           styleName: 'tr'
         });
       });
@@ -372,7 +403,13 @@ let tcmTreeProvider, tcmTreeView;
         header: {
           text: '카세트합계'
         }
-      }, {
+      }, ...(keys.includes('회계합계') ? [{
+        column: '회계합계',
+        rowSpan: 3,
+        header: {
+          text: '회계합계'
+        }
+      }] : []), {
         column: '구매합계',
         rowSpan: 3,
         header: {
@@ -398,7 +435,42 @@ let tcmTreeProvider, tcmTreeView;
           text: '구매'
         },
         items: make2Depth('구매')
-      }];
+      }, ...(keys.includes('회계비가동보상') || keys.includes('회계조정') || keys.includes('회계이전가격') ? [{
+        header: {
+          text: '회계'
+        },
+        items: [{
+          header: {
+            text: '제품'
+          },
+          items: [{
+            column: '회계비가동보상',
+            header: {
+              text: '비가동보상'
+            }
+          }]
+        }, {
+          header: {
+            text: '제품'
+          },
+          items: [{
+            column: '회계조정',
+            header: {
+              text: '조정'
+            }
+          }]
+        }, {
+          header: {
+            text: '기타'
+          },
+          items: [{
+            column: '회계이전가격',
+            header: {
+              text: '이전가격'
+            }
+          }]
+        }]
+      }] : [])];
       tcmTreeView.setColumnLayout(layout);
       tcmTreeView.setCellStyleCallback(this.setCellStyleCallbackGrid.bind(this));
       tcmTreeView.setRowStyleCallback(this.setRowStyleCallbackGrid.bind(this));
@@ -1285,4 +1357,8 @@ const useC0001001 = (0,pinia__WEBPACK_IMPORTED_MODULE_0__.defineStore)('c0001001
 /***/ })
 
 }]);
+<<<<<<<< HEAD:src/main/resources/public/js/src_views_web_c0009000_C0009010_vue.0da9e813d7d9f845.js
 //# sourceMappingURL=src_views_web_c0009000_C0009010_vue.0da9e813d7d9f845.js.map
+========
+//# sourceMappingURL=src_views_web_c0009000_C0009010_vue.1bee1b3ff2742671.js.map
+>>>>>>>> 118c861 (fix(ui): 제조원가(재공) 엑셀 파일명 교정 + 개발빌드 타이틀 'Dev COST SYSTEM'):src/main/resources/public/js/src_views_web_c0009000_C0009010_vue.1bee1b3ff2742671.js
