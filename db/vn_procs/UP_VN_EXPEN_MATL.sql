@@ -378,7 +378,7 @@ with boh as (select 구분,model,sum(PRE_EOH_AMT) boh_amt,기초수량 from doi_
 			  	  AND a.site = @SITE
 			  	  AND a.sel_code = @SEL_CODE
 				  AND (
-				       a.acct LIKE '62%' AND a.acct NOT LIKE '621%'
+				       a.acct LIKE '62%' AND a.acct NOT LIKE '621%' AND a.acct NOT LIKE '6272%'
 				  )
 				  AND ISNULL(a.expen_sel, '') <> ''
 			      AND ISNULL(a.dept,'') NOT IN ('400','448')
@@ -750,7 +750,7 @@ with boh as (select 구분,model,sum(PRE_EOH_AMT) boh_amt,기초수량 from doi_
       SELECT @FILTERED_AMT = ISNULL(SUM(ACCT_AMT), 0)
       FROM DOI_ACCT_EXPEN
       WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SEL_CODE
-        AND ACCT LIKE '62%' AND ACCT NOT LIKE '621%' -- AND ACCT NOT LIKE '51%' /*AND DEPT NOT IN ('448','400')*/;
+        AND ACCT LIKE '62%' AND ACCT NOT LIKE '621%' AND ACCT NOT LIKE '6272%' -- AND ACCT NOT LIKE '51%' /*AND DEPT NOT IN ('448','400')*/;
       
       SELECT @CASSETTE_AMT = ISNULL(SUM((A.ACCT_AMT * B.VINA_CST * D.RATE)), 0)
       FROM DOI_ACCT_EXPEN  A 
@@ -777,7 +777,7 @@ with boh as (select 구분,model,sum(PRE_EOH_AMT) boh_amt,기초수량 from doi_
      -- 소스 상세
       DECLARE @SOURCE_CNT INT = 0;
       SELECT @SOURCE_CNT = COUNT(*) FROM DOI_ACCT_EXPEN 
-      WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SEL_CODE AND ACCT LIKE '62%' AND ACCT NOT LIKE '621%' AND ISNULL(EXPEN_SEL, '') <> '';
+      WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SEL_CODE AND ACCT LIKE '62%' AND ACCT NOT LIKE '621%' AND ACCT NOT LIKE '6272%' AND ISNULL(EXPEN_SEL, '') <> '';
       
       SET  @Message =  @Message + char(10) + REPLICATE(' ', 10) + '소스(DOI_ACCT_EXPEN)' + REPLICATE(' ', 10) + RIGHT(REPLICATE(' ', 10) + CAST(@SOURCE_CNT AS VARCHAR(10)), 10) + REPLICATE(' ', 4) + RIGHT(REPLICATE(' ', 20) + FORMAT(@SOURCE_AMT, 'N2'), 20) + '달러';
       
@@ -852,7 +852,7 @@ BEGIN*/                   -- [주석처리] 짝을 맞추기 위해 BEGIN도 주
                 AND A.SEL_CODE = @SEL_CODE
                 AND A.EXPEN_SEL = @EXPEN_SEL -- 현재 커서의 비용항목
                 AND (
-				       a.acct LIKE '62%' AND a.acct NOT LIKE '621%'
+				       a.acct LIKE '62%' AND a.acct NOT LIKE '621%' AND a.acct NOT LIKE '6272%'
 				)
 				AND ISNULL(a.expen_sel, '') <> '';
               
@@ -891,7 +891,7 @@ DEALLOCATE item_cursor;
                 AND A.SITE = @SITE 
                 AND A.SEL_CODE = @SEL_CODE
                 AND (
-				       a.acct LIKE '62%' AND a.acct NOT LIKE '621%'
+				       a.acct LIKE '62%' AND a.acct NOT LIKE '621%' AND a.acct NOT LIKE '6272%'
 				)
 				AND ISNULL(a.expen_sel, '') <> '';
           SELECT @TARGET_ITEM_AMT = ISNULL(SUM([IN]), 0)
@@ -959,5 +959,6 @@ DEALLOCATE item_cursor;
        RETURN -1;
    END CATCH;
 END;
+
 
 

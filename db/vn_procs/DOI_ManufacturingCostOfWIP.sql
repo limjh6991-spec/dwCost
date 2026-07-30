@@ -148,9 +148,9 @@ BEGIN
 			, SA.LOSS_DEFECT_AMT
 			, SA.LOSS_SALE_QTY
 			, SA.LOSS_SALE_AMT
-            -- 타계정입고(RMA_IN)
-        	, NULL RMA_IN_QTY
-            , NULL RMA_IN_AMT
+            -- 타계정입고(RMA_IN) = 입고 상세 컬럼 합계
+        	, (ISNULL(SA.ETC_IN_LOT_QTY,0) + ISNULL(SA.ETC_IN_DEF_RW_QTY,0) + ISNULL(SA.ETC_IN_RMA_QTY,0) + ISNULL(SA.ETC_IN_PREV_DEF_QTY,0) + ISNULL(SA.ETC_IN_CUR_DEF_QTY,0)) AS RMA_IN_QTY
+            , (ISNULL(SA.ETC_IN_LOT_AMT,0) + ISNULL(SA.ETC_IN_DEF_RW_AMT,0) + ISNULL(SA.ETC_IN_RMA_AMT,0) + ISNULL(SA.ETC_IN_PREV_DEF_AMT,0) + ISNULL(SA.ETC_IN_CUR_DEF_AMT,0)) AS RMA_IN_AMT
             , SA.ETC_IN_LOT_QTY
 			, SA.ETC_IN_LOT_AMT
 			, SA.ETC_IN_DEF_RW_QTY
@@ -172,6 +172,11 @@ BEGIN
             -- PL전/PL후 (재공 완성률 환산 수량, EOH 왼쪽)
             , PS.PL전 AS PL_BEFORE
             , PS.PL후 AS PL_AFTER
+            -- PL전/PL후 금액 (EOH_AMT를 완성환산비율 PL전×0.5 : PL후×0.9 로 안분)
+            , CAST(ROUND(SA.EOH_AMT * (ISNULL(PS.PL전,0)*0.5)
+                   / NULLIF(ISNULL(PS.PL전,0)*0.5 + ISNULL(PS.PL후,0)*0.9, 0), 2) AS decimal(18,2)) AS PL_BEFORE_AMT
+            , CAST(ROUND(SA.EOH_AMT * (ISNULL(PS.PL후,0)*0.9)
+                   / NULLIF(ISNULL(PS.PL전,0)*0.5 + ISNULL(PS.PL후,0)*0.9, 0), 2) AS decimal(18,2)) AS PL_AFTER_AMT
             -- 기말재공품재고(EOH)
             , SA.EOH_QTY
             , SA.EOH_AMT
