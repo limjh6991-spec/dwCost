@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007013Mapper">
+	<!-- 기타입출고금액조회(통합) (DOI_VN_ETC_INOUT) -->
+	<select id="C0007013_Sch1" resultType="CamelMap">
+		SELECT yyyymm, 회사, 전표, 전표유형, 전표도, 거래처,
+			품목자산분류, 분류, 중분류, 소분류,
+			품명, 품번, 규격, 단위, 외주업체,
+			수량, 금액, 단가, 사유, 창고, 부서,
+			특이사항, 품목특이사항
+		FROM DOI_VN_ETC_INOUT
+		WHERE yyyymm = #{yyyymm}
+		ORDER BY 품명
+	</select>
+
+	<delete id="C0007013_Delete1">
+		DELETE FROM DOI_VN_ETC_INOUT
+		WHERE yyyymm = #{yyyymm}
+		AND ISNULL(전표,'') = ISNULL(#{전표},'')
+		AND ISNULL(품번,'') = ISNULL(#{품번},'')
+	</delete>
+
+	<insert id="uploadExcel" parameterType="java.util.List">
+		<foreach collection="list" item="item" separator=";">
+		INSERT INTO DOI_VN_ETC_INOUT (회사, 전표, 전표유형, 전표도, 거래처,
+			품목자산분류, 분류, 중분류, 소분류, 품명, 품번, 규격, 단위, 외주업체,
+			수량, 금액, 단가, 사유, 창고, 부서, 특이사항, 품목특이사항,
+			yyyymm, edit_user, edit_date)
+		VALUES (#{item.field1}, #{item.field2}, #{item.field3}, #{item.field4}, #{item.field5},
+			#{item.field6}, #{item.field7}, #{item.field8}, #{item.field9}, #{item.field10},
+			#{item.field11}, #{item.field12}, #{item.field13}, #{item.field14},
+			#{item.field15}, #{item.field16}, #{item.field17}, #{item.field18},
+			#{item.field19}, #{item.field20}, #{item.field21}, #{item.field22},
+			#{item.field23}, #{item.editUser}, GETDATE())
+		</foreach>
+	</insert>
+</mapper>

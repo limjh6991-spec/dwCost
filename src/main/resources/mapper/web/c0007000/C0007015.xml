@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007015Mapper">
+	<!-- 자재조회 (DOI_VN_MATERIAL) -->
+	<select id="C0007015_Sch1" resultType="CamelMap">
+		SELECT yyyymm, 품명, 품번, 규격, 품목자산분류,
+			대분류, 중분류, 소분류, 단위,
+			자재구분, 중요도, 부서, 처리, 분류,
+			표준원가, 대표품번, BOM유무, 완제품소요량,
+			Lot관리, Serial관리, 외주관리여부,
+			한글규격, 유효기간, 색상,
+			기본단가처리, 구매거래처, 인증규격,
+			MAT_GRP_1, MAT_GRP_2
+		FROM DOI_VN_MATERIAL
+		WHERE yyyymm = #{yyyymm}
+		ORDER BY 품명
+	</select>
+
+	<delete id="C0007015_Delete1">
+		DELETE FROM DOI_VN_MATERIAL
+		WHERE yyyymm = #{yyyymm}
+		AND ISNULL(품번,'') = ISNULL(#{품번},'')
+	</delete>
+
+	<insert id="uploadExcel" parameterType="java.util.List">
+		<foreach collection="list" item="item" separator=";">
+		INSERT INTO DOI_VN_MATERIAL (품명, 품번, 규격, 품목자산분류,
+			대분류, 중분류, 소분류, 단위,
+			자재구분, 중요도, 부서, 처리, 분류,
+			표준원가, 대표품번, BOM유무, 완제품소요량,
+			Lot관리, Serial관리, 외주관리여부,
+			한글규격, 유효기간, 색상,
+			기본단가처리, 구매거래처, 인증규격,
+			MAT_GRP_1, MAT_GRP_2,
+			yyyymm, edit_user, edit_date)
+		VALUES (#{item.field1}, #{item.field2}, #{item.field3}, #{item.field4},
+			#{item.field5}, #{item.field6}, #{item.field7}, #{item.field8},
+			#{item.field9}, #{item.field10}, #{item.field11}, #{item.field12},
+			#{item.field13}, #{item.field14}, #{item.field15}, #{item.field16},
+			#{item.field17}, #{item.field18}, #{item.field19}, #{item.field20},
+			#{item.field21}, #{item.field22}, #{item.field23}, #{item.field24},
+			#{item.field25}, #{item.field26}, #{item.field27}, #{item.field28},
+			#{item.field29}, #{item.editUser}, GETDATE())
+		</foreach>
+	</insert>
+</mapper>

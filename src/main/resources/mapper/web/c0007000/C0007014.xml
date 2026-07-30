@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007014Mapper">
+	<!-- 재고금액상세조회(통합) (DOI_VN_STOCK_DETAIL) -->
+	<select id="C0007014_Sch1" resultType="CamelMap">
+		SELECT yyyymm, 자산처리계정, 품목자산분류, 재고자산종류, 매출원가계정,
+			분류, 중분류, 소분류, 품목기타분류,
+			품명, 품번, 규격, 단위,
+			기초수량, 기초금액, 입고수량, 입고금액, 출고수량, 출고금액,
+			재고수량A, 재고금액B, 차이수량A_B,
+			결산후금액C, 결산후금액D, 차이금액C_D,
+			최종결산월재고단가,
+			생산수량, 생산금액, 구매수량, 구매금액,
+			적송입고수량, 적송입고금액, 기타입고수량, 기타입고금액,
+			판매수량, 판매원가, 투입수량, 투입금액,
+			적송출고수량, 적송출고금액, 기타출고수량, 기타출고금액
+		FROM DOI_VN_STOCK_DETAIL
+		WHERE yyyymm = #{yyyymm}
+		ORDER BY 품명
+	</select>
+
+	<delete id="C0007014_Delete1">
+		DELETE FROM DOI_VN_STOCK_DETAIL
+		WHERE yyyymm = #{yyyymm}
+		AND ISNULL(품번,'') = ISNULL(#{품번},'')
+	</delete>
+
+	<insert id="uploadExcel" parameterType="java.util.List">
+		<foreach collection="list" item="item" separator=";">
+		INSERT INTO DOI_VN_STOCK_DETAIL (자산처리계정, 품목자산분류, 재고자산종류, 매출원가계정,
+			분류, 중분류, 소분류, 품목기타분류, 품명, 품번, 규격, 단위,
+			기초수량, 기초금액, 입고수량, 입고금액, 출고수량, 출고금액,
+			재고수량A, 재고금액B, 차이수량A_B,
+			결산후금액C, 결산후금액D, 차이금액C_D, 최종결산월재고단가,
+			생산수량, 생산금액, 구매수량, 구매금액,
+			적송입고수량, 적송입고금액, 기타입고수량, 기타입고금액,
+			판매수량, 판매원가, 투입수량, 투입금액,
+			적송출고수량, 적송출고금액, 기타출고수량, 기타출고금액,
+			yyyymm, edit_user, edit_date)
+		VALUES (#{item.field1}, #{item.field2}, #{item.field3}, #{item.field4},
+			#{item.field5}, #{item.field6}, #{item.field7}, #{item.field8},
+			#{item.field9}, #{item.field10}, #{item.field11}, #{item.field12},
+			#{item.field13}, #{item.field14}, #{item.field15}, #{item.field16},
+			#{item.field17}, #{item.field18}, #{item.field19}, #{item.field20},
+			#{item.field21}, #{item.field22}, #{item.field23}, #{item.field24},
+			#{item.field25}, #{item.field26}, #{item.field27}, #{item.field28},
+			#{item.field29}, #{item.field30}, #{item.field31}, #{item.field32},
+			#{item.field33}, #{item.field34}, #{item.field35}, #{item.field36},
+			#{item.field37}, #{item.field38}, #{item.field39}, #{item.field40},
+			#{item.field41}, #{item.field42}, #{item.editUser}, GETDATE())
+		</foreach>
+	</insert>
+</mapper>
