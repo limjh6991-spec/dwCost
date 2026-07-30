@@ -4,7 +4,7 @@
       <div class="col login_visu">
                 <div class="header">
                   <h1 class="logo">
-                    <span>원가관리시스템 테스트</span>
+                    <span>{{ sysName }}</span>
                   </h1>
               </div>
         </div>
@@ -64,6 +64,8 @@ export default {
       //제조기술 : 230404-689 (메뉴 3개)
       //Back#1   : TEMP01 (메뉴 2개)  
       //200120-97 : BIZADMIN 권한
+      // 로그인 화면 시스템명 — 개발/로컬에만 '테스트' 접미(운영은 '원가관리시스템')
+      sysName: process.env.VUE_APP_SYS_NAME || '원가관리시스템',
       userId:'',
       // userId:'SYSADMIN',
       password:'',
