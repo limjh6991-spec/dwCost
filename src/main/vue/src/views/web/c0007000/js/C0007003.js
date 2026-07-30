@@ -46,6 +46,8 @@ const grid = {
     { fieldName: '타계정출고', dataType: ValueType.NUMBER },
     { fieldName: '기타출고Lot변환', dataType: ValueType.NUMBER },
     { fieldName: '기타출고기타', dataType: ValueType.NUMBER },
+    { fieldName: 'plBefore', dataType: ValueType.NUMBER },
+    { fieldName: 'plAfter', dataType: ValueType.NUMBER },
     { fieldName: 'eohMonth', dataType: ValueType.NUMBER },
   ],
 
@@ -77,6 +79,8 @@ const grid = {
     { name: '타계정출고', fieldName: '타계정출고', width: '100', header: { text: '타계정출고' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: '기타출고Lot변환', fieldName: '기타출고Lot변환', width: '130', header: { text: '기타출고_LOT변환' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: '기타출고기타', fieldName: '기타출고기타', width: '110', header: { text: '기타출고_기타' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'plBefore', fieldName: 'plBefore', width: '90', header: { text: 'PL전' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
+    { name: 'plAfter', fieldName: 'plAfter', width: '90', header: { text: 'PL후' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
     { name: 'eohMonth', fieldName: 'eohMonth', width: '90', header: { text: 'EOH_MONTH' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0', footer: { expression: 'sum', numberFormat: '#,##0', styleName: 'sum-footer1' } },
   ],
 };

@@ -153,9 +153,9 @@ BEGIN
 	         boh,
 	         [in],
 	         case when (boh_qty+in_qty = eoh_qty or boh_qty+in_qty = eoh_qty+loss_qty or (out_qty + bad_qty + transfer_qty = 0 and loss_qty > 0)) and eoh_qty != 0 
-	         				then boh + coalesce("in",0) else unit_cost * (eoh_qty / 2.0) end as Ori_eoh,
+	         				then boh + coalesce("in",0) else unit_cost * ISNULL((SELECT v.EOHEQ FROM V_VN_WIP_CONV v WHERE v.wc_ym = @YYYYMM AND v.wc_site = @SITE AND v.wc_gubun = 구분 AND v.wc_model = model), 0) end as Ori_eoh,
  	         round(case when (boh_qty+in_qty = eoh_qty or boh_qty+in_qty = eoh_qty+loss_qty or (out_qty + bad_qty + transfer_qty = 0 and loss_qty > 0)) and eoh_qty != 0 
- 				then boh + coalesce("in",0) else unit_cost * (eoh_qty / 2.0) end,0) as Base_eoh,
+ 				then boh + coalesce("in",0) else unit_cost * ISNULL((SELECT v.EOHEQ FROM V_VN_WIP_CONV v WHERE v.wc_ym = @YYYYMM AND v.wc_site = @SITE AND v.wc_gubun = 구분 AND v.wc_model = model), 0) end,0) as Base_eoh,
 	         adj_yn,UnitCost_YN,
          (SELECT ISNULL(SUM(p.기타입고_불량_RW),0) FROM doi_prod_subul p WHERE p.yyyymm=doi_expen_matl.yyyymm AND p.site=doi_expen_matl.site AND p.구분=doi_expen_matl.구분 AND p.도우모델=doi_expen_matl.model) AS def_rw_qty,
          (SELECT ISNULL(SUM(ISNULL(p.기타입고_LOT변환,0)+ISNULL(p.기타입고_불량_RW,0)+ISNULL(p.기타입고_RMA_RW,0)+ISNULL(p.기타입고_전월불량,0)+ISNULL(p.기타입고_당월불량,0)),0) FROM doi_prod_subul p WHERE p.yyyymm=doi_expen_matl.yyyymm AND p.site=doi_expen_matl.site AND p.구분=doi_expen_matl.구분 AND p.도우모델=doi_expen_matl.model) AS transfer_in_qty
@@ -216,9 +216,9 @@ BEGIN
 	         boh_amt boh,
 	         배부금액 as [in],
 	         case when (boh_qty+in_qty = eoh_qty or boh_qty+in_qty = eoh_qty+loss_qty or (out_qty + bad_qty + transfer_qty = 0 and loss_qty > 0)) and eoh_qty != 0 
-	         				then boh_amt + 배부금액 else 단가 * (eoh_qty / 2.0) end as Ori_eoh,
+	         				then boh_amt + 배부금액 else 단가 * ISNULL((SELECT v.EOHEQ FROM V_VN_WIP_CONV v WHERE v.wc_ym = @YYYYMM AND v.wc_site = @SITE AND v.wc_gubun = 구분 AND v.wc_model = 도우모델), 0) end as Ori_eoh,
 	         round(case when (boh_qty+in_qty = eoh_qty or boh_qty+in_qty = eoh_qty+loss_qty or (out_qty + bad_qty + transfer_qty = 0 and loss_qty > 0)) and eoh_qty != 0 
-	         				then boh_amt + 배부금액 else 단가 * (eoh_qty / 2.0) end,0) as Base_Eoh,
+	         				then boh_amt + 배부금액 else 단가 * ISNULL((SELECT v.EOHEQ FROM V_VN_WIP_CONV v WHERE v.wc_ym = @YYYYMM AND v.wc_site = @SITE AND v.wc_gubun = 구분 AND v.wc_model = 도우모델), 0) end,0) as Base_Eoh,
 	         adj_yn,1 UnitCost_YN,
          (SELECT ISNULL(SUM(p.기타입고_불량_RW),0) FROM doi_prod_subul p WHERE p.yyyymm=doi_mat_cost.yyyymm AND p.site=doi_mat_cost.site AND p.구분=doi_mat_cost.구분 AND p.도우모델=doi_mat_cost.도우모델) AS def_rw_qty,
          (SELECT ISNULL(SUM(ISNULL(p.기타입고_LOT변환,0)+ISNULL(p.기타입고_불량_RW,0)+ISNULL(p.기타입고_RMA_RW,0)+ISNULL(p.기타입고_전월불량,0)+ISNULL(p.기타입고_당월불량,0)),0) FROM doi_prod_subul p WHERE p.yyyymm=doi_mat_cost.yyyymm AND p.site=doi_mat_cost.site AND p.구분=doi_mat_cost.구분 AND p.도우모델=doi_mat_cost.도우모델) AS transfer_in_qty
