@@ -260,10 +260,9 @@ BEGIN
 		-- 회계 항목: 코스트센터 + 계정코드 조건(AND). 매출계정이므로 순액 = 대변 - 차변
 		-- (대변 양수=양수, 차변 양수=음수). 코스트센터명은 월별 조직 스냅샷 접미(YYYYMMDD)를 허용하도록 LIKE 사용.
 		 SELECT
-      -- 이전가격: 재경그룹 AND 41004010
+      -- 이전가격: 41004010
       @ACC_PREV_PRICE =
           COALESCE(SUM(CASE WHEN 계정코드 = N'41004010'
-                             AND 코스트센터 LIKE N'재경그룹%'
                             THEN ISNULL(대변금액,0) - ISNULL(차변금액,0)
                             ELSE 0 END),0)
 
@@ -274,12 +273,15 @@ BEGIN
                             THEN ISNULL(대변금액,0) - ISNULL(차변금액,0)
                             ELSE 0 END),0)
 
-      -- 조정: 영업그룹 제외 AND 41002020
+      -- 조정: 41002020 / 영업그룹 제외 / 재경그룹은 차변 무시(대변만) / 나머지는 대변-차변
     , @ACC_ADJ =
-          COALESCE(SUM(CASE WHEN 계정코드 = N'41002020'
-                             AND 코스트센터 NOT LIKE N'영업그룹%'
-                            THEN ISNULL(대변금액,0) - ISNULL(차변금액,0)
-                            ELSE 0 END),0)
+          COALESCE(SUM(CASE
+                        WHEN 계정코드 = N'41002020' AND 코스트센터 LIKE N'재경그룹%'
+                             THEN ISNULL(대변금액,0)                       -- 재경그룹: 차변 무시(대변만)
+                        WHEN 계정코드 = N'41002020' AND 코스트센터 NOT LIKE N'영업그룹%'
+                             THEN ISNULL(대변금액,0) - ISNULL(차변금액,0)   -- 나머지(영업그룹 제외): 대변-차변
+                        ELSE 0
+                       END),0)
 		FROM DOI_DEPT_COST WITH(NOLOCK)
 		WHERE YYYYMM   = @YYYYMM
 		  AND SITE     = @SITE
@@ -358,7 +360,7 @@ BEGIN
             SELECT  N'10' tree_id,     1 AS rn,        N'  I. 매출액'        AS gubun UNION ALL
             SELECT  N'10.01' tree_id,  2 AS rn,        N'    (1) 제품매출'    UNION ALL
             SELECT  N'10.02' tree_id,  3 AS rn,        N'        수량'       UNION ALL
- 			SELECT  N'10.03' tree_id,  4 AS rn,        N'        단가'       UNION ALL
+ 			SELECT  N'10.03' tree_id,  4 AS rn,        N'      단가'       UNION ALL
             SELECT  N'10.04' tree_id,  5 AS rn,        N'    (2) 유상사급'    UNION ALL
             SELECT  N'10.05' tree_id,  6 AS rn,        N'    (3) 상품매출'    UNION ALL
             SELECT  N'10.06' tree_id,  7 AS rn,        N'    (4) 기타매출'    UNION ALL
@@ -833,7 +835,7 @@ BEGIN
 		            + COALESCE(III.amt,0)
 		            + COALESCE(IV.amt,0)
 		            + COALESCE(EC.adj_amt,0)
-		          AS DECIMAL(18,2)) AS amt
+		       AS DECIMAL(18,2)) AS amt
 		    FROM #MODEL M
 		    LEFT JOIN #SALES_BASE SB
             ON SB.model = M.model AND SB.구분  = M.구분    
@@ -1059,7 +1061,7 @@ BEGIN
             FROM #MODEL M
             LEFT JOIN #FIX F
                    ON F.model = M.model
-                  AND F.구분 = M.구분
+       AND F.구분 = M.구분
                   --AND F.rn    = 1 -- ✅ 고정비 합계 rn
             GROUP BY M.구분, M.model
         ),
@@ -1138,7 +1140,7 @@ BEGIN
             UNION ALL SELECT rn, gubun, 구분, model, amt FROM BEP            
         ),
         BASE AS (
-           SELECT
+        SELECT
             	R.tree_id
                 , R.rn
                 , R.gubun
@@ -1249,7 +1251,7 @@ BEGIN
            OR is_cassette = 1;             
 
   SELECT @SumPurchase = COALESCE(
-            STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
                 WITHIN GROUP (ORDER BY sort_structure, model), N'0')
         FROM #MODEL M WHERE M.구분 = N'구매';
 
@@ -1351,8 +1353,8 @@ BEGIN
 
 					WHEN Cur.rn = 6 THEN (' + @SumPurchase + ')
 
-					WHEN Cur.rn = 7 THEN @ACC_TOTAL
-					
+					WHEN Cur.rn = 7 THEN @ACC_PREV_PRICE   -- 기타매출 총합계: 이전가격만
+
 					WHEN Cur.rn = 44 THEN
 					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + ( @CostAdj )
 					
@@ -1532,5 +1534,6 @@ BEGIN
     THROW;   
     END CATCH
 END;
+
 
 
