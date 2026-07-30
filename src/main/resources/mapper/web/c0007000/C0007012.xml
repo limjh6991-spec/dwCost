@@ -6,9 +6,9 @@
 	<!-- 품목별투입조회 (DOI_VN_MAT_INPUT) -->
 	<select id="C0007012_Sch1" resultType="CamelMap">
 		SELECT yyyymm, 제품명, 제품번호, 제품규격,
-			품명, 품번, 규격,
-			투입수량, 단가, 투입금액, 투입비율,
-			제품품목자산분류, 품목자산분류
+			자재명 AS 품명, 자재번호 AS 품번, 자재규격 AS 규격,
+			투입수량, 단가, 투입금액, NULL AS 투입비율,
+			제품품목자산분류, 자재품목자산분류 AS 품목자산분류
 		FROM DOI_VN_MAT_INPUT
 		WHERE yyyymm = #{yyyymm}
 		ORDER BY 제품명, 품명
@@ -18,7 +18,7 @@
 		DELETE FROM DOI_VN_MAT_INPUT
 		WHERE yyyymm = #{yyyymm}
 		AND ISNULL(제품번호,'') = ISNULL(#{제품번호},'')
-		AND ISNULL(품번,'') = ISNULL(#{품번},'')
+		AND ISNULL(자재번호,'') = ISNULL(#{품번},'')
 	</delete>
 
 	<insert id="uploadExcel" parameterType="java.util.List">

@@ -5,10 +5,10 @@
 <mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007013Mapper">
 	<!-- 기타입출고금액조회(통합) (DOI_VN_ETC_INOUT) -->
 	<select id="C0007013_Sch1" resultType="CamelMap">
-		SELECT yyyymm, 회사, 전표, 전표유형, 전표도, 거래처,
-			품목자산분류, 분류, 중분류, 소분류,
-			품명, 품번, 규격, 단위, 외주업체,
-			수량, 금액, 단가, 사유, 창고, 부서,
+		SELECT yyyymm, 회계단위 AS 회사, NULL AS 전표, NULL AS 전표유형, NULL AS 전표도, 거래처,
+			품목자산분류, 대분류 AS 분류, 중분류, 소분류,
+			품명, 품번, 규격, 단위, NULL AS 외주업체,
+			수량, 금액, 단가, 계정과목 AS 사유, 창고, 사용부서 AS 부서,
 			특이사항, 품목특이사항
 		FROM DOI_VN_ETC_INOUT
 		WHERE yyyymm = #{yyyymm}
@@ -18,7 +18,7 @@
 	<delete id="C0007013_Delete1">
 		DELETE FROM DOI_VN_ETC_INOUT
 		WHERE yyyymm = #{yyyymm}
-		AND ISNULL(전표,'') = ISNULL(#{전표},'')
+		AND 1=1 /* 전표 컬럼 없음 */
 		AND ISNULL(품번,'') = ISNULL(#{품번},'')
 	</delete>
 
