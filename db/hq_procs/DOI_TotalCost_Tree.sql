@@ -1,3 +1,4 @@
+
 CREATE OR ALTER PROCEDURE DOI_TotalCost_Tree
 (
     @YYYYMM VARCHAR(6),
@@ -1456,6 +1457,7 @@ BEGIN
 			-- 회계
 			, CAST(
 			    CASE
+			        WHEN Cur.rn = 2 THEN (@ACC_IDLE_COMP + @ACC_ADJ)  -- 제품매출: 비가동보상+조정 합계
 			        WHEN Cur.rn in (1,7,78) THEN @ACC_TOTAL
 			        ELSE 0
 			    END
@@ -1529,4 +1531,5 @@ BEGIN
     THROW;   
     END CATCH
 END;
+
 
