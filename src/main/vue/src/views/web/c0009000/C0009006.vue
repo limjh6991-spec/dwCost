@@ -164,10 +164,11 @@ export default {
         const fn = item.model.toLowerCase();
         // VN: 모델별 수량 컬럼(금액 앞) 추가
         if (params.site === 'VN') {
-          gridField1.fields.push({ fieldName: fn + '_q', valueType: 'number', dataType: 'number' });
+          // 수량 필드명: DB컬럼 `모델_Q` → CamelMap(언더스코어 제거) → `모델Q`. 필드명도 동일하게 맞춤
+          gridField1.fields.push({ fieldName: fn + 'Q', valueType: 'number', dataType: 'number' });
           gridField1.columns.push({
-            name: fn + '_q',
-            fieldName: fn + '_q',
+            name: fn + 'Q',
+            fieldName: fn + 'Q',
             width: 80,
             header: { text: '수량' },
             autoFilter: false,
@@ -202,7 +203,7 @@ export default {
       applyAmtFormatLive(this.gridView, this.userAuthInfo.curProdCtg, this.currency);
       // 환산 대상 금액 컬럼(동적 포함) 수집 — 수량 컬럼(전체수량, *_q)은 환산 제외
       this.currencyFields = gridField1.columns
-        .filter((c) => c.numberFormat && c.fieldName !== '전체수량' && !c.fieldName.endsWith('_q'))
+        .filter((c) => c.numberFormat && c.fieldName !== '전체수량' && !c.fieldName.endsWith('Q'))
         .map((c) => c.fieldName);
 
       const rows = [];
