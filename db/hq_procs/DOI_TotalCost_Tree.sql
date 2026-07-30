@@ -1458,7 +1458,8 @@ BEGIN
 			, CAST(
 			    CASE
 			        WHEN Cur.rn = 2 THEN (@ACC_IDLE_COMP + @ACC_ADJ)  -- 제품매출: 비가동보상+조정 합계
-			        WHEN Cur.rn in (1,7,78) THEN @ACC_TOTAL
+			        WHEN Cur.rn = 7 THEN @ACC_PREV_PRICE              -- 기타매출: 이전가격
+			        WHEN Cur.rn in (1,78) THEN @ACC_TOTAL
 			        ELSE 0
 			    END
 			  AS DECIMAL(18,2)) AS [회계합계]
