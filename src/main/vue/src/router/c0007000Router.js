@@ -98,6 +98,16 @@ const c0007000Router = [
       requiresAuth: true,
     },
   },
+  {
+    path: '/c0007016',
+    name: '자재투입정보(VN)',
+    component: () => import('../views/web/c0007000/C0007016.vue'),
+    meta: {
+      upperSysResourceId: 'C0007000',
+      sysResourceId: 'C0007016',
+      requiresAuth: false,
+    },
+  },
 ];
 
 export default c0007000Router;

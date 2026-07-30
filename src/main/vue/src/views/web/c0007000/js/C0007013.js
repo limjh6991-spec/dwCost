@@ -1,0 +1,68 @@
+/*
+ * 타시스템 > 자재투입정보(VN) > 기타입출고금액조회(통합) (DOI_VN_ETC_INOUT)
+ */
+const { ValueType } = require('realgrid');
+
+const grid = {
+  options: {
+    checkBar: { visible: true, exclusive: false, syncHeadCheck: true },
+    copy: { enabled: true, singleMode: false },
+    display: { columnMovable: false, fitStyle: 'fill', emptyMessage: '조회된 데이터가 없습니다.', hscrollBar: true, showEmptyMessage: true },
+    edit: { editable: false },
+    footer: { visible: true },
+    paste: { enabled: false },
+    rowIndicator: { visible: true },
+  },
+  fields: [
+    { fieldName: 'yyyymm', dataType: ValueType.TEXT },
+    { fieldName: '회사', dataType: ValueType.TEXT },
+    { fieldName: '전표', dataType: ValueType.TEXT },
+    { fieldName: '전표유형', dataType: ValueType.TEXT },
+    { fieldName: '전표도', dataType: ValueType.TEXT },
+    { fieldName: '거래처', dataType: ValueType.TEXT },
+    { fieldName: '품목자산분류', dataType: ValueType.TEXT },
+    { fieldName: '분류', dataType: ValueType.TEXT },
+    { fieldName: '중분류', dataType: ValueType.TEXT },
+    { fieldName: '소분류', dataType: ValueType.TEXT },
+    { fieldName: '품명', dataType: ValueType.TEXT },
+    { fieldName: '품번', dataType: ValueType.TEXT },
+    { fieldName: '규격', dataType: ValueType.TEXT },
+    { fieldName: '단위', dataType: ValueType.TEXT },
+    { fieldName: '외주업체', dataType: ValueType.TEXT },
+    { fieldName: '수량', dataType: ValueType.NUMBER },
+    { fieldName: '금액', dataType: ValueType.NUMBER },
+    { fieldName: '단가', dataType: ValueType.NUMBER },
+    { fieldName: '사유', dataType: ValueType.TEXT },
+    { fieldName: '창고', dataType: ValueType.TEXT },
+    { fieldName: '부서', dataType: ValueType.TEXT },
+    { fieldName: '특이사항', dataType: ValueType.TEXT },
+    { fieldName: '품목특이사항', dataType: ValueType.TEXT },
+  ],
+  columns: [
+    { fieldName: 'yyyymm', name: 'yyyymm', header: { text: '기준월' }, width: 80, styleName: 'tl' },
+    { fieldName: '회사', name: '회사', header: { text: '회사' }, width: 80, styleName: 'tl' },
+    { fieldName: '전표', name: '전표', header: { text: '전표' }, width: 100, styleName: 'tl' },
+    { fieldName: '전표유형', name: '전표유형', header: { text: '전표유형' }, width: 80, styleName: 'tl' },
+    { fieldName: '전표도', name: '전표도', header: { text: '전표도' }, width: 80, styleName: 'tl' },
+    { fieldName: '거래처', name: '거래처', header: { text: '거래처' }, width: 120, styleName: 'tl' },
+    { fieldName: '품목자산분류', name: '품목자산분류', header: { text: '품목자산분류' }, width: 100, styleName: 'tl' },
+    { fieldName: '분류', name: '분류', header: { text: '분류' }, width: 80, styleName: 'tl' },
+    { fieldName: '중분류', name: '중분류', header: { text: '중분류' }, width: 80, styleName: 'tl' },
+    { fieldName: '소분류', name: '소분류', header: { text: '소분류' }, width: 80, styleName: 'tl' },
+    { fieldName: '품명', name: '품명', header: { text: '품명' }, width: 150, styleName: 'tl' },
+    { fieldName: '품번', name: '품번', header: { text: '품번' }, width: 120, styleName: 'tl' },
+    { fieldName: '규격', name: '규격', header: { text: '규격' }, width: 100, styleName: 'tl' },
+    { fieldName: '단위', name: '단위', header: { text: '단위' }, width: 60, styleName: 'tl' },
+    { fieldName: '외주업체', name: '외주업체', header: { text: '외주업체' }, width: 100, styleName: 'tl' },
+    { fieldName: '수량', name: '수량', header: { text: '수량' }, width: 80, numberFormat: '#,##0', styleName: 'tr' },
+    { fieldName: '금액', name: '금액', header: { text: '금액' }, width: 100, numberFormat: '#,##0', styleName: 'tr' },
+    { fieldName: '단가', name: '단가', header: { text: '단가' }, width: 100, numberFormat: '#,##0.00', styleName: 'tr' },
+    { fieldName: '사유', name: '사유', header: { text: '사유' }, width: 120, styleName: 'tl' },
+    { fieldName: '창고', name: '창고', header: { text: '창고' }, width: 80, styleName: 'tl' },
+    { fieldName: '부서', name: '부서', header: { text: '부서' }, width: 80, styleName: 'tl' },
+    { fieldName: '특이사항', name: '특이사항', header: { text: '특이사항' }, width: 150, styleName: 'tl' },
+    { fieldName: '품목특이사항', name: '품목특이사항', header: { text: '품목특이사항' }, width: 150, styleName: 'tl' },
+  ],
+};
+
+module.exports = grid;
