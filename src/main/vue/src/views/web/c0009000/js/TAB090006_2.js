@@ -151,11 +151,11 @@ const grid = {
     { column: '불량률' },
     {
       name: 'grpPL',
-      header: { text: 'PL(완성환산)' },
+      header: { text: 'PL전/후' },
       direction: 'horizontal',
       items: [
-        { name: 'grpPLqty', header: { text: '수량' }, direction: 'horizontal', items: [{ column: 'plBefore' }, { column: 'plAfter' }] },
-        { name: 'grpPLamt', header: { text: '금액' }, direction: 'horizontal', items: [{ column: 'plBeforeAmt' }, { column: 'plAfterAmt' }] },
+        { name: 'grpPLbefore', header: { text: 'PL전' }, direction: 'horizontal', items: [{ column: 'plBefore' }, { column: 'plBeforeAmt' }] },
+        { name: 'grpPLafter', header: { text: 'PL후' }, direction: 'horizontal', items: [{ column: 'plAfter' }, { column: 'plAfterAmt' }] },
       ],
     },
     {
@@ -223,10 +223,10 @@ const grid = {
     { name: 'etcOutEtcAmt', fieldName: 'etcOutEtcAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
     // 불량률, EOH
     { name: '불량률', fieldName: '불량률', width: 50, header: { text: '불량률(%)' }, styleName: 'tr', numberFormat: '#,##0.00' },
-    { name: 'plBefore', fieldName: 'plBefore', width: 70, header: { text: 'PL전' }, styleName: 'tr', numberFormat: '#,##0' },
-    { name: 'plAfter', fieldName: 'plAfter', width: 70, header: { text: 'PL후' }, styleName: 'tr', numberFormat: '#,##0' },
-    { name: 'plBeforeAmt', fieldName: 'plBeforeAmt', width: 85, header: { text: 'PL전' }, styleName: 'tr', numberFormat: '#,##0' },
-    { name: 'plAfterAmt', fieldName: 'plAfterAmt', width: 85, header: { text: 'PL후' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'plBefore', fieldName: 'plBefore', width: 70, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'plBeforeAmt', fieldName: 'plBeforeAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'plAfter', fieldName: 'plAfter', width: 70, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'plAfterAmt', fieldName: 'plAfterAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'eohQty', fieldName: 'eohQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'eohAmt', fieldName: 'eohAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
   ],
