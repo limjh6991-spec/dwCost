@@ -248,7 +248,7 @@ export default {
       const first = rows[0];
       const keys = Object.keys(first);
 
-      const ignore = new Set(['treeId', 'rn', 'gubun', '총합계', '양산합계', '개발합계', '카세트합계', '구매합계', '상품매출', '기타매출']);
+      const ignore = new Set(['treeId', 'rn', 'gubun', '총합계', '양산합계', '개발합계', '카세트합계', '구매합계', '상품매출', '기타매출', '회계합계', '회계비가동보상', '회계조정', '회계이전가격']);
 
       const modelKeys = keys.filter((k) => !ignore.has(k));
 
@@ -278,6 +278,25 @@ export default {
           header: { text },
           numberFormat: '#,##0',
           width: 60,
+          styleName: 'tr',
+        });
+      });
+
+      // 회계 컬럼(HQ 전용): 회계합계 + 회계군(제품:비가동보상/조정, 기타:이전가격). VN 결과엔 없으므로 keys 존재 시에만 생성.
+      [
+        { k: '회계합계', text: '회계합계' },
+        { k: '회계비가동보상', text: '비가동보상' },
+        { k: '회계조정', text: '조정' },
+        { k: '회계이전가격', text: '이전가격' },
+      ].forEach(({ k, text }) => {
+        if (!keys.includes(k)) return;
+        this.ensureField(baseGrid, k, 'number');
+        this.ensureColumn(baseGrid, {
+          name: k,
+          fieldName: k,
+          header: { text },
+          numberFormat: '#,##0',
+          width: 90,
           styleName: 'tr',
         });
       });
@@ -363,12 +382,25 @@ export default {
         { column: '양산합계', rowSpan: 3, header: { text: '양산합계' } },
         { column: '개발합계', rowSpan: 3, header: { text: '개발합계' } },
         { column: '카세트합계', rowSpan: 3, header: { text: '카세트합계' } },
+        ...(keys.includes('회계합계') ? [{ column: '회계합계', rowSpan: 3, header: { text: '회계합계' } }] : []),
         { column: '구매합계', rowSpan: 3, header: { text: '구매합계' } },
 
         { header: { text: '양산' }, items: make2Depth('양산') },
         { header: { text: '개발' }, items: make2Depth('개발') },
         { header: { text: '카세트' }, items: make2Depth('카세트') },
         { header: { text: '구매' }, items: make2Depth('구매') },
+        ...(keys.includes('회계비가동보상') || keys.includes('회계조정') || keys.includes('회계이전가격')
+          ? [
+              {
+                header: { text: '회계' },
+                items: [
+                  { header: { text: '제품' }, items: [{ column: '회계비가동보상', header: { text: '비가동보상' } }] },
+                  { header: { text: '제품' }, items: [{ column: '회계조정', header: { text: '조정' } }] },
+                  { header: { text: '기타' }, items: [{ column: '회계이전가격', header: { text: '이전가격' } }] },
+                ],
+              },
+            ]
+          : []),
       ];
 
       tcmTreeView.setColumnLayout(layout);
