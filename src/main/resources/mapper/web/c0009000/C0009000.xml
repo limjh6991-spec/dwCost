@@ -418,7 +418,14 @@
     </select>
 
     <select id="C0009003_Sch1" resultType="CamelMap">
-        EXEC DOI_AnnualReportBySale @YYYY=#{yyyy}, @SITE=#{site};
+        <choose>
+            <when test="site != null and site == 'VN'">
+                EXEC VN_AnnualReportBySale @YYYY=#{yyyy}, @SITE=#{site};
+            </when>
+            <otherwise>
+                EXEC DOI_AnnualReportBySale @YYYY=#{yyyy}, @SITE=#{site};
+            </otherwise>
+        </choose>
     </select>
 
     <select id="C0009007_Tab090007" resultType="CamelMap">
