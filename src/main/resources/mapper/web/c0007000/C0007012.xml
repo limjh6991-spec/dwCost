@@ -24,7 +24,7 @@
 	<delete id="C0007012_Delete1">
 		DELETE FROM DOI_EXCHANGE_RATE
 		WHERE YYYYMM = #{yyyymm}
-		AND 통화 = N#{통화}
+		AND 통화 = #{통화}
 	</delete>
 
 	<!-- 환율 등록 -->
@@ -38,7 +38,7 @@
 		UPDATE DOI_EXCHANGE_RATE
 		SET 환율 = #{환율}
 		WHERE YYYYMM = #{yyyymm}
-		AND 통화 = N#{통화}
+		AND 통화 = #{통화}
 	</update>
 
 	<!-- ==================== VN 품목별투입조회 (DOI_VN_MAT_INPUT) ==================== -->
