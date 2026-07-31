@@ -12,7 +12,7 @@
 [① 투입배부] UP_VN_EXPN_INPUT ──────────────────────────▶ doi_expn_matl (재료 직과/공통+면적, 가공 물량×면적)
 [② 기초]     UP_VN_COST_BOH ────────────────────────────▶ DOI_COST_BOH (전월EOH 이월 / 초기 doi_boh_amt seed)
 [③ 단가]     UP_VN_COST_UNIT (doi_expn_matl+DOI_COST_BOH+수불) ─▶ doi_cost_unit  = (기초+투입)/(OUT+EOHEQ)
-[④ 재공평가] UP_VN_WIP_EVAL (단가+투입+기초+수불) ────────▶ doi_cost_wip  (BOH/IN/EOH/OUT/LOSS + PL전/후_AMT)
+[④ 재공평가] UP_VN_WIP_EVAL (단가+투입+기초+수불) ────────▶ DOI_COST  (완전생성: 수량+금액 BOH/IN/EOH/OUT/LOSS/out_단가 + 기타입고재유입 RMAIN/ETC_IN_DEF_RW + PL전/후_AMT)
 ```
 
 ## 단계별 상세
@@ -35,7 +35,7 @@
 | ① | **UP_VN_EXPN_INPUT** | DOI_VN_MAT_INPUT(직과)+DOI_MATL_RESC(공통)+doi_acct_expen(가공) | **doi_expn_matl** 투입금액·투입수량(=SUM IN_MONTH) |
 | ② | **UP_VN_COST_BOH** | 전월 DOI_COST.EOH(정상월) / doi_boh_amt.PRE_EOH_AMT(초기, 통) | **DOI_COST_BOH** 기초(전액보존) + BOH_QTY |
 | ③ | **UP_VN_COST_UNIT** | doi_expn_matl + DOI_COST_BOH + 수불 + V_VN_WIP_CONV(EOHEQ) | **doi_cost_unit** 단가=(기초+투입)/(OUT+EOHEQ) |
-| ④ | **UP_VN_WIP_EVAL** | doi_cost_unit + doi_expn_matl + DOI_COST_BOH + 수불 | **doi_cost_wip** EOH=단가×EOHEQ, OUT/LOSS, PL전/후_AMT |
+| ④ | **UP_VN_WIP_EVAL** | doi_cost_unit + doi_expn_matl + DOI_COST_BOH + 수불(V_DOI_PROD_SUBUL·DOI_PROD_SUBUL) | **DOI_COST 완전생성**(구 UP_VN_COST의 VN 조립 대체): 수량 전체 + BOH/IN/EOH/OUT/LOSS/out_단가 + 기타입고 재유입(RMAIN/ETC_IN_DEF_RW) + PL전/후_AMT |
 
 - 공정(PL전/PL후)은 컬럼이 아니라 **EOHEQ = PL전×0.5+PL후×0.9** 로 ③④에서만 반영.
 - **② 기초 배분(초기월)**: 통 기초(PRE_EOH_AMT)를 **실제 투입금액 비율**로 원가항목에 배분(재료:가공=실제 투입비, 202606 재료72%). 생산수불 기초 없는 모델은 전액 가공비. 이후월은 전월 EOH 이월. ※ 기존 경비비율(제조경비AA/(AA+재료))은 AA에 원재료비(6211000) 포함되어 경비 과대 → 폐기.
@@ -58,7 +58,7 @@
 | **doi_expn_matl** ⭐ | UP_VN_EXPN_INPUT | 투입 배부(재료+가공, 제품별) |
 | **DOI_COST_BOH** ⭐ | UP_VN_COST_BOH / DOI_MAKE_COST_BOH | 기초금액(원가항목) |
 | **doi_cost_unit** ⭐ | UP_VN_COST_UNIT | 재공단가 |
-| **doi_cost_wip** ⭐ | UP_VN_WIP_EVAL | 재공평가·원가(BOH/IN/EOH/OUT/LOSS) |
+| **DOI_COST** | UP_VN_WIP_EVAL(구 UP_VN_COST 대체) | 재공평가·원가 완전생성(수량+금액 전체, 기타입고 재유입 포함) |
 | doi_stco / doi_slco … | UP_VN_STOCK_*/SALE_COST | 수불·매출원가 |
 
 ⭐ = 리팩토링 신규 (VN 전용). **doi_mat_cost / doi_expen_matl 은 VN 흐름에서 제외.**
@@ -70,5 +70,5 @@
 
 ## 미결(운영화)
 1. 배치/메뉴에 ①~④ 편입 (현재 재료비 원천만 화면 C0003000 버튼화).
-2. 수불/매출(D)이 doi_cost_wip 참조하도록 연결 (현재 DOI_COST 참조).
+2. 수불/매출(D): DOI_COST 참조는 자동(UP_VN_WIP_EVAL이 DOI_COST 생성). 단 UP_VN_STOCK_BOH의 **doi_expen_matl 참조 → doi_expn_matl**로 변경 필요(신규는 doi_expen_matl 미생성).
 3. 운영 DB 반영.

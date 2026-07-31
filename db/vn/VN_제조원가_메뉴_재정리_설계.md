@@ -33,7 +33,7 @@
 | 5 | TAB030014 | ⑤ 투입배부 | C0003001_Vn6 | `UP_VN_EXPN_INPUT` | doi_expn_matl | **신규** |
 | 6 | TAB030015 | ⑥ 재공기초 | C0003001_Vn7 | `UP_VN_COST_BOH` | DOI_COST_BOH | **신규** |
 | 7 | TAB030016 | ⑦ 재공단가 | C0003001_Vn8 | `UP_VN_COST_UNIT` | doi_cost_unit | **신규** |
-| 8 | TAB030017 | ⑧ 재공평가 | C0003001_Vn9 | `UP_VN_WIP_EVAL` | doi_cost_wip | **신규** |
+| 8 | TAB030017 | ⑧ 재공평가 | C0003001_Vn9 | `UP_VN_WIP_EVAL` | **DOI_COST**(완전생성, 구 UP_VN_COST 대체) | **신규** |
 
 **제거(VN)**: TAB030001~005(구 HQ탭), TAB030012(④재료비배부=UP_VN_MAT_COST, doi_mat_cost 폐기).
 ※ ④가공비집계: `UP_VN_EXPEN_MATL`이 doi_acct_expen 생성(부산물 doi_expen_matl/doi_boh_amt는 신규 파이프라인 미사용). 추후 doi_acct_expen 전용 프로시저로 분리 가능.
@@ -46,9 +46,9 @@
 | 3 | TAB030008 | 매출상계 | (기존) | — |
 → VN 매출원가 탭↔프로시저 연결 현황 별도 확인 필요(현재 VnProcRunner 미적용 가능성).
 
-**매출원가측 변경점**: STOCK_BOH/STOCK_COST/SALE_COST 모두 **DOI_COST**를 읽고, STOCK_BOH는 **doi_expen_matl**도 읽음.
-- **지금(메뉴 재정리)엔 변경 불필요** — DOI_COST는 아직 구 UP_VN_COST가 생성, doi_cost_wip은 병렬. 매출원가 그대로 동작.
-- **신규(doi_cost_wip) 권위 전환 시** → 3개 프로시저 `DOI_COST→doi_cost_wip`, STOCK_BOH `doi_expen_matl→doi_expn_matl` 참조 변경. (별도 스위치 단계)
+**매출원가측 변경점**: STOCK_BOH/STOCK_COST/SALE_COST 모두 **DOI_COST**를 읽음(STOCK_BOH는 **doi_expen_matl**도).
+- **DOI_COST 참조는 자동 반영** — 이제 UP_VN_WIP_EVAL이 DOI_COST를 직접 생성하므로 매출원가는 그대로 신규 원가 사용.
+- **단 UP_VN_STOCK_BOH의 `doi_expen_matl → doi_expn_matl` 참조 변경 필요** (신규 파이프라인은 doi_expen_matl 미생성).
 
 ## 5. 실행 순서 (배치/화면 버튼 순)
 `①재고조정 → ②재료비원장 → ③재료비집계 → ④가공비집계 → ⑤투입배부 → ⑥재공기초 → ⑦재공단가 → ⑧재공평가` → (매출) `제품수불 → 매출원가`
