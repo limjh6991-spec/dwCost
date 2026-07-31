@@ -8,8 +8,9 @@
  */
 CREATE OR ALTER PROCEDURE VN_ProductSubulMonthly
 (
-    @YYYYMM varchar(10),
-    @SITE   varchar(4)
+    @YYYY   varchar(4)  = NULL,
+    @YYYYMM varchar(10) = NULL,
+    @SITE   varchar(4)  = NULL
 )
 AS
 BEGIN
@@ -41,8 +42,9 @@ BEGIN
             , CAST(SUM(TRY_CONVERT(int, REPLACE(REPLACE(ISNULL(PL전, N'0'), N',', N''), N' ', N''))) AS INT) AS TOTAL_EOH_B
             , CAST(SUM(TRY_CONVERT(int, REPLACE(REPLACE(ISNULL(PL후, N'0'), N',', N''), N' ', N''))) AS INT) AS TOTAL_EOH_A
         FROM DOI_PROD_SUBUL WITH (NOLOCK)
-        WHERE YYYYMM = @YYYYMM
-          AND SITE   = @SITE
+        WHERE SITE = @SITE
+          AND ( (NULLIF(@YYYYMM,'') IS NOT NULL AND YYYYMM = @YYYYMM)
+             OR (NULLIF(@YYYYMM,'') IS NULL AND SUBSTRING(YYYYMM,1,4) = @YYYY) )
           AND 도우코드 IS NOT NULL AND LTRIM(RTRIM(도우코드)) <> ''
         GROUP BY 도우코드
         ORDER BY DIVISION, 도우코드;

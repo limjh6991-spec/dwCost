@@ -140,7 +140,7 @@
     <select id="C0009001_Tab090015" resultType="CamelMap">
         IF OBJECT_ID('VN_ProductSubulMonthly', 'P') IS NOT NULL
         BEGIN
-            EXEC VN_ProductSubulMonthly @YYYYMM=#{yyyymm}, @SITE=#{site};
+            EXEC VN_ProductSubulMonthly @YYYY=#{yyyy}, @YYYYMM=#{yyyymm}, @SITE=#{site};
         END
         ELSE
         BEGIN
@@ -488,12 +488,12 @@
 
     <!-- TAB090017: 제조원가(재공)_VN — 재공 공정수불+금액, 도우코드 그레인 (VINA 전용) -->
     <select id="C0009007_Tab090017" resultType="CamelMap">
-        EXEC VN_WipCostLedger_Subul @YYYYMM=#{yyyymm}, @SITE=#{site};
+        EXEC VN_WipCostLedger_Subul @YYYY=#{yyyy}, @YYYYMM=#{yyyymm}, @SITE=#{site};
     </select>
 
     <!-- TAB090016: 매출원가(제품)_VN — WH0006 제품수불+금액, 도우코드 그레인 (VINA 전용) -->
     <select id="C0009007_Tab090016" resultType="CamelMap">
-        EXEC VN_ProductCostLedger_Subul @YYYYMM=#{yyyymm}, @SITE=#{site};
+        EXEC VN_ProductCostLedger_Subul @YYYY=#{yyyy}, @YYYYMM=#{yyyymm}, @SITE=#{site};
     </select>
 
     <select id="C0009009_Sch1" resultType="CamelMap">

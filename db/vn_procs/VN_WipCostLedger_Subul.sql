@@ -1,10 +1,10 @@
 /*
- * VN_WipCostLedger_Subul  (제조원가(재공)_VN / C0009007 TAB090017)
- *   소스 DOI_COST, 도우코드 그레인. 표시=모델(=도우코드)/구분(도우코드 끝자리 P→MP, 그 외 R&D).
- *   ⚠️ 구조 스텁: 행집합만 산출, 측정값 전부 0. 산식 추후 정의. SEL_CODE='ACTUAL' 고정.
+ * VN_WipCostLedger_Subul (제조원가(재공)_VN / C0009007 TAB090017)
+ *   소스 DOI_COST, 도우코드 그레인. 표시=모델(=도우코드)/구분(끝자리 P->MP, 그 외 R&D).
+ *   @YYYYMM 주면 해당월, 없으면 @YYYY 연 전체. 구조 스텁(측정값 0). SEL_CODE='ACTUAL'.
  */
 CREATE OR ALTER PROCEDURE VN_WipCostLedger_Subul
-( @YYYYMM VARCHAR(6), @SITE VARCHAR(4) )
+( @YYYY VARCHAR(4)=NULL, @YYYYMM VARCHAR(6)=NULL, @SITE VARCHAR(4)=NULL )
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -97,7 +97,9 @@ BEGIN
             , CAST(0 AS DECIMAL(18,2)) AS LOSS_QTY
             , CAST(0 AS DECIMAL(18,2)) AS LOSS_AMT
         FROM DOI_COST WITH (NOLOCK)
-        WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE='ACTUAL'
+        WHERE SITE=@SITE AND SEL_CODE='ACTUAL'
+          AND ( (NULLIF(@YYYYMM,'') IS NOT NULL AND YYYYMM=@YYYYMM)
+             OR (NULLIF(@YYYYMM,'') IS NULL AND SUBSTRING(YYYYMM,1,4)=@YYYY) )
           AND 도우코드 IS NOT NULL AND LTRIM(RTRIM(도우코드))<>''
         GROUP BY 도우코드
         ORDER BY CASE WHEN RIGHT(RTRIM(도우코드),1)=N'P' THEN N'MP' ELSE N'R&D' END, 도우코드;
