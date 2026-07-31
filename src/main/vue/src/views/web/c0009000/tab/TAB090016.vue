@@ -1,7 +1,6 @@
 /**
  * TAB090016 - 매출원가(제품)_VN : 완제품창고(WH0006) 수불 + 항목별 수량/금액, 도우코드 그레인
  * 위치: C0009007 재공,제품 원가 > 매출원가(제품) 다음 (VINA 전용)
- * INPUT/기타입고/OUTPUT/기타출고 그룹은 +/- 여닫기
  */
 <template>
   <div>
@@ -24,6 +23,26 @@
             <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" :disabled="true" />
             <label for="floating">사업장</label>
           </div>
+        </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <select class="form-select label-60" id="currencySelect" :value="currency" @change="onCurrencyChange($event.target.value)">
+              <option value="USD">USD</option>
+              <option value="KRW">KRW</option>
+              <option value="VND">VND</option>
+            </select>
+            <label for="currencySelect">통화</label>
+          </div>
+        </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <input autocomplete="off" type="text" class="form-control label-60" id="baseRate" :value="baseRateDisplay" placeholder="기준환율" :disabled="true" />
+            <label for="baseRate">기준환율</label>
+          </div>
+        </b-col>
+        <b-col cols="2" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
+          <b-button class="second" size="sm" @click="openExchangeRate">환율관리</b-button>
+          <span class="ms-2 text-primary" style="font-size: 12px">{{ appliedRateLabel }}</span>
         </b-col>
       </b-row>
       <div class="btn_area">
@@ -49,19 +68,22 @@
         />
       </div>
     </div>
+    <ExchangeRatePopup ref="exchangeRatePopup" @closePopup="onExchangeRateClosed" />
   </div>
 </template>
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
+import currencyConvert from '@web/c0007000/js/currencyConvert.js';
+import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
 import gridField from '@web/c0009000/js/TAB090016.js';
 import _ from 'lodash';
 
 export default {
   name: 'TAB090016',
-  props: {},
-  components: {},
+  mixins: [currencyConvert],
+  components: { ExchangeRatePopup },
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -112,7 +134,8 @@ export default {
     initialize() {
       const base = this.srchInfo.yyyymm;
       this.params.year = base ? String(base).substring(0, 4) : String(new Date().getFullYear());
-      this.params.month = base ? String(base).substring(4, 6) : null;
+      this.params.month = null; // 기준월 디폴트 = 전체
+      this.params.yyyymm = null;
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
@@ -124,6 +147,7 @@ export default {
       if (gv) gv.commit();
       const yyyy = this.params.year ? String(this.params.year) : '';
       const yyyymm = this.params.month ? `${yyyy}${this.params.month}` : '';
+      this.params.yyyymm = yyyymm || null;
       const site = this.params.site != null ? this.siteMap[this.params.site] : null;
       const resp = await this.$axios.api.search({
         menuId: 'c0009000',
@@ -131,7 +155,19 @@ export default {
         queryParams: { yyyy, yyyymm, site },
         target: [],
       });
-      this.wipCostGridRows = Array.isArray(resp) ? resp : (resp && resp.data ? resp.data : []);
+      const raw = Array.isArray(resp) ? resp : (resp && resp.data ? resp.data : []);
+      this.currencyFields = raw.length ? Object.keys(raw[0]).filter((k) => /Amt$/i.test(k)) : [];
+      this.wipCostGridRows = await this.buildCurrencyRows(raw);
+    },
+    onCurrencyChange(currency) {
+      this.setCurrency(currency);
+      this.getDataList();
+    },
+    openExchangeRate() {
+      this.$refs.exchangeRatePopup.openDialog({ yyyymm: this.params.yyyymm || (this.params.year ? `${this.params.year}01` : null) });
+    },
+    onExchangeRateClosed() {
+      if (this.isCurrencyReadonly) this.getDataList();
     },
     excelBtnClick() {
       const gv = this.gridView;

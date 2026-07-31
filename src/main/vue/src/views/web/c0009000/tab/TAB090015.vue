@@ -111,7 +111,7 @@ export default {
     initialize() {
       const base = this.srchInfo.yyyymm;
       this.params.year = base ? String(base).substring(0, 4) : String(new Date().getFullYear());
-      this.params.month = base ? String(base).substring(4, 6) : null;
+      this.params.month = null; // 기준월 디폴트 = 전체
       this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     },
     initializeGrid() {
