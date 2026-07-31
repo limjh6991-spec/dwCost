@@ -108,7 +108,8 @@
 			,a.url
 		from DOI_CM_SYS_RESOURCE a
 		where a.upper_sys_resource_id = 'ROOT_MENU'
-		and a.prod_category = #{prodCategory} 	
+		and a.prod_category = #{prodCategory}
+		and isnull(a.del_yn,'N') <> 'Y'
 		union all
 		select
 			a.prod_category 
@@ -122,10 +123,11 @@
 			,a.sys_resource_type_code_id				
 			,cast(c.full_seq + ' > ' + format(a.seq,'0#') as nvarchar(max)) as full_seq
 			,a.url
-		from DOI_CM_SYS_RESOURCE a	
-		inner join mt c on a.upper_sys_resource_id = c.sys_resource_id	
+		from DOI_CM_SYS_RESOURCE a
+		inner join mt c on a.upper_sys_resource_id = c.sys_resource_id
 		--inner join role_sys_resc b on (a.UPPER_SYS_RESOURCE_ID = b.UPPER_SYS_RESOURCE_ID and a.sys_resource_id = b.sys_resource_id)
-		where a.prod_category = #{prodCategory} 		
+		where a.prod_category = #{prodCategory}
+		and isnull(a.del_yn,'N') <> 'Y'
 	)
 	select 
 		a.*

@@ -59,6 +59,7 @@ public class C0001009ServiceImpl implements C0001009Service {
 	}
 
 	@Override
+	@Transactional
 	public void roleMenuTabSave(Map<String, Object> params) {
 		String userId = jwtUtil.getUserId();
 		List<Map<String, Object>> roleMenuList = (List<Map<String, Object>>)params.get("roleMenuList");
