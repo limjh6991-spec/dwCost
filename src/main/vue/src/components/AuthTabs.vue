@@ -54,8 +54,11 @@ export default {
           if (!list.some(item => item.sysResourceId === 'TAB090014')) {
             list.push({ sysResourceId: 'TAB090014', sysResourceName: '재공품 공정 수불' });
           }
+          if (!list.some(item => item.sysResourceId === 'TAB090015')) {
+            list.push({ sysResourceId: 'TAB090015', sysResourceName: '월별 집계(수량_VN)' });
+          }
         } else {
-          list = list.filter(item => item.sysResourceId !== 'TAB090014');
+          list = list.filter(item => item.sysResourceId !== 'TAB090014' && item.sysResourceId !== 'TAB090015');
         }
       }
       return list;  

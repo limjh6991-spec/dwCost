@@ -31,3 +31,13 @@
 
 - `DOI_BOH_AMT`: 경비기초/재료비기초는 **MODEL_TYPE(전체) 단위**로 저장(`numeric(19,2)`, 2자리 배부).
 - 리포트/프로시저는 사업장 분기(`@SITE`)로 그레인을 선택한다.
+
+---
+
+## (참고) HQ 판관비 배부 파이프라인 — stale 동기화 주의
+
+`DOI_DEPT_COST`(부서별원장, 비용구분='판관') ─복사→ `DOI_ACCT_EXPEN`(acct_class='CC', `UP_DOI_EXPEN_MATL`) ─매출배부→ `doi_smce_cost.DIST_AMT`(`UP_DOI_SALE_COST`) → 총원가·제품별손익·판매관리비 집계표(제품별).
+판매관리비 집계표(**부서별**)만 `DOI_DEPT_COST`를 실시간 직접 조회.
+
+- **마감 후 `DOI_DEPT_COST`가 변경되면** `ACCT_EXPEN→smce_cost`가 옛값으로 동결(stale)돼 부서별 vs 모델기반 리포트 판관비가 어긋난다. 해소: `UP_DOI_EXPEN_MATL → UP_DOI_SALE_COST` 재실행(마감월은 `DOI_CLOSING_MONTH.IS_CLOSED` 임시 해제 후 재실행·재마감).
+- 총원가 `SGA_BASE`·손익 `PL_SGNA`의 판관비 세부 매핑은 `doi_acct` **정확일치+접두폴백**(`sub_name LIKE 상위계정과목+'%'`)이라, `doi_acct` 미등록 계정(예 `판)경상연구개발비-운반비`)도 상위계정과목으로 흡수돼 **총계=항목합**이 보장된다.
