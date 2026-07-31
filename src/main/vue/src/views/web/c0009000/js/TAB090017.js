@@ -137,6 +137,7 @@ const grid = {
       header: { text: '기초 / BOH (7=3+6)' },
       direction: 'horizontal',
       expandable: true,
+      expanded: false,
       items: [
         ...BOH.map(([b, t]) => pflGroup(b, t, 'expand')),
         pflGroup(BOH_TOTAL[0], BOH_TOTAL[1], 'always'),
@@ -150,6 +151,7 @@ const grid = {
       header: { text: '기타입고 / Other Input' },
       direction: 'horizontal',
       expandable: true,
+      expanded: false,
       items: [
         ...IN_ETC.map(([b, t]) => qaGroup(b, t, 'expand')),
         qaGroup('inTotal', '기타입고 (6=1+2+3+4+5)', 'always'),
@@ -163,6 +165,7 @@ const grid = {
       header: { text: '기타출고 / Other Output' },
       direction: 'horizontal',
       expandable: true,
+      expanded: false,
       items: [
         ...OUT_ETC.map(([b, t]) => qaGroup(b, t, 'expand')),
         qaGroup('outTotal', '기타출고 (5=1+2+3+4)', 'always'),
@@ -176,6 +179,7 @@ const grid = {
       header: { text: '재고 / EOH (7=5+6)' },
       direction: 'horizontal',
       expandable: true,
+      expanded: false,
       items: [
         ...EOH.map(([b, t]) => pflGroup(b, t, 'expand')),
         pflGroup(EOH_TOTAL[0], EOH_TOTAL[1], 'always'),

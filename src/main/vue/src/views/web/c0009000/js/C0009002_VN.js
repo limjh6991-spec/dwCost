@@ -116,6 +116,7 @@ const grid = {
       header: { text: 'INPUT' },
       direction: 'horizontal',
       expandable: true,
+      expanded: false,
       items: [
         {
           name: 'grpNormalFg',
@@ -146,6 +147,7 @@ const grid = {
       header: { text: '기타입고' },
       direction: 'horizontal',
       expandable: true,
+      expanded: false,
       items: [
         { column: 'ieRma', groupShowMode: 'expand' },
         { column: 'ieReturnPaid', groupShowMode: 'expand' },
@@ -159,6 +161,7 @@ const grid = {
       header: { text: 'OUTPUT' },
       direction: 'horizontal',
       expandable: true,
+      expanded: false,
       items: [
         { name: 'grpShipA', header: { text: 'SHIP(A급)' }, direction: 'horizontal', groupShowMode: 'expand', items: [{ column: 'shipAPaid' }] },
         { name: 'grpShipB', header: { text: 'SHIP(B급)' }, direction: 'horizontal', groupShowMode: 'expand', items: [{ column: 'shipBPaid' }] },
@@ -170,6 +173,7 @@ const grid = {
       header: { text: '기타출고' },
       direction: 'horizontal',
       expandable: true,
+      expanded: false,
       items: [
         { column: 'oeResorting', groupShowMode: 'expand' },
         { column: 'oeRework', groupShowMode: 'expand' },

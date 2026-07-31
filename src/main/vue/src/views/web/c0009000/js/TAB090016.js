@@ -103,6 +103,7 @@ const grid = {
       header: { text: 'INPUT' },
       direction: 'horizontal',
       expandable: true,
+      expanded: false,
       items: [
         {
           name: 'grpNormalFg',
@@ -134,6 +135,7 @@ const grid = {
       header: { text: '기타입고' },
       direction: 'horizontal',
       expandable: true,
+      expanded: false,
       items: [
         qa('ieRma', '1. RMA', 'expand'),
         qa('ieReturnPaid', '2. 반제품(유상)', 'expand'),
@@ -148,6 +150,7 @@ const grid = {
       header: { text: 'OUTPUT' },
       direction: 'horizontal',
       expandable: true,
+      expanded: false,
       items: [
         qa('shipAPaid', 'SHIP(A급) PAID', 'expand'),
         qa('shipBPaid', 'SHIP(B급) PAID', 'expand'),
@@ -160,6 +163,7 @@ const grid = {
       header: { text: '기타출고' },
       direction: 'horizontal',
       expandable: true,
+      expanded: false,
       items: [
         qa('oeResorting', '1. Re-Sorting(재검사)', 'expand'),
         qa('oeRework', '2. Re-work(SI검사)', 'expand'),

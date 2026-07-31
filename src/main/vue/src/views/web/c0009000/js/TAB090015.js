@@ -84,6 +84,7 @@ const tab090015GridField = {
       direction: 'horizontal',
       header: { text: '기타입고 / Other Input' },
       expandable: true,
+      expanded: false,
       items: [
         { column: 'inCode', groupShowMode: 'expand' },
         { column: 'inResort', groupShowMode: 'expand' },
@@ -99,6 +100,7 @@ const tab090015GridField = {
       direction: 'horizontal',
       header: { text: '기타출고 / Other Output' },
       expandable: true,
+      expanded: false,
       items: [
         { column: 'outCode', groupShowMode: 'expand' },
         {
@@ -115,6 +117,7 @@ const tab090015GridField = {
       direction: 'horizontal',
       header: { text: '재고 / EOH' },
       expandable: true,
+      expanded: false,
       items: [
         { ...pflGroup('lineWip', 'LINE_WIP (A)'), groupShowMode: 'expand' },
         { ...pflGroup('lineFgs', 'LINE_FGs (A)'), groupShowMode: 'expand' },
