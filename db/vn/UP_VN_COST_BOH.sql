@@ -51,14 +51,16 @@ BEGIN
      FROM dist2
      WHERE ABS(boh_base + CASE WHEN rn=1 THEN (CASE WHEN 원가구분=N'재료비' THEN 재료기초 ELSE 경비기초 END - sum_base) ELSE 0 END) > 0.0000001;
 
-     -- (B) 투입없는(doi_expn_matl 미존재) 도우코드: 대표 '*' 행에 PRE_EOH_AMT 전액
+     -- (B) 투입없는(doi_expn_matl 미존재) 도우코드: 재료비기초(MDAX)/경비기초('*') 2행으로 분리 → 재료비 기초 식별성 유지
      INSERT INTO DOI_COST_BOH (YYYYMM,SEL_CODE,SITE,구분,MODEL,도우코드,공정,expen_sel명,ACCT_NAME,ITEM_NAME,EXPEN_SEL,ADJ_YN,BOH_QTY,BOH)
-     SELECT @YYYYMM,@SEL_CODE,@SITE, ISNULL(b.구분,N'양산'), b.도우모델, b.MODEL_TYPE, N'*', N'기초이월', N'*', N'*', '*', 'Y',
-            CAST(ISNULL(q.boh_qty,0) AS int), CAST(b.pre AS numeric(18,2))
-     FROM (SELECT MODEL_TYPE, MAX(MODEL) 도우모델, MAX(구분) 구분, SUM(CAST(PRE_EOH_AMT AS float)) pre
+     SELECT @YYYYMM,@SEL_CODE,@SITE, ISNULL(b.구분,N'양산'), b.도우모델, b.MODEL_TYPE, N'*', v.명, v.acct, N'기초이월', v.expsel, 'Y',
+            CAST(ISNULL(q.boh_qty,0) AS int), CAST(v.boh AS numeric(18,2))
+     FROM (SELECT MODEL_TYPE, MAX(MODEL) 도우모델, MAX(구분) 구분,
+                  SUM(CAST(재료비기초 AS float)) rb, SUM(CAST(경비기초 AS float)) eb
            FROM doi_boh_amt WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE GROUP BY MODEL_TYPE) b
      LEFT JOIN (SELECT 도우코드, SUM(CAST(ISNULL(BOH_MONTH,0) AS float)) boh_qty FROM V_DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 도우코드) q ON q.도우코드=b.MODEL_TYPE
-     WHERE ABS(b.pre) > 0.0000001
+     CROSS APPLY (VALUES ('MDAX', N'직접재료비', N'원장', b.rb), ('*', N'기초이월', N'*', b.eb)) v(expsel, 명, acct, boh)
+     WHERE ABS(v.boh) > 0.0000001
        AND NOT EXISTS (SELECT 1 FROM doi_expn_matl e WHERE e.yyyymm=@YYYYMM AND e.site=@SITE AND e.sel_code=@SEL_CODE AND e.도우코드=b.MODEL_TYPE);
   END
 
