@@ -75,11 +75,10 @@ const grid = {
     },
     footer: { visible: false },
     filtering: { enabled: false },
-    fixed: { colCount: 3 },
+    fixed: { colCount: 2 },
   },
 
   fields: [
-    { fieldName: 'dowooCode', dataType: ValueType.TEXT },
     { fieldName: 'model', dataType: ValueType.TEXT },
     { fieldName: 'division', dataType: ValueType.TEXT },
     ...BASES.flatMap(([b]) => ([
@@ -89,14 +88,12 @@ const grid = {
   ],
 
   columns: [
-    { name: 'dowooCode', fieldName: 'dowooCode', width: 90, header: { text: '도우코드' }, styleName: 'tc', autoFilter: true },
-    { name: 'model', fieldName: 'model', width: 70, header: { text: '모델\nModel' }, styleName: 'tc', autoFilter: true },
+    { name: 'model', fieldName: 'model', width: 90, header: { text: '모델\nModel' }, styleName: 'tc', autoFilter: true },
     { name: 'division', fieldName: 'division', width: 60, header: { text: '구분\nDivision' }, styleName: 'tc', autoFilter: true },
     ...BASES.flatMap(([b]) => qaCols(b)),
   ],
 
   layout: [
-    { column: 'dowooCode' },
     { column: 'model' },
     { column: 'division' },
     qa('boh', 'BOH'),

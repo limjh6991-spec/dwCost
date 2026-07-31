@@ -1,11 +1,10 @@
 /*
  * VN_WipCostLedger_Subul
- *   제조원가(재공)_VN (C0009007 TAB090017) 데이터 소스.
- *   재공품 공정 수불(생산실적 TAB090015) 구조 + 항목별 수량/금액, 도우코드 그레인.
- *   기초/BOH·재고/EOH 는 항목별 PFL전50%/PFL후90% × 수량/금액.
+ *   제조원가(재공)_VN (C0009007 TAB090017): 재공 공정수불+금액.
+ *   도우코드 그레인. 화면 표시는 모델(=도우코드 값)/구분 만. 각 항목 수량/금액.
  *
- *   ⚠️ 현재는 "구조 스텁": 도우코드 그레인 행집합(도우코드/모델/구분)만 DOI_COST에서 산출하고,
- *      모든 수량/금액 측정값은 0으로 반환. (재공 공정수불 세부 산식/소스 매핑 미정)
+ *   ⚠️ 현재는 "구조 스텁": 도우코드 그레인 행집합(모델=도우코드/구분)만 DOI_COST에서 산출하고,
+ *      모든 수량/금액 측정값은 0으로 반환. (수불 세부 산식/소스 매핑 미정)
  *      → 화면 레이아웃/그레인 검증용. 산식 확정 후 각 컬럼을 채운다.
  *   SEL_CODE 는 VN 표준인 'ACTUAL' 고정.
  */
@@ -19,8 +18,7 @@ BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
         SELECT
-              도우코드 AS DOWOO_CODE
-            , MODEL     AS MODEL
+              도우코드 AS MODEL
             , 구분      AS DIVISION
             , CAST(0 AS DECIMAL(18,2)) AS BOH_LINE_WIP_B_QTY
             , CAST(0 AS DECIMAL(18,2)) AS BOH_LINE_WIP_B_AMT
@@ -112,8 +110,8 @@ BEGIN
           AND SEL_CODE = 'ACTUAL'
           AND 도우코드 IS NOT NULL
           AND LTRIM(RTRIM(도우코드)) <> ''
-        GROUP BY 도우코드, MODEL, 구분
-        ORDER BY 구분, MODEL, 도우코드;
+        GROUP BY 도우코드, 구분
+        ORDER BY 구분, 도우코드;
     END TRY
     BEGIN CATCH
         SELECT ERROR_MESSAGE() AS ErrorMessage;
