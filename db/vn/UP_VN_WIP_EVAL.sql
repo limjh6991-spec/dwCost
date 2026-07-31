@@ -43,13 +43,14 @@ BEGIN
       CASE WHEN (boh_qty+in_qty=eoh_qty OR boh_qty+in_qty=eoh_qty+loss_qty OR (out_qty=0 AND loss_qty>0)) AND eoh_qty<>0
            THEN boh+inn ELSE unit_cost*EOHEQ END Ori_eoh
     FROM item it),
-  eohc AS (SELECT *, ROUND(Ori_eoh,0) Base_eoh,
+  -- EOH는 소수 2자리 반올림(달러 센트). 정수 반올림 시 재공유지(BOH=EOH) 모델에서 OUT 누수 발생
+  eohc AS (SELECT *, ROUND(Ori_eoh,2) Base_eoh,
       SUM(Ori_eoh) OVER (PARTITION BY 구분,도우코드,원가구분) Sum_Ori,
-      SUM(ROUND(Ori_eoh,0)) OVER (PARTITION BY 구분,도우코드,원가구분) Sum_Base,
+      SUM(ROUND(Ori_eoh,2)) OVER (PARTITION BY 구분,도우코드,원가구분) Sum_Base,
       ROW_NUMBER() OVER (PARTITION BY 구분,도우코드,원가구분 ORDER BY Ori_eoh DESC, 항목) rn_e FROM ori),
   uc AS (SELECT 구분,도우코드, SUM(unit_cost) uc_tot FROM item GROUP BY 구분,도우코드),
   fin AS (SELECT e.*,
-      CAST(e.Base_eoh + CASE WHEN e.rn_e=1 THEN ROUND(e.Sum_Ori,0)-e.Sum_Base ELSE 0 END AS numeric(18,2)) EOH,
+      CAST(e.Base_eoh + CASE WHEN e.rn_e=1 THEN ROUND(e.Sum_Ori,2)-e.Sum_Base ELSE 0 END AS numeric(18,2)) EOH,
       ROW_NUMBER() OVER (PARTITION BY e.구분,e.도우코드 ORDER BY e.inn DESC, e.항목) rn_amt FROM eohc e)
   INSERT INTO doi_cost_wip
     (YYYYMM,SEL_CODE,SITE,구분,도우코드,도우모델,원가구분,EXPEN_SEL,분류,항목,BOH,[IN],UNIT_COST,EOHEQ,EOH,[OUT],LOSS,PL전_AMT,PL후_AMT,입고전_AMT)
