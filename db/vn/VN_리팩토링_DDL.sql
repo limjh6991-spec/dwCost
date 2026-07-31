@@ -38,7 +38,8 @@ CREATE TABLE dbo.TMP_VN_COST_EOH (
   YYYYMM varchar(6), SEL_CODE varchar(10), SITE varchar(4), 구분 nvarchar(10), 도우코드 varchar(18), 도우모델 varchar(18), 원가구분 nvarchar(10),
   EXPEN_SEL varchar(10), expen_sel명 nvarchar(60), 분류 nvarchar(60), 항목 nvarchar(60), ADJ_YN varchar(1),
   BOH_QTY int, IN_QTY int, EOH_QTY int, OUT_QTY int, LOSS_QTY int, ADJ_QTY int, DEF_RW_QTY int, TRANSFER_IN_QTY int,
-  BOH numeric(18,2), [IN] numeric(18,2), UNIT_COST numeric(24,12), EOHEQ numeric(18,4), EOH numeric(18,2));
+  BOH numeric(18,2), [IN] numeric(18,2), UNIT_COST numeric(24,12), EOHEQ numeric(18,4), EOH numeric(18,2),
+  PL전_AMT numeric(18,2), PL후_AMT numeric(18,2), 입고전_AMT numeric(18,2));  -- 공정별 재공금액(EOH=PL전+PL후)
 -- [2] 원가조립 결과 (OUT/LOSS/기타입고 재유입/PL) = DOI_COST 구조 미러
 IF OBJECT_ID('dbo.TMP_VN_COST') IS NULL
 CREATE TABLE dbo.TMP_VN_COST (

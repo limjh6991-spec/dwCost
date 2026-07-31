@@ -11,7 +11,7 @@ BEGIN
   SET @Message='[START] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+N'- '+@YYYYMM+N' VINA 재공평가(3단계) 시작';
   BEGIN TRY
 
-  /* ============ [1] 재공평가 → TMP_VN_COST_EOH ============ */
+  /* ============ [1] 재공평가 → TMP_VN_COST_EOH  (EOH 확정 + 공정별 재공금액 PL전/후_AMT) ============ */
   DELETE FROM TMP_VN_COST_EOH WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
   ;WITH
   qty AS (SELECT 구분,도우코드,
@@ -25,6 +25,12 @@ BEGIN
       SUM(CAST(ISNULL(기타입고_LOT변환,0)+ISNULL(기타입고_불량_RW,0)+ISNULL(기타입고_RMA_RW,0)+ISNULL(기타입고_전월불량,0)+ISNULL(기타입고_당월불량,0) AS float)) transfer_in_qty
     FROM DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 구분,도우코드),
   conv AS (SELECT wc_gubun 구분, wc_code 도우코드, EOHEQ FROM V_VN_WIP_CONV WHERE wc_ym=@YYYYMM AND wc_site=@SITE),
+  -- 공정별 재공수량 (PL전/PL후/입고전) : 재공금액 분해용
+  pq AS (SELECT 구분,도우코드,
+      SUM(TRY_CONVERT(float,REPLACE(REPLACE(ISNULL(PL전,N'0'),N',',N''),N' ',N''))) PL전_qty,
+      SUM(TRY_CONVERT(float,REPLACE(REPLACE(ISNULL(PL후,N'0'),N',',N''),N' ',N''))) PL후_qty,
+      SUM(TRY_CONVERT(float,REPLACE(REPLACE(ISNULL(입고전,N'0'),N',',N''),N' ',N''))) 입고전_qty
+    FROM DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 구분,도우코드),
   inp AS (SELECT 구분,도우코드,MAX(도우모델) 도우모델, MAX(원가구분) 원가구분, MAX(expen_sel명) expen_sel명, EXPEN_SEL,분류,항목, SUM(CAST(투입금액 AS float)) inn
           FROM doi_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE GROUP BY 구분,도우코드,EXPEN_SEL,분류,항목),
   bh AS (SELECT 구분,도우코드,MAX(MODEL) 도우모델, MAX(expen_sel명) expen_sel명, MAX(ADJ_YN) adj_yn, EXPEN_SEL,ACCT_NAME 분류,ITEM_NAME 항목, SUM(CAST(BOH AS float)) boh
@@ -51,34 +57,32 @@ BEGIN
   eohc AS (SELECT *, ROUND(Ori_eoh,2) Base_eoh,
       SUM(Ori_eoh) OVER (PARTITION BY 구분,도우코드,원가구분) Sum_Ori,
       SUM(ROUND(Ori_eoh,2)) OVER (PARTITION BY 구분,도우코드,원가구분) Sum_Base,
-      ROW_NUMBER() OVER (PARTITION BY 구분,도우코드,원가구분 ORDER BY Ori_eoh DESC, 항목) rn_e FROM ori)
+      ROW_NUMBER() OVER (PARTITION BY 구분,도우코드,원가구분 ORDER BY Ori_eoh DESC, 항목) rn_e,
+      SUM(unit_cost) OVER (PARTITION BY 구분,도우코드) uc_tot,          -- 도우코드 단가합(공정별 재공금액용)
+      ROW_NUMBER() OVER (PARTITION BY 구분,도우코드 ORDER BY inn DESC, 항목) rn_amt FROM ori)
   INSERT INTO TMP_VN_COST_EOH
     (YYYYMM,SEL_CODE,SITE,구분,도우코드,도우모델,원가구분,EXPEN_SEL,expen_sel명,분류,항목,ADJ_YN,
-     BOH_QTY,IN_QTY,EOH_QTY,OUT_QTY,LOSS_QTY,ADJ_QTY,DEF_RW_QTY,TRANSFER_IN_QTY,BOH,[IN],UNIT_COST,EOHEQ,EOH)
-  SELECT @YYYYMM,@SEL_CODE,@SITE,구분,도우코드,도우모델,원가구분,EXPEN_SEL,expen_sel명,분류,항목,adj_yn,
-     CAST(boh_qty AS int),CAST(in_qty AS int),CAST(eoh_qty AS int),CAST(out_qty AS int),CAST(loss_qty AS int),CAST(adj_qty AS int),CAST(def_rw_qty AS int),CAST(transfer_in_qty AS int),
-     CAST(boh AS numeric(18,2)),CAST(inn AS numeric(18,2)),CAST(unit_cost AS numeric(24,12)),CAST(EOHEQ AS numeric(18,4)),
-     CAST(Base_eoh + CASE WHEN rn_e=1 THEN ROUND(Sum_Ori,2)-Sum_Base ELSE 0 END AS numeric(18,2))
-  FROM eohc;
+     BOH_QTY,IN_QTY,EOH_QTY,OUT_QTY,LOSS_QTY,ADJ_QTY,DEF_RW_QTY,TRANSFER_IN_QTY,BOH,[IN],UNIT_COST,EOHEQ,EOH,PL전_AMT,PL후_AMT,입고전_AMT)
+  SELECT @YYYYMM,@SEL_CODE,@SITE,e.구분,e.도우코드,e.도우모델,e.원가구분,e.EXPEN_SEL,e.expen_sel명,e.분류,e.항목,e.adj_yn,
+     CAST(e.boh_qty AS int),CAST(e.in_qty AS int),CAST(e.eoh_qty AS int),CAST(e.out_qty AS int),CAST(e.loss_qty AS int),CAST(e.adj_qty AS int),CAST(e.def_rw_qty AS int),CAST(e.transfer_in_qty AS int),
+     CAST(e.boh AS numeric(18,2)),CAST(e.inn AS numeric(18,2)),CAST(e.unit_cost AS numeric(24,12)),CAST(e.EOHEQ AS numeric(18,4)),
+     CAST(e.Base_eoh + CASE WHEN e.rn_e=1 THEN ROUND(e.Sum_Ori,2)-e.Sum_Base ELSE 0 END AS numeric(18,2)),
+     -- 공정별 재공금액 = 도우코드 단가합 × 공정수량 × 완성률 (대표행). EOH = PL전_AMT + PL후_AMT (정상생산)
+     CASE WHEN e.rn_amt=1 THEN ROUND(e.uc_tot*ISNULL(pq.PL전_qty,0)*0.5,2) ELSE 0 END,
+     CASE WHEN e.rn_amt=1 THEN ROUND(e.uc_tot*ISNULL(pq.PL후_qty,0)*0.9,2) ELSE 0 END,
+     CASE WHEN e.rn_amt=1 THEN ROUND(e.uc_tot*ISNULL(pq.입고전_qty,0)*1.0,2) ELSE 0 END
+  FROM eohc e LEFT JOIN pq ON pq.구분=e.구분 AND pq.도우코드=e.도우코드;
   -- 검증 [1]: EOH 대사
   SELECT @cnt=COUNT(*), @boh=SUM(CAST(BOH AS float)), @inn=SUM(CAST([IN] AS float)), @eoh=SUM(CAST(EOH AS float))
     FROM TMP_VN_COST_EOH WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
   SET @Message=@Message+CHAR(10)+'[1.재공평가] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+N'- TMP_VN_COST_EOH '+CAST(@cnt AS varchar(20))+N'행, BOH '+CONVERT(varchar(30),CAST(@boh AS money),1)+N' + IN '+CONVERT(varchar(30),CAST(@inn AS money),1)+N' → EOH '+CONVERT(varchar(30),CAST(@eoh AS money),1);
 
-  /* ============ [2] 원가조립 → TMP_VN_COST ============ */
+  /* ============ [2] 원가조립 → TMP_VN_COST  (OUT/LOSS/out_단가/기타입고 재유입). PL전/후_AMT는 [1]에서 이어받음 ============ */
   DELETE FROM TMP_VN_COST WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
-  ;WITH
-  pq AS (SELECT 구분,도우코드,
-      SUM(TRY_CONVERT(float,REPLACE(REPLACE(ISNULL(PL전,N'0'),N',',N''),N' ',N''))) PL전_qty,
-      SUM(TRY_CONVERT(float,REPLACE(REPLACE(ISNULL(PL후,N'0'),N',',N''),N' ',N''))) PL후_qty,
-      SUM(TRY_CONVERT(float,REPLACE(REPLACE(ISNULL(입고전,N'0'),N',',N''),N' ',N''))) 입고전_qty
-    FROM DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 구분,도우코드),
-  uc AS (SELECT 구분,도우코드, SUM(CAST(UNIT_COST AS float)) uc_tot FROM TMP_VN_COST_EOH WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE GROUP BY 구분,도우코드),
-  base AS (
+  ;WITH base AS (
     SELECT t.*,
        -- LOSS: 전량손실이면 BOH+IN 아니면 0 (ACTUAL)
-       CAST(CASE WHEN (t.BOH_QTY+t.IN_QTY=t.LOSS_QTY) AND t.LOSS_QTY>0 THEN t.BOH+t.[IN] ELSE 0 END AS numeric(18,2)) LOSS_AMT,
-       ROW_NUMBER() OVER (PARTITION BY t.구분,t.도우코드 ORDER BY t.[IN] DESC, t.항목) rn_amt
+       CAST(CASE WHEN (t.BOH_QTY+t.IN_QTY=t.LOSS_QTY) AND t.LOSS_QTY>0 THEN t.BOH+t.[IN] ELSE 0 END AS numeric(18,2)) LOSS_AMT
     FROM TMP_VN_COST_EOH t WHERE t.yyyymm=@YYYYMM AND t.site=@SITE AND t.sel_code=@SEL_CODE)
   INSERT INTO TMP_VN_COST
     (YYYYMM,SEL_CODE,SITE,구분,MODEL,도우코드,expen_sel명,ACCT_NAME,ITEM_NAME,EXPEN_SEL,
@@ -91,11 +95,8 @@ BEGIN
      b.LOSS_AMT, 0, 0, b.ADJ_YN, 1,
      b.DEF_RW_QTY, CAST(ROUND(b.DEF_RW_QTY*b.UNIT_COST,2) AS numeric(18,2)),
      b.TRANSFER_IN_QTY, CAST(ROUND(b.TRANSFER_IN_QTY*b.UNIT_COST,2) AS numeric(18,2)),
-     CASE WHEN b.rn_amt=1 THEN ROUND(uc.uc_tot*ISNULL(pq.PL전_qty,0)*0.5,2) ELSE 0 END,
-     CASE WHEN b.rn_amt=1 THEN ROUND(uc.uc_tot*ISNULL(pq.PL후_qty,0)*0.9,2) ELSE 0 END,
-     CASE WHEN b.rn_amt=1 THEN ROUND(uc.uc_tot*ISNULL(pq.입고전_qty,0)*1.0,2) ELSE 0 END
-  FROM base b JOIN uc ON uc.구분=b.구분 AND uc.도우코드=b.도우코드
-    LEFT JOIN pq ON pq.구분=b.구분 AND pq.도우코드=b.도우코드;
+     b.PL전_AMT, b.PL후_AMT, b.입고전_AMT   -- [1] 재공평가에서 확정된 공정별 재공금액 이어받기
+  FROM base b;
   -- 검증 [2]: 원가보존 BOH+IN = OUT+EOH+LOSS
   SELECT @src=SUM(CAST(BOH AS float)+CAST([IN] AS float)), @dst=SUM(CAST([OUT] AS float)+CAST(EOH AS float)+CAST(LOSS AS float)),
          @out=SUM(CAST([OUT] AS float)), @loss=SUM(CAST(LOSS AS float))

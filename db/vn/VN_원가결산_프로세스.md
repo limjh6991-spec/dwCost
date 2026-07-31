@@ -35,7 +35,7 @@
 | ① | **UP_VN_EXPN_INPUT** | DOI_VN_MAT_INPUT(직과)+DOI_MATL_RESC(공통)+doi_acct_expen(가공) | **doi_expn_matl** 투입금액·투입수량(=SUM IN_MONTH) |
 | ② | **UP_VN_COST_BOH** | 전월 DOI_COST.EOH(정상월) / doi_boh_amt.PRE_EOH_AMT(초기, 통) | **DOI_COST_BOH** 기초(전액보존) + BOH_QTY |
 | ③ | **UP_VN_COST_UNIT** | doi_expn_matl + DOI_COST_BOH + 수불 + V_VN_WIP_CONV(EOHEQ) | **doi_cost_unit** 단가=(기초+투입)/(OUT+EOHEQ) |
-| ④ | **UP_VN_WIP_EVAL** (3단계) | doi_cost_unit + doi_expn_matl + DOI_COST_BOH + 수불 | **[1]재공평가→TMP_VN_COST_EOH(EOH) [2]원가조립→TMP_VN_COST(OUT/LOSS/out_단가/기타입고재유입/PL) [3]→DOI_COST**. 단계별 검증로그(EOH대사/원가보존). 구 UP_VN_COST 대체 |
+| ④ | **UP_VN_WIP_EVAL** (3단계) | doi_cost_unit + doi_expn_matl + DOI_COST_BOH + 수불 | **[1]재공평가→TMP_VN_COST_EOH(EOH + 공정별 재공금액 PL전/후_AMT, EOH=PL전+PL후) [2]원가조립→TMP_VN_COST(OUT/LOSS/out_단가/기타입고재유입) [3]→DOI_COST**. 단계별 검증로그. 구 UP_VN_COST 대체 |
 
 - 공정(PL전/PL후)은 컬럼이 아니라 **EOHEQ = PL전×0.5+PL후×0.9** 로 ③④에서만 반영.
 - **② 기초 배분(초기월)**: 통 기초(PRE_EOH_AMT)를 **실제 투입금액 비율**로 원가항목에 배분(재료:가공=실제 투입비, 202606 재료72%). 생산수불 기초 없는 모델은 전액 가공비. 이후월은 전월 EOH 이월. ※ 기존 경비비율(제조경비AA/(AA+재료))은 AA에 원재료비(6211000) 포함되어 경비 과대 → 폐기.
