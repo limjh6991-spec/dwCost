@@ -21,7 +21,7 @@
     <template #tab-content-TAB030005>
       <TAB030005 tabId="TAB030005" />
     </template>
-    <!-- VINA 재료비 파이프라인 (제조원가집계) -->
+    <!-- VINA 원가 파이프라인 (제조원가집계) : ①~③ 원천 + ④~⑧ 리팩토링 -->
     <template #tab-content-TAB030009>
       <TAB030009 tabId="TAB030009" />
     </template>
@@ -33,6 +33,21 @@
     </template>
     <template #tab-content-TAB030012>
       <TAB030012 tabId="TAB030012" />
+    </template>
+    <template #tab-content-TAB030013>
+      <TAB030013 tabId="TAB030013" />
+    </template>
+    <template #tab-content-TAB030014>
+      <TAB030014 tabId="TAB030014" />
+    </template>
+    <template #tab-content-TAB030015>
+      <TAB030015 tabId="TAB030015" />
+    </template>
+    <template #tab-content-TAB030016>
+      <TAB030016 tabId="TAB030016" />
+    </template>
+    <template #tab-content-TAB030017>
+      <TAB030017 tabId="TAB030017" />
     </template>
   </auth-tabs>
 </template>
@@ -47,6 +62,11 @@ import TAB030009 from './tab/TAB030009.vue';
 import TAB030010 from './tab/TAB030010.vue';
 import TAB030011 from './tab/TAB030011.vue';
 import TAB030012 from './tab/TAB030012.vue';
+import TAB030013 from './tab/TAB030013.vue';
+import TAB030014 from './tab/TAB030014.vue';
+import TAB030015 from './tab/TAB030015.vue';
+import TAB030016 from './tab/TAB030016.vue';
+import TAB030017 from './tab/TAB030017.vue';
 
 export default {
   name: 'DOI_C0003001',
@@ -61,6 +81,11 @@ export default {
     TAB030010,
     TAB030011,
     TAB030012,
+    TAB030013,
+    TAB030014,
+    TAB030015,
+    TAB030016,
+    TAB030017,
   },
   watch: {},
   data() {

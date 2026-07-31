@@ -70,5 +70,5 @@
 
 ## 미결(운영화)
 1. 배치/메뉴에 ①~④ 편입 (현재 재료비 원천만 화면 C0003000 버튼화).
-2. 수불/매출(D): DOI_COST 참조는 자동(UP_VN_WIP_EVAL이 DOI_COST 생성). 단 UP_VN_STOCK_BOH의 **doi_expen_matl 참조 → doi_expn_matl**로 변경 필요(신규는 doi_expen_matl 미생성).
+2. 수불/매출(D): DOI_COST 참조 자동 반영(UP_VN_WIP_EVAL이 DOI_COST 생성). STOCK_BOH/COST/SALE 활성 doi_expen_matl 참조 0 확인 → 별도 변경 불필요.
 3. 운영 DB 반영.

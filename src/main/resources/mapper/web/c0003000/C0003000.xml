@@ -237,10 +237,51 @@
             #{site},
             #{selcode}
     </select>
-    <!-- ④ 재료비 배부(직과/공통) : doi_mat_cost -->
+    <!-- ④ 재료비 배부(직과/공통) : doi_mat_cost [구방식, 미사용] -->
     <select id="C0003001_Vn4" resultType="CamelMap">
         DECLARE @RET_CODE INT;
         EXEC @RET_CODE = UP_VN_MAT_COST
+            #{yyyymm},
+            #{site},
+            #{selcode}
+    </select>
+    <!-- ===== VINA 원가 리팩토링 파이프라인 (④~⑧) ===== -->
+    <!-- ④ 가공비 집계 : doi_acct_expen -->
+    <select id="C0003001_Vn5" resultType="CamelMap">
+        DECLARE @RET_CODE INT;
+        EXEC @RET_CODE = UP_VN_ACCT_EXPEN
+            #{yyyymm},
+            #{site},
+            #{selcode}
+    </select>
+    <!-- ⑤ 투입 배부 : doi_expn_matl -->
+    <select id="C0003001_Vn6" resultType="CamelMap">
+        DECLARE @RET_CODE INT;
+        EXEC @RET_CODE = UP_VN_EXPN_INPUT
+            #{yyyymm},
+            #{site},
+            #{selcode}
+    </select>
+    <!-- ⑥ 재공 기초 : DOI_COST_BOH -->
+    <select id="C0003001_Vn7" resultType="CamelMap">
+        DECLARE @RET_CODE INT;
+        EXEC @RET_CODE = UP_VN_COST_BOH
+            #{yyyymm},
+            #{site},
+            #{selcode}
+    </select>
+    <!-- ⑦ 재공 단가 : doi_cost_unit -->
+    <select id="C0003001_Vn8" resultType="CamelMap">
+        DECLARE @RET_CODE INT;
+        EXEC @RET_CODE = UP_VN_COST_UNIT
+            #{yyyymm},
+            #{site},
+            #{selcode}
+    </select>
+    <!-- ⑧ 재공 평가 : DOI_COST -->
+    <select id="C0003001_Vn9" resultType="CamelMap">
+        DECLARE @RET_CODE INT;
+        EXEC @RET_CODE = UP_VN_WIP_EVAL
             #{yyyymm},
             #{site},
             #{selcode}

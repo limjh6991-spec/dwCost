@@ -46,9 +46,7 @@
 | 3 | TAB030008 | 매출상계 | (기존) | — |
 → VN 매출원가 탭↔프로시저 연결 현황 별도 확인 필요(현재 VnProcRunner 미적용 가능성).
 
-**매출원가측 변경점**: STOCK_BOH/STOCK_COST/SALE_COST 모두 **DOI_COST**를 읽음(STOCK_BOH는 **doi_expen_matl**도).
-- **DOI_COST 참조는 자동 반영** — 이제 UP_VN_WIP_EVAL이 DOI_COST를 직접 생성하므로 매출원가는 그대로 신규 원가 사용.
-- **단 UP_VN_STOCK_BOH의 `doi_expen_matl → doi_expn_matl` 참조 변경 필요** (신규 파이프라인은 doi_expen_matl 미생성).
+**매출원가측 변경점**: **없음(확인 완료)**. STOCK_BOH/STOCK_COST/SALE_COST의 활성 코드는 전부 **DOI_COST만 참조**(주석 제외 doi_expen_matl 활성참조 0). 이제 UP_VN_WIP_EVAL이 DOI_COST를 직접 생성하므로 매출원가/수불은 **자동으로 신규 원가 사용**. (STOCK_BOH의 doi_expen_matl 1건은 주석 처리된 죽은 코드)
 
 ## 5. 실행 순서 (배치/화면 버튼 순)
 `①재고조정 → ②재료비원장 → ③재료비집계 → ④가공비집계 → ⑤투입배부 → ⑥재공기초 → ⑦재공단가 → ⑧재공평가` → (매출) `제품수불 → 매출원가`
