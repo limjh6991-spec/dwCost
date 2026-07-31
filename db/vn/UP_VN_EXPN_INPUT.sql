@@ -1,83 +1,122 @@
 CREATE OR ALTER PROCEDURE dbo.UP_VN_EXPN_INPUT @YYYYMM varchar(6), @SITE varchar(4), @SEL_CODE varchar(10) AS
-/* [VN 리팩토링 260731] 투입(재료비+가공비) 집계 → doi_vn_expn_matl (수량/금액)
-   소스 = 기존 집계결과: doi_mat_cost.배부금액(재료), doi_expen_matl.[in](가공)
-   공정(PL전/PL후) = V_VN_PROCESS_RATE 비율로 투입금액/수량 분할(잔차는 PL전에 보정 → 총액 보존)
-   투입수량: 직과재료 = DOI_VN_MAT_INPUT 원천 투입수량(도우코드×자재). 공통재료/가공 = 0(수량개념 없음/면적배부)
-   카세트(VINA CST, len(model)>5) 제외: VN은 doi_vncst_rate 미사용으로 데이터 없음
-   ※ EXPEN_SEL/ACCT_NAME(분류) 매핑은 UP_VN_COST의 DOI_COST 조립과 동일 → 하류 재구성 정합 */
+/* [VN 리팩토링 260731-2] 제품별(도우코드) 투입 배부 → doi_expn_matl  (재료+가공, 투입금액+투입수량만)
+   ★ doi_mat_cost / doi_expen_matl 미사용. 원천에서 직접 배부.
+   재료: 직과=DOI_VN_MAT_INPUT, 공통=DOI_MATL_RESC(환산량×면적 배부)  [UP_VN_MAT_COST 로직]
+   가공: doi_acct_expen(물량×면적 배부, 카세트 dept 400/448 제외)     [UP_VN_EXPEN_MATL 로직]
+   투입수량 = 도우코드별 SUM(IN_MONTH) (원가항목 행마다 반복). 공정/기초/단가는 하류 함수. */
 BEGIN
   SET NOCOUNT ON;
-  DECLARE @Message nvarchar(max), @mat float, @exp float, @cnt int;
-  SET @Message = '[START] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+N'- '+@YYYYMM+' VINA 투입집계(doi_vn_expn_matl) 시작';
+  DECLARE @Message nvarchar(max), @mat float, @exp float, @cnt int, @missing_cnt int, @missing_list nvarchar(max);
+  SET @Message = '[START] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+N'- '+@YYYYMM+N' VINA 투입배부(doi_expn_matl) 시작';
   BEGIN TRY
 
-  DELETE FROM doi_vn_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
+  -- 면적 누락 검증 (환산량>0 도우코드 중 DOI_MODEL_MAST 면적 없으면 중단)
+  ;WITH prod_chk AS (
+     SELECT 도우코드, SUM(CAST(ISNULL(IN_MONTH,0)+ISNULL(OUT_MONTH,0)+ISNULL(LOSS_MONTH,0) AS float))/2.0 환산량
+     FROM V_DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 도우코드)
+  SELECT @missing_cnt=COUNT(*), @missing_list=STRING_AGG(CONVERT(nvarchar(max),p.도우코드),N', ')
+  FROM prod_chk p LEFT JOIN DOI_MODEL_MAST mm ON mm.yyyymm=@YYYYMM AND mm.site=@SITE AND mm.MODEL=p.도우코드
+  WHERE p.환산량>0 AND (mm.MODEL IS NULL OR ISNULL(mm.xy,0)=0);
+  IF ISNULL(@missing_cnt,0)>0
+  BEGIN
+     SET @Message=@Message+CHAR(10)+'[ERROR] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+N'- 면적(DOI_MODEL_MAST) 누락 도우코드 '+CAST(@missing_cnt AS varchar(10))+N'건 → 배부 중단: '+ISNULL(@missing_list,N'');
+     INSERT INTO doi_execlog (yyyymm,sel_code,site,exec_date,rslt_message,exec_user,menu_id,proc_name,exec_rslt)
+       VALUES (@YYYYMM,@SEL_CODE,@SITE,getdate(),@Message,'system',N'제조원가집계','UP_VN_EXPN_INPUT','FAIL');
+     SELECT @Message as retMessage; RETURN -1;
+  END
 
-  -- 도우코드별 PL전 비율(단일값). 잔차 보정에 사용
-  ;WITH pr AS (
-    SELECT yyyymm, site, 구분, 도우코드,
-           MAX(CASE WHEN 공정=N'PL전' THEN 비율 END) rate_pl전
-    FROM V_VN_PROCESS_RATE WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY yyyymm, site, 구분, 도우코드
-  ),
-  -- 직과재료 원천 투입수량 (도우코드×자재)
-  mi AS (SELECT 제품번호 도우코드, 자재번호, SUM(CAST(투입수량 AS float)) qty
-         FROM DOI_VN_MAT_INPUT WHERE yyyymm=@YYYYMM GROUP BY 제품번호, 자재번호),
-  -- (1) 재료비: doi_mat_cost → EXPEN_SEL/ACCT_NAME 매핑(UP_VN_COST 동일)
-  mat AS (
-    SELECT m.구분, m.도우코드, m.도우모델,
-      N'재료비' 원가구분,
-      CASE WHEN m.mat_class=N'원자재' OR m.원가자재분류=N'원장'
-             OR m.mat_class+m.자재대분류=N'부자재'+N'필름' OR m.원가자재분류=N'필름'
-             OR m.mat_class+m.자재대분류=N'원자재'+N'카세트' OR m.원가자재분류=N'카세트'
-             OR (m.mat_class+COALESCE(m.자재대분류,N'1')=N'약액'+N'1')
-             OR (m.mat_class+m.자재대분류=N'부자재'+N'약액') OR m.원가자재분류=N'약액'
-           THEN 'MDAX' ELSE 'MIAX' END EXPEN_SEL,
-      m.자재번호 항목,
-      CASE WHEN m.mat_class+m.자재대분류=N'부자재'+N'필름' OR m.원가자재분류=N'필름' THEN N'PF'
-           WHEN m.mat_class+m.자재대분류=N'원자재'+N'카세트' OR m.원가자재분류=N'카세트' THEN N'카세트'
-           WHEN (m.mat_class+COALESCE(m.자재대분류,N'1')=N'약액'+N'1') OR (m.mat_class+m.자재대분류=N'부자재'+N'약액') OR m.원가자재분류=N'약액' THEN N'약액'
-           WHEN (m.mat_class+m.자재대분류=N'부자재'+N'트레이' OR m.원가자재분류=N'트레이') THEN N'트레이'
-           WHEN m.mat_class=N'원자재' THEN N'원장' ELSE N'기타' END 분류,
-      CAST(m.배부금액 AS float) 투입금액,
-      ISNULL(mi.qty,0) 투입수량        -- 직과재료(배부방식=직과)만 원천 투입수량, 공통은 0
-    FROM doi_mat_cost m
-    LEFT JOIN mi ON mi.도우코드=m.도우코드 AND mi.자재번호=m.자재번호 AND m.배부방식=N'직과'
-    WHERE m.yyyymm=@YYYYMM AND m.site=@SITE AND m.sel_code=@SEL_CODE
-  ),
-  -- (2) 가공비: doi_expen_matl([in]) — 카세트(VINA CST, len>5) 제외
-  exp AS (
-    SELECT e.구분, e.도우코드, e.model 도우모델,
-      N'가공비' 원가구분, e.EXPEN_SEL, e.SUB_NAME 항목, e.ACCT_NAME 분류,
-      CAST(e.[in] AS float) 투입금액, CAST(0 AS float) 투입수량
-    FROM doi_expen_matl e
-    WHERE e.yyyymm=@YYYYMM AND e.site=@SITE AND e.sel_code=@SEL_CODE
-      AND LEN(e.model)<=5 AND ISNULL(e.SUB_NAME,'')<>N'VINA CST'
-  ),
-  src AS (SELECT * FROM mat UNION ALL SELECT * FROM exp)
-  INSERT INTO doi_vn_expn_matl
-    (YYYYMM,SEL_CODE,SITE,구분,도우코드,도우모델,공정,원가구분,EXPEN_SEL,항목,분류,투입수량,투입금액)
-  SELECT @YYYYMM,@SEL_CODE,@SITE, s.구분, s.도우코드, s.도우모델, v.공정, s.원가구분, s.EXPEN_SEL, s.항목, s.분류,
-         CAST(v.투입수량 AS numeric(18,2)), CAST(v.투입금액 AS numeric(18,2))
-  FROM src s
-  LEFT JOIN pr ON pr.구분=s.구분 AND pr.도우코드=s.도우코드
-  CROSS APPLY (VALUES
-      (N'PL전', ROUND(s.투입금액 * ISNULL(pr.rate_pl전,0), 2), ROUND(s.투입수량 * ISNULL(pr.rate_pl전,0), 2)),
-      (N'PL후', s.투입금액 - ROUND(s.투입금액 * ISNULL(pr.rate_pl전,0), 2), s.투입수량 - ROUND(s.투입수량 * ISNULL(pr.rate_pl전,0), 2))
-  ) v(공정, 투입금액, 투입수량)
-  WHERE ABS(v.투입금액) > 0.0000001 OR ABS(v.투입수량) > 0.0000001;   -- 0 배분 행 제외
+  DELETE FROM doi_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
+
+  -- 공유: 도우코드별 수량/면적/도우모델
+  IF OBJECT_ID('tempdb..#prod') IS NOT NULL DROP TABLE #prod;
+  SELECT pa.도우코드, pa.도우모델, pa.구분, pa.in_qty, pa.환산량, CAST(ISNULL(mm.xy,0) AS float) 면적
+  INTO #prod
+  FROM (SELECT 도우코드, MAX(도우모델) 도우모델, MAX(구분) 구분,
+           SUM(CAST(ISNULL(IN_MONTH,0) AS float)) in_qty,
+           SUM(CAST(ISNULL(IN_MONTH,0)+ISNULL(OUT_MONTH,0)+ISNULL(LOSS_MONTH,0) AS float))/2.0 환산량
+        FROM V_DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 도우코드) pa
+  LEFT JOIN DOI_MODEL_MAST mm ON mm.yyyymm=@YYYYMM AND mm.site=@SITE AND mm.MODEL=pa.도우코드
+  WHERE pa.환산량>0;
+
+  ---------------- (1) 재료비 배부 ----------------
+  ;WITH
+  matcls AS (SELECT 자재번호,
+      MAX(CASE WHEN 품목자산분류=N'Raw Material' AND UPPER(자재소분류) LIKE N'%CHEMICAL%' THEN N'약액'
+               WHEN 품목자산분류=N'Raw Material' THEN N'원재료'
+               WHEN 품목자산분류=N'Sub Material' THEN N'부재료' ELSE N'기타' END) grp,
+      MAX(CASE WHEN 품목자산분류=N'Raw Material' AND UPPER(자재소분류) LIKE N'%CHEMICAL%' THEN N'약액'
+               WHEN 품목자산분류=N'Raw Material' THEN N'원자재'
+               WHEN 품목자산분류=N'Sub Material' THEN N'부자재' ELSE N'기타' END) mat_class_hq
+    FROM DOI_VN_MATERIAL WHERE yyyymm=@YYYYMM GROUP BY 자재번호),
+  comm_src AS (SELECT r.품번 자재번호, SUM(CAST(r.투입금액 AS float)) 금액
+    FROM DOI_MATL_RESC r JOIN matcls c ON c.자재번호=r.품번
+    WHERE r.yyyymm=@YYYYMM AND r.site=@SITE AND ISNULL(r.투입금액,0)<>0 AND c.grp IN (N'약액',N'부재료') GROUP BY r.품번),
+  tot_chg AS (SELECT SUM(환산량*면적) s FROM #prod),
+  common_calc AS (SELECT p.구분,p.도우모델,p.도우코드,p.in_qty, s.자재번호,
+      ROUND(s.금액*(p.환산량*p.면적/NULLIF(t.s,0)),2) 배부금액,
+      ROW_NUMBER() OVER (PARTITION BY s.자재번호 ORDER BY p.환산량*p.면적 DESC,p.도우코드) rn,
+      SUM(ROUND(s.금액*(p.환산량*p.면적/NULLIF(t.s,0)),2)) OVER (PARTITION BY s.자재번호) sum_배부, s.금액 in_amt
+    FROM comm_src s CROSS JOIN #prod p CROSS JOIN tot_chg t),
+  mat_rows AS (
+    -- 직과
+    SELECT p.구분,p.도우모델,mi.제품번호 도우코드, mi.자재번호, N'직과' 배부방식, p.in_qty,
+           CAST(SUM(CAST(mi.투입금액 AS float)) AS float) 배부금액
+    FROM DOI_VN_MAT_INPUT mi JOIN matcls c ON c.자재번호=mi.자재번호 JOIN #prod p ON p.도우코드=mi.제품번호
+    WHERE mi.yyyymm=@YYYYMM AND c.grp=N'원재료'
+    GROUP BY p.구분,p.도우모델,mi.제품번호,mi.자재번호,p.in_qty
+    UNION ALL
+    -- 공통 (잔차 rn=1 보정)
+    SELECT 구분,도우모델,도우코드,자재번호, N'공통', in_qty,
+           CAST(배부금액 + CASE WHEN rn=1 THEN (in_amt-sum_배부) ELSE 0 END AS float)
+    FROM common_calc)
+  INSERT INTO doi_expn_matl
+    (YYYYMM,SEL_CODE,SITE,구분,도우코드,도우모델,원가구분,EXPEN_SEL,expen_sel명,분류,항목,배부방식,투입수량,투입금액)
+  SELECT @YYYYMM,@SEL_CODE,@SITE, r.구분, r.도우코드, r.도우모델, N'재료비',
+    CASE WHEN r.배부방식=N'직과' THEN 'MDAX' ELSE 'MIAX' END,
+    CASE WHEN r.배부방식=N'직과' THEN N'직접재료비' ELSE N'간접재료비' END,
+    CASE WHEN r.배부방식=N'직과' THEN N'원장' ELSE N'기타' END,
+    r.자재번호, r.배부방식, CAST(r.in_qty AS numeric(18,2)), CAST(r.배부금액 AS numeric(18,2))
+  FROM mat_rows r
+  WHERE ABS(r.배부금액)>0.0000001;
+
+  ---------------- (2) 가공비 배부 (UTG, 카세트 제외) ----------------
+  ;WITH
+  MODEL_RATE AS (
+    SELECT 구분, 도우코드, 도우모델, in_qty,
+      CAST(CAST(환산량*면적 AS numeric(38,25))/NULLIF(SUM(환산량*면적) OVER(),0) AS numeric(38,25)) dist_rate
+    FROM #prod),
+  sum_expen AS (
+    SELECT EXPEN_SEL, MAX(EXPEN_SEL명) EXPEN_SEL명, ACCT_NAME, DISP_SEQ, SUM(CAST(ACCT_AMT AS float)) total
+    FROM doi_acct_expen a
+    WHERE a.yyyymm=@YYYYMM AND a.site=@SITE AND a.sel_code=@SEL_CODE
+      AND a.acct LIKE '62%' AND a.acct NOT LIKE '621%' AND a.acct NOT LIKE '6272%'
+      AND ISNULL(a.expen_sel,'')<>'' AND ISNULL(a.dept,'') NOT IN ('400','448')
+    GROUP BY EXPEN_SEL, ACCT_NAME, DISP_SEQ),
+  calc AS (
+    SELECT a.EXPEN_SEL, a.EXPEN_SEL명, a.ACCT_NAME, a.DISP_SEQ, b.구분, b.도우코드, b.도우모델, b.in_qty,
+      a.total Original_Total, ROUND(a.total*b.dist_rate,2) Base_IN,
+      SUM(ROUND(a.total*b.dist_rate,2)) OVER (PARTITION BY a.EXPEN_SEL,a.ACCT_NAME,a.DISP_SEQ) Sum_Base_IN,
+      ROW_NUMBER() OVER (PARTITION BY a.EXPEN_SEL,a.ACCT_NAME,a.DISP_SEQ ORDER BY b.dist_rate DESC, b.도우코드) rn
+    FROM sum_expen a INNER JOIN MODEL_RATE b ON 1=1)
+  INSERT INTO doi_expn_matl
+    (YYYYMM,SEL_CODE,SITE,구분,도우코드,도우모델,원가구분,EXPEN_SEL,expen_sel명,분류,항목,배부방식,투입수량,투입금액)
+  SELECT @YYYYMM,@SEL_CODE,@SITE, c.구분, c.도우코드, c.도우모델, N'가공비',
+    c.EXPEN_SEL, c.EXPEN_SEL명, c.ACCT_NAME, N'UTG', N'-',
+    CAST(c.in_qty AS numeric(18,2)),
+    CAST(c.Base_IN + CASE WHEN c.rn=1 THEN (c.Original_Total - c.Sum_Base_IN) ELSE 0 END AS numeric(18,2))
+  FROM calc c
+  WHERE ABS(c.Base_IN + CASE WHEN c.rn=1 THEN (c.Original_Total - c.Sum_Base_IN) ELSE 0 END)>0.0000001;
 
   SELECT @mat=SUM(CASE WHEN 원가구분=N'재료비' THEN CAST(투입금액 AS float) ELSE 0 END),
          @exp=SUM(CASE WHEN 원가구분=N'가공비' THEN CAST(투입금액 AS float) ELSE 0 END),
-         @cnt=COUNT(*) FROM doi_vn_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
-  SET @Message = @Message + CHAR(10)+'[FINISH] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)
-     +N'- 투입집계 완료 ('+CAST(@cnt AS varchar(20))+N'행, 재료비 '+CONVERT(varchar(30),CAST(@mat AS money),1)
-     +N' + 가공비 '+CONVERT(varchar(30),CAST(@exp AS money),1)+N')';
+         @cnt=COUNT(*) FROM doi_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
+  SET @Message=@Message+CHAR(10)+'[FINISH] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+N'- 투입배부 완료 ('+CAST(@cnt AS varchar(20))+N'행, 재료 '+CONVERT(varchar(30),CAST(@mat AS money),1)+N' + 가공 '+CONVERT(varchar(30),CAST(@exp AS money),1)+N')';
   INSERT INTO doi_execlog (yyyymm,sel_code,site,exec_date,rslt_message,exec_user,menu_id,proc_name,exec_rslt)
     VALUES (@YYYYMM,@SEL_CODE,@SITE,getdate(),@Message,'system',N'제조원가집계','UP_VN_EXPN_INPUT','SUCCESS');
   SELECT @Message as retMessage;
   END TRY
   BEGIN CATCH
-    SET @Message = @Message + CHAR(10)+'[ERROR] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+ERROR_MESSAGE();
+    SET @Message=@Message+CHAR(10)+'[ERROR] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+ERROR_MESSAGE();
     INSERT INTO doi_execlog (yyyymm,sel_code,site,exec_date,rslt_message,exec_user,menu_id,proc_name,exec_rslt)
       VALUES (@YYYYMM,@SEL_CODE,@SITE,getdate(),@Message,'system',N'제조원가집계','UP_VN_EXPN_INPUT','FAIL');
     SELECT @Message as retMessage;

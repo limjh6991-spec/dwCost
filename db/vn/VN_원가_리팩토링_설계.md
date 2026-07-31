@@ -1,6 +1,16 @@
 # VN 가공비·재료비·재공평가 리팩토링 설계 (260731)
 
-## ✅ 구축 완료 (as-built, 260731, DWCMSTEST 202606 검증)
+## ⚠️ 정정 (260731-2) — 아래 초기설계는 폐기, 최신은 VN_원가결산_프로세스.md
+초기엔 "doi_mat_cost/doi_expen_matl에서 추출"로 만들었으나 **의도와 반대**였음.
+정정 방침: **VN은 doi_mat_cost/doi_expen_matl 미사용**. doi_mat_amt/DOI_VN_MAT_INPUT/DOI_MATL_RESC(재료)+doi_acct_expen(가공)
+원천에서 **doi_expn_matl로 직접 배부** → 기초(전액보존) → 단가 → 재공평가(doi_cost_wip).
+공정은 컬럼 아님(EOHEQ로만 반영). 202606 완전 원가보존(투입 8,390,385.34 = OUT+EOH+LOSS, 차 0) 검증.
+→ **정본: db/vn/VN_원가결산_프로세스.md · DDL: VN_리팩토링_DDL.sql**
+
+---
+<details><summary>초기설계(폐기, 참고용)</summary>
+
+## (폐기) 구축 완료 (as-built, 260731, DWCMSTEST 202606 검증)
 소스 결정 = **기존 집계결과 추출**(권장): doi_mat_cost/doi_expen_matl → 신규 테이블. 총액 자동보존.
 
 | # | 함수 | 출력 | 검증(202606 VN) |
@@ -106,3 +116,5 @@ ALTER TABLE dbo.DOI_COST_BOH ADD 도우코드 varchar(18) NOT NULL DEFAULT '';
 
 ## 4. 화면 호환 (후속)
 현재 VN 화면(결산증빙자료 C0008, 총원가 등)이 doi_mat_cost/doi_expen_matl 직접 참조 → 신규 체계로 가면 (a) 그 화면들을 doi_vn_expn_matl 참조로 변경, 또는 (b) 호환 뷰 제공 필요. (EOH/재공평가는 DOI_COST 유지라 그쪽 화면은 영향 적음)
+
+</details>
