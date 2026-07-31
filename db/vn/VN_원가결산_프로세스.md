@@ -20,7 +20,7 @@
 ### 재료비 원천 (기존 로직, doi_mat_amt까지)
 | 순 | 프로시저 | 산출 |
 |---|---|---|
-| 1 | `UP_VN_STOCK_ADJ` | 재고조정(6272 기타출고→투입) doi_prod_subul |
+| 1 | `UP_VN_STOCK_ADJ` | 재고조정(6272 기타출고→투입 재분류) → **DOI_VN_STOCK_ADJ, DOI_VN_ETC_INOUT** |
 | 2 | `UP_VN_MATL_RESC` | **doi_matl_resc** (재료비 원장, 공통배부 소스) |
 | 3 | `UP_VN_MAT_AMT` | **doi_mat_amt** (재료비 집계) · 직과 소스 = DOI_VN_MAT_INPUT |
 
