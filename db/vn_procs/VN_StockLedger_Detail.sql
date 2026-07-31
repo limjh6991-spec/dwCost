@@ -19,6 +19,7 @@ BEGIN
     ------------------------------------------------------------------ */
     SELECT
           MODEL_TYPE                       AS MODEL
+        , CASE WHEN RIGHT(RTRIM(MODEL_TYPE),1)=N'P' THEN N'MP' ELSE N'R&D' END AS DIVISION
         , SUM(ISNULL(BOH,0))               AS BOH
         -- INPUT > NORMAL FG INPUT
         , CAST(0 AS decimal(18,2))         AS FG_LAST_MONTH
