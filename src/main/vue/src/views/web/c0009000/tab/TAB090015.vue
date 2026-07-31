@@ -83,13 +83,10 @@ export default {
     };
   },
   watch: {
-    'params.year'() { if (!this.isInitializing) this.getDataList(); },
-    'params.month'() { if (!this.isInitializing) this.getDataList(); },
     prodCtg: {
       handler(newVal) {
-        if (newVal && this.$refs.prodSubulGrid != null) {
-          this.initialize();
-          this.getDataList();
+        if (newVal) {
+          this.initialize(); // 사업장 등 초기화만; 데이터는 조회 버튼으로
         }
       },
     },
@@ -105,7 +102,7 @@ export default {
     this.$nextTick(() => { this.isInitializing = false; });
   },
   mounted() {
-    this.getDataList();
+    // 자동 조회하지 않음 — 조회 버튼 클릭 시에만 데이터 조회
   },
   methods: {
     initialize() {
