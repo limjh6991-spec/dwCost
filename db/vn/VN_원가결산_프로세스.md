@@ -33,12 +33,13 @@
 | 순 | 프로시저 | 입력 | 산출 |
 |---|---|---|---|
 | ① | **UP_VN_EXPN_INPUT** | DOI_VN_MAT_INPUT(직과)+DOI_MATL_RESC(공통)+doi_acct_expen(가공) | **doi_expn_matl** 투입금액·투입수량(=SUM IN_MONTH) |
-| ② | **UP_VN_COST_BOH** | 전월 DOI_COST.EOH(정상월) / doi_boh_amt(초기, 투입비율 분배) | **DOI_COST_BOH** 기초(전액보존) + BOH_QTY |
+| ② | **UP_VN_COST_BOH** | 전월 DOI_COST.EOH(정상월) / doi_boh_amt.PRE_EOH_AMT(초기, 통) | **DOI_COST_BOH** 기초(전액보존) + BOH_QTY |
 | ③ | **UP_VN_COST_UNIT** | doi_expn_matl + DOI_COST_BOH + 수불 + V_VN_WIP_CONV(EOHEQ) | **doi_cost_unit** 단가=(기초+투입)/(OUT+EOHEQ) |
 | ④ | **UP_VN_WIP_EVAL** | doi_cost_unit + doi_expn_matl + DOI_COST_BOH + 수불 | **doi_cost_wip** EOH=단가×EOHEQ, OUT/LOSS, PL전/후_AMT |
 
 - 공정(PL전/PL후)은 컬럼이 아니라 **EOHEQ = PL전×0.5+PL후×0.9** 로 ③④에서만 반영.
-- 생산없는(환산량=0) 재공모델: 기초 전액을 대표행('*')에 → ④에서 BOH=EOH(재공 유지).
+- **② 기초 배분 규칙(초기월)**: 통 기초(PRE_EOH_AMT)를 → 생산수불 기초 있음(BOH_MONTH≠0)이면 **경비:재료 = 경비비율(=제조경비/(제조경비+재료비))** 분할, 없으면 **전액 가공비 직과**. 이후월은 전월 EOH 이월. (경비비율 202606=58.07%)
+- 생산없는(환산량=0) 재공모델: 기초를 재료(MDAX)/경비('*') 대표행 → ④에서 BOH=EOH(재공 유지).
 - 전량손실 모델: OUT=0·EOH=0·LOSS=BOH+IN.
 
 ### 수불·매출원가
