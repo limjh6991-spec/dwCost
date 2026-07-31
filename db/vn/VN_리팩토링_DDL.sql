@@ -31,18 +31,20 @@ CREATE TABLE dbo.doi_cost_unit (
   단가 numeric(24,12) NOT NULL DEFAULT 0, edit_date datetime DEFAULT GETDATE(),
   CONSTRAINT PK_doi_cost_unit PRIMARY KEY (YYYYMM,SEL_CODE,SITE,구분,도우코드,원가구분,EXPEN_SEL,분류,항목));
 
--- ④ 재공평가(원가) — BOH/IN/EOH/OUT/LOSS + PL전/후/입고전_AMT (완전 원가보존)
-IF OBJECT_ID('dbo.doi_cost_wip') IS NULL
-CREATE TABLE dbo.doi_cost_wip (
-  YYYYMM varchar(6) NOT NULL, SEL_CODE varchar(10) NOT NULL, SITE varchar(4) NOT NULL,
-  구분 nvarchar(10) NOT NULL, 도우코드 varchar(18) NOT NULL, 도우모델 varchar(18) NOT NULL DEFAULT '',
-  원가구분 nvarchar(10) NOT NULL, EXPEN_SEL varchar(10) NOT NULL, 분류 nvarchar(60) NOT NULL DEFAULT '', 항목 nvarchar(60) NOT NULL,
-  BOH numeric(18,2) NOT NULL DEFAULT 0, [IN] numeric(18,2) NOT NULL DEFAULT 0, UNIT_COST numeric(24,12) NOT NULL DEFAULT 0,
-  EOHEQ numeric(18,4) NOT NULL DEFAULT 0, EOH numeric(18,2) NOT NULL DEFAULT 0,
-  [OUT] numeric(18,2) NOT NULL DEFAULT 0, LOSS numeric(18,2) NOT NULL DEFAULT 0,
-  PL전_AMT numeric(18,2) NOT NULL DEFAULT 0, PL후_AMT numeric(18,2) NOT NULL DEFAULT 0, 입고전_AMT numeric(18,2) NOT NULL DEFAULT 0,
-  edit_date datetime DEFAULT GETDATE(),
-  CONSTRAINT PK_doi_cost_wip PRIMARY KEY (YYYYMM,SEL_CODE,SITE,구분,도우코드,원가구분,EXPEN_SEL,분류,항목));
+-- ④ 재공평가 : UP_VN_WIP_EVAL 3단계 스테이징 (최종은 DOI_COST). doi_cost_wip은 폐기(축소판이라 미사용).
+-- [1] 재공평가 결과 (EOH 확정)
+IF OBJECT_ID('dbo.TMP_VN_COST_EOH') IS NULL
+CREATE TABLE dbo.TMP_VN_COST_EOH (
+  YYYYMM varchar(6), SEL_CODE varchar(10), SITE varchar(4), 구분 nvarchar(10), 도우코드 varchar(18), 도우모델 varchar(18), 원가구분 nvarchar(10),
+  EXPEN_SEL varchar(10), expen_sel명 nvarchar(60), 분류 nvarchar(60), 항목 nvarchar(60), ADJ_YN varchar(1),
+  BOH_QTY int, IN_QTY int, EOH_QTY int, OUT_QTY int, LOSS_QTY int, ADJ_QTY int, DEF_RW_QTY int, TRANSFER_IN_QTY int,
+  BOH numeric(18,2), [IN] numeric(18,2), UNIT_COST numeric(24,12), EOHEQ numeric(18,4), EOH numeric(18,2));
+-- [2] 원가조립 결과 (OUT/LOSS/기타입고 재유입/PL) = DOI_COST 구조 미러
+IF OBJECT_ID('dbo.TMP_VN_COST') IS NULL
+CREATE TABLE dbo.TMP_VN_COST (
+  YYYYMM varchar(6), SEL_CODE varchar(10), SITE varchar(4), 구분 nvarchar(10), MODEL varchar(18), 도우코드 varchar(18), expen_sel명 nvarchar(60), ACCT_NAME nvarchar(100), ITEM_NAME nvarchar(100), EXPEN_SEL varchar(10),
+  BOH_QTY int, IN_QTY int, EOH_QTY int, OUT_QTY int, LOSS_QTY int, BAD_QTY int, TRANSFER_QTY int, ADJ_QTY int, UNIT_COST numeric(24,12), BOH numeric(18,2), [IN] numeric(18,2), EOH numeric(18,2), OUT_단가 numeric(24,12), [OUT] numeric(18,2), LOSS numeric(18,2), BAD numeric(18,2), TRANSFER numeric(18,2), ADJ_YN varchar(1), UnitCost_YN int,
+  ETC_IN_DEF_RW_QTY int, ETC_IN_DEF_RW_AMT numeric(18,2), RMAIN_QTY int, RMAIN_AMT numeric(18,2), PL전_AMT numeric(18,2), PL후_AMT numeric(18,2), 입고전_AMT numeric(18,2));
 
 -- ② 기초: 공유테이블 DOI_COST_BOH 재활용 (도우코드/공정 컬럼 추가, BOH 소수점, PK에 도우코드+공정)
 -- ALTER TABLE dbo.DOI_COST_BOH ADD 도우코드 varchar(18) NOT NULL DEFAULT '', 공정 nvarchar(20) NOT NULL DEFAULT '';

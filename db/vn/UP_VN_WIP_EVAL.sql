@@ -1,17 +1,18 @@
 CREATE OR ALTER PROCEDURE dbo.UP_VN_WIP_EVAL @YYYYMM varchar(6), @SITE varchar(4), @SEL_CODE varchar(10) AS
-/* [VN 리팩토링 260731-5] 재공평가 → DOI_COST 완전 생성 (구 UP_VN_COST의 VN 조립 대체)
-   입력: doi_cost_unit(단가) + doi_expn_matl(투입) + DOI_COST_BOH(기초) + V_DOI_PROD_SUBUL(수량) + DOI_PROD_SUBUL(기타입고/PL) + V_VN_WIP_CONV(EOHEQ)
-   생성: 수량(BOH/IN/EOH/OUT/LOSS/ADJ) + 금액(BOH/IN/EOH/OUT/LOSS/BAD/TRANSFER) + out_단가
-         + 기타입고 재유입(ETC_IN_DEF_RW=불량RW, RMAIN=기타입고합계) 재공금액 + PL전/후/입고전_AMT
-   EOH = 특수케이스(boh_qty+in_qty=eoh_qty 등)면 BOH+IN, 아니면 단가×EOHEQ. (구분,도우코드,원가구분)별 소수2 반올림+rn1 잔차.
-   원가보존: BOH+IN = OUT+EOH+LOSS. (BAD/TRANSFER=0 VN) */
+/* [VN 리팩토링 260731-6] 재공평가 → DOI_COST : 3단계 분리(가독성·중간검증)
+   [1] 재공평가  → TMP_VN_COST_EOH : 원가항목별 BOH/IN/단가/EOHEQ/EOH + 수량 (재공 가치 확정)
+   [2] 원가조립  → TMP_VN_COST     : EOH 기준 OUT/LOSS/out_단가 + 기타입고 재유입(RMAIN/ETC_IN_DEF_RW) + PL금액
+   [3] 최종      → DOI_COST        : TMP_VN_COST 그대로 입력
+   각 단계 후 검증(EOH 대사 / 원가보존 BOH+IN=OUT+EOH+LOSS)을 로그에 기록.
+   * 카세트 등 별도 그룹 확장 시 [3]에서 UNION ALL 지점 사용. */
 BEGIN
   SET NOCOUNT ON;
-  DECLARE @Message nvarchar(max), @cnt int, @boh float, @inn float, @out float, @eoh float, @loss float;
-  SET @Message='[START] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+N'- '+@YYYYMM+N' VINA 재공평가(DOI_COST) 시작';
+  DECLARE @Message nvarchar(max), @cnt int, @boh float, @inn float, @out float, @eoh float, @loss float, @src float, @dst float;
+  SET @Message='[START] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+N'- '+@YYYYMM+N' VINA 재공평가(3단계) 시작';
   BEGIN TRY
-  DELETE FROM DOI_COST WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
 
+  /* ============ [1] 재공평가 → TMP_VN_COST_EOH ============ */
+  DELETE FROM TMP_VN_COST_EOH WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
   ;WITH
   qty AS (SELECT 구분,도우코드,
       SUM(CAST(ISNULL(BOH_MONTH,0) AS float)) boh_qty, SUM(CAST(ISNULL(IN_MONTH,0) AS float)) in_qty,
@@ -24,11 +25,6 @@ BEGIN
       SUM(CAST(ISNULL(기타입고_LOT변환,0)+ISNULL(기타입고_불량_RW,0)+ISNULL(기타입고_RMA_RW,0)+ISNULL(기타입고_전월불량,0)+ISNULL(기타입고_당월불량,0) AS float)) transfer_in_qty
     FROM DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 구분,도우코드),
   conv AS (SELECT wc_gubun 구분, wc_code 도우코드, EOHEQ FROM V_VN_WIP_CONV WHERE wc_ym=@YYYYMM AND wc_site=@SITE),
-  pq AS (SELECT 구분,도우코드,
-      SUM(TRY_CONVERT(float,REPLACE(REPLACE(ISNULL(PL전,N'0'),N',',N''),N' ',N''))) PL전_qty,
-      SUM(TRY_CONVERT(float,REPLACE(REPLACE(ISNULL(PL후,N'0'),N',',N''),N' ',N''))) PL후_qty,
-      SUM(TRY_CONVERT(float,REPLACE(REPLACE(ISNULL(입고전,N'0'),N',',N''),N' ',N''))) 입고전_qty
-    FROM DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 구분,도우코드),
   inp AS (SELECT 구분,도우코드,MAX(도우모델) 도우모델, MAX(원가구분) 원가구분, MAX(expen_sel명) expen_sel명, EXPEN_SEL,분류,항목, SUM(CAST(투입금액 AS float)) inn
           FROM doi_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE GROUP BY 구분,도우코드,EXPEN_SEL,분류,항목),
   bh AS (SELECT 구분,도우코드,MAX(MODEL) 도우모델, MAX(expen_sel명) expen_sel명, MAX(ADJ_YN) adj_yn, EXPEN_SEL,ACCT_NAME 분류,ITEM_NAME 항목, SUM(CAST(BOH AS float)) boh
@@ -36,7 +32,7 @@ BEGIN
   keys AS (SELECT 구분,도우코드,EXPEN_SEL,분류,항목 FROM inp UNION SELECT 구분,도우코드,EXPEN_SEL,분류,항목 FROM bh),
   item AS (
     SELECT k.구분,k.도우코드, COALESCE(i.도우모델,b.도우모델,'') 도우모델,
-       COALESCE(i.원가구분, CASE WHEN LEFT(k.EXPEN_SEL,1)='M' THEN N'재료비' WHEN k.EXPEN_SEL='*' THEN N'가공비' ELSE N'가공비' END) 원가구분,
+       COALESCE(i.원가구분, CASE WHEN LEFT(k.EXPEN_SEL,1)='M' THEN N'재료비' ELSE N'가공비' END) 원가구분,
        COALESCE(i.expen_sel명,b.expen_sel명,'') expen_sel명, ISNULL(b.adj_yn,'N') adj_yn,
        k.EXPEN_SEL,k.분류,k.항목, ISNULL(b.boh,0) boh, ISNULL(i.inn,0) inn, ISNULL(u.단가,0) unit_cost,
        q.boh_qty,q.in_qty,q.eoh_qty,q.out_qty,q.loss_qty,q.adj_qty, ISNULL(cv.EOHEQ,0) EOHEQ,
@@ -55,44 +51,71 @@ BEGIN
   eohc AS (SELECT *, ROUND(Ori_eoh,2) Base_eoh,
       SUM(Ori_eoh) OVER (PARTITION BY 구분,도우코드,원가구분) Sum_Ori,
       SUM(ROUND(Ori_eoh,2)) OVER (PARTITION BY 구분,도우코드,원가구분) Sum_Base,
-      ROW_NUMBER() OVER (PARTITION BY 구분,도우코드,원가구분 ORDER BY Ori_eoh DESC, 항목) rn_e FROM ori),
-  uc AS (SELECT 구분,도우코드, SUM(unit_cost) uc_tot FROM item GROUP BY 구분,도우코드),
-  fin AS (SELECT e.*,
-      CAST(e.Base_eoh + CASE WHEN e.rn_e=1 THEN ROUND(e.Sum_Ori,2)-e.Sum_Base ELSE 0 END AS numeric(18,2)) EOH,
-      ROW_NUMBER() OVER (PARTITION BY e.구분,e.도우코드 ORDER BY e.inn DESC, e.항목) rn_amt FROM eohc e),
-  calc AS (SELECT f.*,
-      -- LOSS: 전량손실이면 BOH+IN, 아니면 0(ACTUAL) / ACTLSS면 단가배분
-      CAST(CASE WHEN (f.boh_qty+f.in_qty=f.loss_qty) AND f.loss_qty>0 THEN f.boh+f.inn
-                WHEN @SEL_CODE<>'ACTLSS' THEN 0
-                ELSE CASE WHEN (f.out_qty+CASE WHEN @SEL_CODE='ACTLSS' THEN f.loss_qty ELSE 0 END)>0
-                          THEN ROUND((f.boh+f.inn-f.EOH)/(f.out_qty+f.loss_qty)*f.loss_qty,2) ELSE 0 END END AS numeric(18,2)) LOSS_AMT
-    FROM fin f)
+      ROW_NUMBER() OVER (PARTITION BY 구분,도우코드,원가구분 ORDER BY Ori_eoh DESC, 항목) rn_e FROM ori)
+  INSERT INTO TMP_VN_COST_EOH
+    (YYYYMM,SEL_CODE,SITE,구분,도우코드,도우모델,원가구분,EXPEN_SEL,expen_sel명,분류,항목,ADJ_YN,
+     BOH_QTY,IN_QTY,EOH_QTY,OUT_QTY,LOSS_QTY,ADJ_QTY,DEF_RW_QTY,TRANSFER_IN_QTY,BOH,[IN],UNIT_COST,EOHEQ,EOH)
+  SELECT @YYYYMM,@SEL_CODE,@SITE,구분,도우코드,도우모델,원가구분,EXPEN_SEL,expen_sel명,분류,항목,adj_yn,
+     CAST(boh_qty AS int),CAST(in_qty AS int),CAST(eoh_qty AS int),CAST(out_qty AS int),CAST(loss_qty AS int),CAST(adj_qty AS int),CAST(def_rw_qty AS int),CAST(transfer_in_qty AS int),
+     CAST(boh AS numeric(18,2)),CAST(inn AS numeric(18,2)),CAST(unit_cost AS numeric(24,12)),CAST(EOHEQ AS numeric(18,4)),
+     CAST(Base_eoh + CASE WHEN rn_e=1 THEN ROUND(Sum_Ori,2)-Sum_Base ELSE 0 END AS numeric(18,2))
+  FROM eohc;
+  -- 검증 [1]: EOH 대사
+  SELECT @cnt=COUNT(*), @boh=SUM(CAST(BOH AS float)), @inn=SUM(CAST([IN] AS float)), @eoh=SUM(CAST(EOH AS float))
+    FROM TMP_VN_COST_EOH WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
+  SET @Message=@Message+CHAR(10)+'[1.재공평가] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+N'- TMP_VN_COST_EOH '+CAST(@cnt AS varchar(20))+N'행, BOH '+CONVERT(varchar(30),CAST(@boh AS money),1)+N' + IN '+CONVERT(varchar(30),CAST(@inn AS money),1)+N' → EOH '+CONVERT(varchar(30),CAST(@eoh AS money),1);
+
+  /* ============ [2] 원가조립 → TMP_VN_COST ============ */
+  DELETE FROM TMP_VN_COST WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
+  ;WITH
+  pq AS (SELECT 구분,도우코드,
+      SUM(TRY_CONVERT(float,REPLACE(REPLACE(ISNULL(PL전,N'0'),N',',N''),N' ',N''))) PL전_qty,
+      SUM(TRY_CONVERT(float,REPLACE(REPLACE(ISNULL(PL후,N'0'),N',',N''),N' ',N''))) PL후_qty,
+      SUM(TRY_CONVERT(float,REPLACE(REPLACE(ISNULL(입고전,N'0'),N',',N''),N' ',N''))) 입고전_qty
+    FROM DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 구분,도우코드),
+  uc AS (SELECT 구분,도우코드, SUM(CAST(UNIT_COST AS float)) uc_tot FROM TMP_VN_COST_EOH WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE GROUP BY 구분,도우코드),
+  base AS (
+    SELECT t.*,
+       -- LOSS: 전량손실이면 BOH+IN 아니면 0 (ACTUAL)
+       CAST(CASE WHEN (t.BOH_QTY+t.IN_QTY=t.LOSS_QTY) AND t.LOSS_QTY>0 THEN t.BOH+t.[IN] ELSE 0 END AS numeric(18,2)) LOSS_AMT,
+       ROW_NUMBER() OVER (PARTITION BY t.구분,t.도우코드 ORDER BY t.[IN] DESC, t.항목) rn_amt
+    FROM TMP_VN_COST_EOH t WHERE t.yyyymm=@YYYYMM AND t.site=@SITE AND t.sel_code=@SEL_CODE)
+  INSERT INTO TMP_VN_COST
+    (YYYYMM,SEL_CODE,SITE,구분,MODEL,도우코드,expen_sel명,ACCT_NAME,ITEM_NAME,EXPEN_SEL,
+     BOH_QTY,IN_QTY,EOH_QTY,OUT_QTY,LOSS_QTY,BAD_QTY,TRANSFER_QTY,ADJ_QTY,UNIT_COST,BOH,[IN],EOH,OUT_단가,[OUT],LOSS,BAD,TRANSFER,ADJ_YN,UnitCost_YN,
+     ETC_IN_DEF_RW_QTY,ETC_IN_DEF_RW_AMT,RMAIN_QTY,RMAIN_AMT,PL전_AMT,PL후_AMT,입고전_AMT)
+  SELECT @YYYYMM,@SEL_CODE,@SITE,b.구분,b.도우모델,b.도우코드,b.expen_sel명,b.분류,b.항목,b.EXPEN_SEL,
+     b.BOH_QTY,b.IN_QTY,b.EOH_QTY,b.OUT_QTY,b.LOSS_QTY,0,0,b.ADJ_QTY,b.UNIT_COST,b.BOH,b.[IN],b.EOH,
+     CAST(CASE WHEN b.OUT_QTY>0 THEN (b.BOH+b.[IN]-b.EOH-b.LOSS_AMT)/b.OUT_QTY ELSE b.UNIT_COST END AS numeric(24,12)),
+     CAST(b.BOH+b.[IN]-b.EOH-b.LOSS_AMT AS numeric(18,2)),   -- OUT (원가보존)
+     b.LOSS_AMT, 0, 0, b.ADJ_YN, 1,
+     b.DEF_RW_QTY, CAST(ROUND(b.DEF_RW_QTY*b.UNIT_COST,2) AS numeric(18,2)),
+     b.TRANSFER_IN_QTY, CAST(ROUND(b.TRANSFER_IN_QTY*b.UNIT_COST,2) AS numeric(18,2)),
+     CASE WHEN b.rn_amt=1 THEN ROUND(uc.uc_tot*ISNULL(pq.PL전_qty,0)*0.5,2) ELSE 0 END,
+     CASE WHEN b.rn_amt=1 THEN ROUND(uc.uc_tot*ISNULL(pq.PL후_qty,0)*0.9,2) ELSE 0 END,
+     CASE WHEN b.rn_amt=1 THEN ROUND(uc.uc_tot*ISNULL(pq.입고전_qty,0)*1.0,2) ELSE 0 END
+  FROM base b JOIN uc ON uc.구분=b.구분 AND uc.도우코드=b.도우코드
+    LEFT JOIN pq ON pq.구분=b.구분 AND pq.도우코드=b.도우코드;
+  -- 검증 [2]: 원가보존 BOH+IN = OUT+EOH+LOSS
+  SELECT @src=SUM(CAST(BOH AS float)+CAST([IN] AS float)), @dst=SUM(CAST([OUT] AS float)+CAST(EOH AS float)+CAST(LOSS AS float)),
+         @out=SUM(CAST([OUT] AS float)), @loss=SUM(CAST(LOSS AS float))
+    FROM TMP_VN_COST WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
+  SET @Message=@Message+CHAR(10)+'[2.원가조립] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+N'- TMP_VN_COST 원가보존 투입 '+CONVERT(varchar(30),CAST(@src AS money),1)+N' = OUT '+CONVERT(varchar(30),CAST(@out AS money),1)+N'+EOH '+CONVERT(varchar(30),CAST(@eoh AS money),1)+N'+LOSS '+CONVERT(varchar(30),CAST(@loss AS money),1)+N' (차 '+CONVERT(varchar(30),CAST(@src-@dst AS money),1)+N')';
+
+  /* ============ [3] 최종 → DOI_COST ============ */
+  DELETE FROM DOI_COST WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
   INSERT INTO DOI_COST
     (YYYYMM,SEL_CODE,SITE,구분,MODEL,도우코드,expen_sel명,ACCT_NAME,ITEM_NAME,EXPEN_SEL,
-     BOH_QTY,IN_QTY,EOH_QTY,OUT_QTY,LOSS_QTY,BAD_QTY,TRANSFER_QTY,ADJ_QTY,
-     UNIT_COST,BOH,[IN],EOH,OUT_단가,[OUT],LOSS,BAD,TRANSFER,ADJ_YN,UnitCost_YN,
+     BOH_QTY,IN_QTY,EOH_QTY,OUT_QTY,LOSS_QTY,BAD_QTY,TRANSFER_QTY,ADJ_QTY,UNIT_COST,BOH,[IN],EOH,OUT_단가,[OUT],LOSS,BAD,TRANSFER,ADJ_YN,UnitCost_YN,
      ETC_IN_DEF_RW_QTY,ETC_IN_DEF_RW_AMT,RMAIN_QTY,RMAIN_AMT,PL전_AMT,PL후_AMT,입고전_AMT)
-  SELECT @YYYYMM,@SEL_CODE,@SITE,c.구분,c.도우모델,c.도우코드,c.expen_sel명,c.분류,c.항목,c.EXPEN_SEL,
-     CAST(c.boh_qty AS int),CAST(c.in_qty AS int),CAST(c.eoh_qty AS int),CAST(c.out_qty AS int),CAST(c.loss_qty AS int),0,0,CAST(c.adj_qty AS int),
-     CAST(c.unit_cost AS numeric(24,12)), CAST(c.boh AS numeric(18,2)), CAST(c.inn AS numeric(18,2)), c.EOH,
-     -- out_단가 = OUT금액/OUT수량 (OUT=BOH+IN-EOH-LOSS 로 원가보존)
-     CAST(CASE WHEN c.out_qty>0 THEN (c.boh+c.inn-c.EOH-c.LOSS_AMT)/c.out_qty ELSE c.unit_cost END AS numeric(24,12)),
-     CAST(c.boh+c.inn-c.EOH-c.LOSS_AMT AS numeric(18,2)),   -- OUT (원가보존)
-     c.LOSS_AMT, 0, 0, c.adj_yn, 1,
-     CAST(c.def_rw_qty AS int), CAST(ROUND(c.def_rw_qty*c.unit_cost,2) AS numeric(18,2)),
-     CAST(c.transfer_in_qty AS int), CAST(ROUND(c.transfer_in_qty*c.unit_cost,2) AS numeric(18,2)),
-     CASE WHEN c.rn_amt=1 THEN ROUND(uc.uc_tot*ISNULL(pq.PL전_qty,0)*0.5,2) ELSE 0 END,
-     CASE WHEN c.rn_amt=1 THEN ROUND(uc.uc_tot*ISNULL(pq.PL후_qty,0)*0.9,2) ELSE 0 END,
-     CASE WHEN c.rn_amt=1 THEN ROUND(uc.uc_tot*ISNULL(pq.입고전_qty,0)*1.0,2) ELSE 0 END
-  FROM calc c JOIN uc ON uc.구분=c.구분 AND uc.도우코드=c.도우코드
-    LEFT JOIN pq ON pq.구분=c.구분 AND pq.도우코드=c.도우코드;
+  SELECT YYYYMM,SEL_CODE,SITE,구분,MODEL,도우코드,expen_sel명,ACCT_NAME,ITEM_NAME,EXPEN_SEL,
+     BOH_QTY,IN_QTY,EOH_QTY,OUT_QTY,LOSS_QTY,BAD_QTY,TRANSFER_QTY,ADJ_QTY,UNIT_COST,BOH,[IN],EOH,OUT_단가,[OUT],LOSS,BAD,TRANSFER,ADJ_YN,UnitCost_YN,
+     ETC_IN_DEF_RW_QTY,ETC_IN_DEF_RW_AMT,RMAIN_QTY,RMAIN_AMT,PL전_AMT,PL후_AMT,입고전_AMT
+  FROM TMP_VN_COST WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
+  -- (카세트 등 별도 그룹은 여기서 UNION ALL로 추가)
 
-  SELECT @cnt=COUNT(*), @boh=SUM(CAST(BOH AS float)), @inn=SUM(CAST([IN] AS float)),
-         @out=SUM(CAST([OUT] AS float)), @eoh=SUM(CAST(EOH AS float)), @loss=SUM(CAST(LOSS AS float))
-    FROM DOI_COST WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
-  SET @Message=@Message+CHAR(10)+'[FINISH] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+N'- 재공평가(DOI_COST) 완료 ('+CAST(@cnt AS varchar(20))
-     +N'행, 투입 BOH+IN '+CONVERT(varchar(30),CAST(@boh+@inn AS money),1)+N' = OUT '+CONVERT(varchar(30),CAST(@out AS money),1)
-     +N' + EOH '+CONVERT(varchar(30),CAST(@eoh AS money),1)+N' + LOSS '+CONVERT(varchar(30),CAST(@loss AS money),1)+N')';
+  SELECT @cnt=COUNT(*) FROM DOI_COST WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
+  SET @Message=@Message+CHAR(10)+'[3.DOI_COST] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+N'- DOI_COST '+CAST(@cnt AS varchar(20))+N'행 입력 완료';
   INSERT INTO doi_execlog (yyyymm,sel_code,site,exec_date,rslt_message,exec_user,menu_id,proc_name,exec_rslt)
     VALUES (@YYYYMM,@SEL_CODE,@SITE,getdate(),@Message,'system',N'제조원가집계','UP_VN_WIP_EVAL','SUCCESS');
   SELECT @Message as retMessage;
