@@ -32,14 +32,25 @@ BEGIN
        FROM doi_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
      SET @재료율 = ISNULL(@재료투입,0) / NULLIF(ISNULL(@재료투입,0)+ISNULL(@가공투입,0),0);
 
-     -- 도우코드별 통 기초(PRE) + 기초재공수량
+     -- 도우코드별 통 기초(PRE) + 기초재공수량 + 재료/경비 분할(생산수불기초 있으면 재료율, 없으면 전액 경비)
      IF OBJECT_ID('tempdb..#boh') IS NOT NULL DROP TABLE #boh;
-     SELECT b.도우코드, b.도우모델, b.구분, b.pre, ISNULL(pb.boh_qty,0) boh_qty
+     SELECT b.도우코드, b.도우모델, b.구분, b.pre, ISNULL(pb.boh_qty,0) boh_qty,
+            CASE WHEN ISNULL(pb.boh_qty,0)<>0 THEN ROUND(b.pre*@재료율,2) ELSE 0 END AS 재료기초,
+            b.pre - CASE WHEN ISNULL(pb.boh_qty,0)<>0 THEN ROUND(b.pre*@재료율,2) ELSE 0 END AS 경비기초
      INTO #boh
      FROM (SELECT MODEL_TYPE 도우코드, MAX(MODEL) 도우모델, MAX(구분) 구분, SUM(CAST(PRE_EOH_AMT AS float)) pre
            FROM doi_boh_amt WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE GROUP BY MODEL_TYPE) b
      LEFT JOIN (SELECT 도우코드, SUM(CAST(ISNULL(BOH_MONTH,0) AS float)) boh_qty FROM V_DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 도우코드) pb
             ON pb.도우코드=b.도우코드;
+
+     -- 전역 가공 계정 구조(비율) : 투입없는 모델의 경비기초를 실제 가공계정으로 분해할 템플릿
+     IF OBJECT_ID('tempdb..#tmpl') IS NOT NULL DROP TABLE #tmpl;
+     SELECT EXPEN_SEL, MAX(expen_sel명) expen_sel명, 분류, 항목,
+            CAST(SUM(CAST(투입금액 AS float)) / NULLIF(SUM(SUM(CAST(투입금액 AS float))) OVER(),0) AS float) rate,
+            ROW_NUMBER() OVER (ORDER BY SUM(CAST(투입금액 AS float)) DESC, EXPEN_SEL, 분류) rn_t
+     INTO #tmpl
+     FROM doi_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE AND 원가구분=N'가공비'
+     GROUP BY EXPEN_SEL, 분류, 항목;
 
      ;WITH
      e AS (SELECT 구분,도우코드,도우모델,원가구분,EXPEN_SEL,expen_sel명,분류,항목,CAST(투입금액 AS float) 투입금액,
@@ -58,14 +69,26 @@ BEGIN
      FROM dist2
      WHERE ABS(boh_base + CASE WHEN rn=1 THEN (pre - sum_base) ELSE 0 END) > 0.0000001;
 
-     -- (B) 투입없는 도우코드: 생산수불기초 있으면 전역 재료율로 재료(MDAX)/경비('*'), 없으면 전액 경비('*')
+     -- (B1) 투입없는 도우코드 재료기초 → MDAX/원장 단일 대표행
      INSERT INTO DOI_COST_BOH (YYYYMM,SEL_CODE,SITE,구분,MODEL,도우코드,공정,expen_sel명,ACCT_NAME,ITEM_NAME,EXPEN_SEL,ADJ_YN,BOH_QTY,BOH)
-     SELECT @YYYYMM,@SEL_CODE,@SITE, ISNULL(b.구분,N'양산'), b.도우모델, b.도우코드, N'*', v.명, v.acct, N'기초이월', v.expsel, 'Y',
-            CAST(b.boh_qty AS int), CAST(v.boh AS numeric(18,2))
-     FROM (SELECT *, CASE WHEN boh_qty<>0 THEN ROUND(pre*@재료율,2) ELSE 0 END 재료기초 FROM #boh) b
-     CROSS APPLY (VALUES ('MDAX', N'직접재료비', N'원장', b.재료기초), ('*', N'기초이월', N'*', b.pre - b.재료기초)) v(expsel, 명, acct, boh)
-     WHERE ABS(v.boh) > 0.0000001
+     SELECT @YYYYMM,@SEL_CODE,@SITE, ISNULL(b.구분,N'양산'), b.도우모델, b.도우코드, N'*', N'직접재료비', N'원장', N'기초이월', 'MDAX', 'Y',
+            CAST(b.boh_qty AS int), CAST(b.재료기초 AS numeric(18,2))
+     FROM #boh b
+     WHERE ABS(b.재료기초) > 0.0000001
        AND NOT EXISTS (SELECT 1 FROM doi_expn_matl e WHERE e.yyyymm=@YYYYMM AND e.site=@SITE AND e.sel_code=@SEL_CODE AND e.도우코드=b.도우코드);
+
+     -- (B2) 투입없는 도우코드 경비기초 → 실제 가공계정(#tmpl 전역구조)으로 분해 (rn=1 잔차보정)
+     ;WITH nb AS (SELECT b.* FROM #boh b
+                  WHERE ABS(b.경비기초)>0.0000001
+                    AND NOT EXISTS (SELECT 1 FROM doi_expn_matl e WHERE e.yyyymm=@YYYYMM AND e.site=@SITE AND e.sel_code=@SEL_CODE AND e.도우코드=b.도우코드)),
+          d AS (SELECT nb.도우코드,nb.도우모델,nb.구분,nb.boh_qty,nb.경비기초, t.EXPEN_SEL,t.expen_sel명,t.분류,t.항목,t.rn_t,
+                       ROUND(nb.경비기초*t.rate,2) bb FROM nb CROSS JOIN #tmpl t),
+          d2 AS (SELECT *, SUM(bb) OVER (PARTITION BY 도우코드) sb FROM d)
+     INSERT INTO DOI_COST_BOH (YYYYMM,SEL_CODE,SITE,구분,MODEL,도우코드,공정,expen_sel명,ACCT_NAME,ITEM_NAME,EXPEN_SEL,ADJ_YN,BOH_QTY,BOH)
+     SELECT @YYYYMM,@SEL_CODE,@SITE, ISNULL(구분,N'양산'), 도우모델, 도우코드, N'*', expen_sel명, 분류, 항목, EXPEN_SEL, 'Y',
+            CAST(boh_qty AS int), CAST(bb + CASE WHEN rn_t=1 THEN (경비기초 - sb) ELSE 0 END AS numeric(18,2))
+     FROM d2
+     WHERE ABS(bb + CASE WHEN rn_t=1 THEN (경비기초 - sb) ELSE 0 END) > 0.0000001;
   END
 
   SELECT @tot=SUM(CAST(BOH AS float)), @cnt=COUNT(*) FROM DOI_COST_BOH WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
