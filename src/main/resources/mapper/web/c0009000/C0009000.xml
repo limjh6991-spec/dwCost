@@ -486,6 +486,16 @@
         EXEC DOI_ManufacturingCostOfWIP @YYYY=#{yyyy}, @SITE=#{site}, @SEL_CODE=#{selCode};
     </select>
 
+    <!-- TAB090017: 제조원가(재공)_VN — 재공 공정수불+금액, 도우코드 그레인 (VINA 전용) -->
+    <select id="C0009007_Tab090017" resultType="CamelMap">
+        EXEC VN_WipCostLedger_Subul @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
+
+    <!-- TAB090016: 매출원가(제품)_VN — WH0006 제품수불+금액, 도우코드 그레인 (VINA 전용) -->
+    <select id="C0009007_Tab090016" resultType="CamelMap">
+        EXEC VN_ProductCostLedger_Subul @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
+
     <select id="C0009009_Sch1" resultType="CamelMap">
         <choose>
             <when test="site != null and site == 'VN'">
