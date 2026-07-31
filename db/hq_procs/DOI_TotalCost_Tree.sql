@@ -283,14 +283,7 @@ BEGIN
                             ELSE 0 END),0)
 
       -- 조정: 41002020 / 영업그룹 제외 / 재경그룹은 차변 무시(대변만) / 나머지는 대변-차변
-    , @ACC_ADJ =
-          COALESCE(SUM(CASE
-                        WHEN 계정코드 = N'41002020' AND 코스트센터 LIKE N'재경그룹%'
-                             THEN ISNULL(대변금액,0)                       -- 재경그룹: 차변 무시(대변만)
-                        WHEN 계정코드 = N'41002020' AND 코스트센터 NOT LIKE N'영업그룹%'
-                             THEN ISNULL(대변금액,0) - ISNULL(차변금액,0)   -- 나머지(영업그룹 제외): 대변-차변
-                        ELSE 0
-                       END),0)
+    , @ACC_ADJ = -@SCOF_ACC   /* 41002020 삭제 → 회계-조정 매출액 = 제품매출-유상사급 = -유상사급 2026-07-31 */
 		FROM DOI_DEPT_COST WITH(NOLOCK)
 		WHERE YYYYMM   = @YYYYMM
 		  AND SITE     = @SITE
@@ -1372,7 +1365,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ') + @ACC_TOTAL ) - case when '+ @YYYYMM + '< ''202604'' THEN @SCOF  else 0 end
 
 					WHEN Cur.rn = 2 THEN
-					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ') + (@ACC_IDLE_COMP + @ACC_ADJ))   -- [규칙1] 제품매출: 양산+개발+카세트+회계(비가동+조정)
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ') + (@ACC_IDLE_COMP))   -- [규칙1] 제품매출(조정은 매출액으로 이동): 양산+개발+카세트+회계(비가동+조정)
 
 					WHEN Cur.rn = 6 THEN (' + @SumPurchase + ')
 
@@ -1482,10 +1475,10 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 			-- 회계
 			, CAST(
 			    CASE
-			        WHEN Cur.rn = 2 THEN (@ACC_IDLE_COMP + @ACC_ADJ)  -- 제품매출: 비가동보상+조정 합계
+			        WHEN Cur.rn = 2 THEN (@ACC_IDLE_COMP)  -- 제품매출: 비가동보상 (조정은 매출액으로 이동)
 			        WHEN Cur.rn = 7 THEN @ACC_PREV_PRICE              -- 기타매출: 이전가격
 			        WHEN Cur.rn in (1,78) THEN @ACC_TOTAL
-			        WHEN Cur.rn = 5 THEN @SCOF_ACC   -- 회계-조정 유상사급
+			        WHEN Cur.rn = 5 THEN @SCOF_ACC   -- 유상사급 란: 회계-조정 유상사급
 			        ELSE 0
 			    END
 			  AS DECIMAL(18,2)) AS [회계합계]
@@ -1501,8 +1494,8 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 			-- 회계-제품-조정 : 매출액(rn=1) 합계 + 제품매출 행(rn=2)
 			, CAST(
 			    CASE
-			        WHEN Cur.rn IN (1,2) THEN @ACC_ADJ
-			        WHEN Cur.rn = 5 THEN @SCOF_ACC   -- 회계-조정 유상사급
+			        WHEN Cur.rn = 1 THEN @ACC_ADJ   -- 매출액 = 제품매출 - 유상사급 (= -유상사급)
+			        WHEN Cur.rn = 5 THEN @SCOF_ACC   -- 유상사급 란
 			        ELSE 0
 			    END
 			  AS DECIMAL(18,2)) AS [회계_조정]
