@@ -29,12 +29,15 @@ const pflGroup = (base, text, showMode) => {
 };
 
 // 수량/금액 (2열) 그룹. base -> baseQty/baseAmt
+// PFL 그룹(BOH/EOH)이 4단이므로, 스페이서 밴드를 넣어 수량/금액을 동일한 맨 아랫단(4단)에 정렬한다.
 const qaGroup = (base, text, showMode) => {
   const g = {
     name: `grp_${base}`,
     header: { text },
     direction: 'horizontal',
-    items: [{ column: `${base}Qty` }, { column: `${base}Amt` }],
+    items: [
+      { name: `grp_${base}_lv`, header: { text: '' }, direction: 'horizontal', items: [{ column: `${base}Qty` }, { column: `${base}Amt` }] },
+    ],
   };
   if (showMode) g.groupShowMode = showMode;
   return g;

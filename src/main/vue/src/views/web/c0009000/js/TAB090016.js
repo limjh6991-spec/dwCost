@@ -10,15 +10,18 @@
 const { ValueType } = require('realgrid');
 
 // 수량/금액 2열 그룹 (base -> baseQty/baseAmt)
-const qa = (base, text, showMode) => {
+// pad: 최하단(4단) 정렬용 스페이서 밴드 수. 얕은 그룹(BOH 등)의 수량/금액이 위로 늘어나지 않고
+//      맨 아랫단에만 오도록, 항목별 그룹 깊이를 최대깊이(4)에 맞춘다.
+const qa = (base, text, showMode, pad = 0) => {
+  let inner = [{ column: `${base}Qty` }, { column: `${base}Amt` }];
+  for (let i = 0; i < pad; i++) {
+    inner = [{ name: `grp_${base}_lv${i}`, header: { text: '' }, direction: 'horizontal', items: inner }];
+  }
   const g = {
     name: `grp_${base}`,
     header: { text },
     direction: 'horizontal',
-    items: [
-      { column: `${base}Qty` },
-      { column: `${base}Amt` },
-    ],
+    items: inner,
   };
   if (showMode) g.groupShowMode = showMode;
   return g;
@@ -96,7 +99,7 @@ const grid = {
   layout: [
     { column: 'model' },
     { column: 'division' },
-    qa('boh', 'BOH'),
+    qa('boh', 'BOH', null, 2),
     // INPUT (expandable): NORMAL FG INPUT + RW FROM LINE + T_INPUT(합계)
     {
       name: 'grpInput',
@@ -126,7 +129,7 @@ const grid = {
             qa('whReturnPlRw', '8. WH RETURN(PL-RW)'),
           ],
         },
-        qa('tInput', 'T_INPUT (9=1-8)', 'always'),
+        qa('tInput', 'T_INPUT (9=1-8)', 'always', 1),
       ],
     },
     // 기타입고 (expandable)
@@ -137,11 +140,11 @@ const grid = {
       expandable: true,
       expanded: false,
       items: [
-        qa('ieRma', '1. RMA', 'expand'),
-        qa('ieReturnPaid', '2. 반제품(유상)', 'expand'),
-        qa('ieReturnFree', '3. 반제품(무상)', 'expand'),
-        qa('ieOther', '4. 기타', 'expand'),
-        qa('ieTotal', '기타입고 (5=1+2+3+4)', 'always'),
+        qa('ieRma', '1. RMA', 'expand', 1),
+        qa('ieReturnPaid', '2. 반제품(유상)', 'expand', 1),
+        qa('ieReturnFree', '3. 반제품(무상)', 'expand', 1),
+        qa('ieOther', '4. 기타', 'expand', 1),
+        qa('ieTotal', '기타입고 (5=1+2+3+4)', 'always', 1),
       ],
     },
     // OUTPUT (expandable): SHIP(A급)/SHIP(B급) + T_OUTPUT(합계)
@@ -152,9 +155,9 @@ const grid = {
       expandable: true,
       expanded: false,
       items: [
-        qa('shipAPaid', 'SHIP(A급) PAID', 'expand'),
-        qa('shipBPaid', 'SHIP(B급) PAID', 'expand'),
-        qa('tOutput', 'T_OUTPUT (3=1+2)', 'always'),
+        qa('shipAPaid', 'SHIP(A급) PAID', 'expand', 1),
+        qa('shipBPaid', 'SHIP(B급) PAID', 'expand', 1),
+        qa('tOutput', 'T_OUTPUT (3=1+2)', 'always', 1),
       ],
     },
     // 기타출고 (expandable)
@@ -165,16 +168,16 @@ const grid = {
       expandable: true,
       expanded: false,
       items: [
-        qa('oeResorting', '1. Re-Sorting(재검사)', 'expand'),
-        qa('oeRework', '2. Re-work(SI검사)', 'expand'),
-        qa('oeRma', '3. RMA', 'expand'),
-        qa('oeFreeSale', '4. 무상매출', 'expand'),
-        qa('oeOther', '5. 기타', 'expand'),
-        qa('oeTotal', '기타출고 (6=1+2+3+4+5)', 'always'),
+        qa('oeResorting', '1. Re-Sorting(재검사)', 'expand', 1),
+        qa('oeRework', '2. Re-work(SI검사)', 'expand', 1),
+        qa('oeRma', '3. RMA', 'expand', 1),
+        qa('oeFreeSale', '4. 무상매출', 'expand', 1),
+        qa('oeOther', '5. 기타', 'expand', 1),
+        qa('oeTotal', '기타출고 (6=1+2+3+4+5)', 'always', 1),
       ],
     },
-    qa('loss', 'LOSS'),
-    qa('eoh', 'EOH (WH0006)'),
+    qa('loss', 'LOSS', null, 2),
+    qa('eoh', 'EOH (WH0006)', null, 2),
   ],
 };
 
