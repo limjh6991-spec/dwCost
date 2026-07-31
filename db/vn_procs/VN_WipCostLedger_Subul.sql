@@ -1,25 +1,17 @@
 /*
- * VN_WipCostLedger_Subul
- *   제조원가(재공)_VN (C0009007 TAB090017): 재공 공정수불+금액.
- *   도우코드 그레인. 화면 표시는 모델(=도우코드 값)/구분 만. 각 항목 수량/금액.
- *
- *   ⚠️ 현재는 "구조 스텁": 도우코드 그레인 행집합(모델=도우코드/구분)만 DOI_COST에서 산출하고,
- *      모든 수량/금액 측정값은 0으로 반환. (수불 세부 산식/소스 매핑 미정)
- *      → 화면 레이아웃/그레인 검증용. 산식 확정 후 각 컬럼을 채운다.
- *   SEL_CODE 는 VN 표준인 'ACTUAL' 고정.
+ * VN_WipCostLedger_Subul  (제조원가(재공)_VN / C0009007 TAB090017)
+ *   소스 DOI_COST, 도우코드 그레인. 표시=모델(=도우코드)/구분(도우코드 끝자리 P→MP, 그 외 R&D).
+ *   ⚠️ 구조 스텁: 행집합만 산출, 측정값 전부 0. 산식 추후 정의. SEL_CODE='ACTUAL' 고정.
  */
 CREATE OR ALTER PROCEDURE VN_WipCostLedger_Subul
-(
-    @YYYYMM VARCHAR(6),
-    @SITE   VARCHAR(4)
-)
+( @YYYYMM VARCHAR(6), @SITE VARCHAR(4) )
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
         SELECT
               도우코드 AS MODEL
-            , 구분      AS DIVISION
+            , CASE WHEN RIGHT(RTRIM(도우코드),1)=N'P' THEN N'MP' ELSE N'R&D' END AS DIVISION
             , CAST(0 AS DECIMAL(18,2)) AS BOH_LINE_WIP_B_QTY
             , CAST(0 AS DECIMAL(18,2)) AS BOH_LINE_WIP_B_AMT
             , CAST(0 AS DECIMAL(18,2)) AS BOH_LINE_WIP_A_QTY
@@ -105,15 +97,10 @@ BEGIN
             , CAST(0 AS DECIMAL(18,2)) AS LOSS_QTY
             , CAST(0 AS DECIMAL(18,2)) AS LOSS_AMT
         FROM DOI_COST WITH (NOLOCK)
-        WHERE YYYYMM = @YYYYMM
-          AND SITE   = @SITE
-          AND SEL_CODE = 'ACTUAL'
-          AND 도우코드 IS NOT NULL
-          AND LTRIM(RTRIM(도우코드)) <> ''
-        GROUP BY 도우코드, 구분
-        ORDER BY 구분, 도우코드;
+        WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE='ACTUAL'
+          AND 도우코드 IS NOT NULL AND LTRIM(RTRIM(도우코드))<>''
+        GROUP BY 도우코드
+        ORDER BY CASE WHEN RIGHT(RTRIM(도우코드),1)=N'P' THEN N'MP' ELSE N'R&D' END, 도우코드;
     END TRY
-    BEGIN CATCH
-        SELECT ERROR_MESSAGE() AS ErrorMessage;
-    END CATCH
+    BEGIN CATCH SELECT ERROR_MESSAGE() AS ErrorMessage; END CATCH
 END;

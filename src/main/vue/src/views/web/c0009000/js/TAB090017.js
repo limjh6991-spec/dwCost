@@ -43,21 +43,21 @@ const qaGroup = (base, text, showMode) => {
 // PFL 항목: [base, headerText]
 const BOH = [
   ['bohLineWip', '1. LINE_WIP'],
-  ['bohLineFgs', '2. LINE_FGs'],
+  ['bohLineFgs', '2. LINE_FGS'],
   ['bohASub', '3=1+2. BOH A LEVEL SUB TOTAL'],
   ['bohBWip', '4. B_LEVEL_WIP'],
-  ['bohBFgs', '5. B_LEVEL_FGs'],
+  ['bohBFgs', '5. B_LEVEL_FGS'],
   ['bohBSub', '6=4+5. BOH B LEVEL SUB TOTAL'],
 ];
 const BOH_TOTAL = ['tBoh', '7=3+6. T_BOH'];
 
 const EOH = [
   ['eohLineWip', '1. LINE_WIP (A)'],
-  ['eohLineFgs', '2. LINE_FGs (A)'],
+  ['eohLineFgs', '2. LINE_FGS (A)'],
   ['eohBWip', '3. B_LEVEL WIP (A)'],
-  ['eohBFgs', '4. B_LEVEL FGs'],
+  ['eohBFgs', '4. B_LEVEL FGS'],
   ['eohTWip', '5(1+3). T_EOH WIP'],
-  ['eohTFgs', '6(2+4). T_EOH FGs'],
+  ['eohTFgs', '6(2+4). T_EOH FGS'],
 ];
 const EOH_TOTAL = ['totalEoh', '7=5+6. TOTAL_EOH (MES)'];
 

@@ -1,25 +1,30 @@
 /*
- * VN_ProductCostLedger_Subul
- *   매출원가(제품)_VN (C0009007 TAB090016): 완제품창고(WH0006) 제품수불+금액.
- *   도우코드 그레인. 화면 표시는 모델(=도우코드 값)/구분 만. 각 항목 수량/금액.
- *
- *   ⚠️ 현재는 "구조 스텁": 도우코드 그레인 행집합(모델=도우코드/구분)만 DOI_COST에서 산출하고,
- *      모든 수량/금액 측정값은 0으로 반환. (수불 세부 산식/소스 매핑 미정)
- *      → 화면 레이아웃/그레인 검증용. 산식 확정 후 각 컬럼을 채운다.
- *   SEL_CODE 는 VN 표준인 'ACTUAL' 고정.
+ * VN_ProductCostLedger_Subul  (매출원가(제품)_VN / C0009007 TAB090016)
+ *   결산 DOI_STCO(도우모델 그레인)는 그대로 두고, 화면에서만 도우모델 -> 도우코드로 매핑.
+ *   도우코드 = DOI_STOCK/DOI_STOCK_BOH 의 MODEL_TYPE(도우코드와 동일). 모델당 MODEL_TYPE 다중이면 전부 표시(fan-out).
+ *   재고에 없는 모델은 도우모델을 그대로 표시(COALESCE 폴백).
+ *   표시=모델(=도우코드)/구분(도우코드 끝자리 P->MP, 그 외 R&D).
+ *   구조 스텁: 측정값 전부 0. 산식 추후 정의.
  */
 CREATE OR ALTER PROCEDURE VN_ProductCostLedger_Subul
-(
-    @YYYYMM VARCHAR(6),
-    @SITE   VARCHAR(4)
-)
+( @YYYYMM VARCHAR(6), @SITE VARCHAR(4) )
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
-        SELECT
-              도우코드 AS MODEL
-            , 구분      AS DIVISION
+        ;WITH mt AS (
+            SELECT DISTINCT MODEL, MODEL_TYPE FROM DOI_STOCK WITH(NOLOCK)
+             WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND MODEL_TYPE IS NOT NULL AND LTRIM(RTRIM(MODEL_TYPE))<>''
+            UNION
+            SELECT DISTINCT model, model_type FROM DOI_STOCK_BOH WITH(NOLOCK)
+             WHERE yyyymm=@YYYYMM AND SITE=@SITE AND model_type IS NOT NULL AND LTRIM(RTRIM(model_type))<>''
+        ),
+        stco AS (
+            SELECT DISTINCT MODEL FROM DOI_STCO WITH(NOLOCK) WHERE YYYYMM=@YYYYMM AND SITE=@SITE
+        )
+        SELECT DISTINCT
+              COALESCE(mt.MODEL_TYPE, s.MODEL) AS MODEL
+            , CASE WHEN RIGHT(RTRIM(COALESCE(mt.MODEL_TYPE, s.MODEL)),1)=N'P' THEN N'MP' ELSE N'R&D' END AS DIVISION
             , CAST(0 AS DECIMAL(18,2)) AS BOH_QTY
             , CAST(0 AS DECIMAL(18,2)) AS BOH_AMT
             , CAST(0 AS DECIMAL(18,2)) AS FG_LAST_MONTH_QTY
@@ -72,16 +77,9 @@ BEGIN
             , CAST(0 AS DECIMAL(18,2)) AS LOSS_AMT
             , CAST(0 AS DECIMAL(18,2)) AS EOH_QTY
             , CAST(0 AS DECIMAL(18,2)) AS EOH_AMT
-        FROM DOI_COST WITH (NOLOCK)
-        WHERE YYYYMM = @YYYYMM
-          AND SITE   = @SITE
-          AND SEL_CODE = 'ACTUAL'
-          AND 도우코드 IS NOT NULL
-          AND LTRIM(RTRIM(도우코드)) <> ''
-        GROUP BY 도우코드, 구분
-        ORDER BY 구분, 도우코드;
+        FROM stco s
+        LEFT JOIN mt ON mt.MODEL = s.MODEL
+        ORDER BY CASE WHEN RIGHT(RTRIM(COALESCE(mt.MODEL_TYPE, s.MODEL)),1)=N'P' THEN N'MP' ELSE N'R&D' END, COALESCE(mt.MODEL_TYPE, s.MODEL);
     END TRY
-    BEGIN CATCH
-        SELECT ERROR_MESSAGE() AS ErrorMessage;
-    END CATCH
+    BEGIN CATCH SELECT ERROR_MESSAGE() AS ErrorMessage; END CATCH
 END;
