@@ -23,8 +23,6 @@ const qa = (base, text, showMode, pad = 0) => {
     direction: 'horizontal',
     items: inner,
   };
-  // pad 스페이서 밴드 헤더를 숨겨, 항목 라벨이 위쪽 빈 밴드를 세로로 덮도록 함(수량/금액은 맨 아랫단).
-  if (pad > 0) g.hideChildHeaders = true;
   if (showMode) g.groupShowMode = showMode;
   return g;
 };

@@ -36,7 +36,6 @@ const qaGroup = (base, text, showMode) => {
     name: `grp_${base}`,
     header: { text },
     direction: 'horizontal',
-    hideChildHeaders: true,
     items: [
       { name: `grp_${base}_lv`, header: { text: '' }, direction: 'horizontal', items: [{ column: `${base}Qty` }, { column: `${base}Amt` }] },
     ],
