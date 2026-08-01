@@ -9,19 +9,15 @@
 
 const { ValueType } = require('realgrid');
 
-// 수량/금액 2열 그룹 (base -> baseQty/baseAmt)
-// pad: 최하단(4단) 정렬용 밴드 수. 스페이서 밴드에도 항목 라벨을 넣어 라벨이 위쪽 빈 밴드를
-//      세로로 덮고, 수량/금액은 맨 아랫단 1행만 차지하도록 한다.
+
+// RealGrid는 빈 spacer를 같은 그룹 트리 안에 두면 헤더가 이어져 보인다.
+// 실제 데이터 그룹만 남겨서 빈 공간이 병합 블록에 포함되지 않도록 재구성한다.
 const qa = (base, text, showMode, pad = 0) => {
-  let inner = [{ column: `${base}Qty` }, { column: `${base}Amt` }];
-  for (let i = 0; i < pad; i++) {
-    inner = [{ name: `grp_${base}_lv${i}`, header: { text: ' ' }, direction: 'horizontal', items: inner }];
-  }
   const g = {
     name: `grp_${base}`,
     header: { text },
     direction: 'horizontal',
-    items: inner,
+    items: [{ column: `${base}Qty` }, { column: `${base}Amt` }],
   };
   if (showMode) g.groupShowMode = showMode;
   return g;
@@ -68,13 +64,13 @@ const grid = {
     edit: { editable: false },
     display: {
       columnMovable: false,
-      editItemMerging: true,
+      editItemMerging: false,
       fitStyle: 'even',
       emptyMessage: '조회된 데이터가 없습니다.',
       hscrollBar: true,
       showEmptyMessage: true,
       headerDepth: 4,
-      mergePolicy: 'auto',
+      mergePolicy: 'never',
     },
     footer: { visible: false },
     filtering: { enabled: false },
@@ -93,13 +89,13 @@ const grid = {
   columns: [
     { name: 'model', fieldName: 'model', width: 90, header: { text: '모델\nModel' }, styleName: 'tc', autoFilter: true },
     { name: 'division', fieldName: 'division', width: 60, header: { text: '구분\nDivision' }, styleName: 'tc', autoFilter: true },
-    ...BASES.flatMap(([b]) => qaCols(b)),
+    ...BASES.flatMap(([b]) => [...qaCols(b)]),
   ],
 
   layout: [
     { column: 'model' },
     { column: 'division' },
-    qa('boh', 'BOH', null, 2),
+    qa('boh', 'BOH', null),
     // INPUT (expandable): NORMAL FG INPUT + RW FROM LINE + T_INPUT(합계)
     {
       name: 'grpInput',
@@ -129,7 +125,7 @@ const grid = {
             qa('whReturnPlRw', '8. WH RETURN(PL-RW)'),
           ],
         },
-        qa('tInput', 'T_INPUT (9=1-8)', 'always', 1),
+        qa('tInput', 'T_INPUT (9=1-8)', 'always'),
       ],
     },
     // 기타입고 (expandable)
@@ -140,11 +136,11 @@ const grid = {
       expandable: true,
       expanded: false,
       items: [
-        qa('ieRma', '1. RMA', 'expand', 1),
-        qa('ieReturnPaid', '2. 반제품(유상)', 'expand', 1),
-        qa('ieReturnFree', '3. 반제품(무상)', 'expand', 1),
-        qa('ieOther', '4. 기타', 'expand', 1),
-        qa('ieTotal', '기타입고 (5=1+2+3+4)', 'always', 1),
+        qa('ieRma', '1. RMA', 'expand'),
+        qa('ieReturnPaid', '2. 반제품(유상)', 'expand'),
+        qa('ieReturnFree', '3. 반제품(무상)', 'expand'),
+        qa('ieOther', '4. 기타', 'expand'),
+        qa('ieTotal', '기타입고 (5=1+2+3+4)', 'always'),
       ],
     },
     // OUTPUT (expandable): SHIP(A급)/SHIP(B급) + T_OUTPUT(합계)
@@ -155,9 +151,9 @@ const grid = {
       expandable: true,
       expanded: false,
       items: [
-        qa('shipAPaid', 'SHIP(A급) PAID', 'expand', 1),
-        qa('shipBPaid', 'SHIP(B급) PAID', 'expand', 1),
-        qa('tOutput', 'T_OUTPUT (3=1+2)', 'always', 1),
+        qa('shipAPaid', 'SHIP(A급) PAID', 'expand'),
+        qa('shipBPaid', 'SHIP(B급) PAID', 'expand'),
+        qa('tOutput', 'T_OUTPUT (3=1+2)', 'always'),
       ],
     },
     // 기타출고 (expandable)
@@ -168,16 +164,16 @@ const grid = {
       expandable: true,
       expanded: false,
       items: [
-        qa('oeResorting', '1. Re-Sorting(재검사)', 'expand', 1),
-        qa('oeRework', '2. Re-work(SI검사)', 'expand', 1),
-        qa('oeRma', '3. RMA', 'expand', 1),
-        qa('oeFreeSale', '4. 무상매출', 'expand', 1),
-        qa('oeOther', '5. 기타', 'expand', 1),
-        qa('oeTotal', '기타출고 (6=1+2+3+4+5)', 'always', 1),
+        qa('oeResorting', '1. Re-Sorting(재검사)', 'expand'),
+        qa('oeRework', '2. Re-work(SI검사)', 'expand'),
+        qa('oeRma', '3. RMA', 'expand'),
+        qa('oeFreeSale', '4. 무상매출', 'expand'),
+        qa('oeOther', '5. 기타', 'expand'),
+        qa('oeTotal', '기타출고 (6=1+2+3+4+5)', 'always'),
       ],
     },
-    qa('loss', 'LOSS', null, 2),
-    qa('eoh', 'EOH (WH0006)', null, 2),
+    qa('loss', 'LOSS', null),
+    qa('eoh', 'EOH (WH0006)', null),
   ],
 };
 
