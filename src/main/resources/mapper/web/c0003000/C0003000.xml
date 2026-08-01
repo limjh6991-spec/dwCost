@@ -296,6 +296,30 @@
             #{selcode}
     </select>
 
+    <!-- ===== VINA 매출원가 집계 (C0003002) 단계별 실행 ===== -->
+    <!-- 제품 수불 : 기초(STOCK_BOH) + 원가(STOCK_COST, @R_Message OUTPUT) -->
+    <select id="C0003002_Vn1" resultType="CamelMap">
+        DECLARE @m nvarchar(max);
+        EXEC UP_VN_STOCK_BOH  #{yyyymm}, #{site}, #{selcode};
+        EXEC UP_VN_STOCK_COST #{yyyymm}, #{site}, #{selcode}, @m OUTPUT;
+    </select>
+    <!-- 매출원가/판관비 : doi_slco / doi_smce_cost -->
+    <select id="C0003002_Vn2" resultType="CamelMap">
+        DECLARE @RET_CODE INT;
+        EXEC @RET_CODE = UP_VN_SALE_COST
+            #{yyyymm},
+            #{site},
+            #{selcode}
+    </select>
+    <!-- 매출상계 : UP_DOI_SCOF (VN 전용판 없음, 공용 프로시저 site 처리) -->
+    <select id="C0003002_Vn3" resultType="CamelMap">
+        DECLARE @RET_CODE INT;
+        EXEC @RET_CODE = UP_DOI_SCOF
+            #{yyyymm},
+            #{site},
+            #{selcode}
+    </select>
+
     <select id="ExeclogPopup" resultType="CamelMap">
     SELECT
         seq_no,
