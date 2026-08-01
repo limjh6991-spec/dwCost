@@ -261,6 +261,7 @@ export default {
         '양산z합계양산', '양산Z합계양산', 'z합계양산', 'Z합계양산', 'zMassTotal',
         '카세트z합계카세트', '카세트Z합계카세트', 'z합계카세트', 'Z합계카세트', 'zCassetteTotal',
         '구매z합계구매', '구매Z합계구매', 'z합계구매', 'Z합계구매', 'zPurchaseTotal',
+        '회계z합계회계', '회계Z합계회계', 'z합계회계', 'Z합계회계', 'zAccTotal',
       ]);
 
       return Object.keys(first)
@@ -270,7 +271,8 @@ export default {
           if (pivotKey.startsWith('개발')) gubun = '개발';
           else if (pivotKey.startsWith('카세트')) gubun = '카세트';
           else if (pivotKey.startsWith('구매')) gubun = '구매';
-          const procModelKey = pivotKey.replace(/^개발|^양산|^카세트|^구매/, '');
+          else if (pivotKey.startsWith('회계')) gubun = '회계';
+          const procModelKey = pivotKey.replace(/^개발|^양산|^카세트|^구매|^회계/, '');
           // 소문자로 변환하여 displayMap에서 조회 (대소문자 무관 매칭)
           const lowerKey = procModelKey.toLowerCase();
           const raw = displayMap?.[lowerKey] ?? procModelKey;
@@ -316,7 +318,8 @@ export default {
       row.zDevTotal = sum('개발');
       row.zCassetteTotal = sum('카세트');
       row.zPurchaseTotal = sum('구매');
-      row.zTotal = row.zMassTotal + row.zDevTotal + row.zCassetteTotal + row.zPurchaseTotal;
+      row.zAccTotal = sum('회계');
+      row.zTotal = row.zMassTotal + row.zDevTotal + row.zCassetteTotal + row.zPurchaseTotal + row.zAccTotal;
 
       return row;
     },
@@ -334,6 +337,7 @@ export default {
         o.zMassTotal = Number(r['양산z합계양산'] ?? r['양산Z합계양산'] ?? r['Z합계양산'] ?? 0);
         o.zCassetteTotal = Number(r['카세트z합계카세트'] ?? r['카세트Z합계카세트'] ?? r['Z합계카세트'] ?? 0);
         o.zPurchaseTotal = Number(r['구매z합계구매'] ?? r['구매Z합계구매'] ?? r['Z합계구매'] ?? 0);
+        o.zAccTotal = Number(r['회계z합계회계'] ?? r['회계Z합계회계'] ?? r['Z합계회계'] ?? 0);
 
         return o;
       });
@@ -474,6 +478,7 @@ export default {
         { k:'zDevTotal',  text:'개발합계' },
         { k:'zCassetteTotal', text:'카세트' },
         { k:'zPurchaseTotal', text:'구매' },
+        { k:'zAccTotal', text:'회계' },
       ].forEach(({k,text}) => {
         this.ensureField(baseGrid, k, 'number');
         this.ensureColumn(baseGrid, {
@@ -506,6 +511,7 @@ export default {
       const gaebalModels = headerMeta.filter(x => x.gubun === '개발').sort(sortByModel);
       const cassetteModels = headerMeta.filter(x => x.gubun === '카세트').sort(sortByModel);
       const purchaseModels = headerMeta.filter(x => x.gubun === '구매').sort(sortByModel);
+      const accountModels = headerMeta.filter(x => x.gubun === '회계').sort(sortByModel);
 
       const layout = [
         { header: { text: '사업구분' }, items: [{ column: 'gubun', width: 280, rowSpan: 2, header: { text: '제품명' } }] },
@@ -517,12 +523,14 @@ export default {
             { column: 'zDevTotal', header: { text: '개발' } },
             { column: 'zCassetteTotal', header: { text: '카세트' } },
             { column: 'zPurchaseTotal', header: { text: '구매' } },
+            { column: 'zAccTotal', header: { text: '회계' } },
           ],
         },
         { header: { text: '양산' }, items: yangsanModels.map(m => ({ column: m.fieldId })) },
         { header: { text: '개발' }, items: gaebalModels.map(m => ({ column: m.fieldId })) },
         { header: { text: '카세트' }, items: cassetteModels.map(m => ({ column: m.fieldId })) },
         { header: { text: '구매' }, items: purchaseModels.map(m => ({ column: m.fieldId })) },
+        ...(accountModels.length ? [{ header: { text: '회계' }, items: accountModels.map(m => ({ column: m.fieldId })) }] : []),
       ];
 
       modelPlTreeView.setColumnLayout(layout);

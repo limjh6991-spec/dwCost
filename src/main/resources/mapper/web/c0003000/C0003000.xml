@@ -18,10 +18,14 @@
     </select>
  
  	<select id="C0003003_Sch1" resultType="CamelMap">
-	EXEC UP_DOI_COST
-		#{yyyymm},
-		#{site},
-		#{selcode}
+	<choose>
+	  <when test="site != null and site == 'VN'">
+	    EXEC UP_VN_COST #{yyyymm}, #{site}, #{selcode}
+	  </when>
+	  <otherwise>
+	    EXEC UP_DOI_COST #{yyyymm}, #{site}, #{selcode}
+	  </otherwise>
+	</choose>
     </select>
        
     <select id="C0003005_Sch1" resultType="CamelMap">
@@ -34,9 +38,14 @@
     
     <select id="C0003007_Sch1" resultType="CamelMap">
 	DECLARE @RET_CODE INT;
-	EXEC @RET_CODE = UP_DOI_EXPEN_MATL 
-		#{yyyymm},
-		#{site},'ACTUAL'
+	<choose>
+	  <when test="site != null and site == 'VN'">
+	    EXEC @RET_CODE = UP_VN_EXPEN_MATL #{yyyymm}, #{site}, 'ACTUAL'
+	  </when>
+	  <otherwise>
+	    EXEC @RET_CODE = UP_DOI_EXPEN_MATL #{yyyymm}, #{site},'ACTUAL'
+	  </otherwise>
+	</choose>
     </select>
 	   
     <select id="C0003009_Sch1" resultType="CamelMap">

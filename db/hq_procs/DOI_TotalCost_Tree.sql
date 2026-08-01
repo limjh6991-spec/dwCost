@@ -24,6 +24,10 @@ BEGIN
 		DECLARE @SumCas_Sale     NVARCHAR(MAX)=N'0';
 		DECLARE @SumCas_Qty      NVARCHAR(MAX)=N'0';
 		DECLARE @SumPur_Sale     NVARCHAR(MAX)=N'0';
+		DECLARE @SumYangsan_ProdSale NVARCHAR(MAX)=N'0';  -- 제품매출(rn=2), 매출단가용
+		DECLARE @SumDev_ProdSale     NVARCHAR(MAX)=N'0';
+		DECLARE @SumCas_ProdSale     NVARCHAR(MAX)=N'0';
+		DECLARE @SumPur_ProdSale     NVARCHAR(MAX)=N'0';
 		DECLARE @SumPur_Qty      NVARCHAR(MAX)=N'0';
         DECLARE @SumYangsan_Bep NVARCHAR(MAX)=N'0';
 		DECLARE @SumDev_Bep     NVARCHAR(MAX)=N'0';  --손익분기점 : Break-Even Point (BEP) Operating Profit
@@ -48,6 +52,7 @@ BEGIN
 		DECLARE @ACC_IDLE_COMP  DECIMAL(18,2) = 0;   -- 비가동보상 (제품매출/41002010/재경그룹)
 		DECLARE @ACC_ADJ        DECIMAL(18,2) = 0;   -- 조정 (제품매출/41002020/영업그룹 제외)
 		DECLARE @ACC_TOTAL      DECIMAL(18,2) = 0;   -- 회계합계
+		DECLARE @SCOF_ACC       DECIMAL(18,2) = 0;   -- 회계-조정 유상사급 (DOI_원장상계 구분='회계')
 
         DECLARE @SQL             NVARCHAR(MAX);
 
@@ -99,7 +104,7 @@ BEGIN
 		        , B.품명 AS model
 		        , N'해외' AS 매출구분
 		        , CASE WHEN MI.품번 IS NOT NULL THEN N'상품' ELSE N'제품' END AS 매출대분류
-		        , CAST(B.원화판매금액 AS DECIMAL(18,2)) AS amt
+		 , CAST(B.원화판매금액 AS DECIMAL(18,2)) AS amt
 		    FROM DOI_INVOICE_RESC B WITH(NOLOCK)
 		    LEFT JOIN MERCH_ITEM MI
 		      ON MI.품번 = B.품번
@@ -192,7 +197,8 @@ BEGIN
 			WHERE 1=1
 			  AND YYYYMM=@YYYYMM
 			  AND COALESCE(O.매출상계,0) <> 0
-		  	  AND NULLIF(모델,'') IS NOT NULL	    
+			  AND O.구분 <> N'회계'   -- 회계-조정은 회계 컬럼에서 처리(모델컬럼 제외)
+		  	  AND NULLIF(모델,'') IS NOT NULL
 		)
 		SELECT
 		      CAST(model AS NVARCHAR(500)) AS model
@@ -247,7 +253,11 @@ BEGIN
 	   WHERE yyyymm  = @YYYYMM
 	    AND site   	 = @SITE
         AND sel_code = @SELCODE
-        
+
+	  SELECT @SCOF_ACC = CAST(COALESCE(SUM(매출상계),0) AS DECIMAL(18,2))
+	   FROM DOI_원장상계 WITH(NOLOCK)
+	   WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SELCODE AND 구분 = N'회계';
+
         SELECT @CostAdj = COALESCE(ABS(SUM(ISNULL(대변금액,0))), 0)
 		FROM DOI_DEPT_COST WITH(NOLOCK)
 		WHERE YYYYMM   = @YYYYMM
@@ -273,14 +283,7 @@ BEGIN
                             ELSE 0 END),0)
 
       -- 조정: 41002020 / 영업그룹 제외 / 재경그룹은 차변 무시(대변만) / 나머지는 대변-차변
-    , @ACC_ADJ =
-          COALESCE(SUM(CASE
-                        WHEN 계정코드 = N'41002020' AND 코스트센터 LIKE N'재경그룹%'
-                             THEN ISNULL(대변금액,0)                       -- 재경그룹: 차변 무시(대변만)
-                        WHEN 계정코드 = N'41002020' AND 코스트센터 NOT LIKE N'영업그룹%'
-                             THEN ISNULL(대변금액,0) - ISNULL(차변금액,0)   -- 나머지(영업그룹 제외): 대변-차변
-                        ELSE 0
-                       END),0)
+    , @ACC_ADJ = -@SCOF_ACC   /* 41002020 삭제 → 회계-조정 매출액 = 제품매출-유상사급 = -유상사급 2026-07-31 */
 		FROM DOI_DEPT_COST WITH(NOLOCK)
 		WHERE YYYYMM   = @YYYYMM
 		  AND SITE     = @SITE
@@ -833,7 +836,7 @@ BEGIN
 		              COALESCE(II.amt,0)
 		            + COALESCE(III.amt,0)
 		            + COALESCE(IV.amt,0)
-		            + COALESCE(EC.adj_amt,0)
+/*		            + COALESCE(EC.adj_amt,0)*/
 		       AS DECIMAL(18,2)) AS amt
 		    FROM #MODEL M
 		    LEFT JOIN #SALES_BASE SB
@@ -844,8 +847,8 @@ BEGIN
 		           ON III.model = M.model AND III.구분 = M.구분
 		    LEFT JOIN EXP_AGG IV
 		           ON IV.model = M.model AND IV.구분 = M.구분
-		    LEFT JOIN ETC_SALE_BASE EC
-		      ON EC.model = M.model AND EC.구분 = M.구분		           
+/*		    LEFT JOIN ETC_SALE_BASE EC
+		      ON EC.model = M.model AND EC.구분 = M.구분	*/	           
 		),
 		MERCH_COGS_FACT AS (
 		    -- 상품매출원가
@@ -946,18 +949,23 @@ BEGIN
 --		),
     /* ====== VI 판관비 ====== */
 		SGA_BASE AS (
-			SELECT 48+총원가_순서 rn,
-			       N'    ('+CAST(총원가_순서 as varchar(2))+') '+b.상위계정과목 as gubun,
+			SELECT 48+m.총원가_순서 rn,
+			       N'    ('+CAST(m.총원가_순서 as varchar(2))+') '+m.상위계정과목 as gubun,
 			       a.구분,
 			       a.model,
-			       SUM(dist_amt) AS amt --select *
+			       SUM(a.dist_amt) AS amt
 			FROM doi_smce_cost a WITH(NOLOCK)
-			inner join doi_acct b
-			  on (a.yyyymm=b.yyyymm and a.site=b.site and a.sub_name=b.	acct_name)
+			CROSS APPLY (
+			    SELECT TOP 1 b.상위계정과목, b.총원가_순서
+			    FROM doi_acct b WITH(NOLOCK)
+			    WHERE b.yyyymm=a.yyyymm AND b.site=a.site AND b.sel_code=a.sel_code
+			      AND (b.acct_name = a.sub_name OR a.sub_name LIKE b.상위계정과목 + N'%')
+			    ORDER BY CASE WHEN b.acct_name = a.sub_name THEN 0 ELSE 1 END, LEN(b.상위계정과목) DESC
+			) m
 			WHERE a.yyyymm = @YYYYMM
 			  AND a.site   = @SITE
 			  AND a.sel_code = @SELCODE
-			  AND b.상위계정과목 in (
+			  AND m.상위계정과목 in (
 				'판)임원급여',
 				'판)직원급여',
 				'판)상여금',
@@ -987,7 +995,7 @@ BEGIN
 			    '판)주식보상비용',
 			    '판)해외시장개척비'
 			  )
-			GROUP BY a.구분, a.model, b.상위계정과목, b.총원가_순서 --order by 1
+			GROUP BY a.구분, a.model, m.상위계정과목, m.총원가_순서
 		),
         SGA AS (
       	SELECT
@@ -1042,7 +1050,7 @@ BEGIN
         ==============================================================*/
         VAR_TOTAL AS (
             SELECT
-                  M.구분
+ M.구분
                 , M.model
                 , CAST(COALESCE(SUM(V.amt),0) AS DECIMAL(18,2)) AS var_amt
             FROM #MODEL M
@@ -1129,7 +1137,7 @@ BEGIN
 --            UNION ALL SELECT rn, gubun, 구분, model, amt FROM ADJ_SALE
 --  UNION ALL SELECT rn, gubun, 구분, model, amt FROM INV_ADJ  --26/02/13 KYH삭제
 --            UNION ALL SELECT rn, gubun, 구분, model, amt FROM MERCH_COGS    --26/02/13 KYH삭제         
-            UNION ALL SELECT rn, gubun, 구분, model, amt FROM SGA        
+  UNION ALL SELECT rn, gubun, 구분, model, amt FROM SGA        
             UNION ALL SELECT rn, gubun, 구분, model, amt FROM SGA_BASE  --26/02/16 KYH추가
             UNION ALL SELECT rn, gubun, 구분, model, amt FROM TOTAL_COST
             UNION ALL SELECT rn, gubun, 구분, model, amt FROM OP_PROFIT
@@ -1265,6 +1273,12 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
         FROM #MODEL WHERE 구분 = N'구매';  
 
         -------------
+		-- 제품매출(rn=2) 합계 : 매출단가 = 제품매출/수량
+		SELECT @SumYangsan_ProdSale = COALESCE(STRING_AGG(N'COALESCE(ProdSale.' + QUOTENAME(pivot_key) + N',0)', N' + ') WITHIN GROUP (ORDER BY sort_structure, model), N'0') FROM #MODEL WHERE 구분=N'양산' AND is_cassette=0;
+		SELECT @SumDev_ProdSale = COALESCE(STRING_AGG(N'COALESCE(ProdSale.' + QUOTENAME(pivot_key) + N',0)', N' + ') WITHIN GROUP (ORDER BY sort_structure, model), N'0') FROM #MODEL WHERE 구분=N'개발' AND is_cassette=0;
+		SELECT @SumCas_ProdSale = COALESCE(STRING_AGG(N'COALESCE(ProdSale.' + QUOTENAME(pivot_key) + N',0)', N' + ') WITHIN GROUP (ORDER BY sort_structure, model), N'0') FROM #MODEL WHERE 구분=N'카세트' OR is_cassette=1;
+		SELECT @SumPur_ProdSale = COALESCE(STRING_AGG(N'COALESCE(ProdSale.' + QUOTENAME(pivot_key) + N',0)', N' + ') WITHIN GROUP (ORDER BY sort_structure, model), N'0') FROM #MODEL WHERE 구분=N'구매';
+		-------------
 		SELECT @SumYangsan_Bep =
 		  COALESCE(STRING_AGG(N'COALESCE(Bep.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 		    WITHIN GROUP (ORDER BY sort_structure, model), N'0')
@@ -1338,7 +1352,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 					CASE
 					  WHEN Cur.rn = 5 THEN @SCOF
 					  WHEN Cur.rn = 4 THEN
-					      ((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + '))
+					      ((' + @SumYangsan_ProdSale + ')+(' + @SumDev_ProdSale + ')+(' + @SumCas_ProdSale + ')+(' + @SumPur_ProdSale + '))
 					      / NULLIF(((' + @SumYangsan_Qty + ')+(' + @SumDev_Qty + ')+(' + @SumCas_Qty + ')+(' + @SumPur_Qty + ')),0)
             		  WHEN LTRIM(Cur.gubun) = N''영업이익률'' THEN
 						  ((' + @SumYangsan_Op + ')+(' + @SumDev_Op + ')+(' + @SumCas_Op + ')+(' + @SumPur_Op +'))
@@ -1348,20 +1362,23 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 					      /NULLIF(((' + @SumYangsan_Bep + ')+(' + @SumDev_Bep + ')+(' + @SumCas_Bep + ')+(' + @SumPur_Bep +')),0)*100
 					       --/NULLIF(((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + ')),0)*100
 					WHEN Cur.rn = 1 THEN
-					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ') + @ACC_TOTAL ) - case when '+ @YYYYMM + '< ''202604'' THEN @SCOF  else 0 end
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ') + @ACC_TOTAL ) - case when '+ @YYYYMM + '< ''202604'' THEN @SCOF  else 0 end
+
+					WHEN Cur.rn = 2 THEN
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ') + (@ACC_IDLE_COMP))   -- [규칙1] 제품매출(조정은 매출액으로 이동): 양산+개발+카세트+회계(비가동+조정)
 
 					WHEN Cur.rn = 6 THEN (' + @SumPurchase + ')
 
 					WHEN Cur.rn = 7 THEN @ACC_PREV_PRICE   -- 기타매출 총합계: 이전가격만
 
 					WHEN Cur.rn = 44 THEN
-					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + ( @CostAdj )
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')) + ( @CostAdj + @LossAdj )
 					
 					WHEN Cur.rn = 47 THEN
 					    @CostAdj + @LossAdj
 					
 					WHEN Cur.rn = 77 THEN
-					  ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + ( @CostAdj )
+					  ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')) + ( @CostAdj )
 					
 					WHEN Cur.rn = 78 THEN
 					    /*(
@@ -1370,11 +1387,11 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 					    )
 					    -*/
 					    (
-					      ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ') - @SCOF + @ACC_TOTAL )
+					      ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ') - @SCOF + @ACC_TOTAL )
 					     -- + ( @CostAdj )
 					    )
 					ELSE
-					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + '))
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + '))
 					END		      
 					AS DECIMAL(18,2)) AS [총합계]
 		
@@ -1382,7 +1399,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 		    , CAST(
 				CASE
 				 -- WHEN Cur.rn = 5 and '+ @YYYYMM + '>= ''202604'' THEN @SCOF 
-				  WHEN Cur.rn = 4 THEN ((' + @SumYangsan_Sale + ') / NULLIF((' + @SumYangsan_Qty + '),0))
+				  WHEN Cur.rn = 4 THEN ((' + @SumYangsan_ProdSale + ') / NULLIF((' + @SumYangsan_Qty + '),0))
            	  WHEN LTRIM(Cur.gubun) = N''영업이익률'' THEN
 						  ((' + @SumYangsan_Op  +'))
 					      /NULLIF(((' + @SumYangsan_Sale + ')),0)*100
@@ -1390,7 +1407,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 					  ('+@SumYangsan_FiX +')
 				      /NULLIF(((' + @SumYangsan_Bep +')),0)*100
 		      WHEN Cur.rn = 44 THEN
-		          ((' + @SumYangsan + '))
+		          ((' + @SumYangsan + ')) + @LossAdjYangsan
 		
 		      WHEN Cur.rn = 47 THEN
 		          @LossAdjYangsan
@@ -1408,7 +1425,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 			, CAST(
 				CASE
 				  --WHEN Cur.rn = 5 THEN 0
-				  WHEN Cur.rn = 4 THEN ((' + @SumDev_Sale + ') / NULLIF((' + @SumDev_Qty + '),0))
+				  WHEN Cur.rn = 4 THEN ((' + @SumDev_ProdSale + ') / NULLIF((' + @SumDev_Qty + '),0))
             	  WHEN LTRIM(Cur.gubun) = N''영업이익률'' THEN
 						  ((' + @SumDev_Op +'))
 					      /NULLIF(((' + @SumDev_Sale + ')),0)*100
@@ -1417,7 +1434,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 				      /NULLIF(((' + @SumDev_Bep +')),0)*100
 
 			      WHEN Cur.rn = 44 THEN
-			          ((' + @SumDev + '))
+			          ((' + @SumDev + ')) + @LossAdjDev
 			
 			      WHEN Cur.rn = 47 THEN
 			          @LossAdjDev
@@ -1435,14 +1452,14 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 			, CAST(	
 				CASE
 				  WHEN Cur.rn = 5 THEN 0
-				  WHEN Cur.rn = 4 THEN ((' + @SumCas_Sale + ') / NULLIF((' + @SumCas_Qty + '),0))
+				  WHEN Cur.rn = 4 THEN ((' + @SumCas_ProdSale + ') / NULLIF((' + @SumCas_Qty + '),0))
 				  ELSE (' + @SumCassette + ')
 				END AS DECIMAL(18,2)) AS [카세트합계]
 
             , CAST( 
                 CASE
                   WHEN Cur.rn = 5 THEN 0
-                  WHEN Cur.rn = 4 THEN ((' + @SumPur_Sale + ') / NULLIF((' + @SumPur_Qty + '),0))
+                  WHEN Cur.rn = 4 THEN ((' + @SumPur_ProdSale + ') / NULLIF((' + @SumPur_Qty + '),0))
                   ELSE (' + @SumPurchase + ')
                 END AS DECIMAL(18,2)) AS [구매합계]
 		
@@ -1458,9 +1475,10 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 			-- 회계
 			, CAST(
 			    CASE
-			        WHEN Cur.rn = 2 THEN (@ACC_IDLE_COMP + @ACC_ADJ)  -- 제품매출: 비가동보상+조정 합계
+			        WHEN Cur.rn = 2 THEN (@ACC_IDLE_COMP)  -- 제품매출: 비가동보상 (조정은 매출액으로 이동)
 			        WHEN Cur.rn = 7 THEN @ACC_PREV_PRICE              -- 기타매출: 이전가격
 			        WHEN Cur.rn in (1,78) THEN @ACC_TOTAL
+			        WHEN Cur.rn = 5 THEN @SCOF_ACC   -- 유상사급 란: 회계-조정 유상사급
 			        ELSE 0
 			    END
 			  AS DECIMAL(18,2)) AS [회계합계]
@@ -1476,7 +1494,8 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 			-- 회계-제품-조정 : 매출액(rn=1) 합계 + 제품매출 행(rn=2)
 			, CAST(
 			    CASE
-			        WHEN Cur.rn IN (1,2) THEN @ACC_ADJ
+			        WHEN Cur.rn = 1 THEN @ACC_ADJ   -- 매출액 = 제품매출 - 유상사급 (= -유상사급)
+			        WHEN Cur.rn = 5 THEN @SCOF_ACC   -- 유상사급 란
 			        ELSE 0
 			    END
 			  AS DECIMAL(18,2)) AS [회계_조정]
@@ -1491,7 +1510,8 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 		    , ' + @ModelSelectCols + N'
 
 		FROM P Cur
-		LEFT JOIN P Sales ON Sales.rn = 1 
+		LEFT JOIN P Sales ON Sales.rn = 1
+		LEFT JOIN P ProdSale ON ProdSale.rn = 2 
 		LEFT JOIN P Qty   ON Qty.rn = 3
     	LEFT JOIN P Op    ON LTRIM(Op.gubun) = N''VIII. 영업이익''
     	LEFT JOIN P Bep   ON LTRIM(Bep.gubun) LIKE N''X. 손익분기점%''
@@ -1500,7 +1520,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 		
 --		SELECT @SQL;
 		EXEC sp_executesql @SQL, 
-		N'@SCOF DECIMAL(18,2), @CostAdj DECIMAL(18,2), @LossAdj DECIMAL(18,2), @LossAdjYangsan DECIMAL(18,2), @LossAdjDev DECIMAL(18,2) ,@ACC_TOTAL decimal(18,2), @ACC_PREV_PRICE decimal(18,2), @ACC_IDLE_COMP decimal(18,2), @ACC_ADJ decimal(18,2)',
+		N'@SCOF DECIMAL(18,2), @CostAdj DECIMAL(18,2), @LossAdj DECIMAL(18,2), @LossAdjYangsan DECIMAL(18,2), @LossAdjDev DECIMAL(18,2) ,@ACC_TOTAL decimal(18,2), @ACC_PREV_PRICE decimal(18,2), @ACC_IDLE_COMP decimal(18,2), @ACC_ADJ decimal(18,2), @SCOF_ACC decimal(18,2)',
 		@SCOF = @SCOFTotal,
     	@CostAdj = @CostAdj,
     	@LossAdj = @LossAdj,
@@ -1509,7 +1529,8 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 		@ACC_TOTAL      = @ACC_TOTAL,
 		@ACC_PREV_PRICE = @ACC_PREV_PRICE,
 		@ACC_IDLE_COMP  = @ACC_IDLE_COMP,
-		@ACC_ADJ        = @ACC_ADJ;
+		@ACC_ADJ        = @ACC_ADJ,
+		@SCOF_ACC       = @SCOF_ACC;
 
         DROP TABLE #BASE;
         DROP TABLE #RN;
@@ -1533,6 +1554,8 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
     THROW;   
     END CATCH
 END;
+
+
 
 
 

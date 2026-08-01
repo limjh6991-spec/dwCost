@@ -42,23 +42,9 @@ export default {
       return this.userAuthInfo.getTabInfoListBySRI(upperSysResId, sysResId) || [];
     },
     tab3List(){
-      let list = [...this.rawTabInfoList];
-      const routePath = (this.$route?.path || this.route?.path || '').toLowerCase();
-      const sysResId = this.$route?.meta?.sysResourceId || this.route?.meta?.sysResourceId;
-      const isC0009001 = sysResId === 'C0009001' || routePath.includes('c0009001');
-
-      if (isC0009001) {
-        const curProd = this.userAuthInfo?.curProdCtg;
-        const isVina = (curProd === 'VN' || curProd === 'VINA');
-        if (isVina) {
-          if (!list.some(item => item.sysResourceId === 'TAB090014')) {
-            list.push({ sysResourceId: 'TAB090014', sysResourceName: '재공품 공정 수불' });
-          }
-        } else {
-          list = list.filter(item => item.sysResourceId !== 'TAB090014');
-        }
-      }
-      return list;  
+      // TAB090014/090015 포함 모든 탭은 DB 권한(doi_cm_role_sys_resource)으로 제어.
+      // (과거 하드코딩 push는 권한 미부여 시절의 임시조치였고, 이제 DB가 표시/숨김을 결정)
+      return [...this.rawTabInfoList];
     },
     tab4List(){
       let obj = this.rawTabInfoList.find((resc) => resc.sysResourceId === this.pTabId);      

@@ -135,7 +135,36 @@
             </if>
         END
     </select>
-    
+
+    <!-- C0009001 Tab5: 월별 집계(수량_VN) 제품 수불부. 프로시저 있으면 호출, 없으면 컬럼 스텁 -->
+    <select id="C0009001_Tab090015" resultType="CamelMap">
+        IF OBJECT_ID('VN_ProductSubulMonthly', 'P') IS NOT NULL
+        BEGIN
+            EXEC VN_ProductSubulMonthly @YYYY=#{yyyy}, @YYYYMM=#{yyyymm}, @SITE=#{site};
+        END
+        ELSE
+        BEGIN
+            SELECT TOP 0
+                CAST('' AS NVARCHAR(50)) AS MODEL,
+                CAST('' AS NVARCHAR(20)) AS DIVISION,
+                CAST(0 AS INT) AS T_BOH_B,  CAST(0 AS INT) AS T_BOH_A,
+                CAST(0 AS INT) AS USC_INPUT,
+                CAST(0 AS INT) AS IN_CODE,  CAST(0 AS INT) AS IN_RESORT, CAST(0 AS INT) AS IN_REWORK,
+                CAST(0 AS INT) AS IN_SEMI,  CAST(0 AS INT) AS IN_ETC,    CAST(0 AS INT) AS IN_TOTAL,
+                CAST(0 AS INT) AS OUTPUT_A,
+                CAST(0 AS INT) AS OUT_CODE, CAST(0 AS INT) AS OUT_SEMI_PAID, CAST(0 AS INT) AS OUT_SEMI_FREE,
+                CAST(0 AS INT) AS OUT_ETC,  CAST(0 AS INT) AS OUT_TOTAL,
+                CAST(0 AS INT) AS LOSS,
+                CAST(0 AS INT) AS LINE_WIP_B, CAST(0 AS INT) AS LINE_WIP_A,
+                CAST(0 AS INT) AS LINE_FGS_B, CAST(0 AS INT) AS LINE_FGS_A,
+                CAST(0 AS INT) AS B_WIP_B,    CAST(0 AS INT) AS B_WIP_A,
+                CAST(0 AS INT) AS B_FGS_B,    CAST(0 AS INT) AS B_FGS_A,
+                CAST(0 AS INT) AS T_EOH_WIP_B, CAST(0 AS INT) AS T_EOH_WIP_A,
+                CAST(0 AS INT) AS T_EOH_FGS_B, CAST(0 AS INT) AS T_EOH_FGS_A,
+                CAST(0 AS INT) AS TOTAL_EOH_B, CAST(0 AS INT) AS TOTAL_EOH_A;
+        END
+    </select>
+
     <!-- C0009011: 생산실적 월별/기간별(누적) 조회 (기존 쿼리 유지) -->
     <select id="C0009011_Sch1" resultType="CamelMap">
         SELECT
@@ -457,6 +486,16 @@
         EXEC DOI_ManufacturingCostOfWIP @YYYY=#{yyyy}, @SITE=#{site}, @SEL_CODE=#{selCode};
     </select>
 
+    <!-- TAB090017: 제조원가(재공)_VN — 재공 공정수불+금액, 도우코드 그레인 (VINA 전용) -->
+    <select id="C0009007_Tab090017" resultType="CamelMap">
+        EXEC VN_WipCostLedger_Subul @YYYY=#{yyyy}, @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
+
+    <!-- TAB090016: 매출원가(제품)_VN — WH0006 제품수불+금액, 도우코드 그레인 (VINA 전용) -->
+    <select id="C0009007_Tab090016" resultType="CamelMap">
+        EXEC VN_ProductCostLedger_Subul @YYYY=#{yyyy}, @YYYYMM=#{yyyymm}, @SITE=#{site};
+    </select>
+
     <select id="C0009009_Sch1" resultType="CamelMap">
         <choose>
             <when test="site != null and site == 'VN'">
@@ -615,21 +654,20 @@
 
     <select id="C0009013_Sch1" resultType="CamelMap">
     select
-        YYYYMM,       
-        SITE as SITE_ORG,
-        CASE WHEN SITE='HQ' Then '본사'  WHEN SITE='VN' then 'VINA' else site end as SITE,
-        SEL_CODE,
+        yyyymm,
+        site as SITE_ORG,
+        CASE WHEN site='HQ' Then '본사'  WHEN site='VN' then 'VINA' else site end as SITE,
+        sel_code,
         구분,
-        MODEL,
-        창고,
-        품번,
-        상계금액,
-        수량,
-        최종결산월재고단가,
-        IN_MONTH,
-        DIST_RATE,
-        FINAL_AMT 
-    FROM DOI_SCOF
+        모델,
+        원장매칭,
+        소요량,
+        배율,
+        출하기여수량,
+        원장사용량,
+        원장단가,
+        매출상계
+    FROM DOI_원장상계
     where 1=1
     <if test="yyyymm != null and yyyymm != ''">
         and YYYYMM = #{yyyymm}
@@ -640,7 +678,7 @@
     <if test="selCode != null and selCode != ''">
         and SEL_CODE = #{selCode}
     </if>
-    order BY 품번, MODEL ;
+    order BY 구분, 모델 ;
 </select>
 
     <select id="C0009013_SelectSelCode" resultType="CamelMap">

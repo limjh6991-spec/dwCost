@@ -17,6 +17,10 @@
     <template #tab-content-TAB090014>
       <TAB090014 />
     </template>
+    <!-- Tab 5 월별 집계(수량_VN) : 제품 수불부 (VINA 전용) -->
+    <template #tab-content-TAB090015>
+      <TAB090015 />
+    </template>
   </auth-tabs>
 </template>
 
@@ -25,6 +29,7 @@ import TAB090001 from '@web/c0009000/tab/TAB090001.vue';
 import TAB090002 from '@web/c0009000/tab/TAB090002.vue';
 import TAB090003 from '@web/c0009000/tab/TAB090003.vue';
 import TAB090014 from '@web/c0009000/tab/TAB090014.vue';
+import TAB090015 from '@web/c0009000/tab/TAB090015.vue';
 
 export default {
   name: 'DW_C0009001',
@@ -34,6 +39,7 @@ export default {
     TAB090002,
     TAB090003,
     TAB090014,
+    TAB090015,
   },
   watch: {},
   data() {
