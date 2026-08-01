@@ -262,6 +262,19 @@ BEGIN
 
 	GROUP BY 구분, model, sec, item;
 
+	-- 부재료비(6272)만 -> (6)_TRAY / (7)_기타 분리 (제품별: TRAY 총액을 모델별 부재료비 비중 안분)
+	--   TRAY 총액 = 기타입출고금액조회(통합) DOI_VN_ETC_INOUT 중 부재료(Sub Material)·소분류 TRAY 집계
+	--   모델별 _TRAY = 모델 부재료비 x (TRAY총액 / 전체 부재료비), _기타 = 모델 부재료비 - _TRAY
+	DECLARE @vTrayTot decimal(28,4), @vSubTot decimal(28,4);
+	SELECT @vTrayTot = ISNULL(SUM(금액),0) FROM DOI_VN_ETC_INOUT
+	 WHERE yyyymm=@YYYYMM AND 품목자산분류=N'Sub Material' AND UPPER(소분류) LIKE N'%TRAY%';
+	SELECT @vSubTot = ISNULL(SUM(amt),0) FROM #amt WHERE sec=1 AND item=N'부재료비 (6272)';
+	INSERT #amt(구분, model, sec, item, iord, amt)
+	SELECT 구분, model, 1, N'부재료비 (6272)_TRAY', 62720, CASE WHEN @vSubTot=0 THEN 0 ELSE CAST(amt*@vTrayTot/@vSubTot AS decimal(28,4)) END FROM #amt WHERE sec=1 AND item=N'부재료비 (6272)'
+	UNION ALL
+	SELECT 구분, model, 1, N'부재료비 (6272)_기타', 62721, amt - CASE WHEN @vSubTot=0 THEN 0 ELSE CAST(amt*@vTrayTot/@vSubTot AS decimal(28,4)) END FROM #amt WHERE sec=1 AND item=N'부재료비 (6272)';
+	DELETE FROM #amt WHERE sec=1 AND item=N'부재료비 (6272)';
+
 
 
 	-- 고정 골격 (재료2 + 직접노무11 + 간접경비31), 데이터 없으면 0, 목록 밖(공구도구 등)은 제외
@@ -276,7 +289,7 @@ BEGIN
 
 	FROM (VALUES
 
-		(1,1,N'원재료_원장'),(1,2,N'원재료_카세트 부품'),(1,3,N'원재료_PF'),(1,4,N'원재료_PL'),(1,5,N'원재료_약액'),(1,6,N'부재료비 (6272)'),
+		(1,1,N'원재료_원장'),(1,2,N'원재료_카세트 부품'),(1,3,N'원재료_PF'),(1,4,N'원재료_PL'),(1,5,N'원재료_약액'),(1,6,N'부재료비 (6272)_TRAY'),(1,7,N'부재료비 (6272)_기타'),
 
 		(2,1,N'제)급여-직원'),(2,2,N'제)상여금'),(2,3,N'제)제수당'),(2,4,N'제)퇴직급여'),(2,5,N'제)주식보상비용'),(2,6,N'제)급여-사회보험료'),(2,7,N'제)급여-건강보험'),(2,8,N'제)급여-노동자실업보험료'),(2,9,N'제)급여-노동자노조비'),(2,10,N'제)급여-개인소득세'),(2,11,N'제)급여-기타'),
 
