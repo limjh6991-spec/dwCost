@@ -9,6 +9,32 @@
             <label for="floatingSelect" class="select">기준월</label>
           </div>
         </b-col>
+        <b-col cols="2" class="ms-3">
+          <div class="form-floating">
+            <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" :disabled="true" />
+            <label for="floating">사업장</label>
+          </div>
+        </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <select class="form-select label-60" id="currencySelect" :value="currency" @change="onCurrencyChange($event.target.value)">
+              <option value="USD">USD</option>
+              <option value="KRW">KRW</option>
+              <option value="VND">VND</option>
+            </select>
+            <label for="currencySelect">통화</label>
+          </div>
+        </b-col>
+        <b-col cols="2" class="ms-3" v-if="showCurrencySelect">
+          <div class="form-floating">
+            <input autocomplete="off" type="text" class="form-control label-60" id="baseRate" :value="baseRateDisplay" placeholder="기준환율" :disabled="true" />
+            <label for="baseRate">기준환율</label>
+          </div>
+        </b-col>
+        <b-col cols="2" class="ms-2 d-flex align-items-center" v-if="showCurrencySelect">
+          <b-button class="second" size="sm" @click="openExchangeRate">환율관리</b-button>
+          <span class="ms-2 text-primary" style="font-size: 12px">{{ appliedRateLabel }}</span>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -27,15 +53,20 @@
       </div>
     </div>
     <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
+    <ExchangeRatePopup ref="exchangeRatePopup" @closePopup="onExchangeRateClosed" />
   </div>
 </template>
 
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
+import currencyConvert from '@web/c0007000/js/currencyConvert.js';
+import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
 import gridField from '@web/c0007000/js/C0007014.js';
 
 export default {
+  mixins: [currencyConvert],
+  components: { ExchangeRatePopup },
   props: { tabId: { type: String, default: '' } },
   setup() {
     const srchInfo = useC0001001();
@@ -43,7 +74,7 @@ export default {
     return { srchInfo, userAuthInfo };
   },
   data() {
-    return { dataGrid: null, gridRows: [], params: { yyyymm: null }, isClosedMonth: false };
+    return { dataGrid: null, gridRows: [], params: { yyyymm: null, site: 'VINA' }, isClosedMonth: false };
   },
   watch: {
     'params.yyyymm': async function (newVal) {
@@ -55,7 +86,10 @@ export default {
     gridView() { return this.$refs.dataGrid?.getGridView(); },
     gridDataProvider() { return this.$refs.dataGrid?.getGridDataProvider(); },
   },
-  created() { this.dataGrid = _.cloneDeep(gridField); },
+  created() {
+    this.dataGrid = _.cloneDeep(gridField);
+    this.currencyFields = (gridField.columns || []).map((c) => c.fieldName).filter((f) => f && (f.includes('금액') || f === '판매원가'));
+  },
   mounted() {
     this.params.yyyymm = this.srchInfo.yyyymm;
     this.$nextTick(async () => { await this.checkClosingMonth(); this.searchClick(); });
@@ -76,7 +110,8 @@ export default {
       let params = { yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null };
       const rows = [];
       await this.$axios.api.search({ menuId: 'c0007014', queryId: 'C0007014_Sch1', queryParams: params, target: rows });
-      this.gridRows.splice(0, this.gridRows.length, ...rows);
+      const converted = await this.buildCurrencyRows(rows);
+      this.gridRows.splice(0, this.gridRows.length, ...converted);
     },
     searchClick() {
       if (!this.params.yyyymm) { this.$toast && this.$toast('error', '년월 선택해주세요.'); return; }
@@ -118,6 +153,9 @@ export default {
       });
     },
     closePopup() { this.searchClick(); },
+    onCurrencyChange(currency) { this.setCurrency(currency); this.getDataList(); },
+    openExchangeRate() { this.$refs.exchangeRatePopup.openDialog({ yyyymm: this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : null }); },
+    onExchangeRateClosed() { if (this.isCurrencyReadonly) this.getDataList(); },
   },
 };
 </script>

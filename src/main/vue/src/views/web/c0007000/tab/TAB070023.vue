@@ -9,6 +9,12 @@
             <label for="floatingSelect" class="select">기준월</label>
           </div>
         </b-col>
+        <b-col cols="2" class="ms-3">
+          <div class="form-floating">
+            <input autocomplete="off" type="text" class="form-control label-60" id="floating" placeholder="Site" v-model="params.site" :disabled="true" />
+            <label for="floating">사업장</label>
+          </div>
+        </b-col>
       </b-row>
       <div class="btn_area">
         <b-button @click="searchClick"><span class="ico_search"></span>조회</b-button>
@@ -43,7 +49,7 @@ export default {
     return { srchInfo, userAuthInfo };
   },
   data() {
-    return { dataGrid: null, gridRows: [], params: { yyyymm: null }, isClosedMonth: false };
+    return { dataGrid: null, gridRows: [], params: { yyyymm: null, site: 'VINA' }, isClosedMonth: false };
   },
   watch: {
     'params.yyyymm': async function (newVal) {
