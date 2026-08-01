@@ -13,7 +13,6 @@
 
 const { ValueType } = require('realgrid');
 
-// 수량/금액 리프는 headerSpan:1 로 맨 아랫단 1행만 차지 → 얕은 그룹 라벨이 위 빈 밴드를 세로로 채움.
 // PFL전50%/PFL후90% × 수량/금액 (4열) 그룹. base -> baseBQty/baseBAmt(전), baseAQty/baseAAmt(후)
 const pflGroup = (base, text, showMode) => {
   const g = {
@@ -21,8 +20,8 @@ const pflGroup = (base, text, showMode) => {
     header: { text },
     direction: 'horizontal',
     items: [
-      { name: `grp_${base}_b`, header: { text: 'PFL전 50%' }, direction: 'horizontal', items: [{ column: `${base}BQty`, headerSpan: 1 }, { column: `${base}BAmt`, headerSpan: 1 }] },
-      { name: `grp_${base}_a`, header: { text: 'PFL후 90%' }, direction: 'horizontal', items: [{ column: `${base}AQty`, headerSpan: 1 }, { column: `${base}AAmt`, headerSpan: 1 }] },
+      { name: `grp_${base}_b`, header: { text: 'PFL전 50%' }, direction: 'horizontal', items: [{ column: `${base}BQty` }, { column: `${base}BAmt` }] },
+      { name: `grp_${base}_a`, header: { text: 'PFL후 90%' }, direction: 'horizontal', items: [{ column: `${base}AQty` }, { column: `${base}AAmt` }] },
     ],
   };
   if (showMode) g.groupShowMode = showMode;
@@ -30,13 +29,16 @@ const pflGroup = (base, text, showMode) => {
 };
 
 // 수량/금액 (2열) 그룹. base -> baseQty/baseAmt
-// 리프에 headerSpan:1 → 수량/금액은 맨 아랫단만, 그룹 라벨(입고~기타출고)이 2·3단을 세로로 채움.
+// PFL(BOH/EOH)이 4단이므로, 항목 라벨을 스페이서 밴드에도 넣어 라벨이 2·3단을 세로로 덮고
+// 수량/금액은 맨 아랫단(4단) 1행만 차지하도록 한다.
 const qaGroup = (base, text, showMode) => {
   const g = {
     name: `grp_${base}`,
     header: { text },
     direction: 'horizontal',
-    items: [{ column: `${base}Qty`, headerSpan: 1 }, { column: `${base}Amt`, headerSpan: 1 }],
+    items: [
+      { name: `grp_${base}_lv`, header: { text }, direction: 'horizontal', items: [{ column: `${base}Qty` }, { column: `${base}Amt` }] },
+    ],
   };
   if (showMode) g.groupShowMode = showMode;
   return g;
