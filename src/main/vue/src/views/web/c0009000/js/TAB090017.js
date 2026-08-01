@@ -29,15 +29,16 @@ const pflGroup = (base, text, showMode) => {
 };
 
 // 수량/금액 (2열) 그룹. base -> baseQty/baseAmt
-// PFL(BOH/EOH)이 4단이므로, 항목 라벨을 스페이서 밴드에도 넣어 라벨이 2·3단을 세로로 덮고
-// 수량/금액은 맨 아랫단(4단) 1행만 차지하도록 한다.
+// PFL(BOH/EOH)이 4단이므로, 스페이서 밴드를 넣어 수량/금액을 맨 아랫단(4단)에 정렬하고,
+// hideChildHeaders 로 스페이서 밴드 헤더를 숨겨 항목 라벨이 2·3단을 세로로 덮도록 한다.
 const qaGroup = (base, text, showMode) => {
   const g = {
     name: `grp_${base}`,
     header: { text },
     direction: 'horizontal',
+    hideChildHeaders: true,
     items: [
-      { name: `grp_${base}_lv`, header: { text }, direction: 'horizontal', items: [{ column: `${base}Qty` }, { column: `${base}Amt` }] },
+      { name: `grp_${base}_lv`, header: { text: '' }, direction: 'horizontal', items: [{ column: `${base}Qty` }, { column: `${base}Amt` }] },
     ],
   };
   if (showMode) g.groupShowMode = showMode;
