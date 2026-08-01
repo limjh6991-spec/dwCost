@@ -19,7 +19,14 @@ BEGIN
         SELECT
               도우코드 AS MODEL
             , CASE WHEN RIGHT(RTRIM(도우코드),1)=N'P' THEN N'MP' ELSE N'R&D' END AS DIVISION
-            -- 기초 BOH (PFL전=BOH_MONTH, PFL후 스텁)
+            -- 기초 BOH 세부 (LINE_WIP/LINE_FGS/A LEVEL/B_LEVEL_WIP/B_LEVEL_FGS/B LEVEL, 각 PFL전/후) — 세부 산식 미정(스텁 0)
+            , CAST(0 AS INT) AS BOH_LINE_WIP_B, CAST(0 AS INT) AS BOH_LINE_WIP_A
+            , CAST(0 AS INT) AS BOH_LINE_FGS_B, CAST(0 AS INT) AS BOH_LINE_FGS_A
+            , CAST(0 AS INT) AS BOH_A_SUB_B,    CAST(0 AS INT) AS BOH_A_SUB_A
+            , CAST(0 AS INT) AS BOH_B_WIP_B,    CAST(0 AS INT) AS BOH_B_WIP_A
+            , CAST(0 AS INT) AS BOH_B_FGS_B,    CAST(0 AS INT) AS BOH_B_FGS_A
+            , CAST(0 AS INT) AS BOH_B_SUB_B,    CAST(0 AS INT) AS BOH_B_SUB_A
+            -- T_BOH (PFL전=BOH_MONTH, PFL후 스텁)
             , CAST(SUM(ISNULL(BOH_MONTH,0)) AS INT) AS T_BOH_B, CAST(0 AS INT) AS T_BOH_A
             -- 입고
             , CAST(SUM(ISNULL(IN_MONTH,0)) AS INT) AS USC_INPUT
