@@ -15,7 +15,7 @@ const { ValueType } = require('realgrid');
 const qa = (base, text, showMode, pad = 0) => {
   let inner = [{ column: `${base}Qty` }, { column: `${base}Amt` }];
   for (let i = 0; i < pad; i++) {
-    inner = [{ name: `grp_${base}_lv${i}`, header: { text: '' }, direction: 'horizontal', items: inner }];
+    inner = [{ name: `grp_${base}_lv${i}`, header: { text: ' ' }, direction: 'horizontal', items: inner }];
   }
   const g = {
     name: `grp_${base}`,

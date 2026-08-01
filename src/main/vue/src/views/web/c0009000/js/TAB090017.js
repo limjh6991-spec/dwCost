@@ -37,7 +37,7 @@ const qaGroup = (base, text, showMode) => {
     header: { text },
     direction: 'horizontal',
     items: [
-      { name: `grp_${base}_lv`, header: { text: '' }, direction: 'horizontal', items: [{ column: `${base}Qty` }, { column: `${base}Amt` }] },
+      { name: `grp_${base}_lv`, header: { text: ' ' }, direction: 'horizontal', items: [{ column: `${base}Qty` }, { column: `${base}Amt` }] },
     ],
   };
   if (showMode) g.groupShowMode = showMode;
