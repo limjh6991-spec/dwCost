@@ -64,9 +64,13 @@
     nav{
         display:flex;
         align-items: center;
-        position: relative;
+        position: absolute; /* relative -> absolute로 변경하여 위치 정밀 제어 */
+        left: 220px;
+        top: 45px; /* 1단(45px) 하단 2단 영역에 절대 배치 */
+        height: 50px;
+        width: calc(100% - 440px); /* 좌우 여백 확보 */
         z-index: 100;
-        margin-top: 45px; /* 1단(45px) 하단으로 배치하여 로고와 수직 라인을 정확히 일치시킴 */
+        justify-content: center;
         &.on{
             background-color: #232f4e;
              border-bottom: 1px solid rgba(256, 256, 256, 0.1);
