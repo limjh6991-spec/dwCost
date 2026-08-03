@@ -93,8 +93,9 @@ BEGIN
      CAST(CASE WHEN b.OUT_QTY>0 THEN (b.BOH+b.[IN]-b.EOH-b.LOSS_AMT)/b.OUT_QTY ELSE b.UNIT_COST END AS numeric(24,12)),
      CAST(b.BOH+b.[IN]-b.EOH-b.LOSS_AMT AS numeric(18,2)),   -- OUT (원가보존)
      b.LOSS_AMT, 0, 0, b.ADJ_YN, 1,
-     b.DEF_RW_QTY, CAST(ROUND(b.DEF_RW_QTY*b.UNIT_COST,2) AS numeric(18,2)),
-     b.TRANSFER_IN_QTY, CAST(ROUND(b.TRANSFER_IN_QTY*b.UNIT_COST,2) AS numeric(18,2)),
+     -- [VN 260801] 재유입(불량RW) 금액 미반영: 당월 재작업이라 원가가 이미 투입에 포함 → 별도 가치 계상 시 이중계상. 수량만 보조표기(금액 0).
+     b.DEF_RW_QTY, CAST(0 AS numeric(18,2)),
+     b.TRANSFER_IN_QTY, CAST(0 AS numeric(18,2)),
      b.PL전_AMT, b.PL후_AMT, b.입고전_AMT   -- [1] 재공평가에서 확정된 공정별 재공금액 이어받기
   FROM base b;
   -- 검증 [2]: 원가보존 BOH+IN = OUT+EOH+LOSS
