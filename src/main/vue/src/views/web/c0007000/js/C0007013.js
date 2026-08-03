@@ -65,4 +65,15 @@ const grid = {
   ],
 };
 
+// 수량/금액 컬럼 합계 푸터 + 금액 소수점 2자리 (VN 자재투입정보)
+grid.columns.forEach((c) => {
+  const f = c.fieldName || '';
+  if (f.includes('금액') || f === '판매원가') {
+    c.numberFormat = '#,##0.00';
+    c.footer = { expression: 'sum', numberFormat: '#,##0.00' };
+  } else if (f.includes('수량')) {
+    c.footer = { expression: 'sum', numberFormat: '#,##0' };
+  }
+});
+
 module.exports = grid;

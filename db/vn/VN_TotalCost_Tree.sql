@@ -259,7 +259,7 @@ BEGIN
         IF OBJECT_ID('tempdb..#SKL_LAB') IS NOT NULL DROP TABLE #SKL_LAB;
         IF OBJECT_ID('tempdb..#SKL_EXP') IS NOT NULL DROP TABLE #SKL_EXP;
         IF OBJECT_ID('tempdb..#SKL_SGA') IS NOT NULL DROP TABLE #SKL_SGA;
-        SELECT N'12.'+RIGHT(N'0'+CAST(seq AS varchar(2)),2) tree_id, 15+seq rn,
+        SELECT N'12.'+RIGHT(N'0'+CAST(seq AS varchar(2)),2) tree_id, 16+seq rn,
                N'    ('+CAST(seq AS varchar(2))+N') '+item gubun, CAST(item AS nvarchar(200)) item, seq
         INTO #SKL_LAB
         FROM (VALUES (1,N'제)급여-직원'),(2,N'제)상여금'),(3,N'제)제수당'),(4,N'제)퇴직급여'),(5,N'제)주식보상비용'),(6,N'제)급여-사회보험료'),(7,N'제)급여-건강보험'),(8,N'제)급여-노동자실업보험료'),(9,N'제)급여-노동자노조비'),(10,N'제)급여-개인소득세'),(11,N'제)급여-기타')) v(seq,item);
@@ -287,8 +287,14 @@ BEGIN
             SELECT N'10.05', 6, N'    (3) 상품매출' UNION ALL
             SELECT N'10.06', 7, N'    (4) 기타매출' UNION ALL
             SELECT N'11', 8, N'  II. 재료비' UNION ALL
-            SELECT N'11.01', 9, N'    (1) 원재료비' UNION ALL
-            SELECT N'12', 15, N'  III. 노무비' UNION ALL
+            SELECT N'11.01', 9,  N'    (1) 원재료_원장' UNION ALL
+            SELECT N'11.02', 10, N'    (2) 원재료_카세트 부품' UNION ALL
+            SELECT N'11.03', 11, N'    (3) 원재료_PF' UNION ALL
+            SELECT N'11.04', 12, N'    (4) 원재료_PL' UNION ALL
+            SELECT N'11.05', 13, N'    (5) 원재료_약액' UNION ALL
+            SELECT N'11.06', 14, N'    (6) 부재료비 (6272)_TRAY' UNION ALL
+            SELECT N'11.07', 15, N'    (7) 부재료비 (6272)_기타' UNION ALL
+            SELECT N'12', 16, N'  III. 노무비' UNION ALL
             SELECT N'13', 30, N'  IV. 제조경비' UNION ALL
             SELECT N'14', 70, N'  V. 매출원가' UNION ALL
             SELECT N'14.01', 71, N'    (1) 제품매출원가' UNION ALL
@@ -444,17 +450,13 @@ BEGIN
               and out_amt != 0
         ),
         MAT_AGG AS (
-            -- II. 재료비 (VN: 단일 원재료비)
+            -- II. 재료비 (총액 유지). 세부(원재료 5분할+부재료비 TRAY/기타)는 골격만, 금액 0 — 로직 추후
             SELECT 8 rn, N'  II. 재료비' gubun, 구분, model, SUM(amt) amt
-            FROM MAT_BASE
-            GROUP BY 구분, model
-            UNION ALL
-            SELECT 9 rn, N'    (1) 원재료비' gubun, 구분, model, SUM(amt) amt
             FROM MAT_BASE
             GROUP BY 구분, model
           ),
         LABOR_BASE AS (
-         SELECT 15+총원가_순서 rn, N'    ('+CAST(총원가_순서 as varchar(1))+') '+b.상위계정과목 as gubun, a.구분, a.model,
+         SELECT 16+총원가_순서 rn, N'    ('+CAST(총원가_순서 as varchar(1))+') '+b.상위계정과목 as gubun, a.구분, a.model,
                    SUM(out_amt) AS amt
             FROM doi_stco a WITH(NOLOCK)
             LEFT JOIN (SELECT DISTINCT yyyymm, site, 계정과목, 계정코드 FROM doi_dept_cost) dc
@@ -470,10 +472,14 @@ BEGIN
             GROUP BY a.구분, a.model ,b.상위계정과목,b.총원가_순서
         ),  
         LABOR_AGG AS (
-            SELECT 15 rn, N'  III. 노무비' gubun, 구분, model,
-                   SUM(amt) AS amt
-            FROM LABOR_BASE 
-            GROUP BY 구분, model
+            -- III. 노무비 합계 = doi_stco 622 계정 전체 (상세 LABOR_ITEMS와 동일 소스로 정합)
+            SELECT 16 rn, N'  III. 노무비' gubun, a.구분, a.model, SUM(a.out_amt) AS amt
+            FROM doi_stco a WITH(NOLOCK)
+            JOIN (SELECT DISTINCT yyyymm,site,계정과목,계정코드 FROM doi_dept_cost) dc
+              ON dc.yyyymm=a.yyyymm AND dc.site=a.site AND dc.계정과목=a.acct_name
+            WHERE a.yyyymm=@YYYYMM AND a.site=@SITE AND a.sel_code=@SELCODE
+              AND LEFT(dc.계정코드,3)='622' AND a.out_amt<>0
+            GROUP BY a.구분, a.model
         ),
         EXP_BASE AS (
                  SELECT 22+총원가_순서 rn, N'    ('+CAST(총원가_순서 as varchar(2))+') '+b.상위계정과목 as gubun, a.구분, a.model,

@@ -13,32 +13,29 @@
 
 const { ValueType } = require('realgrid');
 
-// PFL전50%/PFL후90% × 수량/금액 (4열) 그룹. base -> baseBQty/baseBAmt(전), baseAQty/baseAAmt(후)
+
+// RealGrid는 같은 그룹 트리에 빈 spacer 노드가 있으면 빈 셀까지 병합해버린다.
+// 따라서 실제 데이터가 있는 헤더만 그룹에 남기고, 빈 여백은 아예 그룹 구조에서 제거한다.
 const pflGroup = (base, text, showMode) => {
   const g = {
     name: `grp_${base}`,
     header: { text },
     direction: 'horizontal',
     items: [
-      { name: `grp_${base}_b`, header: { text: 'PFL전 50%' }, direction: 'horizontal', items: [{ column: `${base}BQty` }, { column: `${base}BAmt` }] },
-      { name: `grp_${base}_a`, header: { text: 'PFL후 90%' }, direction: 'horizontal', items: [{ column: `${base}AQty` }, { column: `${base}AAmt` }] },
+      { name: `${base}_b`, header: { text: 'PFL전 50%' }, direction: 'horizontal', items: [{ column: `${base}BQty` }, { column: `${base}BAmt` }] },
+      { name: `${base}_a`, header: { text: 'PFL후 90%' }, direction: 'horizontal', items: [{ column: `${base}AQty` }, { column: `${base}AAmt` }] },
     ],
   };
   if (showMode) g.groupShowMode = showMode;
   return g;
 };
 
-// 수량/금액 (2열) 그룹. base -> baseQty/baseAmt
-// PFL(BOH/EOH)이 4단이므로, 스페이서 밴드를 넣어 수량/금액을 맨 아랫단(4단)에 정렬하고,
-// hideChildHeaders 로 스페이서 밴드 헤더를 숨겨 항목 라벨이 2·3단을 세로로 덮도록 한다.
 const qaGroup = (base, text, showMode) => {
   const g = {
     name: `grp_${base}`,
     header: { text },
     direction: 'horizontal',
-    items: [
-      { name: `grp_${base}_lv`, header: { text: '' }, direction: 'horizontal', items: [{ column: `${base}Qty` }, { column: `${base}Amt` }] },
-    ],
+    items: [{ column: `${base}Qty` }, { column: `${base}Amt` }],
   };
   if (showMode) g.groupShowMode = showMode;
   return g;
@@ -104,13 +101,13 @@ const grid = {
     edit: { editable: false },
     display: {
       columnMovable: false,
-      editItemMerging: true,
+      editItemMerging: false,
       fitStyle: 'even',
       emptyMessage: '조회된 데이터가 없습니다.',
       hscrollBar: true,
       showEmptyMessage: true,
       headerDepth: 4,
-      mergePolicy: 'auto',
+      mergePolicy: 'never',
     },
     footer: { visible: false },
     filtering: { enabled: false },

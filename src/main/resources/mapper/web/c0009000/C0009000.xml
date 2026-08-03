@@ -147,6 +147,12 @@
             SELECT TOP 0
                 CAST('' AS NVARCHAR(50)) AS MODEL,
                 CAST('' AS NVARCHAR(20)) AS DIVISION,
+                CAST(0 AS INT) AS BOH_LINE_WIP_B, CAST(0 AS INT) AS BOH_LINE_WIP_A,
+                CAST(0 AS INT) AS BOH_LINE_FGS_B, CAST(0 AS INT) AS BOH_LINE_FGS_A,
+                CAST(0 AS INT) AS BOH_A_SUB_B,    CAST(0 AS INT) AS BOH_A_SUB_A,
+                CAST(0 AS INT) AS BOH_B_WIP_B,    CAST(0 AS INT) AS BOH_B_WIP_A,
+                CAST(0 AS INT) AS BOH_B_FGS_B,    CAST(0 AS INT) AS BOH_B_FGS_A,
+                CAST(0 AS INT) AS BOH_B_SUB_B,    CAST(0 AS INT) AS BOH_B_SUB_A,
                 CAST(0 AS INT) AS T_BOH_B,  CAST(0 AS INT) AS T_BOH_A,
                 CAST(0 AS INT) AS USC_INPUT,
                 CAST(0 AS INT) AS IN_CODE,  CAST(0 AS INT) AS IN_RESORT, CAST(0 AS INT) AS IN_REWORK,
