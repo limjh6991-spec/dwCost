@@ -17,7 +17,7 @@
     <template #tab-content-TAB090014>
       <TAB090014 />
     </template>
-    <!-- Tab 5 월별 집계(수량_VN) : 제품 수불부 (VINA 전용) -->
+    <!-- Tab 5 월별 집계(수량_VN) : 생산 수불 (VINA 전용) -->
     <template #tab-content-TAB090015>
       <TAB090015 />
     </template>

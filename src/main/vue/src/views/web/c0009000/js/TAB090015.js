@@ -7,7 +7,7 @@
  * 데이터 프로시저 기대 컬럼(예): T_BOH_B/T_BOH_A, USC_INPUT, IN_CODE ... TOTAL_EOH_B/TOTAL_EOH_A
  */
 
-const NUM = { numberFormat: '#,##0', styleName: 'right-column', footer: { expression: 'sum', numberFormat: '#,##0' } };
+const NUM = { numberFormat: '#,##0', styleName: 'tr', footer: { expression: 'sum', numberFormat: '#,##0' } };
 const numCol = (name, text, extra = {}) => ({ name, fieldName: name, type: 'data', width: '90', header: { text }, ...NUM, ...extra });
 
 // PFL전/후 2열 헤더 그룹 (base: tBoh → tBohB/tBohA)
@@ -158,9 +158,12 @@ const tab090015GridField = {
   ],
   options: {
     edit: { editable: false },
-    display: { fitStyle: 'evenFill' },
+    display: { fitStyle: 'even' },
     footer: { visible: true },
     header: { height: 60 },
+    fixed: { colCount: 2 },    
+    emptyMessage: '조회된 데이터가 없습니다.',    
+    hscrollBar: true,
   },
 };
 
