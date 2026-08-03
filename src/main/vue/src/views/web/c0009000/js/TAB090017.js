@@ -76,6 +76,7 @@ const OUT_ETC = [
   ['outSemiFree', '3. 반제품 출고(무상)'],
   ['outEtc', '4. 기타'],
 ];
+const OUT_TOTAL = ['outTotal', '기타출고 (5=1+2+3+4)'];
 
 // ===== 필드/컬럼 생성 =====
 const pflFields = (base) => ([
@@ -93,8 +94,8 @@ const numCol = (name) => ({ name, fieldName: name, width: 70, header: { text: /A
 const pflCols = (base) => ([numCol(`${base}BQty`), numCol(`${base}BAmt`), numCol(`${base}AQty`), numCol(`${base}AAmt`)]);
 const qaCols = (base) => ([numCol(`${base}Qty`), numCol(`${base}Amt`)]);
 
-const ALL_PFL = [...BOH, BOH_TOTAL, ...EOH, EOH_TOTAL];
-const ALL_QA = [['uscInput'], ...IN_ETC, ['inTotal'], ['outputA'], ...OUT_ETC, ['outTotal'], ['loss']];
+const ALL_PFL = [...BOH, BOH_TOTAL, ...OUT_ETC, OUT_TOTAL, ...EOH, EOH_TOTAL];
+const ALL_QA = [['uscInput'], ...IN_ETC, ['inTotal'], ['outputA'], ['loss']];
 
 const grid = {
   options: {
@@ -168,8 +169,8 @@ const grid = {
       expandable: true,
       expanded: false,
       items: [
-        ...OUT_ETC.map(([b, t]) => qaGroup(b, t, 'expand')),
-        qaGroup('outTotal', '기타출고 (5=1+2+3+4)', 'always'),
+        ...OUT_ETC.map(([b, t]) => pflGroup(b, t, 'expand')),
+        pflGroup(OUT_TOTAL[0], OUT_TOTAL[1], 'always'),
       ],
     },
     // LOSS

@@ -68,7 +68,6 @@ const grid = {
     // 기타출고
     { fieldName: 'oeResorting', dataType: ValueType.NUMBER },
     { fieldName: 'oeRework', dataType: ValueType.NUMBER },
-    { fieldName: 'oeRma', dataType: ValueType.NUMBER },
     { fieldName: 'oeFreeSale', dataType: ValueType.NUMBER },
     { fieldName: 'oeOther', dataType: ValueType.NUMBER },
     { fieldName: 'oeTotal', dataType: ValueType.NUMBER },
@@ -99,9 +98,8 @@ const grid = {
     numCol('tOutput', 'tOutput', 'T_OUTPUT', 110),
     numCol('oeResorting', 'oeResorting', '1. Re-Sorting\n(재검사)', 120),
     numCol('oeRework', 'oeRework', '2. Re-work\n(SI검사)', 120),
-    numCol('oeRma', 'oeRma', '3. RMA'),
-    numCol('oeFreeSale', 'oeFreeSale', '4. 무상반출', 100),
-    numCol('oeOther', 'oeOther', '5. 기타'),
+    numCol('oeFreeSale', 'oeFreeSale', '3. 무상반출', 100),
+    numCol('oeOther', 'oeOther', '4. 기타'),
     numCol('oeTotal', 'oeTotal', '기타출고', 130),
     numCol('loss', 'loss', 'LOSS'),
     numCol('eoh', 'eoh', 'EOH\nWH0006', 110),
@@ -177,7 +175,6 @@ const grid = {
       items: [
         { column: 'oeResorting', groupShowMode: 'expand' },
         { column: 'oeRework', groupShowMode: 'expand' },
-        { column: 'oeRma', groupShowMode: 'expand' },
         { column: 'oeFreeSale', groupShowMode: 'expand' },
         { column: 'oeOther', groupShowMode: 'expand' },
         { column: 'oeTotal', groupShowMode: 'always' },
