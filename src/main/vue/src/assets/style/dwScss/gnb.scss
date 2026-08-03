@@ -6,7 +6,7 @@
     position: relative;
     z-index: 100;
     background:#2b94a5;
-    height: 75px; /* 50px -> 75px로 변경 */
+    height: 95px; /* 75px -> 95px로 변경 */
     &.on{
         .cur_time{
             display: none!important;
@@ -15,7 +15,7 @@
     .logo{
         position: absolute;
         left:10px;
-        top:35px; /* 15px -> 35px로 변경 (하단 50px 영역의 센터) */
+        top:56px; /* 2단 영역의 중앙 정렬 (45px + 11px) */
         h1{
             text-indent: -1000px;
             background: url('@assets/images/logo1.png') no-repeat;
@@ -27,55 +27,27 @@
         }
     }
     .user_info{
-        height: 25px; /* 50px -> 25px로 변경 */
+        height: 45px; /* 25px -> 45px로 복원 */
         position: absolute;
         right: 10px;
-        top: 2px; /* 상단 2px 지점 배치 */
+        top: 0px; /* 상단 1단 영역 */
         display: flex;
         align-items: center;
         z-index: 1000;
         justify-items: center;
 
-        .lang-site-select {
-            display: inline-flex;
-            align-items: center;
-            margin-right: 10px;
-            .label {
-                font-size: 11px;
-                color: rgba(255, 255, 255, 0.8);
-                margin-right: 4px;
-                white-space: nowrap;
-            }
-            .mini-select {
-                height: 20px;
-                background-color: rgba(255, 255, 255, 0.15);
-                color: #fff;
-                border: 1px solid rgba(255, 255, 255, 0.25);
-                border-radius: 3px;
-                font-size: 11px;
-                padding: 0 4px;
-                outline: none;
-                cursor: pointer;
-                
-                option {
-                    background-color: #232f4e;
-                    color: #fff;
-                }
-            }
-        }
-
         .logid{
-            font-size: 11px; /* 14px -> 11px */
+            font-size: 14px; /* 11px -> 14px로 복원 */
             color:#fff;
             margin-right: 8px;
         }
         .logout{
             color: transparent;
             background: url('@assets/images/log_out.png') no-repeat;
-            width: 18px; /* 24px -> 18px */
-            height: 18px; /* 24px -> 18px */
+            width: 24px; /* 18px -> 24px로 복원 */
+            height: 24px; /* 18px -> 24px로 복원 */
             background-size: contain !important;
-            margin-left:2px ;
+            margin-left:5px ;
             cursor: pointer;
         }
         .cur_time{
@@ -94,7 +66,7 @@
         align-items: center;
         position: relative;
         z-index: 100;
-        margin-top: 25px; /* 75px 높이에 맞게 하단 50px 영역으로 마진 추가 */
+        margin-top: 45px; /* 1단(45px) 하단으로 배치하여 로고와 수직 라인을 정확히 일치시킴 */
         &.on{
             background-color: #232f4e;
              border-bottom: 1px solid rgba(256, 256, 256, 0.1);
@@ -307,7 +279,7 @@
         border-top: 1px solid#324166;
         position: absolute;
         left: 0;
-        top: 73px; /* 48px -> 73px로 변경 */
+        top: 93px; /* GNB 높이 95px 확장에 맞춰 93px로 변경 */
         width: 100%;
         height: 0;
         pointer-events: none;

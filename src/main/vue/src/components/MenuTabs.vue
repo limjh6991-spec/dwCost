@@ -76,18 +76,19 @@
 
     </nav>
     <div class="user_info dw_mes">
-      <div class="lang-site-select">
-          <span class="label">{{ $trans("사이트") }}:</span>
-          <select class="mini-select" v-model="selectdProdCtg" @change="onProdCtgChange">
+      <!-- <div class="cur_time"><i class="bi bi-alarm"></i><span>{{curDateStr}}</span></div> -->
+      <div class="form-floating">
+          <select class="form-select label-60 " id="floatingSelect" aria-label="Floating label select example" v-model="selectdProdCtg" @change="onProdCtgChange">
               <option v-for="(pc,index) in prodCtgList" :value="pc.prodCategory" :key="index">{{pc.prodCategory==="HQ"? $trans("본사") : "VINA"}}</option>
           </select>
+          <label for="floatingSelect" class="select">{{ $trans("사이트") }}:</label>
       </div>
-      <div class="lang-site-select" v-if="selectdProdCtg === 'VN'">
-          <span class="label">{{ $trans("언어") }}:</span>
-          <select class="mini-select" v-model="selectedLocale" @change="onLocaleChange">
+      <div class="form-floating" v-if="selectdProdCtg === 'VN'" style="margin-left: 5px; margin-right: 5px;">
+          <select class="form-select label-60 " id="floatingLangSelect" aria-label="Language select" v-model="selectedLocale" @change="onLocaleChange">
               <option value="ko">한국어</option>
               <option value="vi">Tiếng Việt</option>
           </select>
+          <label for="floatingLangSelect" class="select">{{ $trans("언어") }}:</label>
       </div>
 
       <div class="logid">{{userAuthInfo.userInfo.useName}}</div>
@@ -168,12 +169,12 @@ export default {
       return {
         height: `${this.depthBgHeight}px`,
         opacity: this.opacity,
-        top: '73px'
+        top: '93px'
       };
     },
     closeBtnStyle(){
       return {
-        top: `${this.depthBgHeight - 5 == -5 ? -30 : this.depthBgHeight + 25}px`,
+        top: `${this.depthBgHeight - 5 == -5 ? -30 : this.depthBgHeight + 45}px`,
         opacity: this.opacity,
         
       };
