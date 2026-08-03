@@ -94,8 +94,8 @@ const numCol = (name) => ({ name, fieldName: name, width: 70, header: { text: /A
 const pflCols = (base) => ([numCol(`${base}BQty`), numCol(`${base}BAmt`), numCol(`${base}AQty`), numCol(`${base}AAmt`)]);
 const qaCols = (base) => ([numCol(`${base}Qty`), numCol(`${base}Amt`)]);
 
-const ALL_PFL = [...BOH, BOH_TOTAL, ...OUT_ETC, OUT_TOTAL, ...EOH, EOH_TOTAL];
-const ALL_QA = [['uscInput'], ...IN_ETC, ['inTotal'], ['outputA'], ['loss']];
+const ALL_PFL = [...BOH, BOH_TOTAL, ...OUT_ETC, OUT_TOTAL, ['loss', 'LOSS(SCRAP)'], ...EOH, EOH_TOTAL];
+const ALL_QA = [['uscInput'], ...IN_ETC, ['inTotal'], ['outputA']];
 
 const grid = {
   options: {
@@ -174,7 +174,7 @@ const grid = {
       ],
     },
     // LOSS
-    { name: 'grpLoss', header: { text: 'LOSS / SCRAP' }, direction: 'horizontal', items: [qaGroup('loss', 'LOSS(SCRAP)')] },
+    { name: 'grpLoss', header: { text: 'LOSS / SCRAP' }, direction: 'horizontal', items: [pflGroup('loss', 'LOSS(SCRAP)')] },
     // 재고 / EOH (expandable)
     {
       name: 'grpEoh',
