@@ -40,6 +40,7 @@ BEGIN
         , CAST(0 AS decimal(18,2))         AS IE_TOTAL
         -- OUTPUT
         , CAST(0 AS decimal(18,2))         AS SHIP_A_PAID
+        , CAST(0 AS decimal(18,2))         AS SHIP_A_FREE
         , CAST(0 AS decimal(18,2))         AS SHIP_B_PAID
         , SUM(ISNULL(OUT,0))               AS T_OUTPUT
         -- 기타출고

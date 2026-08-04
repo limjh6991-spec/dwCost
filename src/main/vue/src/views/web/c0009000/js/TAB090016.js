@@ -47,6 +47,7 @@ const BASES = [
   ['ieOther', '4. 기타'],
   ['ieTotal', '기타입고'],
   ['shipAPaid', 'SHIP(A급) PAID'],
+  ['shipAFree', 'SHIP(A급) FREE'],
   ['shipBPaid', 'SHIP(B급) PAID'],
   ['tOutput', 'T_OUTPUT'],
   ['oeResorting', '1. Re-Sorting(재검사)'],
@@ -150,9 +151,9 @@ const grid = {
       expandable: true,
       expanded: false,
       items: [
-        qa('shipAPaid', 'SHIP(A급) PAID', 'expand'),
-        qa('shipBPaid', 'SHIP(B급) PAID', 'expand'),
-        qa('tOutput', 'T_OUTPUT (3=1+2)', 'always'),
+        { name: 'grpShipA', header: { text: 'SHIP (A급)' }, direction: 'horizontal', groupShowMode: 'expand', items: [qa('shipAPaid', 'PAID (유상)'), qa('shipAFree', 'FREE (무상)')] },
+        { name: 'grpShipB', header: { text: 'SHIP (B급)' }, direction: 'horizontal', groupShowMode: 'expand', items: [qa('shipBPaid', 'PAID')] },
+        qa('tOutput', 'T_OUTPUT (4=1+2+3)', 'always'),
       ],
     },
     // 기타출고 (expandable)

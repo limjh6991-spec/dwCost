@@ -63,6 +63,7 @@ const grid = {
     { fieldName: 'ieTotal', dataType: ValueType.NUMBER },
     // OUTPUT
     { fieldName: 'shipAPaid', dataType: ValueType.NUMBER },
+    { fieldName: 'shipAFree', dataType: ValueType.NUMBER },
     { fieldName: 'shipBPaid', dataType: ValueType.NUMBER },
     { fieldName: 'tOutput', dataType: ValueType.NUMBER },
     // 기타출고
@@ -93,7 +94,8 @@ const grid = {
     numCol('ieReturnFree', 'ieReturnFree', '3. 반제품(무상)', 100),
     numCol('ieOther', 'ieOther', '4. 기타'),
     numCol('ieTotal', 'ieTotal', '기타입고', 120),
-    numCol('shipAPaid', 'shipAPaid', 'PAID',150),
+    numCol('shipAPaid', 'shipAPaid', 'PAID (유상)',150),
+    numCol('shipAFree', 'shipAFree', 'FREE (무상)',150),
     numCol('shipBPaid', 'shipBPaid', 'PAID',150),
     numCol('tOutput', 'tOutput', 'T_OUTPUT', 110),
     numCol('oeResorting', 'oeResorting', '1. Re-Sorting\n(재검사)', 120),
@@ -161,7 +163,7 @@ const grid = {
       expandable: true,
       expanded: false,
       items: [
-        { name: 'grpShipA', header: { text: 'SHIP(A급)' }, direction: 'horizontal', groupShowMode: 'expand', items: [{ column: 'shipAPaid' }] },
+        { name: 'grpShipA', header: { text: 'SHIP(A급)' }, direction: 'horizontal', groupShowMode: 'expand', items: [{ column: 'shipAPaid' }, { column: 'shipAFree' }] },
         { name: 'grpShipB', header: { text: 'SHIP(B급)' }, direction: 'horizontal', groupShowMode: 'expand', items: [{ column: 'shipBPaid' }] },
         { column: 'tOutput', groupShowMode: 'always' },
       ],
