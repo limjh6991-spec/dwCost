@@ -139,9 +139,22 @@ export default {
       this.wipCostGrid = _.cloneDeep(gridField);
     },
     searchClick() { this.getDataList(); },
+    // 합계 행 색상 강조 (기존 비-VN 제조원가/매출원가 TAB090006/007 방식 동일)
+    applyRowStyle(gv) {
+      if (!gv || typeof gv.setRowStyleCallback !== 'function') return;
+      gv.setRowStyleCallback((grid, item) => {
+        const itemIndex = item?.itemIndex ?? item?.index ?? item?.dataRow;
+        if (itemIndex == null || itemIndex < 0) return null;
+        const m = String(grid.getValue(itemIndex, 'model') ?? '');
+        if (m === '월합계') return { style: { background: '#fff3cd', fontWeight: 'bold' } };
+        if (m === '총합계') return { style: { background: '#e8f4f8', fontWeight: 'bold' } };
+        return null;
+      });
+    },
     async getDataList() {
       const gv = this.gridView;
       if (gv) gv.commit();
+      this.applyRowStyle(gv);
       const yyyy = this.params.year ? String(this.params.year) : '';
       const yyyymm = this.params.month ? `${yyyy}${this.params.month}` : '';
       this.params.yyyymm = yyyymm || null;

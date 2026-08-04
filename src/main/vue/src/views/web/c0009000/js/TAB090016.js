@@ -71,12 +71,6 @@ const grid = {
       showEmptyMessage: true,
       headerDepth: 4,
       mergePolicy: 'never',
-      rowStyleCallback: function (grid, item) {
-        const m = grid.getValue(item.index, 'model');
-        if (m === '월합계') return { background: '#fff3cd', fontBold: true };
-        if (m === '총합계') return { background: '#e8f4f8', fontBold: true };
-        return null;
-      },
     },
     footer: { visible: false },
     filtering: { enabled: false },
