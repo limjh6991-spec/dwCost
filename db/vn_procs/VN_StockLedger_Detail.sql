@@ -2,7 +2,7 @@
  * VN_StockLedger_Detail  (제품 수불부 VN / C0009002 VN 탭)
  *   원천 DOI_VN_STOCK_RESC (도우코드 그레인, 완제품창고 WH0006 수불 수량 단일값).
  *   표시=모델(=도우코드)/구분(division). 컬럼 별칭은 프론트 CamelMap(fgLastMonth 등)과 매칭.
- *   OUTPUT SHIP(A급)은 PAID(유상)=OUT_SHIP_A, FREE(무상)=0(원천 미분리).
+ *   OUTPUT SHIP(A급)은 PAID(유상)=OUT_SHIP_A_PAID, FREE(무상)=OUT_SHIP_A_FREE.
  */
 CREATE OR ALTER PROCEDURE VN_StockLedger_Detail
 (
@@ -36,8 +36,8 @@ BEGIN
             , ETCIN_ETC       AS IE_OTHER
             , ETCIN_TOTAL     AS IE_TOTAL
             -- OUTPUT (SHIP A급: PAID(유상)/FREE(무상))
-            , OUT_SHIP_A AS SHIP_A_PAID
-            , CAST(0 AS decimal(18,2)) AS SHIP_A_FREE
+            , OUT_SHIP_A_PAID AS SHIP_A_PAID
+            , OUT_SHIP_A_FREE AS SHIP_A_FREE
             , OUT_SHIP_B AS SHIP_B_PAID
             , T_OUTPUT AS T_OUTPUT
             -- 기타출고

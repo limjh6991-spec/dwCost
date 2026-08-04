@@ -2,7 +2,7 @@
  * VN_ProductCostLedger_Subul  (매출원가(제품)_VN / C0009007 TAB090016)
  *   원천 DOI_VN_STCO (도우코드 × 계정 그레인). 도우코드로 집계: 수량=MAX(반복), 금액=SUM.
  *   표시=모델(=도우코드)/구분(division). 컬럼 별칭은 프론트 CamelMap(fgLastMonth 등)과 매칭.
- *   OUTPUT SHIP(A급)은 PAID(유상)=OUT_SHIP_A, FREE(무상)=0(원천 미분리). 기타출고 RMA 없음.
+ *   OUTPUT SHIP(A급)은 PAID(유상)=OUT_SHIP_A_PAID, FREE(무상)=OUT_SHIP_A_FREE. 기타출고 RMA 없음.
  */
 CREATE OR ALTER PROCEDURE VN_ProductCostLedger_Subul
 ( @YYYY VARCHAR(4)=NULL, @YYYYMM VARCHAR(6)=NULL, @SITE VARCHAR(4)=NULL, @SEL_CODE VARCHAR(10)='ACTUAL' )
@@ -28,7 +28,8 @@ BEGIN
                 MAX(ISNULL(ETCIN_SEMI_FREE_QTY,0)) isfQ, SUM(ISNULL(ETCIN_SEMI_FREE_AMT,0)) isfA,
                 MAX(ISNULL(ETCIN_ETC_QTY,0)) ioQ, SUM(ISNULL(ETCIN_ETC_AMT,0)) ioA,
                 MAX(ISNULL(ETCIN_TOTAL_QTY,0)) itQ, SUM(ISNULL(ETCIN_TOTAL_AMT,0)) itA,
-                MAX(ISNULL(OUT_SHIP_A_QTY,0)) saQ, SUM(ISNULL(OUT_SHIP_A_AMT,0)) saA,
+                MAX(ISNULL(OUT_SHIP_A_PAID_QTY,0)) saQ, SUM(ISNULL(OUT_SHIP_A_PAID_AMT,0)) saA,
+                MAX(ISNULL(OUT_SHIP_A_FREE_QTY,0)) safQ, SUM(ISNULL(OUT_SHIP_A_FREE_AMT,0)) safA,
                 MAX(ISNULL(OUT_SHIP_B_QTY,0)) sbQ, SUM(ISNULL(OUT_SHIP_B_AMT,0)) sbA,
                 MAX(ISNULL(T_OUTPUT_QTY,0)) toQ, SUM(ISNULL(T_OUTPUT_AMT,0)) toA,
                 MAX(ISNULL(ETCOUT_RESORT_QTY,0)) orsQ, SUM(ISNULL(ETCOUT_RESORT_AMT,0)) orsA,
@@ -63,7 +64,7 @@ BEGIN
             , ioQ AS IE_OTHER_QTY, ioA AS IE_OTHER_AMT
             , itQ AS IE_TOTAL_QTY, itA AS IE_TOTAL_AMT
             , saQ AS SHIP_A_PAID_QTY, saA AS SHIP_A_PAID_AMT
-            , CAST(0 AS DECIMAL(18,2)) AS SHIP_A_FREE_QTY, CAST(0 AS DECIMAL(18,2)) AS SHIP_A_FREE_AMT
+            , safQ AS SHIP_A_FREE_QTY, safA AS SHIP_A_FREE_AMT
             , sbQ AS SHIP_B_PAID_QTY, sbA AS SHIP_B_PAID_AMT
             , toQ AS T_OUTPUT_QTY, toA AS T_OUTPUT_AMT
             , orsQ AS OE_RESORTING_QTY, orsA AS OE_RESORTING_AMT
