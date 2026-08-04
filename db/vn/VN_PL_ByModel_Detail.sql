@@ -114,9 +114,10 @@ BEGIN
 		SELECT @NonOpCost = COALESCE(SUM(차변금액),0) FROM DOI_DEPT_COST WITH(NOLOCK) WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SEL_CODE AND LEFT(계정코드,3)=N'811';
 		SELECT @CorpTax   = COALESCE(SUM(차변금액),0) FROM DOI_DEPT_COST WITH(NOLOCK) WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SEL_CODE AND LEFT(계정코드,3)=N'821';
 		-- 재고흐름(회사 전체 doi_stco) — 기초/당기제조/타계정/기말 총합계 정확화용
-		DECLARE @BOH_T DECIMAL(18,2)=0, @IN_T DECIMAL(18,2)=0, @OUTETC_T DECIMAL(18,2)=0, @EOH_T DECIMAL(18,2)=0;
+		DECLARE @BOH_T DECIMAL(18,2)=0, @IN_T DECIMAL(18,2)=0, @OUTETC_T DECIMAL(18,2)=0, @EOH_T DECIMAL(18,2)=0, @ETCIN_T DECIMAL(18,2)=0;
 		SELECT @BOH_T=COALESCE(SUM(BOH_AMT),0), @IN_T=COALESCE(SUM(IN_AMT),0),
-		       @OUTETC_T=COALESCE(SUM(OUTETC_AMT),0), @EOH_T=COALESCE(SUM(EOH_AMT),0)
+		       @OUTETC_T=COALESCE(SUM(OUTETC_AMT),0), @EOH_T=COALESCE(SUM(EOH_AMT),0),
+		       @ETCIN_T=COALESCE(SUM(ETCIN_TOTAL_AMT),0)  -- 타계정에서(기타입고) 총합계 = 매출원가(제품)VN 기타입고
 		FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, T_INPUT_AMT AS IN_AMT, EOH_WH0006_AMT AS EOH_AMT, ETCOUT_TOTAL_AMT AS OUTETC_AMT, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) X WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SEL_CODE AND COST_TYPE<>'LOSS';
 		-- 기타매출 = DOI_DEPT_COST 계정코드 5118000 대변금액 합 (회사 전체 → 총합계 전용)
 		DECLARE @EtcSale DECIMAL(18,2)=0;
@@ -276,6 +277,8 @@ BEGIN
 		        , CAST(NULL AS DECIMAL(18,2)) AS trans_out_amt
 		        , SUM(ISNULL(S.EOH_AMT, 0)) AS end_fg_amt
 		        , SUM(S.out_amt) AS prod_cogs_amt --select *
+		        , SUM(ISNULL(S.ETCIN_TOTAL_AMT,0)) AS etcin_amt   -- 타계정에서(기타입고)
+		        , SUM(ISNULL(S.OUTETC_AMT,0))      AS etcout_amt  -- 타계정으로(기타출고)
 		    FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, T_INPUT_AMT AS IN_AMT, EOH_WH0006_AMT AS EOH_AMT, ETCOUT_TOTAL_AMT AS OUTETC_AMT, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) S
 		    WHERE S.YYYYMM   = @YYYYMM
 		      AND S.SITE     = @SITE
@@ -313,6 +316,8 @@ BEGIN
 		        , ISNULL(MCA.merch_cogs_amt,0) AS merch_cogs_amt
 		        , CAST(NULL AS DECIMAL(18,2)) AS merch_purchase_amt
 		        , S.prod_cogs_amt
+		        , S.etcin_amt
+		        , S.etcout_amt
 		    FROM STCO_BASE S
 		    LEFT JOIN MERCH_COGS_ALLOC MCA
 		      ON MCA.구분  = S.구분   
@@ -331,6 +336,8 @@ BEGIN
 		        , ISNULL(MCA.merch_cogs_amt,0) AS merch_cogs_amt
 		        , CAST(NULL AS DECIMAL(18,2)) AS merch_purchase_amt
 		        , CAST(0 AS DECIMAL(18,2)) AS prod_cogs_amt
+		        , CAST(0 AS DECIMAL(18,2)) AS etcin_amt
+		        , CAST(0 AS DECIMAL(18,2)) AS etcout_amt
 		    FROM MERCH_COGS_ALLOC MCA
 		    WHERE NOT EXISTS (
 		        SELECT 1
@@ -471,11 +478,13 @@ BEGIN
             SELECT 1103, N'      2. 당기제품제조원가', M.구분, M.model, ISNULL(C.cur_mfg_cost_amt,0)
             FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model=M.model AND C.구분=M.구분
             UNION ALL
-            SELECT 1104, N'      3. 타계정으로제품대체액', M.구분, M.model,
-                   -( ISNULL(C.begin_fg_amt,0)+ISNULL(C.cur_mfg_cost_amt,0)-ISNULL(C.end_fg_amt,0)-ISNULL(C.prod_cogs_amt,0) )
+            SELECT 1104, N'      3. 타계정에서제품대체액', M.구분, M.model, ISNULL(C.etcin_amt,0)
             FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model=M.model AND C.구분=M.구분
             UNION ALL
-            SELECT 1105, N'      4. 기말제품재고액', M.구분, M.model, -ISNULL(C.end_fg_amt,0)
+            SELECT 1105, N'      4. 타계정으로제품대체액', M.구분, M.model, -ISNULL(C.etcout_amt,0)
+            FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model=M.model AND C.구분=M.구분
+            UNION ALL
+            SELECT 1106, N'      5. 기말제품재고액', M.구분, M.model, -ISNULL(C.end_fg_amt,0)
             FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model=M.model AND C.구분=M.구분
 
             ------------------------------------------------------------------
@@ -636,11 +645,12 @@ BEGIN
 		WHERE model = N'Z합계'
 		  AND rn = 141;
 
-		-- 재고흐름 4항목: 총합계는 회사 전체 doi_stco 잔액으로 (모델별 컬럼은 출고발생 모델 커버분)
+		-- 재고흐름 5항목: 총합계는 회사 전체 doi_stco 잔액으로 (모델별 컬럼은 출고발생 모델 커버분)
 		UPDATE #sourceTable SET amt = @BOH_T     WHERE model=N'Z합계' AND rn=1102;   -- 기초제품재고액
 		UPDATE #sourceTable SET amt = @IN_T      WHERE model=N'Z합계' AND rn=1103;   -- 당기제품제조원가
-		UPDATE #sourceTable SET amt = -@OUTETC_T WHERE model=N'Z합계' AND rn=1104;   -- 타계정으로제품대체액
-		UPDATE #sourceTable SET amt = -@EOH_T    WHERE model=N'Z합계' AND rn=1105;   -- 기말제품재고액
+		UPDATE #sourceTable SET amt = @ETCIN_T   WHERE model=N'Z합계' AND rn=1104;   -- 타계정에서제품대체액(기타입고)
+		UPDATE #sourceTable SET amt = -@OUTETC_T WHERE model=N'Z합계' AND rn=1105;   -- 타계정으로제품대체액(기타출고)
+		UPDATE #sourceTable SET amt = -@EOH_T    WHERE model=N'Z합계' AND rn=1106;   -- 기말제품재고액
 
 		-- (3) 기타매출 = 5118000 대변합 (총합계 전용) → 매출액/순매출액/매출이익/영업이익에 가산
 		UPDATE #sourceTable SET amt = @EtcSale                     WHERE model=N'Z합계' AND rn IN (103,104);
