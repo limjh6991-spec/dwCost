@@ -70,7 +70,7 @@ BEGIN
 		            ELSE N'개발'
 		          END AS 구분
 		        , A.품번
-		        , CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END AS model
+		        , CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN A.품번 ELSE A.품명 END AS model
 		        , N'국내' AS 매출구분
 		        , CASE WHEN MI.품번 IS NOT NULL THEN N'상품' ELSE N'제품' END AS 매출대분류
 		        , CAST(A.원화판매금액 AS DECIMAL(18,2)) AS amt
@@ -91,7 +91,7 @@ BEGIN
 		            ELSE N'개발'
 		          END AS 구분
 		        , B.품번
-		        , CASE WHEN @SITE = N'VN' AND LEN(B.품번) > 1 THEN LEFT(B.품번, LEN(B.품번) - 1) ELSE B.품명 END AS model
+		        , CASE WHEN @SITE = N'VN' AND LEN(B.품번) > 1 THEN B.품번 ELSE B.품명 END AS model
 		        , N'해외' AS 매출구분
 		        , CASE WHEN MI.품번 IS NOT NULL THEN N'상품' ELSE N'제품' END AS 매출대분류
 		        , CAST(B.원화판매금액 AS DECIMAL(18,2)) AS amt
@@ -346,7 +346,7 @@ BEGIN
 		              WHEN RIGHT(A.품번, 1) = 'P' THEN N'양산'
 		              ELSE N'개발'
 		          END AS 구분
-		        , CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END AS model
+		        , CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN A.품번 ELSE A.품명 END AS model
 		        , SUM(A.수량) AS qty
 		    FROM (
                 SELECT YYYYMM, SITE, 품번, 품명, 수량 FROM DOI_SALE_RESC WHERE YYYYMM = @YYYYMM AND SITE = @SITE
@@ -361,7 +361,7 @@ BEGIN
                     WHEN RIGHT(A.품번, 1) = 'P' THEN N'양산'
                     ELSE N'개발'
                 END,
-                CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END
+                CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN A.품번 ELSE A.품명 END
 		),
 		QTY_FACT AS (
 		    SELECT
@@ -380,7 +380,7 @@ BEGIN
 		              WHEN RIGHT(A.품번, 1) = 'P' THEN N'양산'
 		              ELSE N'개발'
 		          END AS 구분
-		        , CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END AS model
+		        , CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN A.품번 ELSE A.품명 END AS model
 		        , SUM(A.매출금액) AS sale_amt
 		        , SUM(A.수량)     AS qty
 		    FROM (
@@ -396,7 +396,7 @@ BEGIN
 		            WHEN RIGHT(A.품번, 1) = 'P' THEN N'양산'
 		            ELSE N'개발'
 		        END,
-		        CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END
+		        CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN A.품번 ELSE A.품명 END
 		),
 		PRICE_FACT AS (
 		    SELECT
@@ -439,7 +439,7 @@ BEGIN
 		MAT_BASE AS (
             SELECT
             	구분
-                , model    
+                , 도우코드 AS model    
                 , acct_name
                 , out_amt AS amt --select distinct acct_name
    FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) doi_stco
@@ -456,7 +456,7 @@ BEGIN
             GROUP BY 구분, model
           ),
         LABOR_BASE AS (
-         SELECT 16+총원가_순서 rn, N'    ('+CAST(총원가_순서 as varchar(1))+') '+b.상위계정과목 as gubun, a.구분, a.model,
+         SELECT 16+총원가_순서 rn, N'    ('+CAST(총원가_순서 as varchar(1))+') '+b.상위계정과목 as gubun, a.구분, a.도우코드 AS model,
                    SUM(out_amt) AS amt
             FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) a
             LEFT JOIN (SELECT DISTINCT yyyymm, site, 계정과목, 계정코드 FROM doi_dept_cost) dc
@@ -469,20 +469,20 @@ BEGIN
               AND a.site   = @SITE
               AND a.sel_code = @SELCODE
               AND b.상위계정과목 in ('제)임원급여','제)직원급여', '제)상여금', '제)제수당', '제)퇴직급여', '제)주식보상비용')
-            GROUP BY a.구분, a.model ,b.상위계정과목,b.총원가_순서
+            GROUP BY a.구분, a.도우코드 ,b.상위계정과목,b.총원가_순서
         ),  
         LABOR_AGG AS (
             -- III. 노무비 합계 = doi_stco 622 계정 전체 (상세 LABOR_ITEMS와 동일 소스로 정합)
-            SELECT 16 rn, N'  III. 노무비' gubun, a.구분, a.model, SUM(a.out_amt) AS amt
+            SELECT 16 rn, N'  III. 노무비' gubun, a.구분, a.도우코드 AS model, SUM(a.out_amt) AS amt
             FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) a
             JOIN (SELECT DISTINCT yyyymm,site,계정과목,계정코드 FROM doi_dept_cost) dc
               ON dc.yyyymm=a.yyyymm AND dc.site=a.site AND dc.계정과목=a.acct_name
             WHERE a.yyyymm=@YYYYMM AND a.site=@SITE AND a.sel_code=@SELCODE
               AND LEFT(dc.계정코드,3)='622' AND a.out_amt<>0
-            GROUP BY a.구분, a.model
+            GROUP BY a.구분, a.도우코드
         ),
         EXP_BASE AS (
-                 SELECT 22+총원가_순서 rn, N'    ('+CAST(총원가_순서 as varchar(2))+') '+b.상위계정과목 as gubun, a.구분, a.model,
+                 SELECT 22+총원가_순서 rn, N'    ('+CAST(총원가_순서 as varchar(2))+') '+b.상위계정과목 as gubun, a.구분, a.도우코드 AS model,
                    SUM(out_amt) AS amt
             FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) a
             LEFT JOIN (SELECT DISTINCT yyyymm, site, 계정과목, 계정코드 FROM doi_dept_cost) dc
@@ -495,7 +495,7 @@ BEGIN
               AND a.site   = @SITE
               AND a.sel_code = @SELCODE
               AND b.상위계정과목 in ('제)복리후생비','제)여비교통비','제)통신비','제)수도광열비','제)전력비','제)세금과공과','제)감가상각비','제)지급임차료','제)수선비','제)보험료','제)차량유지비','제)운반비','제)교육훈련비','제)도서인쇄비','제)소모품비','제)지급수수료','제)외주가공비','제)사용권자산감가상각비','제)검사비','제)견본비','제)공구 및 도구비용')
-            GROUP BY a.구분, a.model ,b.상위계정과목,b.총원가_순서
+            GROUP BY a.구분, a.도우코드 ,b.상위계정과목,b.총원가_순서
             UNION ALL
             /*SELECT 22 rn, N'  EXTRA' gubun, 구분, model, out_amt
              FROM doi_slco a WITH(NOLOCK)
@@ -504,7 +504,7 @@ BEGIN
               AND a.sel_code = @SELCODE
               AND a.model = 'EXTRA'
             UNION ALL*/
-            SELECT 22 rn, N'  기타출고' gubun, 구분, model, out_amt
+            SELECT 22 rn, N'  기타출고' gubun, 구분, 도우코드 AS model, out_amt
              FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) a
             WHERE a.yyyymm = @YYYYMM
               AND a.site   = @SITE
@@ -529,18 +529,18 @@ BEGIN
              AND R.SITE   = @SITE
              AND R.SEL_CODE = @SELCODE
              AND R.품목자산분류 = N'상품'
-             AND (CASE WHEN @SITE = N'VN' AND LEN(R.품번) > 1 THEN LEFT(R.품번, LEN(R.품번) - 1) ELSE R.품명 END) = M.model
+             AND (CASE WHEN @SITE = N'VN' AND LEN(R.품번) > 1 THEN R.품번 ELSE R.품명 END) = M.model
             WHERE M.구분 = N'구매'
             GROUP BY M.구분, M.model
         ),				
 		
         /* ====== 제품매출원가(doi_stco OUT, 비LOSS) = 실제 제품출고원가 ====== */
         PROD_COGS AS (
-            SELECT 구분, model, CAST(SUM(out_amt) AS DECIMAL(18,2)) AS amt
+            SELECT 구분, 도우코드 AS model, CAST(SUM(out_amt) AS DECIMAL(18,2)) AS amt
             FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) doi_stco
             WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SELCODE
               AND COST_TYPE <> 'LOSS'
-            GROUP BY 구분, model
+            GROUP BY 구분, 도우코드
         ),
         TOTAL_MFG AS (
             /*SELECT 43 rn, N'    당기총제조원가' gubun, M.구분, M.model,
@@ -640,9 +640,10 @@ BEGIN
 			SELECT 47+b.총원가_순서 rn,
 			       N'    ('+CAST(b.총원가_순서 as varchar(2))+') '+b.상위계정과목 as gubun,
 			       a.구분,
-			       a.model,
+			       ISNULL(mm.도우코드,a.model) AS model,
 			       SUM(a.dist_amt) AS amt
 			FROM doi_smce_cost a WITH(NOLOCK)
+			LEFT JOIN (SELECT DISTINCT MODEL,도우코드 FROM DOI_VN_STCO WHERE yyyymm=@YYYYMM AND sel_code=@SELCODE) mm ON mm.MODEL=a.model
 			-- VN: sub_name(원장명)은 doi_acct.acct_name과 매칭 안 되므로 doi_dept_cost(판관) 브리지
 			left join (select distinct yyyymm, site, 계정과목, 계정코드 from doi_dept_cost where 비용구분=N'판관') dc
 			  on @SITE=N'VN' and dc.yyyymm=a.yyyymm and dc.site=a.site and dc.계정과목=a.sub_name
@@ -661,7 +662,7 @@ BEGIN
 				'판)무형자산상각비','판)견본비','판)사용권자산감가상각비','판)주식보상비용','판)해외시장개척비'
 			  ))
 			    OR (@SITE=N'VN' AND b.상위계정과목 LIKE N'판)%' AND NULLIF(b.총원가_순서,N'') IS NOT NULL) )
-			GROUP BY a.구분, a.model, b.상위계정과목, b.총원가_순서
+			GROUP BY a.구분, ISNULL(mm.도우코드,a.model), b.상위계정과목, b.총원가_순서
 		),
         SGA AS (
       	SELECT
@@ -671,7 +672,7 @@ BEGIN
                 , M.model
                 , CAST(COALESCE(SUM(X.dist_amt),0) AS DECIMAL(18,2)) AS amt
             FROM #MODEL M
-            LEFT JOIN (SELECT sm.* FROM DOI_SMCE_COST sm
+            LEFT JOIN (SELECT sm.*, mmx.도우코드 AS dwcode FROM DOI_SMCE_COST sm LEFT JOIN (SELECT DISTINCT MODEL,도우코드 FROM DOI_VN_STCO WHERE yyyymm=@YYYYMM AND sel_code=@SELCODE) mmx ON mmx.MODEL=sm.MODEL
                        JOIN (SELECT yyyymm,site,계정과목,MIN(계정코드) 계정코드 FROM doi_dept_cost WHERE 비용구분=N'판관' GROUP BY yyyymm,site,계정과목) dc
                          ON dc.yyyymm=sm.yyyymm AND dc.site=sm.site AND dc.계정과목=sm.SUB_NAME
                        JOIN doi_acct da ON da.yyyymm=sm.yyyymm AND da.site=sm.site AND da.acct=dc.계정코드
@@ -679,7 +680,7 @@ BEGIN
             ON X.YYYYMM = @YYYYMM
                   AND X.SITE   = @SITE
                   AND X.SEL_CODE = @SELCODE
-                  AND X.MODEL  = M.model
+                  AND ISNULL(X.dwcode,X.MODEL) = M.model
                   AND M.구분 = CASE WHEN X.MODEL LIKE 'VINA%' THEN '카세트' ELSE M.구분 END
             GROUP BY CASE WHEN X.MODEL LIKE 'VINA%' THEN '카세트' ELSE M.구분 END, M.model
         ),
@@ -788,7 +789,7 @@ BEGIN
         ),
         /* ===== 세부 항목(집계표 골격): doi_stco(제조 622/627) + doi_smce_cost(판관) 브리지 ===== */
         STCO_OH AS (
-            SELECT a.구분, a.model, LEFT(dc.계정코드,3) code3,
+            SELECT a.구분, a.도우코드 AS model, LEFT(dc.계정코드,3) code3,
                    CASE WHEN a.acct_name=N'공구 및 도구비용 - 상각비용' THEN N'제)공구 및 도구 비용 - 상각비용' WHEN a.acct_name=N'공구 및 도구비용 - 일회성비용' THEN N'제)공구 및 도구 비용 -일회성비용' ELSE REPLACE(COALESCE(NULLIF(b.경영계획과목,N''),b.상위계정과목),N'(간접)',N'') END item,
                    SUM(a.out_amt) amt
             FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) a
@@ -799,7 +800,7 @@ BEGIN
             WHERE a.yyyymm=@YYYYMM AND a.site=@SITE AND a.sel_code=@SELCODE
               AND LEFT(dc.계정코드,3) IN ('622','627') AND a.out_amt<>0
               AND ISNULL(CASE WHEN a.acct_name=N'공구 및 도구비용 - 상각비용' THEN N'제)공구 및 도구 비용 - 상각비용' WHEN a.acct_name=N'공구 및 도구비용 - 일회성비용' THEN N'제)공구 및 도구 비용 -일회성비용' ELSE REPLACE(COALESCE(NULLIF(b.경영계획과목,N''),b.상위계정과목),N'(간접)',N'') END,N'')<>N''
-            GROUP BY a.구분, a.model, LEFT(dc.계정코드,3),
+            GROUP BY a.구분, a.도우코드, LEFT(dc.계정코드,3),
                      CASE WHEN a.acct_name=N'공구 및 도구비용 - 상각비용' THEN N'제)공구 및 도구 비용 - 상각비용' WHEN a.acct_name=N'공구 및 도구비용 - 일회성비용' THEN N'제)공구 및 도구 비용 -일회성비용' ELSE REPLACE(COALESCE(NULLIF(b.경영계획과목,N''),b.상위계정과목),N'(간접)',N'') END
         ),
         LABOR_ITEMS AS (
@@ -813,16 +814,17 @@ BEGIN
             GROUP BY sk.rn, sk.gubun, o.구분, o.model
         ),
         SGA_OH AS (
-            SELECT a.구분, a.model,
+            SELECT a.구분, ISNULL(mm.도우코드,a.model) AS model,
                    COALESCE(NULLIF(b.경영계획과목,N''),b.상위계정과목) item,
                    SUM(a.dist_amt) amt
             FROM doi_smce_cost a WITH(NOLOCK)
+			LEFT JOIN (SELECT DISTINCT MODEL,도우코드 FROM DOI_VN_STCO WHERE yyyymm=@YYYYMM AND sel_code=@SELCODE) mm ON mm.MODEL=a.model
             JOIN (SELECT yyyymm,site,계정과목,MIN(계정코드) AS 계정코드 FROM doi_dept_cost WHERE 비용구분=N'판관' GROUP BY yyyymm,site,계정과목) dc
               ON dc.yyyymm=a.yyyymm AND dc.site=a.site AND dc.계정과목=a.sub_name
             JOIN doi_acct b WITH(NOLOCK)
               ON b.yyyymm=a.yyyymm AND b.site=a.site AND b.acct=dc.계정코드
             WHERE a.yyyymm=@YYYYMM AND a.site=@SITE AND a.sel_code=@SELCODE
-            GROUP BY a.구분, a.model, COALESCE(NULLIF(b.경영계획과목,N''),b.상위계정과목)
+            GROUP BY a.구분, ISNULL(mm.도우코드,a.model), COALESCE(NULLIF(b.경영계획과목,N''),b.상위계정과목)
         ),
         SGA_ITEMS AS (
             SELECT sk.rn, sk.gubun, o.구분, o.model, CAST(SUM(o.amt) AS DECIMAL(18,2)) amt
