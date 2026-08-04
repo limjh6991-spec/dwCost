@@ -123,6 +123,18 @@ BEGIN
 		SELECT @EtcSale = COALESCE(SUM(대변금액),0) FROM DOI_DEPT_COST WITH(NOLOCK)
 		WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SEL_CODE AND 계정코드='5118000';
 
+		-- 판매비 = 6417100+6417200 대변(스펙8). 일반관리비 = 판관비집계표총액 − 판매비(스펙9).
+		-- 모델별 컬럼은 모델별 판관비 비중으로 안분 → 총합계는 스펙값과 정확히 일치(판매비+일반관리비=모델별 판관비 유지, 영업이익 불변)
+		DECLARE @SellTotal DECIMAL(18,2)=0, @SGNATotal DECIMAL(18,2)=0, @SellRate DECIMAL(18,10)=0;
+		SELECT @SellTotal = COALESCE(SUM(대변금액),0) FROM DOI_DEPT_COST WITH(NOLOCK)
+		WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SEL_CODE AND 계정코드 IN('6417100','6417200');
+		SELECT @SGNATotal = COALESCE(SUM(ISNULL(B.DIST_AMT,0)),0)
+		FROM DOI_SMCE_COST B WITH(NOLOCK)
+		JOIN (SELECT yyyymm,site,계정과목,MIN(계정코드) AS 계정코드 FROM doi_dept_cost WHERE 비용구분=N'판관' GROUP BY yyyymm,site,계정과목) dc
+		  ON dc.yyyymm=B.yyyymm AND dc.site=B.site AND dc.계정과목=B.SUB_NAME
+		WHERE B.YYYYMM=@YYYYMM AND B.SITE=@SITE AND B.SEL_CODE=@SEL_CODE AND LEFT(dc.계정코드,3) IN('641','642');
+		SET @SellRate = CASE WHEN @SGNATotal=0 THEN 0 ELSE @SellTotal/@SGNATotal END;
+
 		DROP TABLE IF EXISTS #sourceTable;
 		 ;WITH MERCH_ITEM AS (
 		    -- 당월/사업장/SEL 기준 "상품" 품번 목록
@@ -481,10 +493,10 @@ BEGIN
             --  8. 판매비(641) / 9. 일반관리비(642)  — 세부항목은 주석처리
             ------------------------------------------------------------------
             UNION ALL
-            SELECT 2400, N'  8. 판매비', M.구분, M.model, ISNULL(SP.sell_amt,0)
+            SELECT 2400, N'  8. 판매비', M.구분, M.model, (ISNULL(SP.sell_amt,0)+ISNULL(SP.admin_amt,0)) * @SellRate
             FROM #MODEL M LEFT JOIN SGNA_SPLIT SP ON SP.model=M.model AND SP.구분=M.구분
             UNION ALL
-            SELECT 2500, N'  9. 일반관리비', M.구분, M.model, ISNULL(SP.admin_amt,0)
+            SELECT 2500, N'  9. 일반관리비', M.구분, M.model, (ISNULL(SP.sell_amt,0)+ISNULL(SP.admin_amt,0)) * (1-@SellRate)
             FROM #MODEL M LEFT JOIN SGNA_SPLIT SP ON SP.model=M.model AND SP.구분=M.구분
 
             ------------------------------------------------------------------
