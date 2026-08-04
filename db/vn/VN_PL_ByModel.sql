@@ -392,13 +392,13 @@ BEGIN
             --  II. 매출원가
             ------------------------------------------------------------------
             UNION ALL
-            SELECT 5 rn, '  II. 매출원가' gubun, M.구분, M.model, ISNULL(C.prod_cogs_amt,0) + ISNULL(C.merch_cogs_amt,0) + ISNULL(E.outetc_amt,0) /*- ISNULL(SC.scof_amt,0)*/ AS amt 
+            SELECT 5 rn, '  II. 매출원가' gubun, M.구분, M.model, ISNULL(C.prod_cogs_amt,0) + ISNULL(C.merch_cogs_amt,0) /*- ISNULL(SC.scof_amt,0)*/ AS amt 
             FROM #MODEL M 
             LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분
  			LEFT JOIN STCO_OUTETC E ON E.model = M.model AND E.구분  = M.구분
 -- 			LEFT JOIN SCOF_BASE SC ON SC.model = M.model AND SC.구분 = M.구분
             UNION ALL
-            SELECT 6 rn, '    (1) 제품매출원가' gubun, M.구분, M.model, ISNULL(C.prod_cogs_amt,0)  + ISNULL(A.adj_amt,0) + ISNULL(E.outetc_amt,0)  AS amt FROM #MODEL M 
+            SELECT 6 rn, '    (1) 제품매출원가' gubun, M.구분, M.model, ISNULL(C.prod_cogs_amt,0)  + ISNULL(A.adj_amt,0)  AS amt FROM #MODEL M 
             LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분 and C.구분 = M.구분
             LEFT JOIN COGS_ADJ  A ON A.model = M.model AND A.구분 = M.구분
             LEFT JOIN STCO_OUTETC E ON E.model = M.model AND E.구분  = M.구분
@@ -412,7 +412,7 @@ BEGIN
             ------------------------------------------------------------------
             UNION ALL
             SELECT 13 rn, '  III. 매출총이익' gubun, M.구분, M.model, ISNULL(S.total_sale_amt,0) - ISNULL(SC.scof_amt,0)
-            - ( ISNULL(C.prod_cogs_amt,0) + ISNULL(C.merch_cogs_amt,0) + ISNULL(E.outetc_amt,0) + ISNULL(D.adj_amt,0) )  AS amt
+            - ( ISNULL(C.prod_cogs_amt,0) + ISNULL(C.merch_cogs_amt,0) + ISNULL(D.adj_amt,0) )  AS amt
 			FROM #MODEL M
             LEFT JOIN SALES_BASE S ON S.model = M.model and S.구분 = M.구분            
 			LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분  --where M.model='818U'
@@ -430,7 +430,7 @@ BEGIN
             ------------------------------------------------------------------
             UNION ALL
             SELECT 141 rn, '  V. 영업이익'+REPLICATE(NCHAR(0x3000),7) gubun, M.구분, M.model, ISNULL(S.total_sale_amt,0) - ISNULL(SC.scof_amt,0)
-        - ( ISNULL(C.prod_cogs_amt,0) + ISNULL(C.merch_cogs_amt,0) + ISNULL(D.adj_amt,0) + ISNULL(E.outetc_amt,0) ) - ISNULL(G.sgna_amt,0)  AS amt 
+        - ( ISNULL(C.prod_cogs_amt,0) + ISNULL(C.merch_cogs_amt,0) + ISNULL(D.adj_amt,0) ) - ISNULL(G.sgna_amt,0)  AS amt 
             FROM #MODEL M
             LEFT JOIN SALES_BASE S ON S.model = M.model and S.구분 = M.구분           
             LEFT JOIN COGS_BASE C ON C.model = M.model and C.구분 = M.구분
