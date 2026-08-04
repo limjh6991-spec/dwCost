@@ -475,6 +475,17 @@
     <select id="C0009008_Tab090009_Col" resultType="CamelMap">
         SELECT DISTINCT TOP 500 model
         FROM (
+          <choose>
+          <when test="site != null and site == 'VN'">
+            <!-- [VN 260804] doi_smce_cost 도우코드 EMPTY → DOI_VN_STCO(MODEL→도우코드) 매핑. VN_SalesAdminByModel PIVOT 컬럼명(구분+도우코드)과 일치 -->
+            SELECT DISTINCT b.구분 + replace(ISNULL(NULLIF(LTRIM(RTRIM(mc.도우코드)),''),b.model),' ','') as model
+            FROM doi_smce_cost b
+            LEFT JOIN (SELECT DISTINCT MODEL, 도우코드 FROM DOI_VN_STCO WHERE yyyymm=#{yyyymm} AND sel_code=#{selCode}) mc ON mc.MODEL=b.model
+            where 1=1
+            <if test="yyyymm != null and yyyymm != ''">AND b.YYYYMM = #{yyyymm}</if>
+            <if test="site != null and site != ''">AND b.SITE = #{site}</if>
+          </when>
+          <otherwise>
             SELECT DISTINCT 구분+model as model from doi_smce_cost
             where 1=1
             <if test="yyyymm != null and yyyymm != ''">
@@ -483,6 +494,8 @@
             <if test="site != null and site != ''">
                 AND SITE = #{site}
             </if>
+          </otherwise>
+          </choose>
         )A
         ORDER BY 1
     </select>
