@@ -297,6 +297,24 @@
         FROM (
             SELECT DISTINCT 구분, model
             FROM (
+              <choose>
+              <when test="site != null and site == 'VN'">
+                <!-- [VN 260801] 구 doi_mat_cost/doi_expen_matl → doi_expn_matl. VN_ManufacturingExpenseByModel 컬럼과 일치 -->
+                SELECT DISTINCT 구분, replace(도우모델,' ','') as model FROM doi_expn_matl
+                where 1=1
+                <if test="yyyymm != null and yyyymm != ''">AND YYYYMM = #{yyyymm}</if>
+                <if test="site != null and site != ''">AND SITE = #{site}</if>
+                group by 구분, 도우모델
+                UNION
+                SELECT 'Z' 구분, 구분 model FROM (
+                    SELECT DISTINCT 구분 FROM doi_expn_matl
+                    where 1=1
+                    <if test="yyyymm != null and yyyymm != ''">AND YYYYMM = #{yyyymm}</if>
+                    <if test="site != null and site != ''">AND SITE = #{site}</if>
+                    group by 구분
+                ) a
+              </when>
+              <otherwise>
                 SELECT DISTINCT 구분, 도우모델 as model FROM doi_mat_cost
                 where 1=1
                 <if test="yyyymm != null and yyyymm != ''">
@@ -344,6 +362,8 @@
                     and not (in_qty = 0 and out_qty = 0 and loss_qty = 0)
                     group by 구분
                 )A
+              </otherwise>
+              </choose>
             ) A
         ) A
         ORDER BY CASE WHEN 구분 = 'Z' THEN 1 WHEN 구분 = '양산' THEN 2 ELSE 3 END, 구분
@@ -362,18 +382,25 @@
     </select>
 
     <select id="C0009006_Sch1_Col" resultType="CamelMap">
-        SELECT DISTINCT TOP 500 도우모델 as  model from DOI_MAT_COST
-        where 1=1
-        <if test="yyyymm != null and yyyymm != ''">
-            AND YYYYMM = #{yyyymm}
-        </if>
-        <if test="site != null and site != ''">
-            AND SITE = #{site}
-        </if>
-        <if test="selcode != null and selcode != ''">
-            AND SEL_CODE = #{selcode}
-        </if>
-        ORDER BY 1
+        <choose>
+            <when test="site != null and site == 'VN'">
+                <!-- [VN 260801] 구 DOI_MAT_COST → doi_expn_matl(원가구분='재료비'). VN_DsitributeMatCostByModel 컬럼과 일치 -->
+                SELECT DISTINCT TOP 500 도우모델 as model from doi_expn_matl
+                where 원가구분=N'재료비'
+                <if test="yyyymm != null and yyyymm != ''">AND YYYYMM = #{yyyymm}</if>
+                <if test="site != null and site != ''">AND SITE = #{site}</if>
+                <if test="selcode != null and selcode != ''">AND SEL_CODE = #{selcode}</if>
+                ORDER BY 1
+            </when>
+            <otherwise>
+                SELECT DISTINCT TOP 500 도우모델 as  model from DOI_MAT_COST
+                where 1=1
+                <if test="yyyymm != null and yyyymm != ''">AND YYYYMM = #{yyyymm}</if>
+                <if test="site != null and site != ''">AND SITE = #{site}</if>
+                <if test="selcode != null and selcode != ''">AND SEL_CODE = #{selcode}</if>
+                ORDER BY 1
+            </otherwise>
+        </choose>
     </select>
 
     <select id="C0009006_Sch1" resultType="CamelMap">

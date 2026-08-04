@@ -6,18 +6,28 @@ CREATE OR ALTER Procedure VN_DsitributeMatCostByModel
 )
 AS
 BEGIN
+	-- [VN 260801] 구 DOI_MAT_COST → doi_expn_matl(원가구분='재료비')로 소스 교체
+	--   매핑: 항목=자재번호, 투입금액=배부금액, EXPEN_SEL MDAX=원자재/MIAX=부자재. 투입수량은 doi_matl_resc 유지.
 	BEGIN TRY
 		DECLARE @cols nvarchar(max), @sql nvarchar(max);
-		-- 모델별 [수량, 금액] 컬럼 동적 생성 (수량=투입수량*배부율, 금액=배부금액)
+		-- 모델별 [수량, 금액] 컬럼 동적 생성
 		SELECT @cols = STRING_AGG(CAST(
 			', SUM(CASE WHEN 도우모델=N''' + 도우모델 + ''' THEN q   END) AS [' + 도우모델 + '_Q]' +
 			', SUM(CASE WHEN 도우모델=N''' + 도우모델 + ''' THEN amt END) AS [' + 도우모델 + ']'
 			AS nvarchar(max)), '') WITHIN GROUP (ORDER BY 도우모델)
-		FROM (SELECT DISTINCT 도우모델 FROM DOI_MAT_COST WITH(NOLOCK)
-		      WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE) m;
+		FROM (SELECT DISTINCT 도우모델 FROM doi_expn_matl WITH(NOLOCK)
+		      WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE AND 원가구분=N'재료비') m;
 
 		SET @sql = N'
-		;WITH mat_info AS (
+		;WITH MC AS (
+			SELECT 도우모델, 항목 AS 자재번호,
+			       CASE WHEN EXPEN_SEL=''MDAX'' THEN N''원자재'' ELSE N''부자재'' END AS mat_class,
+			       SUM(투입금액) AS 배부금액
+			FROM doi_expn_matl WITH(NOLOCK)
+			WHERE yyyymm=@ym AND site=@st AND sel_code=@sc AND 원가구분=N''재료비''
+			GROUP BY 도우모델, 항목, CASE WHEN EXPEN_SEL=''MDAX'' THEN N''원자재'' ELSE N''부자재'' END
+		),
+		mat_info AS (
 			SELECT coalesce(bom.자재번호, mat.품번) 자재번호,
 			       coalesce(bom.자재명, mat.품명) 자재명, mat.규격,
 			       coalesce(bom.자재대분류, mat.대분류) 자재대분류,
@@ -40,10 +50,9 @@ BEGIN
 				a.도우모델,
 				ROUND(coalesce(q.투입수량,0) * a.배부금액 / NULLIF(SUM(a.배부금액) OVER (PARTITION BY a.자재번호),0), 2) AS q_raw,
 				a.배부금액 AS amt
-			FROM DOI_MAT_COST a WITH(NOLOCK)
+			FROM MC a
 			LEFT JOIN mat_info b ON (a.자재번호 = b.자재번호)
 			LEFT JOIN QTY q ON (q.품번 = a.자재번호)
-			WHERE a.yyyymm=@ym AND a.site=@st AND a.sel_code=@sc
 		),
 		ADJ AS (
 			SELECT 자재분류,자재대분류,자재중분류,자재명,자재번호,거래처,규격,투입수량,도우모델,amt,

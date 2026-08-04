@@ -248,6 +248,28 @@
 
     <select id="C0008004_Sch1" resultType="CamelMap">
         with base_cost as (
+          <choose>
+          <when test="site != null and site == 'VN'">
+            <!-- [VN 260801] DOI_COST 단일 소스(재료 MDAX/MIAX + 가공). DOI_MAT_COST 미참조 -->
+            select
+            model,
+            case when expen_sel='MDAX' then '직접재료비' when LEFT(expen_sel,1)='M' then '간접재료비' else '가공비' end c_cost,
+            avg(in_qty) in_qty,
+            avg((in_qty + OUT_QTY + loss_qty)/ 2.0) as 환산수량,
+            sum([in]) as 투입금액
+            from doi_cost
+            where 1=1
+            and expen_sel not in ('NONE') and expen_sel &lt;&gt; '*'
+            <if test="yyyymm != null and yyyymm != ''">
+                and YYYYMM = #{yyyymm}
+            </if>
+            <if test="site != null and site != ''">
+                and SITE = #{site}
+            </if>
+            group by model,
+            case when expen_sel='MDAX' then '직접재료비' when LEFT(expen_sel,1)='M' then '간접재료비' else '가공비' end
+          </when>
+          <otherwise>
             select
             model,
             '가공비' c_cost,
@@ -280,6 +302,8 @@
             </if>
             group by 도우모델,
             case when mat_class='원자재' then '직접재료비' else '간접재료비' end
+          </otherwise>
+          </choose>
         ), in_cost as(
         select
             model,
@@ -309,6 +333,33 @@
     </select>
 
     <select id="C0008004_Sch2" resultType="CamelMap">
+      <choose>
+      <when test="site != null and site == 'VN'">
+        <!-- [VN 260801] DOI_COST 단일(재료 MDAX/MIAX + 가공). 재료행도 실제 구분/BOH/자재번호(ITEM_NAME) 표시 -->
+        select
+        구분,
+        MODEL,
+        EXPEN_SEL,
+        expen_sel명 AS EXPEN_SEL명,
+        IN_QTY AS in_qty,
+        ADJ_QTY AS adj_qty,
+        BOH,
+        [IN] AS INPUT_AMT,
+        ITEM_NAME AS SUB_NAME
+        from doi_cost
+        where sel_code='ACTUAL' and EXPEN_SEL not in ('NONE') and EXPEN_SEL &lt;&gt; '*'
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and SITE = #{site}
+        </if>
+        <if test="model != null and model != ''">
+            and MODEL = #{model}
+        </if>
+        order by 구분,EXPEN_SEL;
+      </when>
+      <otherwise>
         select
         구분,
         MODEL,
@@ -353,6 +404,8 @@
             and 도우모델 = #{model}
         </if>
         order by 구분,EXPEN_SEL;
+      </otherwise>
+      </choose>
     </select>
 
     <select id="C0008005_Sch1" resultType="CamelMap">
@@ -448,6 +501,39 @@
     </select>
 
     <select id="C0008006_Sch1" resultType="CamelMap">
+      <choose>
+      <when test="site != null and site == 'VN'">
+        <!-- [VN 260801] 원가항목별 재료비: doi_expn_matl(직과/공통) + DOI_MODEL_MAST(면적). 직과는 소요량/배부율 N/A, 공통만 면적배부율(=환산량×면적/Σ) -->
+        ;WITH gc AS (SELECT c.구분,c.도우코드,MAX(CAST(c.ADJ_QTY AS float)) 환산량,MAX(ISNULL(mm.xy,0)) 면적
+              FROM DOI_COST c LEFT JOIN DOI_MODEL_MAST mm ON mm.MODEL=c.도우코드 AND mm.yyyymm=c.yyyymm AND mm.site=c.site AND mm.sel_code=c.sel_code
+              WHERE c.sel_code='ACTUAL'
+              <if test="yyyymm != null and yyyymm != ''">AND c.YYYYMM = #{yyyymm}</if>
+              <if test="site != null and site != ''">AND c.SITE = #{site}</if>
+              GROUP BY c.구분,c.도우코드),
+        tot AS (SELECT SUM(환산량*면적) s FROM gc),
+        mi AS (SELECT 품번, MAX(품명) 품명 FROM doi_matl_resc
+              WHERE 1=1 <if test="yyyymm != null and yyyymm != ''">AND YYYYMM = #{yyyymm}</if> <if test="site != null and site != ''">AND SITE = #{site}</if>
+              GROUP BY 품번)
+        SELECT e.구분, e.YYYYMM as yyyymm, e.SEL_CODE as sel_code,
+               CASE WHEN e.SITE='HQ' THEN '본사' WHEN e.SITE='VN' THEN 'VINA' END AS SITE,
+               e.도우모델, e.항목 자재번호, mi.품명 자재명,
+               e.EXPEN_SEL expen_sel, e.expen_sel명,
+               CASE WHEN e.EXPEN_SEL='MDAX' THEN N'원자재' ELSE N'부자재' END mat_class,
+               CAST(e.투입금액 AS numeric(18,2)) in_amt, r.환산량, NULL 소요량,
+               CASE WHEN e.배부방식=N'공통' THEN r.면적 ELSE NULL END 면적,
+               CASE WHEN e.배부방식=N'공통' THEN CAST(r.환산량*r.면적 AS numeric(18,2)) ELSE NULL END 배부적수,
+               CASE WHEN e.배부방식=N'공통' THEN r.환산량*r.면적/NULLIF(t.s,0) ELSE NULL END 배부율,
+               CAST(e.투입금액 AS numeric(18,2)) 배부금액, e.배부방식
+        FROM doi_expn_matl e
+        LEFT JOIN gc r ON r.구분=e.구분 AND r.도우코드=e.도우코드
+        CROSS JOIN tot t
+        LEFT JOIN mi ON mi.품번=e.항목
+        WHERE e.원가구분=N'재료비' AND e.sel_code='ACTUAL'
+        <if test="yyyymm != null and yyyymm != ''">AND e.YYYYMM = #{yyyymm}</if>
+        <if test="site != null and site != ''">AND e.SITE = #{site}</if>
+        ORDER BY e.배부방식 DESC, e.구분, e.항목;
+      </when>
+      <otherwise>
       WITH BOM as (
 		SELECT * 
 		FROM (
@@ -510,7 +596,9 @@
         <if test="selCode != null and selCode != ''">
             and A.SEL_CODE = #{selCode}
         </if>
-     order by a.배부방식 desc,a.구분,a.자재번호     
+     order by a.배부방식 desc,a.구분,a.자재번호
+      </otherwise>
+      </choose>
     </select>
 
     <select id="C0008006_Sch2" resultType="CamelMap">
@@ -530,6 +618,23 @@
     </select>
 
     <select id="C0008007_Sch1" resultType="CamelMap">
+      <choose>
+      <when test="site != null and site == 'VN'">
+        <!-- [VN 260801] 재료 요약: DOI_COST(재료 MDAX/MIAX) -->
+        select 구분, MODEL as 도우모델,
+            case when EXPEN_SEL='MDAX' then 'MDAX' else 'MIDX' end as expen_sel,
+            case when EXPEN_SEL='MDAX' then N'직접재료비' else N'간접재료비' end as expen_sel명,
+            sum(CAST([IN] AS numeric(18,2))) 배부금액
+        from doi_cost
+        where sel_code='ACTUAL' and LEFT(EXPEN_SEL,1)='M'
+        <if test="yyyymm != null and yyyymm != ''">and YYYYMM = #{yyyymm}</if>
+        <if test="site != null and site != ''">and SITE = #{site}</if>
+        group by 구분, MODEL,
+            case when EXPEN_SEL='MDAX' then 'MDAX' else 'MIDX' end,
+            case when EXPEN_SEL='MDAX' then N'직접재료비' else N'간접재료비' end
+        order by 1,2;
+      </when>
+      <otherwise>
         select 구분,도우모델,
 			case when a.mat_class='원자재' then 'MDAX' else 'MIDX' end as expen_sel,
 			case when a.mat_class='원자재' then '직접재료비' else '간접재료비' end as expen_sel명,
@@ -550,9 +655,39 @@
 			case when a.mat_class='원자재' then 'MDAX' else 'MIDX' end,
 			case when a.mat_class='원자재' then '직접재료비' else '간접재료비' end
         order by 1,2;
+      </otherwise>
+      </choose>
     </select>
 
     <select id="C0008007_Sch2" resultType="CamelMap">
+      <choose>
+      <when test="site != null and site == 'VN'">
+        <!-- [VN 260801] 제품별 투입재료비: doi_expn_matl(직과/공통) + DOI_MODEL_MAST(면적). 직과 소요량/배부율 N/A -->
+        ;WITH gc AS (SELECT c.구분,c.도우코드,MAX(CAST(c.ADJ_QTY AS float)) 환산량,MAX(ISNULL(mm.xy,0)) 면적
+              FROM DOI_COST c LEFT JOIN DOI_MODEL_MAST mm ON mm.MODEL=c.도우코드 AND mm.yyyymm=c.yyyymm AND mm.site=c.site AND mm.sel_code=c.sel_code
+              WHERE c.sel_code='ACTUAL'
+              <if test="yyyymm != null and yyyymm != ''">AND c.YYYYMM = #{yyyymm}</if>
+              <if test="site != null and site != ''">AND c.SITE = #{site}</if>
+              GROUP BY c.구분,c.도우코드),
+        tot AS (SELECT SUM(환산량*면적) s FROM gc)
+        select e.YYYYMM as yyyymm, e.SEL_CODE as sel_code, e.SITE as site, e.도우모델, e.항목 자재번호,
+               CASE WHEN e.EXPEN_SEL='MDAX' THEN N'원자재' ELSE N'부자재' END mat_class,
+               e.분류 자재대분류, CAST(e.투입금액 AS numeric(18,2)) in_amt, r.환산량, NULL 소요량,
+               CASE WHEN e.배부방식=N'공통' THEN r.환산량*r.면적/NULLIF(t.s,0) ELSE NULL END 배부율,
+               CAST(e.투입금액 AS numeric(18,2)) 배부금액,
+               CASE WHEN e.배부방식=N'공통' THEN CAST(r.환산량*r.면적 AS numeric(18,2)) ELSE NULL END 사용량,
+               e.배부방식
+        from doi_expn_matl e
+        LEFT JOIN gc r ON r.구분=e.구분 AND r.도우코드=e.도우코드
+        CROSS JOIN tot t
+        where e.원가구분=N'재료비' AND e.sel_code='ACTUAL'
+        <if test="yyyymm != null and yyyymm != ''">AND e.YYYYMM = #{yyyymm}</if>
+        <if test="site != null and site != ''">AND e.SITE = #{site}</if>
+        <if test="model != null and model != ''">AND e.도우모델 = #{model}</if>
+        <if test="gubun != null and gubun != ''">AND e.구분 = #{gubun}</if>
+        order by 1,2,3,4,5,6;
+      </when>
+      <otherwise>
         select
 			yyyymm,
 			sel_code,
@@ -584,6 +719,8 @@
             and 구분 = #{gubun}
         </if>
         order by 1,2,3,4,5,6,7;
+      </otherwise>
+      </choose>
     </select>
 
     <select id="C0008008_Sch1" resultType="CamelMap">
@@ -765,6 +902,35 @@
     </select>
     
     <select id="C0008015_Sch1" resultType="CamelMap">
+      <choose>
+      <when test="site != null and site == 'VN'">
+        <!-- [VN 260801] 제품별 가공비: DOI_COST(투입·환산량) + DOI_MODEL_MAST(면적). 배부율=환산량×면적/Σ. model=도우코드 grain -->
+        ;WITH gc AS (
+          SELECT c.구분, c.도우코드, MAX(c.MODEL) 도우모델,
+                 MAX(CAST(c.ADJ_QTY AS float)) adj_qty, MAX(CAST(c.IN_QTY AS float)) in_qty,
+                 MAX(CAST(c.OUT_QTY AS float)) out_qty, MAX(CAST(c.LOSS_QTY AS float)) loss_qty,
+                 MAX(ISNULL(mm.xy,0)) 면적
+          FROM DOI_COST c
+          LEFT JOIN DOI_MODEL_MAST mm ON mm.MODEL=c.도우코드 AND mm.yyyymm=c.yyyymm AND mm.site=c.site AND mm.sel_code=c.sel_code
+          WHERE c.sel_code='ACTUAL' AND LEFT(c.EXPEN_SEL,1) &lt;&gt; 'M' AND c.EXPEN_SEL NOT IN ('*','NONE')
+          <if test="yyyymm != null and yyyymm != ''">AND c.YYYYMM = #{yyyymm}</if>
+          <if test="site != null and site != ''">AND c.SITE = #{site}</if>
+          GROUP BY c.구분, c.도우코드
+        ), tot AS (SELECT SUM(adj_qty*면적) s FROM gc)
+        SELECT c.구분, c.도우코드 as model, c.면적,
+               CAST(c.adj_qty*c.면적 AS numeric(18,2)) DIST_VALUE,
+               c.adj_qty*c.면적/NULLIF(t.s,0) dist_rate,
+               e.ITEM_NAME SUB_NAME, e.EXPEN_SEL, e.expen_sel명 as EXPEN_SEL명,
+               c.adj_qty, c.in_qty, c.out_qty, c.loss_qty, 0 as disp_seq, e.input_Amt
+        FROM gc c CROSS JOIN tot t
+        JOIN (SELECT 구분,도우코드,EXPEN_SEL,MAX(expen_sel명) expen_sel명, MAX(ITEM_NAME) ITEM_NAME, SUM(CAST([IN] AS float)) input_Amt
+              FROM DOI_COST WHERE sel_code='ACTUAL' AND LEFT(EXPEN_SEL,1) &lt;&gt; 'M' AND EXPEN_SEL NOT IN ('*','NONE')
+              <if test="yyyymm != null and yyyymm != ''">AND YYYYMM = #{yyyymm}</if>
+              <if test="site != null and site != ''">AND SITE = #{site}</if>
+              GROUP BY 구분,도우코드,EXPEN_SEL) e ON e.구분=c.구분 AND e.도우코드=c.도우코드
+        ORDER BY c.구분, c.도우코드, e.EXPEN_SEL;
+      </when>
+      <otherwise>
     select
 		구분,
 		model,
@@ -803,8 +969,10 @@
 		adj_qty,
 		in_qty,
 		out_qty,
-		loss_qty    
+		loss_qty
         order by 구분,MODEL,DISP_SEQ,EXPEN_SEL;
+      </otherwise>
+      </choose>
     </select>
 
     <select id="C0008013_Sch1" resultType="CamelMap">
