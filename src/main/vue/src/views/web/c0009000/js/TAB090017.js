@@ -90,7 +90,7 @@ const qaFields = (base) => ([
   { fieldName: `${base}Amt`, dataType: ValueType.NUMBER },
 ]);
 
-const numCol = (name) => ({ name, fieldName: name, width: 70, header: { text: /Amt$/.test(name) ? '금액' : '수량' }, styleName: 'tr', numberFormat: '#,##0' });
+const numCol = (name) => ({ name, fieldName: name, width: 70, header: { text: /Amt$/.test(name) ? '금액' : '수량' }, styleName: 'tr', numberFormat: /Amt$/.test(name) ? '#,##0.00' : '#,##0' });
 const pflCols = (base) => ([numCol(`${base}BQty`), numCol(`${base}BAmt`), numCol(`${base}AQty`), numCol(`${base}AAmt`)]);
 const qaCols = (base) => ([numCol(`${base}Qty`), numCol(`${base}Amt`)]);
 
@@ -109,6 +109,12 @@ const grid = {
       showEmptyMessage: true,
       headerDepth: 4,
       mergePolicy: 'never',
+      rowStyleCallback: function (grid, item) {
+        const m = grid.getValue(item.index, 'model');
+        if (m === '월합계') return { background: '#fff3cd', fontBold: true };
+        if (m === '총합계') return { background: '#e8f4f8', fontBold: true };
+        return null;
+      },
     },
     footer: { visible: false },
     filtering: { enabled: false },
