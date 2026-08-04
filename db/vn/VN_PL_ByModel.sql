@@ -42,7 +42,7 @@ BEGIN
 		          WHEN RIGHT(A.품번,1)='P' THEN N'양산'
 		          ELSE N'개발'
 		        END AS 구분,
-		        CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END AS model
+		        CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN A.품번 ELSE A.품명 END AS model
 		    FROM DOI_SALE_RESC A
 		    LEFT JOIN MERCH_ITEM MI
 		      ON MI.품번 = A.품번
@@ -59,7 +59,7 @@ BEGIN
 		          WHEN RIGHT(B.품번,1)='P' THEN N'양산'
 		          ELSE N'개발'
 		        END AS 구분,
-		        CASE WHEN @SITE = N'VN' AND LEN(B.품번) > 1 THEN LEFT(B.품번, LEN(B.품번) - 1) ELSE B.품명 END AS model
+		        CASE WHEN @SITE = N'VN' AND LEN(B.품번) > 1 THEN B.품번 ELSE B.품명 END AS model
 		    FROM DOI_INVOICE_RESC B
 		    LEFT JOIN MERCH_ITEM MI
 		      ON MI.품번 = B.품번
@@ -127,7 +127,7 @@ BEGIN
 		          	ELSE N'개발'
 		          END AS 구분
 		        , A.품번
-		        , CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번) - 1) ELSE A.품명 END AS model
+		        , CASE WHEN @SITE = N'VN' AND LEN(A.품번) > 1 THEN A.품번 ELSE A.품명 END AS model
 		        , N'국내'          AS 매출구분
 		        , CASE WHEN MI.품번 IS NOT NULL THEN N'상품' ELSE N'제품' END AS 매출대분류
 		        , A.원화판매금액   AS amt
@@ -149,7 +149,7 @@ BEGIN
 		          	ELSE N'개발'
 		          END AS 구분
 		        , B.품번
-		        , CASE WHEN @SITE = N'VN' AND LEN(B.품번) > 1 THEN LEFT(B.품번, LEN(B.품번) - 1) ELSE B.품명 END AS model
+		        , CASE WHEN @SITE = N'VN' AND LEN(B.품번) > 1 THEN B.품번 ELSE B.품명 END AS model
 		        , N'해외'          AS 매출구분
 		        , CASE WHEN MI.품번 IS NOT NULL THEN N'상품' ELSE N'제품' END AS 매출대분류
 		        , B.원화판매금액   AS amt
@@ -234,7 +234,7 @@ BEGIN
 		, STCO_BASE AS (
 		    SELECT
 		        S.구분 AS 구분
-		        , S.MODEL AS model
+		        , S.도우코드 AS model
 		        , SUM(ISNULL(S.BOH_AMT, 0)) AS begin_fg_amt
 		        , SUM(ISNULL(S.IN_AMT, 0))  AS cur_mfg_cost_amt
 		        , CAST(NULL AS DECIMAL(18,2)) AS trans_out_amt
@@ -245,12 +245,12 @@ BEGIN
 		      AND S.SITE     = @SITE
 		      AND S.SEL_CODE = @SEL_CODE
 		      AND S.COST_TYPE != 'LOSS'
-		    GROUP BY S.구분, S.MODEL
+		    GROUP BY S.구분, S.도우코드
 		)
 		, STCO_OUTETC AS (
 			SELECT
 			      구분
-			    , MODEL AS model
+			    , 도우코드 AS model
 			    , SUM(
 			        CASE
 			            WHEN 구분 = N'양산'
@@ -263,7 +263,7 @@ BEGIN
 			  AND SITE = @SITE
 			  AND SEL_CODE = @SEL_CODE
 			  AND ISNULL(OUTETC_AMT,0) <> 0
-			GROUP BY 구분, MODEL
+			GROUP BY 구분, 도우코드
 		)
 		, COGS_BASE AS (
 		    -- 1) STCO 있는 모델: 상품원가 붙이기
@@ -306,14 +306,14 @@ BEGIN
 		, COGS_ADJ AS (
 		    SELECT
 		        a.구분 AS 구분
-		        , a.model
+		        , a.도우코드 AS model
 		        , SUM(a.out_amt) AS adj_amt
 		    FROM DOI_SLCO a WITH(NOLOCK)
 		    WHERE a.YYYYMM = @YYYYMM
 		      AND a.SITE   = @SITE
 		      AND a.SEL_CODE = @SEL_CODE
 		      AND a.expen_sel명 = N'기타매출'
-		    GROUP BY a.구분, a.model
+		    GROUP BY a.구분, a.도우코드
 		)
         , SGNA_BASE AS (
             ------------------------------------------------------------------
@@ -321,10 +321,11 @@ BEGIN
             ------------------------------------------------------------------
             SELECT
             	구분
-                , MODEL           AS model
+                , ISNULL(NULLIF(LTRIM(RTRIM(mm.도우코드)),''),S.MODEL) AS model
                 , SUB_NAME
                 , SUM(ISNULL(DIST_AMT,0)) AS amt      -- 배부된 판관비 금액
             FROM DOI_SMCE_COST S
+            LEFT JOIN (SELECT DISTINCT MODEL, 도우코드 FROM DOI_VN_STCO WHERE yyyymm=@YYYYMM AND sel_code=@SEL_CODE) mm ON mm.MODEL=S.MODEL
             JOIN (SELECT yyyymm,site,계정과목,MIN(계정코드) 계정코드 FROM doi_dept_cost WHERE 비용구분=N'판관' GROUP BY yyyymm,site,계정과목) dc
               ON dc.yyyymm=S.yyyymm AND dc.site=S.site AND dc.계정과목=S.SUB_NAME
             JOIN doi_acct da ON da.yyyymm=S.yyyymm AND da.site=S.site AND da.acct=dc.계정코드
@@ -332,7 +333,7 @@ BEGIN
               AND S.SITE = @SITE
               AND S.SEL_CODE = @SEL_CODE
               AND da.상위계정과목 <> N'비용제외' AND ISNULL(da.상위계정과목,N'') <> N''
-            GROUP BY S.구분, S.MODEL, S.SUB_NAME
+            GROUP BY S.구분, ISNULL(NULLIF(LTRIM(RTRIM(mm.도우코드)),''),S.MODEL), S.SUB_NAME
         )
         , SGNA_SUM AS (
             ------------------------------------------------------------------

@@ -300,11 +300,11 @@
               <choose>
               <when test="site != null and site == 'VN'">
                 <!-- [VN 260801] 구 doi_mat_cost/doi_expen_matl → doi_expn_matl. VN_ManufacturingExpenseByModel 컬럼과 일치 -->
-                SELECT DISTINCT 구분, replace(도우모델,' ','') as model FROM doi_expn_matl
+                SELECT DISTINCT 구분, replace(도우코드,' ','') as model FROM doi_expn_matl
                 where 1=1
                 <if test="yyyymm != null and yyyymm != ''">AND YYYYMM = #{yyyymm}</if>
                 <if test="site != null and site != ''">AND SITE = #{site}</if>
-                group by 구분, 도우모델
+                group by 구분, 도우코드
                 UNION
                 SELECT 'Z' 구분, 구분 model FROM (
                     SELECT DISTINCT 구분 FROM doi_expn_matl

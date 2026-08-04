@@ -8,7 +8,7 @@ BEGIN
 	-- [VN 260801] 구 doi_mat_cost/doi_expen_matl → 신 doi_expn_matl 단일 소스로 교체
 	--   재료: 원가구분='재료비' (항목=자재번호, 투입금액=배부금액)
 	--   경비: 원가구분='가공비' (분류=ACCT_NAME, 투입금액=[in]) → doi_dept_cost/doi_acct 브리지 동일
-	--   컬럼목록: doi_expn_matl에 존재하는 (구분,도우모델)만 = 투입 있는 모델
+	--   컬럼목록: doi_expn_matl에 존재하는 (구분,도우코드)만 = 투입 있는 모델
 	BEGIN TRY
 		BEGIN TRANSACTION;
 		DECLARE @Columns VARCHAR(3000);
@@ -21,10 +21,10 @@ BEGIN
 				FROM (
 					SELECT DISTINCT 구분, model
 					FROM (
-						SELECT DISTINCT 구분, replace(도우모델,' ','') as model
+						SELECT DISTINCT 구분, replace(도우코드,' ','') as model
 						FROM doi_expn_matl
 						where yyyymm=@YYYYMM and site=@SITE and sel_code=@SEL_CODE
-						group by 구분, 도우모델
+						group by 구분, 도우코드
 						UNION
 						SELECT 'Z' 구분, CONCAT(구분, '합계') model
 						  FROM ( SELECT DISTINCT 구분 FROM doi_expn_matl
@@ -34,7 +34,7 @@ BEGIN
 					) A
 				) A
 				ORDER BY CASE WHEN 구분 = '양산' THEN 1 ELSE 2 END, 구분
-						,CASE WHEN model = '양산합계' THEN 1 ELSE 2 END, model )AS 도우모델 ;
+						,CASE WHEN model = '양산합계' THEN 1 ELSE 2 END, model )AS 도우코드 ;
 		select @Columns=  '['+@Columns+']';
 
 		SELECT @Null_Columns = COALESCE(@Null_Columns, '') + MODEL +'],0) as ['+MODEL+'],coalesce(['
@@ -42,10 +42,10 @@ BEGIN
 				FROM (
 					SELECT DISTINCT 구분, model
 					FROM (
-						SELECT DISTINCT 구분, replace(도우모델,' ','') as model
+						SELECT DISTINCT 구분, replace(도우코드,' ','') as model
 						  FROM doi_expn_matl
 						 where yyyymm=@YYYYMM and site=@SITE and sel_code=@SEL_CODE
-						group by 구분, 도우모델
+						group by 구분, 도우코드
 						UNION
 						SELECT 'Z' 구분, CONCAT(구분, '합계') model
 						  FROM ( SELECT DISTINCT 구분 FROM doi_expn_matl
@@ -55,7 +55,7 @@ BEGIN
 					) A
 				) A
 				ORDER BY CASE WHEN 구분 = '양산' THEN 1 ELSE 2 END, 구분
-						,CASE WHEN model = '양산합계' THEN 1 ELSE 2 END, model )AS 도우모델 ;
+						,CASE WHEN model = '양산합계' THEN 1 ELSE 2 END, model )AS 도우코드 ;
 		select @Null_Columns=  'rn,gubun,'+ replace('coalesce(['+@Null_Columns+']',',coalesce([]','');
 
 	-- ===== 금액(#amt) + 골격(#skel) + 소스(#sourceTable) =====
@@ -64,8 +64,8 @@ BEGIN
 	INTO #amt
 	FROM (
 			-- 재료비: doi_expn_matl(원가구분='재료비'), 항목=자재번호
-			select mc.구분, replace(mc.도우모델,' ','') model, 1 sec, case when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'%Glass%' then N'원재료_원장' when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'PF%' then N'원재료_PF' when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'PL%' then N'원재료_PL' when m.품목자산분류=N'Raw Material' and upper(m.자재소분류) like N'%CHEMICAL%' then N'원재료_약액' when m.품목자산분류=N'Sub Material' then N'부재료비 (6272)' else N'원재료_기타' end item, CAST(case when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'%Glass%' then 1 when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'PF%' then 3 when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'PL%' then 4 when m.품목자산분류=N'Raw Material' and upper(m.자재소분류) like N'%CHEMICAL%' then 5 when m.품목자산분류=N'Sub Material' then 6 else 9 end AS bigint) iord, mc.배부금액 amt
-			from (SELECT 구분, 도우모델, 항목 자재번호, 투입금액 배부금액 FROM doi_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE AND 원가구분=N'재료비') mc
+			select mc.구분, replace(mc.도우코드,' ','') model, 1 sec, case when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'%Glass%' then N'원재료_원장' when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'PF%' then N'원재료_PF' when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'PL%' then N'원재료_PL' when m.품목자산분류=N'Raw Material' and upper(m.자재소분류) like N'%CHEMICAL%' then N'원재료_약액' when m.품목자산분류=N'Sub Material' then N'부재료비 (6272)' else N'원재료_기타' end item, CAST(case when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'%Glass%' then 1 when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'PF%' then 3 when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'PL%' then 4 when m.품목자산분류=N'Raw Material' and upper(m.자재소분류) like N'%CHEMICAL%' then 5 when m.품목자산분류=N'Sub Material' then 6 else 9 end AS bigint) iord, mc.배부금액 amt
+			from (SELECT 구분, 도우코드, 항목 자재번호, 투입금액 배부금액 FROM doi_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE AND 원가구분=N'재료비') mc
 			left join DOI_VN_MATERIAL m on m.자재번호=mc.자재번호 and m.yyyymm=@YYYYMM
 		union all
 			-- 경비: doi_expn_matl(원가구분='가공비'), 분류=ACCT_NAME
@@ -74,7 +74,7 @@ BEGIN
 			       case when left(dc.계정코드,4)='6272' then N'부재료비 (6272)' when e.ACCT_NAME=N'공구 및 도구비용 - 상각비용' then N'제)공구 및 도구 비용 - 상각비용' when e.ACCT_NAME=N'공구 및 도구비용 - 일회성비용' then N'제)공구 및 도구 비용 -일회성비용' else REPLACE(a.상위계정과목,N'(간접)',N'') end item,
 			       MIN(TRY_CONVERT(bigint, dc.계정코드)) iord,
 			       sum(e.[in]) amt
-			from (SELECT 구분, 도우모델 model, 분류 ACCT_NAME, 투입금액 [in] FROM doi_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE AND 원가구분=N'가공비') e
+			from (SELECT 구분, 도우코드 model, 분류 ACCT_NAME, 투입금액 [in] FROM doi_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE AND 원가구분=N'가공비') e
 			join (select distinct yyyymm,site,계정과목,계정코드 from doi_dept_cost) dc on dc.yyyymm=@YYYYMM and dc.site=@SITE and dc.계정과목=e.ACCT_NAME
 			join doi_acct a on a.yyyymm=@YYYYMM and a.site=@SITE and a.acct=dc.계정코드
 			where left(dc.계정코드,3) in ('622','627') and left(dc.계정코드,4)<>'6272'

@@ -14,15 +14,16 @@ BEGIN
 
 		-- 1) 금액(#amt) : doi_smce_cost → doi_dept_cost(판관) 브리지 → doi_acct.상위계정과목
 		IF OBJECT_ID('tempdb..#amt') IS NOT NULL DROP TABLE #amt;
-		SELECT b.구분 + replace(b.model,' ','') model, COALESCE(NULLIF(a.경영계획과목,''),a.상위계정과목) item, SUM(b.dist_amt) amt
+		SELECT b.구분 + replace(ISNULL(NULLIF(LTRIM(RTRIM(mc.도우코드)),''),b.model),' ','') model, COALESCE(NULLIF(a.경영계획과목,''),a.상위계정과목) item, SUM(b.dist_amt) amt
 		INTO #amt
 		FROM doi_smce_cost b
+		LEFT JOIN (SELECT DISTINCT MODEL, 도우코드 FROM DOI_VN_STCO WHERE yyyymm=@YYYYMM AND sel_code=@SEL_CODE) mc ON mc.MODEL=b.model
 		JOIN (SELECT yyyymm,site,계정과목,MIN(계정코드) AS 계정코드 FROM doi_dept_cost WHERE 비용구분=N'판관' GROUP BY yyyymm,site,계정과목) dc
 			ON dc.yyyymm=b.yyyymm AND dc.site=b.site AND dc.계정과목=b.sub_name
 		JOIN doi_acct a ON a.yyyymm=b.yyyymm AND a.site=b.site AND a.acct=dc.계정코드
 		WHERE b.yyyymm=@YYYYMM AND b.site=@SITE AND b.sel_code=@SEL_CODE
 		  AND ISNULL(COALESCE(NULLIF(a.경영계획과목,''),a.상위계정과목),'')<>''
-		GROUP BY b.구분 + replace(b.model,' ',''), COALESCE(NULLIF(a.경영계획과목,''),a.상위계정과목);
+		GROUP BY b.구분 + replace(ISNULL(NULLIF(LTRIM(RTRIM(mc.도우코드)),''),b.model),' ',''), COALESCE(NULLIF(a.경영계획과목,''),a.상위계정과목);
 
 		-- 2) @Columns : 모델(구분+model) + X/Y/Z합계
 		SELECT @Columns = COALESCE(@Columns + N'],[', N'') + model FROM (SELECT DISTINCT model FROM #amt UNION SELECT N'X합계' UNION SELECT N'Y합계' UNION SELECT N'Z합계') A;
