@@ -481,10 +481,10 @@ BEGIN
             SELECT 1104, N'      3. 타계정에서제품대체액', M.구분, M.model, ISNULL(C.etcin_amt,0)
             FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model=M.model AND C.구분=M.구분
             UNION ALL
-            SELECT 1105, N'      4. 타계정으로제품대체액', M.구분, M.model, -ISNULL(C.etcout_amt,0)
+            SELECT 1105, N'      4. 타계정으로제품대체액', M.구분, M.model, ISNULL(C.etcout_amt,0)
             FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model=M.model AND C.구분=M.구분
             UNION ALL
-            SELECT 1106, N'      5. 기말제품재고액', M.구분, M.model, -ISNULL(C.end_fg_amt,0)
+            SELECT 1106, N'      5. 기말제품재고액', M.구분, M.model, ISNULL(C.end_fg_amt,0)
             FROM #MODEL M LEFT JOIN COGS_BASE C ON C.model=M.model AND C.구분=M.구분
 
             ------------------------------------------------------------------
@@ -649,8 +649,8 @@ BEGIN
 		UPDATE #sourceTable SET amt = @BOH_T     WHERE model=N'Z합계' AND rn=1102;   -- 기초제품재고액
 		UPDATE #sourceTable SET amt = @IN_T      WHERE model=N'Z합계' AND rn=1103;   -- 당기제품제조원가
 		UPDATE #sourceTable SET amt = @ETCIN_T   WHERE model=N'Z합계' AND rn=1104;   -- 타계정에서제품대체액(기타입고)
-		UPDATE #sourceTable SET amt = -@OUTETC_T WHERE model=N'Z합계' AND rn=1105;   -- 타계정으로제품대체액(기타출고)
-		UPDATE #sourceTable SET amt = -@EOH_T    WHERE model=N'Z합계' AND rn=1106;   -- 기말제품재고액
+		UPDATE #sourceTable SET amt = @OUTETC_T  WHERE model=N'Z합계' AND rn=1105;   -- 타계정으로제품대체액(기타출고) [양수 표시]
+		UPDATE #sourceTable SET amt = @EOH_T     WHERE model=N'Z합계' AND rn=1106;   -- 기말제품재고액 [양수 표시]
 
 		-- (3) 기타매출 = 5118000 대변합 (총합계 전용) → 매출액/순매출액/매출이익/영업이익에 가산
 		UPDATE #sourceTable SET amt = @EtcSale                     WHERE model=N'Z합계' AND rn IN (103,104);
