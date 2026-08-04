@@ -1,16 +1,15 @@
 /*
  * VN_ProductSubulMonthly  (생산실적 > 월별 집계(수량_VN) / C0009001 TAB090015)
- *   원천 DOI_PROD_SUBUL, 도우코드 그레인. 표시=모델(=도우코드)/구분(도우코드 끝자리 P->MP, 그 외 R&D).
- *   우선 DOI_PROD_SUBUL에서 매칭되는 월수량만 채움:
- *     T_BOH_B=BOH_MONTH, USC_INPUT=IN_MONTH, OUTPUT_A=OUT_MONTH, LOSS=LOSS_MONTH,
- *     TOTAL_EOH_B=PL전, TOTAL_EOH_A=PL후 (PL전/후는 콤마 텍스트 → TRY_CONVERT).
- *   재공 공정수불 세부 분해(IN_CODE/OUT_CODE/LINE_WIP/… B_LEVEL 등)는 0 (산식 추후 정의).
+ *   원천 DOI_VN_PROD_RESC (도우코드 그레인, 수량 단일값). 표시=모델(=도우코드)/구분(division).
+ *   전=B(PFL전 50%) / 후=A(PFL후 90%). BOH/EOH 소계·T_BOH·T_EOH·TOTAL_EOH·기타입출고 합계는
+ *   원천에 pre-계산돼 있어 직접 매핑. 컬럼 별칭은 CamelMap 규칙(전→B/후→A).
  */
 CREATE OR ALTER PROCEDURE VN_ProductSubulMonthly
 (
-    @YYYY   varchar(4)  = NULL,
-    @YYYYMM varchar(10) = NULL,
-    @SITE   varchar(4)  = NULL
+    @YYYY     varchar(4)  = NULL,
+    @YYYYMM   varchar(10) = NULL,
+    @SITE     varchar(4)  = NULL,
+    @SEL_CODE varchar(10) = 'ACTUAL'
 )
 AS
 BEGIN
@@ -18,46 +17,44 @@ BEGIN
     BEGIN TRY
         SELECT
               도우코드 AS MODEL
-            , CASE WHEN RIGHT(RTRIM(도우코드),1)=N'P' THEN N'MP' ELSE N'R&D' END AS DIVISION
-            -- 기초 BOH 세부 (LINE_WIP/LINE_FGS/A LEVEL/B_LEVEL_WIP/B_LEVEL_FGS/B LEVEL, 각 PFL전/후) — 세부 산식 미정(스텁 0)
-            , CAST(0 AS INT) AS BOH_LINE_WIP_B, CAST(0 AS INT) AS BOH_LINE_WIP_A
-            , CAST(0 AS INT) AS BOH_LINE_FGS_B, CAST(0 AS INT) AS BOH_LINE_FGS_A
-            , CAST(0 AS INT) AS BOH_A_SUB_B,    CAST(0 AS INT) AS BOH_A_SUB_A
-            , CAST(0 AS INT) AS BOH_B_WIP_B,    CAST(0 AS INT) AS BOH_B_WIP_A
-            , CAST(0 AS INT) AS BOH_B_FGS_B,    CAST(0 AS INT) AS BOH_B_FGS_A
-            , CAST(0 AS INT) AS BOH_B_SUB_B,    CAST(0 AS INT) AS BOH_B_SUB_A
-            -- T_BOH (PFL전=BOH_MONTH, PFL후 스텁)
-            , CAST(SUM(ISNULL(BOH_MONTH,0)) AS INT) AS T_BOH_B, CAST(0 AS INT) AS T_BOH_A
+            , division AS DIVISION
+            -- 기초 BOH (전=B / 후=A)
+            , BOH_LINE_WIP_전 AS BOH_LINE_WIP_B, BOH_LINE_WIP_후 AS BOH_LINE_WIP_A
+            , BOH_LINE_FGS_전 AS BOH_LINE_FGS_B, BOH_LINE_FGS_후 AS BOH_LINE_FGS_A
+            , BOH_A_SUB_전    AS BOH_A_SUB_B,    BOH_A_SUB_후    AS BOH_A_SUB_A
+            , BOH_B_WIP_전    AS BOH_B_WIP_B,    BOH_B_WIP_후    AS BOH_B_WIP_A
+            , BOH_B_FGS_전    AS BOH_B_FGS_B,    BOH_B_FGS_후    AS BOH_B_FGS_A
+            , BOH_B_SUB_전    AS BOH_B_SUB_B,    BOH_B_SUB_후    AS BOH_B_SUB_A
+            , T_BOH_전        AS T_BOH_B,        T_BOH_후        AS T_BOH_A
             -- 입고
-            , CAST(SUM(ISNULL(IN_MONTH,0)) AS INT) AS USC_INPUT
-            , CAST(0 AS INT) AS IN_CODE, CAST(0 AS INT) AS IN_RESORT, CAST(0 AS INT) AS IN_REWORK
-            , CAST(0 AS INT) AS IN_SEMI, CAST(0 AS INT) AS IN_ETC, CAST(0 AS INT) AS IN_TOTAL
+            , USC_INPUT AS USC_INPUT
+            -- 기타입고
+            , ETCIN_CODE AS IN_CODE, ETCIN_RESORT AS IN_RESORT, ETCIN_REWORK AS IN_REWORK
+            , ETCIN_SEMI AS IN_SEMI, ETCIN_ETC AS IN_ETC, ETCIN_TOTAL AS IN_TOTAL
             -- 출고
-            , CAST(SUM(ISNULL(OUT_MONTH,0)) AS INT) AS OUTPUT_A
-            , CAST(0 AS INT) AS OUT_CODE_B, CAST(0 AS INT) AS OUT_CODE_A
-            , CAST(0 AS INT) AS OUT_SEMI_PAID_B, CAST(0 AS INT) AS OUT_SEMI_PAID_A
-            , CAST(0 AS INT) AS OUT_SEMI_FREE_B, CAST(0 AS INT) AS OUT_SEMI_FREE_A
-            , CAST(0 AS INT) AS OUT_ETC_B, CAST(0 AS INT) AS OUT_ETC_A
-            , CAST(0 AS INT) AS OUT_TOTAL_B, CAST(0 AS INT) AS OUT_TOTAL_A
-            -- LOSS (PFL전=LOSS_MONTH, PFL후 스텁)
-            , CAST(SUM(ISNULL(LOSS_MONTH,0)) AS INT) AS LOSS_B, CAST(0 AS INT) AS LOSS_A
-            -- 재고 EOH 세부(스텁)
-            , CAST(0 AS INT) AS LINE_WIP_B, CAST(0 AS INT) AS LINE_WIP_A
-            , CAST(0 AS INT) AS LINE_FGS_B, CAST(0 AS INT) AS LINE_FGS_A
-            , CAST(0 AS INT) AS B_WIP_B,    CAST(0 AS INT) AS B_WIP_A
-            , CAST(0 AS INT) AS B_FGS_B,    CAST(0 AS INT) AS B_FGS_A
-            , CAST(0 AS INT) AS T_EOH_WIP_B, CAST(0 AS INT) AS T_EOH_WIP_A
-            , CAST(0 AS INT) AS T_EOH_FGS_B, CAST(0 AS INT) AS T_EOH_FGS_A
-            -- TOTAL_EOH = PL전 / PL후 (완성환산 수량)
-            , CAST(SUM(TRY_CONVERT(int, REPLACE(REPLACE(ISNULL(PL전, N'0'), N',', N''), N' ', N''))) AS INT) AS TOTAL_EOH_B
-            , CAST(SUM(TRY_CONVERT(int, REPLACE(REPLACE(ISNULL(PL후, N'0'), N',', N''), N' ', N''))) AS INT) AS TOTAL_EOH_A
-        FROM DOI_PROD_SUBUL WITH (NOLOCK)
-        WHERE SITE = @SITE
+            , OUTPUT_A AS OUTPUT_A
+            -- 기타출고 (전=B / 후=A)
+            , ETCOUT_CODE_전      AS OUT_CODE_B,      ETCOUT_CODE_후      AS OUT_CODE_A
+            , ETCOUT_SEMI_PAID_전 AS OUT_SEMI_PAID_B, ETCOUT_SEMI_PAID_후 AS OUT_SEMI_PAID_A
+            , ETCOUT_SEMI_FREE_전 AS OUT_SEMI_FREE_B, ETCOUT_SEMI_FREE_후 AS OUT_SEMI_FREE_A
+            , ETCOUT_ETC_전       AS OUT_ETC_B,       ETCOUT_ETC_후       AS OUT_ETC_A
+            , ETCOUT_TOTAL_전     AS OUT_TOTAL_B,     ETCOUT_TOTAL_후     AS OUT_TOTAL_A
+            -- LOSS (전=B / 후=A)
+            , LOSS_전 AS LOSS_B, LOSS_후 AS LOSS_A
+            -- 재고 EOH (전=B / 후=A) — 그리드 필드: lineWip/lineFgs/bWip/bFgs/tEohWip/tEohFgs/totalEoh
+            , EOH_LINE_WIP_전 AS LINE_WIP_B, EOH_LINE_WIP_후 AS LINE_WIP_A
+            , EOH_LINE_FGS_전 AS LINE_FGS_B, EOH_LINE_FGS_후 AS LINE_FGS_A
+            , EOH_B_WIP_전    AS B_WIP_B,    EOH_B_WIP_후    AS B_WIP_A
+            , EOH_B_FGS_전    AS B_FGS_B,    EOH_B_FGS_후    AS B_FGS_A
+            , T_EOH_WIP_전    AS T_EOH_WIP_B, T_EOH_WIP_후   AS T_EOH_WIP_A
+            , T_EOH_FGS_전    AS T_EOH_FGS_B, T_EOH_FGS_후   AS T_EOH_FGS_A
+            , TOTAL_EOH_전    AS TOTAL_EOH_B, TOTAL_EOH_후   AS TOTAL_EOH_A
+        FROM DOI_VN_PROD_RESC WITH (NOLOCK)
+        WHERE SEL_CODE = @SEL_CODE
           AND ( (NULLIF(@YYYYMM,'') IS NOT NULL AND YYYYMM = @YYYYMM)
              OR (NULLIF(@YYYYMM,'') IS NULL AND SUBSTRING(YYYYMM,1,4) = @YYYY) )
           AND 도우코드 IS NOT NULL AND LTRIM(RTRIM(도우코드)) <> ''
-        GROUP BY 도우코드
-        ORDER BY DIVISION, 도우코드;
+        ORDER BY division, 도우코드;
     END TRY
     BEGIN CATCH
         SELECT ERROR_MESSAGE() AS ErrorMessage;
