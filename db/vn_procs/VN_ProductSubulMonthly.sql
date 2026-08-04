@@ -39,8 +39,8 @@ BEGIN
             , ETCOUT_SEMI_FREE_전 AS OUT_SEMI_FREE_B, ETCOUT_SEMI_FREE_후 AS OUT_SEMI_FREE_A
             , ETCOUT_ETC_전       AS OUT_ETC_B,       ETCOUT_ETC_후       AS OUT_ETC_A
             , ETCOUT_TOTAL_전     AS OUT_TOTAL_B,     ETCOUT_TOTAL_후     AS OUT_TOTAL_A
-            -- LOSS (전=B / 후=A)
-            , LOSS_전 AS LOSS_B, LOSS_후 AS LOSS_A
+            -- LOSS (전=B / 후=A / 합계=T)
+            , LOSS_전 AS LOSS_B, LOSS_후 AS LOSS_A, (ISNULL(LOSS_전,0)+ISNULL(LOSS_후,0)) AS LOSS_T
             -- 재고 EOH (전=B / 후=A) — 그리드 필드: lineWip/lineFgs/bWip/bFgs/tEohWip/tEohFgs/totalEoh
             , EOH_LINE_WIP_전 AS LINE_WIP_B, EOH_LINE_WIP_후 AS LINE_WIP_A
             , EOH_LINE_FGS_전 AS LINE_FGS_B, EOH_LINE_FGS_후 AS LINE_FGS_A

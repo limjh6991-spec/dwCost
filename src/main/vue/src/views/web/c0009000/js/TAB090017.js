@@ -41,6 +41,22 @@ const qaGroup = (base, text, showMode) => {
   return g;
 };
 
+// PFL전/후 + 합계(전+후) 3그룹 (base: loss → lossB*/lossA*/lossT*)
+const pflGroupT = (base, text, showMode) => {
+  const g = {
+    name: `grp_${base}`,
+    header: { text },
+    direction: 'horizontal',
+    items: [
+      { name: `${base}_b`, header: { text: 'PFL전 50%' }, direction: 'horizontal', items: [{ column: `${base}BQty` }, { column: `${base}BAmt` }] },
+      { name: `${base}_a`, header: { text: 'PFL후 90%' }, direction: 'horizontal', items: [{ column: `${base}AQty` }, { column: `${base}AAmt` }] },
+      { name: `${base}_t`, header: { text: '합계' }, direction: 'horizontal', items: [{ column: `${base}TQty` }, { column: `${base}TAmt` }] },
+    ],
+  };
+  if (showMode) g.groupShowMode = showMode;
+  return g;
+};
+
 // PFL 항목: [base, headerText]
 const BOH = [
   ['bohLineWip', '1. LINE_WIP'],
@@ -121,6 +137,8 @@ const grid = {
     { fieldName: 'division', dataType: ValueType.TEXT },
     ...ALL_PFL.flatMap(([b]) => pflFields(b)),
     ...ALL_QA.flatMap(([b]) => qaFields(b)),
+    { fieldName: 'lossTQty', dataType: ValueType.NUMBER },
+    { fieldName: 'lossTAmt', dataType: ValueType.NUMBER },
   ],
 
   columns: [
@@ -128,6 +146,7 @@ const grid = {
     { name: 'division', fieldName: 'division', width: 60, header: { text: '구분\nDivision' }, styleName: 'tc', autoFilter: true },
     ...ALL_PFL.flatMap(([b]) => pflCols(b)),
     ...ALL_QA.flatMap(([b]) => qaCols(b)),
+    numCol('lossTQty'), numCol('lossTAmt'),
   ],
 
   layout: [
@@ -174,7 +193,7 @@ const grid = {
       ],
     },
     // LOSS
-    { name: 'grpLoss', header: { text: 'LOSS / SCRAP' }, direction: 'horizontal', items: [pflGroup('loss', 'LOSS(SCRAP)')] },
+    { name: 'grpLoss', header: { text: 'LOSS / SCRAP' }, direction: 'horizontal', items: [pflGroupT('loss', 'LOSS(SCRAP)')] },
     // 재고 / EOH (expandable)
     {
       name: 'grpEoh',
