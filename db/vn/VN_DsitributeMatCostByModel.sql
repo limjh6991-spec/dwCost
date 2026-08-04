@@ -10,22 +10,23 @@ BEGIN
 	--   매핑: 항목=자재번호, 투입금액=배부금액, EXPEN_SEL MDAX=원자재/MIAX=부자재. 투입수량은 doi_matl_resc 유지.
 	BEGIN TRY
 		DECLARE @cols nvarchar(max), @sql nvarchar(max);
-		-- 모델별 [수량, 금액] 컬럼 동적 생성
+		-- [VN 260801] 헤더 품번을 도우모델 → 도우코드 기준으로 변경 (비나 현업 요청). doi_expn_matl.도우코드 사용.
+		-- 도우코드별 [수량, 금액] 컬럼 동적 생성
 		SELECT @cols = STRING_AGG(CAST(
-			', SUM(CASE WHEN 도우모델=N''' + 도우모델 + ''' THEN q   END) AS [' + 도우모델 + '_Q]' +
-			', SUM(CASE WHEN 도우모델=N''' + 도우모델 + ''' THEN amt END) AS [' + 도우모델 + ']'
-			AS nvarchar(max)), '') WITHIN GROUP (ORDER BY 도우모델)
-		FROM (SELECT DISTINCT 도우모델 FROM doi_expn_matl WITH(NOLOCK)
+			', SUM(CASE WHEN 도우코드=N''' + 도우코드 + ''' THEN q   END) AS [' + 도우코드 + '_Q]' +
+			', SUM(CASE WHEN 도우코드=N''' + 도우코드 + ''' THEN amt END) AS [' + 도우코드 + ']'
+			AS nvarchar(max)), '') WITHIN GROUP (ORDER BY 도우코드)
+		FROM (SELECT DISTINCT 도우코드 FROM doi_expn_matl WITH(NOLOCK)
 		      WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE AND 원가구분=N'재료비') m;
 
 		SET @sql = N'
 		;WITH MC AS (
-			SELECT 도우모델, 항목 AS 자재번호,
+			SELECT 도우코드, 항목 AS 자재번호,
 			       CASE WHEN EXPEN_SEL=''MDAX'' THEN N''원자재'' ELSE N''부자재'' END AS mat_class,
 			       SUM(투입금액) AS 배부금액
 			FROM doi_expn_matl WITH(NOLOCK)
 			WHERE yyyymm=@ym AND site=@st AND sel_code=@sc AND 원가구분=N''재료비''
-			GROUP BY 도우모델, 항목, CASE WHEN EXPEN_SEL=''MDAX'' THEN N''원자재'' ELSE N''부자재'' END
+			GROUP BY 도우코드, 항목, CASE WHEN EXPEN_SEL=''MDAX'' THEN N''원자재'' ELSE N''부자재'' END
 		),
 		mat_info AS (
 			SELECT coalesce(bom.자재번호, mat.품번) 자재번호,
@@ -47,7 +48,7 @@ BEGIN
 				CAST(N'''' AS nvarchar(50)) AS 거래처,
 				b.규격,
 				coalesce(q.투입수량,0) AS 투입수량,
-				a.도우모델,
+				a.도우코드,
 				ROUND(coalesce(q.투입수량,0) * a.배부금액 / NULLIF(SUM(a.배부금액) OVER (PARTITION BY a.자재번호),0), 2) AS q_raw,
 				a.배부금액 AS amt
 			FROM MC a
@@ -55,8 +56,8 @@ BEGIN
 			LEFT JOIN QTY q ON (q.품번 = a.자재번호)
 		),
 		ADJ AS (
-			SELECT 자재분류,자재대분류,자재중분류,자재명,자재번호,거래처,규격,투입수량,도우모델,amt,
-				q_raw + CASE WHEN ROW_NUMBER() OVER (PARTITION BY 자재번호 ORDER BY q_raw DESC, 도우모델)=1 THEN ROUND(투입수량,2) - SUM(q_raw) OVER (PARTITION BY 자재번호) ELSE 0 END AS q
+			SELECT 자재분류,자재대분류,자재중분류,자재명,자재번호,거래처,규격,투입수량,도우코드,amt,
+				q_raw + CASE WHEN ROW_NUMBER() OVER (PARTITION BY 자재번호 ORDER BY q_raw DESC, 도우코드)=1 THEN ROUND(투입수량,2) - SUM(q_raw) OVER (PARTITION BY 자재번호) ELSE 0 END AS q
 			FROM BASE
 		)
 		SELECT
