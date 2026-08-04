@@ -1,4 +1,4 @@
-CREATE OR ALTER PROCEDURE DOI_TotalCost_Tree
+﻿CREATE   PROCEDURE DOI_TotalCost_Tree
 (
     @YYYYMM VARCHAR(6),
     @SITE   VARCHAR(4),
@@ -1362,7 +1362,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 					      /NULLIF(((' + @SumYangsan_Bep + ')+(' + @SumDev_Bep + ')+(' + @SumCas_Bep + ')+(' + @SumPur_Bep +')),0)*100
 					       --/NULLIF(((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + ')),0)*100
 					WHEN Cur.rn = 1 THEN
-					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ') + (@ACC_TOTAL - @ACC_ADJ) ) - case when '+ @YYYYMM + '< ''202604'' THEN @SCOF  else 0 end
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ') + @ACC_TOTAL ) - case when '+ @YYYYMM + '< ''202604'' THEN @SCOF  else 0 end
 
 					WHEN Cur.rn = 2 THEN
 					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ') + (@ACC_IDLE_COMP))   -- [규칙1] 제품매출(조정은 매출액으로 이동): 양산+개발+카세트+회계(비가동+조정)
@@ -1387,7 +1387,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 					    )
 					    -*/
 					    (
-					      ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ') - @SCOF + (@ACC_TOTAL - @ACC_ADJ) )
+					      ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ') - @SCOF + @ACC_TOTAL )
 					     -- + ( @CostAdj )
 					    )
 					ELSE
