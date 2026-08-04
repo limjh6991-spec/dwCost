@@ -28,6 +28,10 @@ function toDecimal4(fmt) {
   return typeof fmt === 'string' ? fmt.replace(/#,##0/g, '#,##0.0000') : fmt;
 }
 
+function toDecimal5(fmt) {
+  return typeof fmt === 'string' ? fmt.replace(/#,##0/g, '#,##0.00000') : fmt;
+}
+
 export function applyAmtFormat(gridView, columns, curProdCtg, currency = 'USD') {
   if (!gridView || !Array.isArray(columns)) return;
   // VINA(VN) & USD 표시일 때만 2자리. VINA라도 KRW/VND 환산표시면 정수, 본사(HQ)도 정수.
@@ -59,7 +63,7 @@ export function applyAmtFormat(gridView, columns, curProdCtg, currency = 'USD') 
 
 /**
  * applyQtyFormat: 사이트(curProdCtg)에 따라 "수량" 컬럼의 소수 자릿수를 조정.
- *   - VINA(VN): 정수 수량포맷(#,##0)을 소수점 4자리(#,##0.0000)로 표시 (통화 무관)
+ *   - VINA(VN): 정수 수량포맷(#,##0)을 소수점 5자리(#,##0.00000)로 표시 (통화 무관)
  *   - 본사(HQ): 정수(#,##0) 유지
  *   - 금액/비율/순번 등 비-수량 컬럼과, 원래부터 소수인 컬럼은 제외
  */
@@ -76,13 +80,13 @@ export function applyQtyFormat(gridView, columns, curProdCtg) {
     const key = (col.name || '') + '|' + (col.fieldName || '') + '|' + ((col.header && col.header.text) || '');
     if (!QTY_RE.test(key)) return;
 
-    const nf = isVina ? toDecimal4(orig) : orig; // VINA=4자리, 본사=원래 정수
+    const nf = isVina ? toDecimal5(orig) : orig; // VINA=5자리, 본사=원래 정수
     try {
       gridView.setColumnProperty(col.name, 'numberFormat', nf);
       if (col.footer && col.footer.numberFormat) {
         gridView.setColumnProperty(col.name, 'footer', {
           ...col.footer,
-          numberFormat: isVina ? toDecimal4(col.footer.numberFormat) : col.footer.numberFormat,
+          numberFormat: isVina ? toDecimal5(col.footer.numberFormat) : col.footer.numberFormat,
         });
       }
     } catch (e) {
