@@ -654,17 +654,18 @@ BEGIN
 
 		-- (3) 기타매출 = 5118000 대변합 (총합계 전용) → 매출액/순매출액/매출이익/영업이익에 가산
 		UPDATE #sourceTable SET amt = @EtcSale                     WHERE model=N'Z합계' AND rn IN (103,104);
-		UPDATE #sourceTable SET amt = COALESCE(amt,0) + @EtcSale   WHERE model=N'Z합계' AND rn IN (100,1000,2000,3000);
+		UPDATE #sourceTable SET amt = COALESCE(amt,0) + @EtcSale   WHERE model=N'Z합계' AND rn IN (100,1000,2000);  -- 영업이익(3000)은 EtcSale 미가산(총원가 정의)
 
 		-- ===== 6.재무활동이익 / 7.재무활동비용 (회사 전체 → 총합계 컬럼 전용) =====
 		INSERT INTO #sourceTable (구분, model, rn, gubun, amt) VALUES
 		  (N'', N'Z합계', 2100, N'  6. 재무활동으로 부터의 이익', @FinInc_Int + @FinInc_FX),
 		  (N'', N'Z합계', 2200, N'  7. 재무활동으로부터의 비용',  @FinCost_Int + @FinCost_FX),
 		  (N'', N'Z합계', 2300, N'    - 재무 비용',               @FinCost_Int);
-		-- 10. 영업이익(총합계) += (재무이익 - 재무비용)
-		UPDATE #sourceTable
-		   SET amt = COALESCE(amt,0) + (@FinInc_Int + @FinInc_FX) - (@FinCost_Int + @FinCost_FX)
-		 WHERE model=N'Z합계' AND rn=3000;
+		-- 10. 영업이익 = 매출이익 − 판관비 (재무활동 미가감: 영업외이므로 영업이익 제외 / 총원가 VIII 영업이익과 일치)
+		--     [직전 kyh 버전 로직] 재무이익/비용은 별도 표시행(2100/2200/2300)에만, 영업이익엔 미반영
+		-- UPDATE #sourceTable
+		--    SET amt = COALESCE(amt,0) + (@FinInc_Int + @FinInc_FX) - (@FinCost_Int + @FinCost_FX)
+		--  WHERE model=N'Z합계' AND rn=3000;
 
        -- 개발 모델 합계
 		INSERT INTO #sourceTable (구분, model, rn, gubun, amt)
