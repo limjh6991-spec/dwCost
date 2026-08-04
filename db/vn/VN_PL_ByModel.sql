@@ -324,11 +324,15 @@ BEGIN
                 , MODEL           AS model
                 , SUB_NAME
                 , SUM(ISNULL(DIST_AMT,0)) AS amt      -- 배부된 판관비 금액
-            FROM DOI_SMCE_COST
-            WHERE YYYYMM 	= @YYYYMM
-              AND SITE 		= @SITE
-              AND SEL_CODE  = @SEL_CODE 
-            GROUP BY 구분, MODEL, SUB_NAME
+            FROM DOI_SMCE_COST S
+            JOIN (SELECT yyyymm,site,계정과목,MIN(계정코드) 계정코드 FROM doi_dept_cost WHERE 비용구분=N'판관' GROUP BY yyyymm,site,계정과목) dc
+              ON dc.yyyymm=S.yyyymm AND dc.site=S.site AND dc.계정과목=S.SUB_NAME
+            JOIN doi_acct da ON da.yyyymm=S.yyyymm AND da.site=S.site AND da.acct=dc.계정코드
+            WHERE S.YYYYMM = @YYYYMM
+              AND S.SITE = @SITE
+              AND S.SEL_CODE = @SEL_CODE
+              AND da.상위계정과목 <> N'비용제외' AND ISNULL(da.상위계정과목,N'') <> N''
+            GROUP BY S.구분, S.MODEL, S.SUB_NAME
         )
         , SGNA_SUM AS (
             ------------------------------------------------------------------

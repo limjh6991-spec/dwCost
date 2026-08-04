@@ -671,7 +671,11 @@ BEGIN
                 , M.model
                 , CAST(COALESCE(SUM(X.dist_amt),0) AS DECIMAL(18,2)) AS amt
             FROM #MODEL M
-            LEFT JOIN DOI_SMCE_COST X WITH(NOLOCK)
+            LEFT JOIN (SELECT sm.* FROM DOI_SMCE_COST sm
+                       JOIN (SELECT yyyymm,site,계정과목,MIN(계정코드) 계정코드 FROM doi_dept_cost WHERE 비용구분=N'판관' GROUP BY yyyymm,site,계정과목) dc
+                         ON dc.yyyymm=sm.yyyymm AND dc.site=sm.site AND dc.계정과목=sm.SUB_NAME
+                       JOIN doi_acct da ON da.yyyymm=sm.yyyymm AND da.site=sm.site AND da.acct=dc.계정코드
+                       WHERE da.상위계정과목 <> N'비용제외' AND ISNULL(da.상위계정과목,N'') <> N'') X
             ON X.YYYYMM = @YYYYMM
                   AND X.SITE   = @SITE
                   AND X.SEL_CODE = @SELCODE
