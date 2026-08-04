@@ -43,6 +43,7 @@ BEGIN
 --		DECLARE @SumPur_Fix      NVARCHAR(MAX)=N'0';
 
         DECLARE @SCOFTotal DECIMAL(18,2) = 0;
+        DECLARE @EtcSale DECIMAL(18,2) = 0;
 
         DECLARE @SQL             NVARCHAR(MAX);
 
@@ -213,6 +214,11 @@ BEGIN
 	   WHERE yyyymm  = @YYYYMM
 	    AND site   	 = @SITE
         AND sel_code = @SELCODE
+
+        -- (4)기타매출 = DOI_DEPT_COST 계정코드 5118000 대변금액 합 (회사 전체 → 총합계 전용, PL_Detail과 동일 소스)
+        SELECT @EtcSale = CAST(COALESCE(SUM(대변금액),0) AS DECIMAL(18,2))
+        FROM DOI_DEPT_COST WITH(NOLOCK)
+        WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SELCODE AND 계정코드='5118000';
 
 		/*==============================================================
 		  (추가) 1-1) 변동비/고정비 프로시저 결과 받아오기 (세로형)
@@ -1087,6 +1093,7 @@ BEGIN
 						  ((' + @SumYangsan_Cm + ')+(' + @SumDev_Cm + ')+(' + @SumCas_Cm + ')+(' + @SumPur_Cm + '))
 					      /NULLIF(((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + ')),0)*100
 					  WHEN Cur.rn = 1 THEN ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) - @SCOF
+					  WHEN Cur.rn = 7 THEN ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + @EtcSale
 					  ELSE ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + '))
 					END
 		      AS DECIMAL(18,2)) AS [총합계]
@@ -1145,7 +1152,7 @@ BEGIN
 		';
 		
 		--SELECT @SQL;
-		EXEC sp_executesql @SQL, N'@SCOF DECIMAL(18,2)', @SCOF = @SCOFTotal;
+		EXEC sp_executesql @SQL, N'@SCOF DECIMAL(18,2), @EtcSale DECIMAL(18,2)', @SCOF = @SCOFTotal, @EtcSale = @EtcSale;
 
         DROP TABLE #BASE;
         DROP TABLE #RN;
