@@ -52,9 +52,10 @@ BEGIN
 		 mtot AS (SELECT model, SUM(amt) tot FROM item_amt GROUP BY model),
 		 g AS (SELECT NULLIF(SUM(tot),0) g FROM mtot)
 		SELECT m.model, sk.rn, sk.gubun,
+			-- 배부율(rn=0)은 4자리, 금액은 2자리값(#1 dist_amt 2자리) → 공유 CAST 18,4 (금액은 표시시 2자리 포맷)
 			CAST(CASE WHEN sk.rn=0     THEN mt.tot / (SELECT g FROM g)
 			          WHEN sk.rn=99990 THEN mt.tot
-			          ELSE ISNULL(ia.amt,0) END AS DECIMAL(18,3)) amt
+			          ELSE ISNULL(ia.amt,0) END AS DECIMAL(18,4)) amt
 		INTO #sourceTable1
 		FROM (SELECT DISTINCT model FROM #amt) m
 		CROSS JOIN #skel sk

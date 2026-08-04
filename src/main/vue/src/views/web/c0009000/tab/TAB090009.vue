@@ -400,7 +400,7 @@ export default {
 
       // 숫자 포맷은 gubun 컬럼 외에만 적용
       if (!isGubunCol && isRateRow) {
-      ret.numberFormat = '#,##0.##';
+      ret.numberFormat = '#,##0.0000';
       }
 
       return ret;
