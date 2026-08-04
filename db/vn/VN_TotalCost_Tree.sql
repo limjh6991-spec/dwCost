@@ -442,7 +442,7 @@ BEGIN
                 , model    
                 , acct_name
                 , out_amt AS amt --select distinct acct_name
-   FROM doi_stco WITH(NOLOCK)
+   FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) doi_stco
             WHERE yyyymm = @YYYYMM
               AND site   = @SITE
               AND sel_code = @SELCODE
@@ -458,7 +458,7 @@ BEGIN
         LABOR_BASE AS (
          SELECT 16+총원가_순서 rn, N'    ('+CAST(총원가_순서 as varchar(1))+') '+b.상위계정과목 as gubun, a.구분, a.model,
                    SUM(out_amt) AS amt
-            FROM doi_stco a WITH(NOLOCK)
+            FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) a
             LEFT JOIN (SELECT DISTINCT yyyymm, site, 계정과목, 계정코드 FROM doi_dept_cost) dc
                    ON dc.yyyymm=a.yyyymm AND dc.site=a.site AND dc.계정과목=a.acct_name
             inner join doi_acct b on(a.yyyymm=b.yyyymm and a.site=b.site
@@ -474,7 +474,7 @@ BEGIN
         LABOR_AGG AS (
             -- III. 노무비 합계 = doi_stco 622 계정 전체 (상세 LABOR_ITEMS와 동일 소스로 정합)
             SELECT 16 rn, N'  III. 노무비' gubun, a.구분, a.model, SUM(a.out_amt) AS amt
-            FROM doi_stco a WITH(NOLOCK)
+            FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) a
             JOIN (SELECT DISTINCT yyyymm,site,계정과목,계정코드 FROM doi_dept_cost) dc
               ON dc.yyyymm=a.yyyymm AND dc.site=a.site AND dc.계정과목=a.acct_name
             WHERE a.yyyymm=@YYYYMM AND a.site=@SITE AND a.sel_code=@SELCODE
@@ -484,7 +484,7 @@ BEGIN
         EXP_BASE AS (
                  SELECT 22+총원가_순서 rn, N'    ('+CAST(총원가_순서 as varchar(2))+') '+b.상위계정과목 as gubun, a.구분, a.model,
                    SUM(out_amt) AS amt
-            FROM doi_stco a WITH(NOLOCK)
+            FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) a
             LEFT JOIN (SELECT DISTINCT yyyymm, site, 계정과목, 계정코드 FROM doi_dept_cost) dc
                    ON dc.yyyymm=a.yyyymm AND dc.site=a.site AND dc.계정과목=a.acct_name
             inner join doi_acct b on(a.yyyymm=b.yyyymm and a.site=b.site
@@ -505,7 +505,7 @@ BEGIN
               AND a.model = 'EXTRA'
             UNION ALL*/
             SELECT 22 rn, N'  기타출고' gubun, 구분, model, out_amt
-             FROM doi_stco a WITH(NOLOCK)
+             FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) a
             WHERE a.yyyymm = @YYYYMM
               AND a.site   = @SITE
               AND a.sel_code = @SELCODE
@@ -537,7 +537,7 @@ BEGIN
         /* ====== 제품매출원가(doi_stco OUT, 비LOSS) = 실제 제품출고원가 ====== */
         PROD_COGS AS (
             SELECT 구분, model, CAST(SUM(out_amt) AS DECIMAL(18,2)) AS amt
-            FROM doi_stco WITH(NOLOCK)
+            FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) doi_stco
             WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SELCODE
               AND COST_TYPE <> 'LOSS'
             GROUP BY 구분, model
@@ -787,7 +787,7 @@ BEGIN
             SELECT a.구분, a.model, LEFT(dc.계정코드,3) code3,
                    CASE WHEN a.acct_name=N'공구 및 도구비용 - 상각비용' THEN N'제)공구 및 도구 비용 - 상각비용' WHEN a.acct_name=N'공구 및 도구비용 - 일회성비용' THEN N'제)공구 및 도구 비용 -일회성비용' ELSE REPLACE(COALESCE(NULLIF(b.경영계획과목,N''),b.상위계정과목),N'(간접)',N'') END item,
                    SUM(a.out_amt) amt
-            FROM doi_stco a WITH(NOLOCK)
+            FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) a
             JOIN (SELECT DISTINCT yyyymm,site,계정과목,계정코드 FROM doi_dept_cost) dc
               ON dc.yyyymm=a.yyyymm AND dc.site=a.site AND dc.계정과목=a.acct_name
             JOIN doi_acct b WITH(NOLOCK)

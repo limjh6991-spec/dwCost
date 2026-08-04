@@ -66,23 +66,6 @@ BEGIN
 		    WHERE B.YYYYMM = @YYYYMM
 		      AND B.SITE   = @SITE
 		      
-		 UNION
-		 
-		 SELECT C.구분, C.MODEL
-		 FROM DOI_STCO C
-		    WHERE C.YYYYMM = @YYYYMM
-		      AND C.SITE   = @SITE
-		      AND C.SEL_CODE = @SEL_CODE
-		      AND C.MODEL = 'EXTRA'
-		UNION 
-		SELECT 구분, MODEL
-		FROM DOI_STCO
-		WHERE 1=1
-		   AND YYYYMM = @YYYYMM
-		   AND SITE   = @SITE
-		   AND SEL_CODE = @SEL_CODE
-		   AND ACCT_NAME LIKE '기타출고'
-		
 		UNION
 		
 		SELECT
@@ -113,11 +96,8 @@ BEGIN
 		  AND 계정과목 = N'제품매출원가'
 		  AND 대변금액 <> 0;		 
 		 
-		SELECT @LossAdj = COALESCE(SUM(COALESCE(LOSS,0)), 0)
-		FROM DOI_COST WITH(NOLOCK)
-		WHERE YYYYMM   = @YYYYMM
-		  AND SITE     = @SITE
-		  AND SEL_CODE = @SEL_CODE; 
+		-- DOI_COST LOSS 조정 제거 (@LossAdj=0 유지)
+		SET @LossAdj = 0;
 		 
 		DROP TABLE IF EXISTS #sourceTable;
 		 ;WITH MERCH_ITEM AS (
@@ -260,7 +240,7 @@ BEGIN
 		        , CAST(NULL AS DECIMAL(18,2)) AS trans_out_amt
 		        , SUM(ISNULL(S.EOH_AMT, 0)) AS end_fg_amt
 		        , SUM(S.out_amt) AS prod_cogs_amt --select *
-		    FROM DOI_STCO S
+		    FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, T_INPUT_AMT AS IN_AMT, EOH_WH0006_AMT AS EOH_AMT, ETCOUT_TOTAL_AMT AS OUTETC_AMT, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) S
 		    WHERE S.YYYYMM   = @YYYYMM
 		      AND S.SITE     = @SITE
 		      AND S.SEL_CODE = @SEL_CODE
@@ -278,7 +258,7 @@ BEGIN
 			            ELSE  ISNULL(OUTETC_AMT,0)
 			        END
 			      ) AS outetc_amt
-			FROM DOI_STCO
+			FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, T_INPUT_AMT AS IN_AMT, EOH_WH0006_AMT AS EOH_AMT, ETCOUT_TOTAL_AMT AS OUTETC_AMT, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) S2
 			WHERE YYYYMM = @YYYYMM
 			  AND SITE = @SITE
 			  AND SEL_CODE = @SEL_CODE
