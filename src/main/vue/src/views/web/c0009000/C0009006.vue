@@ -172,9 +172,9 @@ export default {
             width: 80,
             header: { text: '수량' },
             autoFilter: false,
-            numberFormat: '#,##0',
+            numberFormat: '#,##0.00000',
             styleName: 'tr',
-            footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
+            footer: { expression: "sum", numberFormat: "#,##0.00000", styleName: "sum-footer1", }
           });
         }
 
@@ -197,6 +197,15 @@ export default {
           footer: { expression: "sum", numberFormat: "#,##0", styleName: "sum-footer1", }
         });
       });
+
+      // VN: 전체수량 컬럼도 소수점 5자리 (동적 모델 수량은 위에서 이미 5자리)
+      if (params.site === 'VN') {
+        const totalQty = gridField1.columns.find((c) => c.name === '전체수량');
+        if (totalQty) {
+          totalQty.numberFormat = '#,##0.00000';
+          if (totalQty.footer) totalQty.footer.numberFormat = '#,##0.00000';
+        }
+      }
 
       this.gridDataProvider.setFields(gridField1.fields);
       this.gridView.setColumns(gridField1.columns);
