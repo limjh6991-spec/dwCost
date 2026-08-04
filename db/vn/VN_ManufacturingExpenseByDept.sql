@@ -32,7 +32,7 @@ BEGIN
 
 			SELECT N'제조공통' dept_name, 1 sec, case when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'%Glass%' then N'원재료_원장' when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'PF%' then N'원재료_PF' when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'PL%' then N'원재료_PL' when m.품목자산분류=N'Raw Material' and upper(m.자재소분류) like N'%CHEMICAL%' then N'원재료_약액' when m.품목자산분류=N'Sub Material' then N'부재료비 (6272)' else N'원재료_기타' end item, CAST(case when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'%Glass%' then 1 when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'PF%' then 3 when m.품목자산분류=N'Raw Material' and m.자재소분류 like N'PL%' then 4 when m.품목자산분류=N'Raw Material' and upper(m.자재소분류) like N'%CHEMICAL%' then 5 when m.품목자산분류=N'Sub Material' then 6 else 9 end AS bigint) iord, CAST(mc.배부금액 AS float) amt
 
-				FROM doi_mat_cost mc LEFT JOIN DOI_VN_MATERIAL m ON m.자재번호=mc.자재번호 AND m.yyyymm=mc.yyyymm WHERE mc.yyyymm=@YYYYMM AND mc.site=@SITE AND mc.sel_code=@SEL_CODE
+				FROM (SELECT 항목 자재번호, 투입금액 배부금액 FROM doi_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE AND 원가구분=N'재료비') mc LEFT JOIN DOI_VN_MATERIAL m ON m.자재번호=mc.자재번호 AND m.yyyymm=@YYYYMM   -- [VN 260801] 구 doi_mat_cost → 신 doi_expn_matl(재료비)
 
 			UNION ALL
 
@@ -114,7 +114,7 @@ BEGIN
 
 		FROM (VALUES
 
-			(1,1,N'원재료_원장'),(1,2,N'원재료_카세트 부품'),(1,3,N'원재료_PF'),(1,4,N'원재료_PL'),(1,5,N'원재료_약액'),(1,6,N'부재료비 (6272)_TRAY'),(1,7,N'부재료비 (6272)_기타'),
+			(1,1,N'원재료_원장'),(1,2,N'원재료_PF'),(1,3,N'원재료_PL'),(1,4,N'원재료_약액'),(1,5,N'부재료비 (6272)_TRAY'),(1,6,N'부재료비 (6272)_기타'),   -- [VN 260801] 원재료_카세트 부품(비나 무해당) 제거·재번호
 
 			(2,1,N'제)급여-직원'),(2,2,N'제)상여금'),(2,3,N'제)제수당'),(2,4,N'제)퇴직급여'),(2,5,N'제)주식보상비용'),(2,6,N'제)급여-사회보험료'),(2,7,N'제)급여-건강보험'),(2,8,N'제)급여-노동자실업보험료'),(2,9,N'제)급여-노동자노조비'),(2,10,N'제)급여-개인소득세'),(2,11,N'제)급여-기타'),
 

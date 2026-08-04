@@ -44,16 +44,16 @@ uc    = pool / 분모
 ### 금액 배부
 | 라인 | 배부 방식 |
 |---|---|
-| **BOH 포지션(8)** | `BOH금액 × (포지션수량 × 평가비율) / Σ(포지션수량 × 평가비율)` — **환산량 기준(전0.5/후0.9) = EOH와 동일**. 대표행 **LINE_WIP_전**에 잔차 흡수(Σ=BOH금액). ※셋업 이후 BOH=전월 EOH금액이라 포지션 배분이 EOH와 일치해야 정합(이월품이면 BOH포지션=EOH포지션) |
+| **BOH 포지션(8)** | `BOH금액 × (포지션수량 × 평가비율) / Σ(포지션수량 × 평가비율)` — **환산량 기준(전0.5/후0.9) = EOH와 동일**. 반올림 잔차는 **값이 가장 큰 포지션**이 흡수(Σ=BOH금액, 음수 방지). ※셋업 이후 BOH=전월 EOH금액이라 포지션 배분이 EOH와 일치(이월품이면 BOH포지션=EOH포지션 정확 일치) |
 | **USC_INPUT** | = IN금액(투입) |
 | **ETCIN_RESORT / REWORK** | = DOI_VN_RSRW rs_amt / rw_amt |
 | **ETCIN_CODE / SEMI / ETC** | 0 (미정) |
-| **EOH 포지션(8)** | `uc × 포지션수량 × 평가비율`(전0.5/후0.9) |
+| **EOH 포지션(8)** | `pool × 포지션수량 × 평가비율 / denom`(=uc×수량×비율, 나눗셈-마지막 → 이월품에서 BOH포지션과 정확 일치) |
 | **ETC-OUT 포지션(8)** | `uc × 포지션수량` (반제품출고 유상/무상 포함) |
 | **LOSS(전/후)** | 전량손실(분모=0)이면 pool 배분, 아니면 0(가치는 OUT에 흡수) |
-| **OUTPUT_A(출고)** | **OUT수량>0**: 잔여 = pool − ΣETC-OUT − ΣEOH − ΣLOSS. **OUT수량=0(이월)**: 0 (잔여는 EOH_LINE_WIP_전이 흡수) → 원가보존 정확 |
+| **OUTPUT_A(출고)** | **OUT수량>0**: 잔여 = pool − ΣETC-OUT − ΣEOH − ΣLOSS. **OUT수량=0(이월)**: 0 (잔여는 값이 가장 큰 EOH포지션이 흡수) → 원가보존 정확 |
 
-> 잔차 흡수: OUT수량>0이면 OUTPUT_A, =0(이월)이면 EOH_LINE_WIP_전. → 이월품 재공 OUTPUT=0 이라 제품 INPUT phantom 없음.
+> 잔차 흡수: OUT수량>0이면 OUTPUT_A, =0(이월)이면 값이 가장 큰 EOH포지션. → 이월품 재공 OUTPUT=0(제품 INPUT phantom 없음), 포지션 음수 없음.
 
 ---
 
@@ -84,7 +84,7 @@ uc = (투입금액 − R/S·R/W금액) / (투입수량 − R/S·R/W수량)
 ### 금액 배부
 | 라인 | 배부 방식 |
 |---|---|
-| **BOH** | = DOI_STOCK_BOH 금액(원가항목별) 그대로 |
+| **BOH** | = DOI_STOCK_BOH 금액(원가항목별). **division은 stock_resc 기준으로 정렬**(DOI_STOCK_BOH를 stock_resc 도우코드·division에 조인 → 815AP 등 기초/수불 division 오분류시 누락 방지) |
 | **INPUT 8분할**(NORMAL LAST·THIS / BACKSHIP·WHRET × SORT/PFRW/PLRW) | `INPUT금액 × 수량비`. 대표행 **NORMAL_THIS**에 잔차 |
 | **ETCIN 반제품 유상/무상** | = 재공 반제품출고 금액 |
 | **ETCIN RMA / 기타** | 0 |
@@ -98,6 +98,21 @@ uc = (투입금액 − R/S·R/W금액) / (투입수량 − R/S·R/W수량)
 > 잔차 흡수 라인 = **OUTPUT(매출원가)**. EOH는 물리수량 고정이라 phantom 없음. R/S·R/W 초과 차액은 매출원가에서 흡수.
 
 ---
+
+## 3-B. 재료/가공 배부 — 생산환산량 (UP_VN_EXPN_INPUT) [2026-08 신기준]
+
+재료 공통·가공비를 도우코드에 배부하는 **배부 적수** 기준.
+```
+생산환산량 = OUTPUT_A + (TOTAL_EOH_전 × 0.5) + (TOTAL_EOH_후 × 0.9)   [doi_vn_prod_resc]
+배부적수   = 생산환산량 × 면적(DOI_MODEL_MAST.xy)
+배부비율   = 모델 적수 / Σ 적수
+```
+- 소스: 구 `V_DOI_PROD_SUBUL`·`(IN+OUT+LOSS)/2` → 신 `doi_vn_prod_resc`·`OUT+eoheq`.
+- 도우모델 = `LEFT(도우코드,LEN-1)`, 구분 = division(MP→양산/R&D→개발).
+- **직과 재료(MDAX)** 는 실투입 도우코드에 직접 귀속(배부 아님) — 전량손실 모델도 보존.
+- **공통재료(MIAX)·가공(UTG)** 만 생산환산량×면적 비율 배부. 면적검증은 OUTPUT>0 모델만.
+- 재료/가공 **총액 불변**, 모델별 재분배(완성출고·기말재공 큰 모델로 이동). → doi_expn_matl → doi_vn_cost(투입 IN) 소비.
+- ※배부 생산환산량(OUT+eoheq)과 재공단가 분모(OUT+**ETC-OUT**+eoheq)는 ETC-OUT 유무만 다름.
 
 ## 4. 재공 ↔ 제품 연결 (금액·수량 동일)
 

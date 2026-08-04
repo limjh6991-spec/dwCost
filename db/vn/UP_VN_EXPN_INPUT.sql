@@ -11,12 +11,13 @@ BEGIN
   BEGIN TRY
 
   -- 면적 누락 검증 (환산량>0 도우코드 중 DOI_MODEL_MAST 면적 없으면 중단)
+  -- [VN 260801] 배부 생산환산량 = OUTPUT_A + TOTAL_EOH_전×0.5+후×0.9 (doi_vn_prod_resc). 면적검증은 OUTPUT>0 모델만(기말재공만 있는 모델은 적수=0).
   ;WITH prod_chk AS (
-     SELECT 도우코드, SUM(CAST(ISNULL(IN_MONTH,0)+ISNULL(OUT_MONTH,0)+ISNULL(LOSS_MONTH,0) AS float))/2.0 환산량
-     FROM V_DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 도우코드)
+     SELECT 도우코드, SUM(ISNULL(OUTPUT_A,0)) outq
+     FROM doi_vn_prod_resc WHERE yyyymm=@YYYYMM AND sel_code=@SEL_CODE GROUP BY 도우코드)
   SELECT @missing_cnt=COUNT(*), @missing_list=STRING_AGG(CONVERT(nvarchar(max),p.도우코드),N', ')
   FROM prod_chk p LEFT JOIN DOI_MODEL_MAST mm ON mm.yyyymm=@YYYYMM AND mm.site=@SITE AND mm.MODEL=p.도우코드
-  WHERE p.환산량>0 AND (mm.MODEL IS NULL OR ISNULL(mm.xy,0)=0);
+  WHERE p.outq>0 AND (mm.MODEL IS NULL OR ISNULL(mm.xy,0)=0);
   IF ISNULL(@missing_cnt,0)>0
   BEGIN
      SET @Message=@Message+CHAR(10)+'[ERROR] '+CONVERT(varchar(19),GETDATE(),120)+CHAR(9)+N'- 면적(DOI_MODEL_MAST) 누락 도우코드 '+CAST(@missing_cnt AS varchar(10))+N'건 → 배부 중단: '+ISNULL(@missing_list,N'');
@@ -31,12 +32,13 @@ BEGIN
   IF OBJECT_ID('tempdb..#prod') IS NOT NULL DROP TABLE #prod;
   SELECT pa.도우코드, pa.도우모델, pa.구분, pa.in_qty, pa.환산량, CAST(ISNULL(mm.xy,0) AS float) 면적
   INTO #prod
-  FROM (SELECT 도우코드, MAX(도우모델) 도우모델, MAX(구분) 구분,
-           SUM(CAST(ISNULL(IN_MONTH,0) AS float)) in_qty,
-           SUM(CAST(ISNULL(IN_MONTH,0)+ISNULL(OUT_MONTH,0)+ISNULL(LOSS_MONTH,0) AS float))/2.0 환산량
-        FROM V_DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 도우코드) pa
+  FROM (SELECT 도우코드, LEFT(도우코드,LEN(도우코드)-1) 도우모델,
+           CASE WHEN division='MP' THEN N'양산' ELSE N'개발' END 구분,
+           SUM(CAST(ISNULL(USC_INPUT,0) AS float)) in_qty,
+           SUM(ISNULL(OUTPUT_A,0)+ISNULL(TOTAL_EOH_전,0)*0.5+ISNULL(TOTAL_EOH_후,0)*0.9) 환산량   -- [VN 260801] 신 생산환산량
+        FROM doi_vn_prod_resc WHERE yyyymm=@YYYYMM AND sel_code=@SEL_CODE GROUP BY 도우코드, division) pa
   LEFT JOIN DOI_MODEL_MAST mm ON mm.yyyymm=@YYYYMM AND mm.site=@SITE AND mm.MODEL=pa.도우코드
-  WHERE pa.환산량>0;
+  WHERE pa.환산량>0 OR EXISTS(SELECT 1 FROM DOI_VN_MAT_INPUT mi WHERE mi.yyyymm=@YYYYMM AND mi.제품번호=pa.도우코드);  -- [VN 260801] 직과 재료 보존(전량손실 모델 포함, 공통/가공은 적수0)
 
   ---------------- (1) 재료비 배부 ----------------
   ;WITH

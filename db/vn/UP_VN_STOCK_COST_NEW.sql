@@ -12,9 +12,11 @@ BEGIN
   DELETE FROM doi_vn_stco WHERE yyyymm=@YYYYMM AND sel_code=@SEL_CODE;
   ;WITH
   sr AS (SELECT * FROM doi_vn_stock_resc WHERE yyyymm=@YYYYMM AND sel_code=@SEL_CODE),
-  bh AS (SELECT model_type 도우코드, CASE WHEN 구분=N'양산' THEN 'MP' ELSE 'R&D' END division, MAX(구분) 구분, expen_sel EXPEN_SEL,
-            MAX(model) MODEL, MAX(expen_sel명) es명, MAX(acct_name) an, MAX(item_name) it, SUM(CAST(boh_amt AS float)) boh_amt
-         FROM DOI_STOCK_BOH WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY model_type, CASE WHEN 구분=N'양산' THEN 'MP' ELSE 'R&D' END, expen_sel),
+  srd AS (SELECT DISTINCT 도우코드, division FROM doi_vn_stock_resc WHERE yyyymm=@YYYYMM AND sel_code=@SEL_CODE),  -- 제품수불 기준 division
+  bh AS (SELECT srd.도우코드, srd.division, CASE WHEN srd.division='MP' THEN N'양산' ELSE N'개발' END 구분, sb.expen_sel EXPEN_SEL,
+            MAX(sb.model) MODEL, MAX(sb.expen_sel명) es명, MAX(sb.acct_name) an, MAX(sb.item_name) it, SUM(CAST(sb.boh_amt AS float)) boh_amt
+         FROM DOI_STOCK_BOH sb JOIN srd ON srd.도우코드=sb.model_type   -- 기초금액 division을 stock_resc 기준으로 정렬(815AP 등 오분류 보정)
+         WHERE sb.yyyymm=@YYYYMM AND sb.site=@SITE GROUP BY srd.도우코드, srd.division, sb.expen_sel),
   wo AS (SELECT 도우코드, division, MAX(구분) 구분, EXPEN_SEL, MAX(MODEL) MODEL, MAX(expen_sel명) es명, MAX(ACCT_NAME) an, MAX(ITEM_NAME) it,
             SUM([OUTPUT_A_AMT]) input_amt, SUM([ETCOUT_SEMI_PAID_전_AMT]+[ETCOUT_SEMI_PAID_후_AMT]) sp_amt, SUM([ETCOUT_SEMI_FREE_전_AMT]+[ETCOUT_SEMI_FREE_후_AMT]) sf_amt
          FROM doi_vn_cost WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 도우코드, division, EXPEN_SEL),

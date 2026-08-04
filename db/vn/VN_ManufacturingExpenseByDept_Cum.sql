@@ -15,8 +15,8 @@ BEGIN
 		SELECT dept_name, sec, item, MIN(iord) iord, SUM(amt) amt
 		INTO #vamt
 		FROM (
-			SELECT N'제조공통' dept_name, 1 sec, N'원재료비' item, CAST(0 AS bigint) iord, SUM(in_amt) amt
-				FROM doi_mat_amt WHERE yyyymm BETWEEN @FROM_YYYYMM AND @TO_YYYYMM AND site=@SITE AND sel_code=@SEL_CODE
+			SELECT N'제조공통' dept_name, 1 sec, N'원재료비' item, CAST(0 AS bigint) iord, SUM(CAST(투입금액 AS float)) amt
+				FROM doi_expn_matl WHERE yyyymm BETWEEN @FROM_YYYYMM AND @TO_YYYYMM AND site=@SITE AND sel_code=@SEL_CODE AND 원가구분=N'재료비'   -- [VN 260801] 구 doi_mat_amt → 신 doi_expn_matl(재료비)
 			UNION ALL
 			SELECT LTRIM(RTRIM(d.코스트센터)) dept_name,
 				CASE WHEN LEFT(d.계정코드,4)='6272' THEN 1
