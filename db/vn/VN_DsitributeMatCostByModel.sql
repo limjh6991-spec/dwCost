@@ -49,7 +49,7 @@ BEGIN
 				b.규격,
 				coalesce(q.투입수량,0) AS 투입수량,
 				a.도우코드,
-				ROUND(coalesce(q.투입수량,0) * a.배부금액 / NULLIF(SUM(a.배부금액) OVER (PARTITION BY a.자재번호),0), 2) AS q_raw,
+				ROUND(coalesce(q.투입수량,0) * a.배부금액 / NULLIF(SUM(a.배부금액) OVER (PARTITION BY a.자재번호),0), 5) AS q_raw,
 				a.배부금액 AS amt
 			FROM MC a
 			LEFT JOIN mat_info b ON (a.자재번호 = b.자재번호)
@@ -57,12 +57,12 @@ BEGIN
 		),
 		ADJ AS (
 			SELECT 자재분류,자재대분류,자재중분류,자재명,자재번호,거래처,규격,투입수량,도우코드,amt,
-				q_raw + CASE WHEN ROW_NUMBER() OVER (PARTITION BY 자재번호 ORDER BY q_raw DESC, 도우코드)=1 THEN ROUND(투입수량,2) - SUM(q_raw) OVER (PARTITION BY 자재번호) ELSE 0 END AS q
+				q_raw + CASE WHEN ROW_NUMBER() OVER (PARTITION BY 자재번호 ORDER BY q_raw DESC, 도우코드)=1 THEN ROUND(투입수량,5) - SUM(q_raw) OVER (PARTITION BY 자재번호) ELSE 0 END AS q
 			FROM BASE
 		)
 		SELECT
 			자재분류, 자재대분류, 자재중분류, 자재명, 자재번호, 거래처, 규격 AS size,
-			MAX(ROUND(투입수량,2)) AS 전체수량,
+			MAX(ROUND(투입수량,5)) AS 전체수량,
 			SUM(amt)      AS [z합계]'
 			+ @cols + N'
 		FROM ADJ
