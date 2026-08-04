@@ -638,7 +638,7 @@ BEGIN
 		INSERT INTO #sourceTable (구분, model, rn, gubun, amt) VALUES
 		  (N'', N'Z합계', 2100, N'  6. 재무활동으로 부터의 이익', @FinInc_Int + @FinInc_FX),
 		  (N'', N'Z합계', 2200, N'  7. 재무활동으로부터의 비용',  @FinCost_Int + @FinCost_FX),
-		  (N'', N'Z합계', 2300, N'    - 재무 비용',               @FinCost_Int + @FinCost_FX);
+		  (N'', N'Z합계', 2300, N'    - 재무 비용',               @FinCost_Int);
 		-- 10. 영업이익(총합계) += (재무이익 - 재무비용)
 		UPDATE #sourceTable
 		   SET amt = COALESCE(amt,0) + (@FinInc_Int + @FinInc_FX) - (@FinCost_Int + @FinCost_FX)
