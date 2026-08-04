@@ -58,7 +58,7 @@
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0009000/js/C0009004.js';
-import { applyAmtFormat } from '@/utils/gridUtils';
+import { applyAmtFormat, applyQtyFormat } from '@/utils/gridUtils';
 import currencyConvert from '@web/c0007000/js/currencyConvert.js';
 import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
 
@@ -148,6 +148,8 @@ export default {
 
       // VINA(USD): 금액 컬럼 소수점 2자리 표시 (본사는 정수 유지)
       applyAmtFormat(this.gridView, this.matSubulGrid.columns, this.userAuthInfo.curProdCtg, this.currency);
+      // VINA: 수량 컬럼 소수점 4자리 표시 (본사는 정수 유지, 통화 무관)
+      applyQtyFormat(this.gridView, this.matSubulGrid.columns, this.userAuthInfo.curProdCtg);
 
       let params = {
         yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,

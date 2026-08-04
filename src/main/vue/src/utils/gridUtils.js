@@ -21,6 +21,13 @@ function toDecimal2(fmt) {
   return typeof fmt === 'string' ? fmt.replace(/#,##0/g, '#,##0.00') : fmt;
 }
 
+// 수량 컬럼만 대상 (비율/순번/기간 등 제외)
+const QTY_RE = /(수량|개수|매수|장수|본수|qty|ea|pcs)/i;
+
+function toDecimal4(fmt) {
+  return typeof fmt === 'string' ? fmt.replace(/#,##0/g, '#,##0.0000') : fmt;
+}
+
 export function applyAmtFormat(gridView, columns, curProdCtg, currency = 'USD') {
   if (!gridView || !Array.isArray(columns)) return;
   // VINA(VN) & USD 표시일 때만 2자리. VINA라도 KRW/VND 환산표시면 정수, 본사(HQ)도 정수.
@@ -42,6 +49,40 @@ export function applyAmtFormat(gridView, columns, curProdCtg, currency = 'USD') 
         gridView.setColumnProperty(col.name, 'footer', {
           ...col.footer,
           numberFormat: isVina ? toDecimal2(col.footer.numberFormat) : col.footer.numberFormat,
+        });
+      }
+    } catch (e) {
+      /* 컬럼 속성 적용 실패는 무시 */
+    }
+  });
+}
+
+/**
+ * applyQtyFormat: 사이트(curProdCtg)에 따라 "수량" 컬럼의 소수 자릿수를 조정.
+ *   - VINA(VN): 정수 수량포맷(#,##0)을 소수점 4자리(#,##0.0000)로 표시 (통화 무관)
+ *   - 본사(HQ): 정수(#,##0) 유지
+ *   - 금액/비율/순번 등 비-수량 컬럼과, 원래부터 소수인 컬럼은 제외
+ */
+export function applyQtyFormat(gridView, columns, curProdCtg) {
+  if (!gridView || !Array.isArray(columns)) return;
+  const isVina = curProdCtg === 'VN'; // 수량은 통화 무관
+
+  columns.forEach((col) => {
+    if (!col || !col.name) return;
+    const orig = col.numberFormat;
+    // 정수형 포맷(#,##0)만 대상. 원래부터 소수(#,##0.00 - 단가 등)면 손대지 않음.
+    if (typeof orig !== 'string' || orig.indexOf('#,##0') < 0 || orig.indexOf('.') >= 0) return;
+    // 수량 컬럼만 대상
+    const key = (col.name || '') + '|' + (col.fieldName || '') + '|' + ((col.header && col.header.text) || '');
+    if (!QTY_RE.test(key)) return;
+
+    const nf = isVina ? toDecimal4(orig) : orig; // VINA=4자리, 본사=원래 정수
+    try {
+      gridView.setColumnProperty(col.name, 'numberFormat', nf);
+      if (col.footer && col.footer.numberFormat) {
+        gridView.setColumnProperty(col.name, 'footer', {
+          ...col.footer,
+          numberFormat: isVina ? toDecimal4(col.footer.numberFormat) : col.footer.numberFormat,
         });
       }
     } catch (e) {
@@ -75,4 +116,4 @@ export function applyAmtFormatLive(gridView, curProdCtg, currency = 'USD') {
   });
 }
 
-export default { applyAmtFormat, applyAmtFormatLive };
+export default { applyAmtFormat, applyQtyFormat, applyAmtFormatLive };
