@@ -456,17 +456,18 @@ BEGIN
         )
         , SGNA_AMT AS (
             -- doi_smce_cost → doi_dept_cost(판관) 브리지 → doi_acct.상위계정과목(경영계획 우선), 모델별 dist_amt 합
-            SELECT B.구분, B.model,
+            SELECT B.구분, ISNULL(NULLIF(LTRIM(RTRIM(mm.도우코드)),''),B.model) AS model,
                    COALESCE(NULLIF(A.경영계획과목,N''),A.상위계정과목) AS item,
                    SUM(ISNULL(B.dist_amt,0)) AS amt
             FROM doi_smce_cost B WITH (NOLOCK)
+            LEFT JOIN (SELECT DISTINCT MODEL, 도우코드 FROM DOI_VN_STCO WHERE yyyymm=@YYYYMM AND sel_code=@SEL_CODE) mm ON mm.MODEL=B.model
             JOIN (SELECT yyyymm, site, 계정과목, MIN(계정코드) AS 계정코드 FROM doi_dept_cost WHERE 비용구분 = N'판관' GROUP BY yyyymm, site, 계정과목) dc
                 ON dc.yyyymm = B.yyyymm AND dc.site = B.site AND dc.계정과목 = B.sub_name
             JOIN doi_acct A WITH (NOLOCK)
                 ON A.yyyymm = B.yyyymm AND A.site = B.site AND A.acct = dc.계정코드
             WHERE B.YYYYMM = @YYYYMM AND B.SITE = @SITE AND B.SEL_CODE = @SEL_CODE
               AND ISNULL(COALESCE(NULLIF(A.경영계획과목,N''),A.상위계정과목),N'') <> N''
-            GROUP BY B.구분, B.model, COALESCE(NULLIF(A.경영계획과목,N''),A.상위계정과목)
+            GROUP BY B.구분, ISNULL(NULLIF(LTRIM(RTRIM(mm.도우코드)),''),B.model), COALESCE(NULLIF(A.경영계획과목,N''),A.상위계정과목)
         )
         , PL_SGNA AS (
             SELECT
