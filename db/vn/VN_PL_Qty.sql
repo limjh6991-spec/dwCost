@@ -7,7 +7,7 @@ CREATE OR ALTER PROCEDURE VN_PL_Qty
 AS
 BEGIN
     SET NOCOUNT ON;
-    -- 제품별 손익계산서 '매출수량' : PL 금액(VN_PL_ByModel)과 동일 모델키(LEFT(품번,LEN-1))로 산출
+    -- 제품별 손익계산서 '매출수량' : PL 금액(VN_PL_ByModel)과 동일 모델키(도우코드=품번, LEN>1)로 산출
     ;WITH MERCH_ITEM AS (
         SELECT DISTINCT M.품번
         FROM DOI_MATL_RESC M WITH(NOLOCK)
@@ -24,7 +24,7 @@ BEGIN
               WHEN RIGHT(LTRIM(RTRIM(A.품번)),1)='P' THEN N'양산'
               ELSE N'개발'
             END AS 구분,
-            CASE WHEN LEN(A.품번) > 1 THEN LEFT(A.품번, LEN(A.품번)-1) ELSE LTRIM(RTRIM(A.품명)) END AS model,
+            CASE WHEN LEN(A.품번) > 1 THEN LTRIM(RTRIM(A.품번)) ELSE LTRIM(RTRIM(A.품명)) END AS model,
             ISNULL(A.수량,0) AS qty
         FROM doi_sale_resc A WITH(NOLOCK)
         LEFT JOIN MERCH_ITEM MI ON MI.품번 = A.품번
@@ -40,7 +40,7 @@ BEGIN
               WHEN RIGHT(LTRIM(RTRIM(B.품번)),1)='P' THEN N'양산'
               ELSE N'개발'
             END AS 구분,
-            CASE WHEN LEN(B.품번) > 1 THEN LEFT(B.품번, LEN(B.품번)-1) ELSE LTRIM(RTRIM(B.품명)) END AS model,
+            CASE WHEN LEN(B.품번) > 1 THEN LTRIM(RTRIM(B.품번)) ELSE LTRIM(RTRIM(B.품명)) END AS model,
             ISNULL(B.수량,0) AS qty
         FROM doi_invoice_resc B WITH(NOLOCK)
         LEFT JOIN MERCH_ITEM MI ON MI.품번 = B.품번
