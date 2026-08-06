@@ -43,6 +43,7 @@ BEGIN
 --		DECLARE @SumPur_Fix      NVARCHAR(MAX)=N'0';
 
         DECLARE @SCOFTotal DECIMAL(18,2) = 0;
+        DECLARE @EtcSale DECIMAL(18,2) = 0;
 
         DECLARE @SQL             NVARCHAR(MAX);
 
@@ -213,6 +214,20 @@ BEGIN
 	   WHERE yyyymm  = @YYYYMM
 	    AND site   	 = @SITE
         AND sel_code = @SELCODE
+
+        -- (4)기타매출 = DOI_DEPT_COST 계정코드 5118000 대변금액 합 (회사 전체 → 총합계 전용, PL_Detail과 동일 소스)
+        SELECT @EtcSale = CAST(COALESCE(SUM(대변금액),0) AS DECIMAL(18,2))
+        FROM DOI_DEPT_COST WITH(NOLOCK)
+        WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SELCODE AND 계정코드='5118000';
+
+        -- [VN 260804] ③ 부재료비(6272) TRAY 비율 (재료비 세부 안분용)
+        DECLARE @vTrayRate float = 0;
+        ;WITH si AS (
+           SELECT ISNULL(SUM(CAST(mc.투입금액 AS float)),0) sub
+           FROM doi_expn_matl mc JOIN DOI_VN_MATERIAL m ON m.자재번호=mc.항목 AND m.yyyymm=@YYYYMM
+           WHERE mc.yyyymm=@YYYYMM AND mc.site=@SITE AND mc.sel_code=@SELCODE AND mc.원가구분=N'재료비' AND m.품목자산분류=N'Sub Material'),
+         tr AS (SELECT ISNULL(SUM(금액),0) tray FROM DOI_VN_ETC_INOUT WHERE yyyymm=@YYYYMM AND 품목자산분류=N'Sub Material' AND UPPER(소분류) LIKE N'%TRAY%')
+        SELECT @vTrayRate = CASE WHEN si.sub=0 THEN 0 WHEN tr.tray>si.sub THEN 1 ELSE tr.tray/si.sub END FROM si CROSS JOIN tr;
 
 		/*==============================================================
 		  (추가) 1-1) 변동비/고정비 프로시저 결과 받아오기 (세로형)
@@ -439,7 +454,7 @@ BEGIN
 		MAT_BASE AS (
             SELECT
             	구분
-                , 도우코드 AS model    
+                , 도우코드 AS model
                 , acct_name
                 , out_amt AS amt --select distinct acct_name
    FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt, CAST('X' AS varchar(10)) AS COST_TYPE FROM DOI_VN_STCO WITH(NOLOCK)) doi_stco
@@ -448,13 +463,50 @@ BEGIN
               AND sel_code = @SELCODE
               and expen_sel IN('MDAX','MIAX')  --직접재료비, 간접재료비
               and out_amt != 0
+            -- [VN 260804] ③구조B: 부재료비(6272계정)를 재료비에 포함(627이지만 재료성). 제조경비(EXP_ITEMS)는 6272 미포함이라 이중계상 없음.
+            UNION ALL
+            SELECT a.구분, a.도우코드 AS model, a.acct_name, a.out_amt AS amt
+            FROM (SELECT *, @SITE AS site, T_OUTPUT_AMT AS out_amt FROM DOI_VN_STCO WITH(NOLOCK)) a
+            WHERE a.yyyymm=@YYYYMM AND a.site=@SITE AND a.sel_code=@SELCODE
+              AND a.expen_sel NOT IN('MDAX','MIAX') AND a.out_amt != 0
+              AND EXISTS(SELECT 1 FROM doi_dept_cost dc WHERE dc.yyyymm=@YYYYMM AND dc.site=@SITE AND dc.계정과목=a.acct_name AND LEFT(dc.계정코드,4)='6272')
         ),
         MAT_AGG AS (
-            -- II. 재료비 (총액 유지). 세부(원재료 5분할+부재료비 TRAY/기타)는 골격만, 금액 0 — 로직 추후
+            -- II. 재료비 (MDAX/MIAX + 6272). 세부는 MAT_DETAIL(투입 구성비 안분).
             SELECT 8 rn, N'  II. 재료비' gubun, 구분, model, SUM(amt) amt
             FROM MAT_BASE
             GROUP BY 구분, model
           ),
+        -- [VN 260804] ③ 재료비 세부 안분: 투입 재료 구성비(doi_expn_matl 재료비 → DOI_VN_MATERIAL 분류) × 매출원가 재료비(MAT_AGG)
+        MAT_INPUT AS (
+            SELECT
+              SUM(CASE WHEN cat=N'원장'   THEN amt ELSE 0 END) glass,
+              SUM(CASE WHEN cat=N'PF'     THEN amt ELSE 0 END) pf,
+              SUM(CASE WHEN cat=N'PL'     THEN amt ELSE 0 END) pl,
+              SUM(CASE WHEN cat=N'약액'   THEN amt ELSE 0 END) chem,
+              SUM(CASE WHEN cat=N'부재료' THEN amt ELSE 0 END) sub,
+              NULLIF(SUM(amt),0) tot
+            FROM (
+              SELECT CASE WHEN m.품목자산분류=N'Raw Material' AND m.자재소분류 LIKE N'%Glass%' THEN N'원장'
+                          WHEN m.품목자산분류=N'Raw Material' AND m.자재소분류 LIKE N'PF%' THEN N'PF'
+                          WHEN m.품목자산분류=N'Raw Material' AND m.자재소분류 LIKE N'PL%' THEN N'PL'
+                          WHEN m.품목자산분류=N'Raw Material' AND UPPER(m.자재소분류) LIKE N'%CHEMICAL%' THEN N'약액'
+                          ELSE N'부재료' END cat,
+                     CAST(mc.투입금액 AS float) amt
+              FROM (SELECT 항목 자재번호, 투입금액 FROM doi_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SELCODE AND 원가구분=N'재료비') mc
+              LEFT JOIN DOI_VN_MATERIAL m ON m.자재번호=mc.자재번호 AND m.yyyymm=@YYYYMM
+            ) t
+        ),
+        MAT_DETAIL AS (
+            SELECT rn, gubun, 구분, model, CAST(amt AS decimal(18,2)) amt FROM (
+              SELECT 9  rn, N'    (1) 원재료_원장' gubun, ma.구분, ma.model, ma.amt*mi.glass/mi.tot amt FROM MAT_AGG ma CROSS JOIN MAT_INPUT mi
+              UNION ALL SELECT 11, N'    (3) 원재료_PF',          ma.구분, ma.model, ma.amt*mi.pf/mi.tot   FROM MAT_AGG ma CROSS JOIN MAT_INPUT mi
+              UNION ALL SELECT 12, N'    (4) 원재료_PL',          ma.구분, ma.model, ma.amt*mi.pl/mi.tot   FROM MAT_AGG ma CROSS JOIN MAT_INPUT mi
+              UNION ALL SELECT 13, N'    (5) 원재료_약액',        ma.구분, ma.model, ma.amt*mi.chem/mi.tot FROM MAT_AGG ma CROSS JOIN MAT_INPUT mi
+              UNION ALL SELECT 14, N'    (6) 부재료비 (6272)_TRAY', ma.구분, ma.model, ma.amt*mi.sub/mi.tot*@vTrayRate     FROM MAT_AGG ma CROSS JOIN MAT_INPUT mi
+              UNION ALL SELECT 15, N'    (7) 부재료비 (6272)_기타', ma.구분, ma.model, ma.amt*mi.sub/mi.tot*(1-@vTrayRate) FROM MAT_AGG ma CROSS JOIN MAT_INPUT mi
+            ) x
+        ),
         LABOR_BASE AS (
          SELECT 16+총원가_순서 rn, N'    ('+CAST(총원가_순서 as varchar(1))+') '+b.상위계정과목 as gubun, a.구분, a.도우코드 AS model,
                    SUM(out_amt) AS amt
@@ -838,9 +890,11 @@ BEGIN
     		UNION ALL SELECT rn, gubun, 구분, model, amt FROM SCOF_BASE
     		UNION ALL SELECT rn, gubun, 구분, model, amt FROM ETC_SALE_BASE    		    		
     		UNION ALL SELECT rn, gubun, 구분, model, amt FROM MAT_AGG
+    		UNION ALL SELECT rn, gubun, 구분, model, amt FROM MAT_DETAIL   -- [VN 260804] ③ 재료비 세부
             UNION ALL SELECT rn, gubun, 구분, model, amt FROM LABOR_AGG
             UNION ALL SELECT rn, gubun, 구분, model, amt FROM LABOR_ITEMS
-            UNION ALL SELECT rn, gubun, 구분, model, amt FROM EXP_AGG
+            -- [VN 260804] ①제조경비 집계오류: 총계(rn30)를 세부(EXP_ITEMS 627·6272제외)합으로 → 총계=세부
+            UNION ALL SELECT 30 rn, N'  IV. 제조경비' gubun, 구분, model, SUM(amt) amt FROM EXP_ITEMS GROUP BY 구분, model
             UNION ALL SELECT rn, gubun, 구분, model, amt FROM EXP_ITEMS
             UNION ALL SELECT rn, gubun, 구분, model, amt FROM TOTAL_MFG
             UNION ALL SELECT rn, gubun, 구분, model, amt FROM PROD_COGS_FACT
@@ -1086,7 +1140,9 @@ BEGIN
            			  WHEN LTRIM(Cur.gubun) = N''한계이익률'' THEN
 						  ((' + @SumYangsan_Cm + ')+(' + @SumDev_Cm + ')+(' + @SumCas_Cm + ')+(' + @SumPur_Cm + '))
 					      /NULLIF(((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + ')),0)*100
-					  WHEN Cur.rn = 1 THEN ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) - @SCOF
+					  WHEN Cur.rn = 1 THEN ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) - @SCOF + @EtcSale
+					  WHEN Cur.rn = 7 THEN ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + @EtcSale
+					  WHEN Cur.rn IN (111,120) THEN ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + @EtcSale   -- [VN 260804] 기타매출을 매출총액에 합산 → 영업이익·한계이익 정합
 					  ELSE ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + '))
 					END
 		      AS DECIMAL(18,2)) AS [총합계]
@@ -1145,7 +1201,7 @@ BEGIN
 		';
 		
 		--SELECT @SQL;
-		EXEC sp_executesql @SQL, N'@SCOF DECIMAL(18,2)', @SCOF = @SCOFTotal;
+		EXEC sp_executesql @SQL, N'@SCOF DECIMAL(18,2), @EtcSale DECIMAL(18,2)', @SCOF = @SCOFTotal, @EtcSale = @EtcSale;
 
         DROP TABLE #BASE;
         DROP TABLE #RN;
