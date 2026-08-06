@@ -10,8 +10,6 @@
 		,CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' end as SITE
 		,구분,구분_ord,도우코드,도우모델,작업구분,org작업구분,model,Inch,DW_SITE,BOH_MONTH,IN_MONTH,BONUS_MONTH,EOH_MONTH,OUT_MONTH,LOSS_MONTH,NG_MONTH,수율제외_MONTH,REWORK진행_MONTH,SHIPPING_PLAN_MONTH,SHIPPING_ACTUAL_MONTH,material_loss,recall_loss
 		,공정발생불량,불량판매,타계정입고,기타입고_LOT변환,기타입고_RMA_RW,기타입고_전월불량,기타입고_당월불량,타계정출고,기타출고_LOT변환,기타출고_기타
-		,TRY_CONVERT(int, REPLACE(REPLACE(ISNULL(PL전, N'0'), N',', N''), N' ', N'')) AS PL_BEFORE
-		,TRY_CONVERT(int, REPLACE(REPLACE(ISNULL(PL후, N'0'), N',', N''), N' ', N'')) AS PL_AFTER
 		from
 			DOI_PROD_SUBUL
 		where 1=1
