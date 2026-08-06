@@ -1,6 +1,7 @@
 /* ============================================================
    [VN 260801] 신규포맷 재공평가 → doi_vn_cost (doi_vn_prod_resc 미러: 포지션 QTY+AMT + expen_sel)
-   현업 로직: 재공단가=(BOH+IN+ETC-IN)/(OUT+ETC-OUT+생산환산량), 생산환산량=EOH(PL전×0.5+PL후×0.9)
+   현업 로직: 재공단가=(BOH+IN+ETC-IN)금액 / [OUT + ETC-OUT(완전수량) + PL전×0.5 + PL후×0.9]수량 → 단가 정확.
+   금액 = 단가 × 포지션수량 × 평가비율: OUT×1.0, ETC-OUT 전×0.5/후×0.9, EOH(PL) 전×0.5/후×0.9. (미배분 잔차는 OUT수량>0→OUTPUT·=0→EOH 흡수). QTY는 물리수량 저장.
    소스: doi_vn_prod_resc + DOI_COST_BOH(BOH) + doi_expn_matl(IN) + DOI_VN_RSRW(ETC-IN=R/S·R/W만)
    BOH 포지션 배분: 환산량(전0.5/후0.9)=EOH와 동일 → 이월품 BOH포지션=EOH포지션.
    잔차: BOH잔차는 값이 가장 큰 BOH포지션이, EOH/OUTPUT잔차는 OUT수량>0이면 OUTPUT_A가·=0이면 값이 가장 큰 EOH포지션이 흡수(음수 방지).
@@ -88,22 +89,23 @@ BEGIN
       ISNULL(ROUND(pool*[EOH_B_WIP_후]*0.9/NULLIF(denom,0),2),0) AS a_EOH_B_WIP_후,
       ISNULL(ROUND(pool*[EOH_B_FGS_전]*0.5/NULLIF(denom,0),2),0) AS a_EOH_B_FGS_전,
       ISNULL(ROUND(pool*[EOH_B_FGS_후]*0.9/NULLIF(denom,0),2),0) AS a_EOH_B_FGS_후,
-      ISNULL(ROUND(uc*[ETCOUT_CODE_전],2),0) AS a_ETCOUT_CODE_전,
-      ISNULL(ROUND(uc*[ETCOUT_CODE_후],2),0) AS a_ETCOUT_CODE_후,
-      ISNULL(ROUND(uc*[ETCOUT_SEMI_PAID_전],2),0) AS a_ETCOUT_SEMI_PAID_전,
-      ISNULL(ROUND(uc*[ETCOUT_SEMI_PAID_후],2),0) AS a_ETCOUT_SEMI_PAID_후,
-      ISNULL(ROUND(uc*[ETCOUT_SEMI_FREE_전],2),0) AS a_ETCOUT_SEMI_FREE_전,
-      ISNULL(ROUND(uc*[ETCOUT_SEMI_FREE_후],2),0) AS a_ETCOUT_SEMI_FREE_후,
-      ISNULL(ROUND(uc*[ETCOUT_ETC_전],2),0) AS a_ETCOUT_ETC_전,
-      ISNULL(ROUND(uc*[ETCOUT_ETC_후],2),0) AS a_ETCOUT_ETC_후
+      ISNULL(ROUND(uc*[ETCOUT_CODE_전]*0.5,2),0) AS a_ETCOUT_CODE_전,
+      ISNULL(ROUND(uc*[ETCOUT_CODE_후]*0.9,2),0) AS a_ETCOUT_CODE_후,
+      ISNULL(ROUND(uc*[ETCOUT_SEMI_PAID_전]*0.5,2),0) AS a_ETCOUT_SEMI_PAID_전,
+      ISNULL(ROUND(uc*[ETCOUT_SEMI_PAID_후]*0.9,2),0) AS a_ETCOUT_SEMI_PAID_후,
+      ISNULL(ROUND(uc*[ETCOUT_SEMI_FREE_전]*0.5,2),0) AS a_ETCOUT_SEMI_FREE_전,
+      ISNULL(ROUND(uc*[ETCOUT_SEMI_FREE_후]*0.9,2),0) AS a_ETCOUT_SEMI_FREE_후,
+      ISNULL(ROUND(uc*[ETCOUT_ETC_전]*0.5,2),0) AS a_ETCOUT_ETC_전,
+      ISNULL(ROUND(uc*[ETCOUT_ETC_후]*0.9,2),0) AS a_ETCOUT_ETC_후
     FROM calc),
   r2 AS (SELECT *,
       CAST(boh AS numeric(18,2)) - (a_BOH_LINE_WIP_전+a_BOH_LINE_WIP_후+a_BOH_LINE_FGS_전+a_BOH_LINE_FGS_후+a_BOH_B_WIP_전+a_BOH_B_WIP_후+a_BOH_B_FGS_전+a_BOH_B_FGS_후) AS b_resid,
       (SELECT MAX(v) FROM (VALUES (a_BOH_LINE_WIP_전),(a_BOH_LINE_WIP_후),(a_BOH_LINE_FGS_전),(a_BOH_LINE_FGS_후),(a_BOH_B_WIP_전),(a_BOH_B_WIP_후),(a_BOH_B_FGS_전),(a_BOH_B_FGS_후)) x(v)) AS bmax,
       (CAST(pool AS numeric(18,2)) - (a_ETCOUT_CODE_전+a_ETCOUT_CODE_후+a_ETCOUT_SEMI_PAID_전+a_ETCOUT_SEMI_PAID_후+a_ETCOUT_SEMI_FREE_전+a_ETCOUT_SEMI_FREE_후+a_ETCOUT_ETC_전+a_ETCOUT_ETC_후) - (a_EOH_LINE_WIP_전+a_EOH_LINE_WIP_후+a_EOH_LINE_FGS_전+a_EOH_LINE_FGS_후+a_EOH_B_WIP_전+a_EOH_B_WIP_후+a_EOH_B_FGS_전+a_EOH_B_FGS_후) - (CASE WHEN denom=0 THEN CAST(pool AS numeric(18,2)) ELSE 0 END)) AS out_resid,
-      (SELECT MAX(v) FROM (VALUES (a_EOH_LINE_WIP_전),(a_EOH_LINE_WIP_후),(a_EOH_LINE_FGS_전),(a_EOH_LINE_FGS_후),(a_EOH_B_WIP_전),(a_EOH_B_WIP_후),(a_EOH_B_FGS_전),(a_EOH_B_FGS_후)) x(v)) AS emax
+      (SELECT MAX(v) FROM (VALUES (a_EOH_LINE_WIP_전),(a_EOH_LINE_WIP_후),(a_EOH_LINE_FGS_전),(a_EOH_LINE_FGS_후),(a_EOH_B_WIP_전),(a_EOH_B_WIP_후),(a_EOH_B_FGS_전),(a_EOH_B_FGS_후)) x(v)) AS emax,
+      (SELECT MAX(v) FROM (VALUES (a_ETCOUT_CODE_전),(a_ETCOUT_CODE_후),(a_ETCOUT_SEMI_PAID_전),(a_ETCOUT_SEMI_PAID_후),(a_ETCOUT_SEMI_FREE_전),(a_ETCOUT_SEMI_FREE_후),(a_ETCOUT_ETC_전),(a_ETCOUT_ETC_후)) x(v)) AS eomax
     FROM r),
-  r3 AS (SELECT *, CASE WHEN a_BOH_LINE_WIP_전>=bmax THEN 1 WHEN a_BOH_LINE_WIP_후>=bmax THEN 2 WHEN a_BOH_LINE_FGS_전>=bmax THEN 3 WHEN a_BOH_LINE_FGS_후>=bmax THEN 4 WHEN a_BOH_B_WIP_전>=bmax THEN 5 WHEN a_BOH_B_WIP_후>=bmax THEN 6 WHEN a_BOH_B_FGS_전>=bmax THEN 7 WHEN a_BOH_B_FGS_후>=bmax THEN 8 ELSE 8 END bmaxpos, CASE WHEN a_EOH_LINE_WIP_전>=emax THEN 1 WHEN a_EOH_LINE_WIP_후>=emax THEN 2 WHEN a_EOH_LINE_FGS_전>=emax THEN 3 WHEN a_EOH_LINE_FGS_후>=emax THEN 4 WHEN a_EOH_B_WIP_전>=emax THEN 5 WHEN a_EOH_B_WIP_후>=emax THEN 6 WHEN a_EOH_B_FGS_전>=emax THEN 7 WHEN a_EOH_B_FGS_후>=emax THEN 8 ELSE 8 END emaxpos FROM r2)
+  r3 AS (SELECT *, CASE WHEN a_BOH_LINE_WIP_전>=bmax THEN 1 WHEN a_BOH_LINE_WIP_후>=bmax THEN 2 WHEN a_BOH_LINE_FGS_전>=bmax THEN 3 WHEN a_BOH_LINE_FGS_후>=bmax THEN 4 WHEN a_BOH_B_WIP_전>=bmax THEN 5 WHEN a_BOH_B_WIP_후>=bmax THEN 6 WHEN a_BOH_B_FGS_전>=bmax THEN 7 WHEN a_BOH_B_FGS_후>=bmax THEN 8 ELSE 8 END bmaxpos, CASE WHEN a_EOH_LINE_WIP_전>=emax THEN 1 WHEN a_EOH_LINE_WIP_후>=emax THEN 2 WHEN a_EOH_LINE_FGS_전>=emax THEN 3 WHEN a_EOH_LINE_FGS_후>=emax THEN 4 WHEN a_EOH_B_WIP_전>=emax THEN 5 WHEN a_EOH_B_WIP_후>=emax THEN 6 WHEN a_EOH_B_FGS_전>=emax THEN 7 WHEN a_EOH_B_FGS_후>=emax THEN 8 ELSE 8 END emaxpos, CASE WHEN a_ETCOUT_CODE_전>=eomax THEN 1 WHEN a_ETCOUT_CODE_후>=eomax THEN 2 WHEN a_ETCOUT_SEMI_PAID_전>=eomax THEN 3 WHEN a_ETCOUT_SEMI_PAID_후>=eomax THEN 4 WHEN a_ETCOUT_SEMI_FREE_전>=eomax THEN 5 WHEN a_ETCOUT_SEMI_FREE_후>=eomax THEN 6 WHEN a_ETCOUT_ETC_전>=eomax THEN 7 WHEN a_ETCOUT_ETC_후>=eomax THEN 8 ELSE 8 END eomaxpos FROM r2)
   INSERT INTO doi_vn_cost (YYYYMM, SEL_CODE, SITE, 도우코드, division, 구분, MODEL, EXPEN_SEL, expen_sel명, ACCT_NAME, ITEM_NAME, UNIT_COST, ADJ_YN, [BOH_LINE_WIP_전_QTY], [BOH_LINE_WIP_전_AMT], [BOH_LINE_WIP_후_QTY], [BOH_LINE_WIP_후_AMT], [BOH_LINE_FGS_전_QTY], [BOH_LINE_FGS_전_AMT], [BOH_LINE_FGS_후_QTY], [BOH_LINE_FGS_후_AMT], [BOH_B_WIP_전_QTY], [BOH_B_WIP_전_AMT], [BOH_B_WIP_후_QTY], [BOH_B_WIP_후_AMT], [BOH_B_FGS_전_QTY], [BOH_B_FGS_전_AMT], [BOH_B_FGS_후_QTY], [BOH_B_FGS_후_AMT], [USC_INPUT_QTY], [USC_INPUT_AMT], [ETCIN_CODE_QTY], [ETCIN_CODE_AMT], [ETCIN_RESORT_QTY], [ETCIN_RESORT_AMT], [ETCIN_REWORK_QTY], [ETCIN_REWORK_AMT], [ETCIN_SEMI_QTY], [ETCIN_SEMI_AMT], [ETCIN_ETC_QTY], [ETCIN_ETC_AMT], [OUTPUT_A_QTY], [OUTPUT_A_AMT], [ETCOUT_CODE_전_QTY], [ETCOUT_CODE_전_AMT], [ETCOUT_CODE_후_QTY], [ETCOUT_CODE_후_AMT], [ETCOUT_SEMI_PAID_전_QTY], [ETCOUT_SEMI_PAID_전_AMT], [ETCOUT_SEMI_PAID_후_QTY], [ETCOUT_SEMI_PAID_후_AMT], [ETCOUT_SEMI_FREE_전_QTY], [ETCOUT_SEMI_FREE_전_AMT], [ETCOUT_SEMI_FREE_후_QTY], [ETCOUT_SEMI_FREE_후_AMT], [ETCOUT_ETC_전_QTY], [ETCOUT_ETC_전_AMT], [ETCOUT_ETC_후_QTY], [ETCOUT_ETC_후_AMT], [LOSS_전_QTY], [LOSS_전_AMT], [LOSS_후_QTY], [LOSS_후_AMT], [EOH_LINE_WIP_전_QTY], [EOH_LINE_WIP_전_AMT], [EOH_LINE_WIP_후_QTY], [EOH_LINE_WIP_후_AMT], [EOH_LINE_FGS_전_QTY], [EOH_LINE_FGS_전_AMT], [EOH_LINE_FGS_후_QTY], [EOH_LINE_FGS_후_AMT], [EOH_B_WIP_전_QTY], [EOH_B_WIP_전_AMT], [EOH_B_WIP_후_QTY], [EOH_B_WIP_후_AMT], [EOH_B_FGS_전_QTY], [EOH_B_FGS_전_AMT], [EOH_B_FGS_후_QTY], [EOH_B_FGS_후_AMT])
   SELECT @YYYYMM,
      @SEL_CODE,
@@ -147,42 +149,42 @@ BEGIN
      CAST([ETCIN_ETC] AS numeric(18,2)),
      CAST(0 AS numeric(18,2)),
      CAST([OUTPUT_A] AS numeric(18,2)),
-     CASE WHEN out_qty>0 THEN out_resid ELSE 0 END,
+     ISNULL(ROUND(uc*[OUTPUT_A],2),0) + CASE WHEN eoheq=0 AND out_qty>0 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([ETCOUT_CODE_전] AS numeric(18,2)),
-     a_ETCOUT_CODE_전,
+     a_ETCOUT_CODE_전 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=1 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([ETCOUT_CODE_후] AS numeric(18,2)),
-     a_ETCOUT_CODE_후,
+     a_ETCOUT_CODE_후 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=2 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([ETCOUT_SEMI_PAID_전] AS numeric(18,2)),
-     a_ETCOUT_SEMI_PAID_전,
+     a_ETCOUT_SEMI_PAID_전 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=3 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([ETCOUT_SEMI_PAID_후] AS numeric(18,2)),
-     a_ETCOUT_SEMI_PAID_후,
+     a_ETCOUT_SEMI_PAID_후 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=4 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([ETCOUT_SEMI_FREE_전] AS numeric(18,2)),
-     a_ETCOUT_SEMI_FREE_전,
+     a_ETCOUT_SEMI_FREE_전 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=5 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([ETCOUT_SEMI_FREE_후] AS numeric(18,2)),
-     a_ETCOUT_SEMI_FREE_후,
+     a_ETCOUT_SEMI_FREE_후 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=6 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([ETCOUT_ETC_전] AS numeric(18,2)),
-     a_ETCOUT_ETC_전,
+     a_ETCOUT_ETC_전 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=7 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([ETCOUT_ETC_후] AS numeric(18,2)),
-     a_ETCOUT_ETC_후,
+     a_ETCOUT_ETC_후 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=8 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([LOSS_전] AS numeric(18,2)),
      CASE WHEN denom=0 THEN ISNULL(ROUND(pool*[LOSS_전]/NULLIF([LOSS_전]+[LOSS_후],0),2),0) ELSE 0 END,
      CAST([LOSS_후] AS numeric(18,2)),
      (CASE WHEN denom=0 THEN CAST(pool AS numeric(18,2)) ELSE 0 END) - (CASE WHEN denom=0 THEN ISNULL(ROUND(pool*[LOSS_전]/NULLIF([LOSS_전]+[LOSS_후],0),2),0) ELSE 0 END),
      CAST([EOH_LINE_WIP_전] AS numeric(18,2)),
-     a_EOH_LINE_WIP_전 + CASE WHEN out_qty=0 AND emaxpos=1 THEN out_resid ELSE 0 END,
+     a_EOH_LINE_WIP_전 + CASE WHEN eoheq>0 AND emaxpos=1 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([EOH_LINE_WIP_후] AS numeric(18,2)),
-     a_EOH_LINE_WIP_후 + CASE WHEN out_qty=0 AND emaxpos=2 THEN out_resid ELSE 0 END,
+     a_EOH_LINE_WIP_후 + CASE WHEN eoheq>0 AND emaxpos=2 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([EOH_LINE_FGS_전] AS numeric(18,2)),
-     a_EOH_LINE_FGS_전 + CASE WHEN out_qty=0 AND emaxpos=3 THEN out_resid ELSE 0 END,
+     a_EOH_LINE_FGS_전 + CASE WHEN eoheq>0 AND emaxpos=3 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([EOH_LINE_FGS_후] AS numeric(18,2)),
-     a_EOH_LINE_FGS_후 + CASE WHEN out_qty=0 AND emaxpos=4 THEN out_resid ELSE 0 END,
+     a_EOH_LINE_FGS_후 + CASE WHEN eoheq>0 AND emaxpos=4 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([EOH_B_WIP_전] AS numeric(18,2)),
-     a_EOH_B_WIP_전 + CASE WHEN out_qty=0 AND emaxpos=5 THEN out_resid ELSE 0 END,
+     a_EOH_B_WIP_전 + CASE WHEN eoheq>0 AND emaxpos=5 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([EOH_B_WIP_후] AS numeric(18,2)),
-     a_EOH_B_WIP_후 + CASE WHEN out_qty=0 AND emaxpos=6 THEN out_resid ELSE 0 END,
+     a_EOH_B_WIP_후 + CASE WHEN eoheq>0 AND emaxpos=6 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([EOH_B_FGS_전] AS numeric(18,2)),
-     a_EOH_B_FGS_전 + CASE WHEN out_qty=0 AND emaxpos=7 THEN out_resid ELSE 0 END,
+     a_EOH_B_FGS_전 + CASE WHEN eoheq>0 AND emaxpos=7 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
      CAST([EOH_B_FGS_후] AS numeric(18,2)),
-     a_EOH_B_FGS_후 + CASE WHEN out_qty=0 AND emaxpos=8 THEN out_resid ELSE 0 END
+     a_EOH_B_FGS_후 + CASE WHEN eoheq>0 AND emaxpos=8 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END
   FROM r3;
 END
