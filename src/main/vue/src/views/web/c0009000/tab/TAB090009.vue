@@ -342,7 +342,7 @@ export default {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      const fileName = `제품별_판매관리비_집계표_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
+      const fileName = `판매관리비_제품별_집계표_${yyyymmdd}_${hours}${minutes}${seconds}.xlsx`;
 
       const options = {
         type: 'excel',
