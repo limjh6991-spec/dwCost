@@ -513,3 +513,69 @@ CREATE TABLE DOI_VN_IF_EXP_PERMIT (
     RAW_JSON    NVARCHAR(MAX)  NULL
 );
 -- [ERP] [매출정보-수출신고필증조회] 43 데이터컬럼
+
+
+-- [ERP] 재고금액상세조회 → doi_matl_resc (보류 해제, 전체필드)
+IF OBJECT_ID(N'DOI_VN_IF_STOCK_DETAIL',N'U') IS NULL
+CREATE TABLE DOI_VN_IF_STOCK_DETAIL (
+    SITE        NVARCHAR(4)    NOT NULL DEFAULT N'VN',
+    SEL_CODE    NVARCHAR(10)   NULL,
+    LOAD_DTTM   DATETIME       NOT NULL DEFAULT GETDATE(),
+    REQUEST_ID  NVARCHAR(50)   NULL,
+    ItemNo                               NVARCHAR(100)    NULL,  -- 품번
+    ItemName                             NVARCHAR(100)    NULL,  -- 품명
+    Spec                                 NVARCHAR(100)    NULL,  -- 규격
+    UMItemClassSSeq                      INT              NULL,  -- 소분류내부코드
+    UMItemClassMSeq                      INT              NULL,  -- 중분류내부코드
+    UMItemClassLSeq                      INT              NULL,  -- 대분류내부코드
+    UMItemClassSName                     NVARCHAR(100)    NULL,  -- 소분류
+    UMItmeClassMName                     NVARCHAR(100)    NULL,  -- 중분류
+    UMItemClassLName                     NVARCHAR(100)    NULL,  -- 대분류
+    UMItemEtcClassSeq                    INT              NULL,  -- 품목기타분류내부코드
+    UMItemEtcClassName                   NVARCHAR(100)    NULL,  -- 품목기타분류
+    UnitName                             NVARCHAR(100)    NULL,  -- 단위
+    ItemSeq                              INT              NULL,  -- 품목내부코드
+    AssetName                            NVARCHAR(100)    NULL,  -- 품목자산분류
+    PreQty                               DECIMAL(19,5)    NULL,  -- 기초수량
+    PreAmt                               DECIMAL(19,5)    NULL,  -- 기초금액
+    ProdQty                              DECIMAL(19,5)    NULL,  -- 생산수량
+    ProdAmt                              DECIMAL(19,5)    NULL,  -- 생산금액
+    BuyQty                               DECIMAL(19,5)    NULL,  -- 구매수량
+    BuyAmt                               DECIMAL(19,5)    NULL,  -- 구매금액
+    MvInQty                              DECIMAL(19,5)    NULL,  -- 적송입고수량
+    MvInAmt                              DECIMAL(19,5)    NULL,  -- 적송입고금액
+    EtcInQty                             DECIMAL(19,5)    NULL,  -- 기Type고수량
+    EtcInAmt                             DECIMAL(19,5)    NULL,  -- 기Type고금액
+    ExchangeInQty                        DECIMAL(19,5)    NULL,  -- 대체입고수량
+    ExchangeInAmt                        DECIMAL(19,5)    NULL,  -- 대체입고금액
+    SalesQty                             DECIMAL(19,5)    NULL,  -- 판매수량
+    SalesAmt                             DECIMAL(19,5)    NULL,  -- 판매원가
+    InputQty                             DECIMAL(19,5)    NULL,  -- 투입수량
+    InputAmt                             DECIMAL(19,5)    NULL,  -- 투입금액
+    PJTOutQty                            DECIMAL(19,5)    NULL,  -- 프로젝트출고수량
+    PJTOutAmt                            DECIMAL(19,5)    NULL,  -- 프로젝트출고금액
+    MvOutQty                             DECIMAL(19,5)    NULL,  -- 적송출고수량
+    MvOutAmt                             DECIMAL(19,5)    NULL,  -- 적송출고금액
+    EtcOutQty                            DECIMAL(19,5)    NULL,  -- 기타출고수량
+    EtcOutAmt                            DECIMAL(19,5)    NULL,  -- 기타출고금액
+    ExchangeOutQty                       DECIMAL(19,5)    NULL,  -- 대체출고수량
+    ExchangeOutAmt                       DECIMAL(19,5)    NULL,  -- 대체출고금액
+    InQty                                DECIMAL(19,5)    NULL,  -- 입고수량
+    OutAmt                               DECIMAL(19,5)    NULL,  -- 출고금액
+    InAmt                                DECIMAL(19,5)    NULL,  -- 입고금액
+    StockQty                             DECIMAL(19,5)    NULL,  -- 재고수량(A)
+    OutQty                               DECIMAL(19,5)    NULL,  -- 출고수량
+    StockAmt                             DECIMAL(19,5)    NULL,  -- 재고금액(C)
+    StockQty2                            DECIMAL(19,5)    NULL,  -- 결산 후 재고수량(B)
+    StockAmt2                            DECIMAL(19,5)    NULL,  -- 결산 후 재고금액(D)
+    DiffQty                              DECIMAL(19,5)    NULL,  -- 차이수량(A-B)
+    DiffAmt                              DECIMAL(19,5)    NULL,  -- 차이금액(C-D)
+    DivPrice                             DECIMAL(19,5)    NULL,  -- 재고단가(D/B)
+    StkPrice                             DECIMAL(19,5)    NULL,  -- 최종결산월재고단가
+    InputAccName                         NVARCHAR(100)    NULL,  -- 생산투입비용계정
+    SalesAccName                         NVARCHAR(100)    NULL,  -- 판매원가계정
+    AssetGroupName                       NVARCHAR(100)    NULL,  -- 재고자산종류
+    AssetAccName                         NVARCHAR(100)    NULL,  -- 자산처리계정
+    RAW_JSON    NVARCHAR(MAX)  NULL
+);
+-- [ERP] [재고금액상세조회] 54 데이터컬럼
