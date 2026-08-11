@@ -23,7 +23,8 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
-          <b-button v-show="!isClosedMonth" class="second" @click="genData">데이터 생성</b-button>       
+          <b-button v-show="isVN" class="second" @click="apiCallClick">API 호출</b-button>
+          <b-button v-show="!isClosedMonth" class="second" @click="genData">데이터 생성</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
         </div>
       </div>
@@ -103,6 +104,10 @@ export default {
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
+    },
+    // 인터페이스(API 호출)는 VN 전용
+    isVN() {
+      return this.siteMap[this.params.site] === 'VN';
     },
   },
   created() {
@@ -195,25 +200,25 @@ export default {
         this.$toast && this.$toast('error', '년월 선택해주세요.');
         return;
       }
-      
+
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
       const site = this.siteMap[this.params.site];
-      
+
       try {
         let params = {
           yyyymm: yyyymm,
           site: site
         };
-        
+
         let param = {
           menuId: 'c0007003',
           queryId: 'uploadMesSubul',
           queryParams: params
         };
-        
+
         const res = await this.$axios.api.search(param);
         const retMessage = res && res.length > 0 ? res[0].retMessage : '';
-        
+
         if (retMessage && retMessage.includes('[ERROR]')) {
           this.$toast && this.$toast('error', retMessage);
         } else {
@@ -223,6 +228,37 @@ export default {
       } catch (error) {
         console.error('MES수불 데이터 생성 실패:', error);
         this.$toast && this.$toast('error', '데이터 생성 중 오류가 발생했습니다.');
+      }
+    },
+    // MES 생산수불(WIP_SUBUL) API 호출 → 적재 → 그리드 새로고침
+    async apiCallClick() {
+      if (!this.params.yyyymm) {
+        this.$toast && this.$toast('error', '년월 선택해주세요.');
+        return;
+      }
+      const yyyymm = this.params.yyyymm.replaceAll('-', '');
+      // TODO(MES 접근 후 확정): factory 코드 매핑 / workDate 일자 기준 / matId(공백=전체).
+      //  현재 값은 정의서 샘플(DV01/일자/716AP) 기준의 잠정 매핑.
+      const payload = {
+        key: 'WIP_SUBUL',
+        selCode: yyyymm,
+        params: {
+          factory: 'DV01',
+          workDate: yyyymm,
+          matId: '',
+        },
+      };
+      try {
+        const res = await this.$axios.api.iface(payload);
+        if (res && res.status === 'success') {
+          this.$toast && this.$toast('success', `MES 생산수불 ${res.loaded}건 수신·적재되었습니다.`);
+          this.getDataList();
+        } else {
+          this.$toast && this.$toast('error', `API 호출 실패: ${res ? res.message : '응답 없음'}`);
+        }
+      } catch (error) {
+        console.error('MES 생산수불 API 호출 실패:', error);
+        this.$toast && this.$toast('error', 'API 호출 중 오류가 발생했습니다.');
       }
     },
   },

@@ -152,6 +152,18 @@ const api = {
 		return instance.post('api/generic/saveData', params).then((response) => response.data);
 	},
 
+	/**
+	 * 타시스템 인터페이스 수신 (ERP/MES 호출 → 적재).
+	 * @param {{key:string, selCode?:string, params?:object}} payload
+	 *   key    : 인터페이스 식별자 (예: WIP_SUBUL, DEPT_COST)
+	 *   selCode: 결산/적재 단위 (트랜잭션). 마스터는 무시.
+	 *   params : 조회조건 (ERP=DataBlock1 필드 / MES={factory,workDate,matId})
+	 * @returns {{status:'success'|'error', key, requestId, loaded, message}}
+	 */
+	async iface(payload) {
+		return instance.post('api/iface/fetch', payload).then((response) => response.data);
+	},
+
   async searchAll(paramsList) {
     const results = new Array(paramsList.length);
     try {
