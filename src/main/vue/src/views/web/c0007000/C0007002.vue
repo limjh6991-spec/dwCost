@@ -43,6 +43,7 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <b-button v-show="isVN" class="second" @click="apiCallClick">API 호출</b-button>
           <b-button v-show="!isClosedMonth && !isCurrencyReadonly" class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
           <b-button v-show="!isClosedMonth && !isCurrencyReadonly" class="sub" @click="addBtnClick">추가</b-button>
@@ -67,9 +68,10 @@ import gridField from '@web/c0007000/js/C0007002.js';
 import { applyAmtFormat } from '@/utils/gridUtils';
 import currencyConvert from '@web/c0007000/js/currencyConvert.js';
 import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
+import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
 
 export default {
-  mixins: [currencyConvert],
+  mixins: [currencyConvert, ifaceApiMixin],
   components: { ExchangeRatePopup },
   props: {},
   setup() {
@@ -135,6 +137,10 @@ export default {
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
+    },
+    // 인터페이스(API 호출)는 VN 전용
+    isVN() {
+      return this.siteMap[this.params.site] === 'VN';
     },
   },
   created() {
@@ -211,6 +217,22 @@ export default {
         return;
       }
       this.getDataList();
+    },
+    // 품목별투입(ITEM_INPUT) API 호출 → 적재 → 그리드 새로고침
+    apiCallClick() {
+      if (!this.params.yyyymm) {
+        this.$toast && this.$toast('error', '년월 선택해주세요.');
+        return;
+      }
+      const yyyymm = this.params.yyyymm.replaceAll('-', '');
+      // TODO(ERP 접근/cert 후 확정): DataBlock 필드 정확한 매핑.
+      this.callIface({
+        key: 'ITEM_INPUT',
+        selCode: yyyymm,
+        params: { yyyymm, site: this.siteMap[this.params.site] },
+        successLabel: '품목별투입',
+        onSuccess: () => this.getDataList(),
+      });
     },
     onCurrencyChange(currency) {
       this.setCurrency(currency);

@@ -27,6 +27,7 @@
       <div class="left_box">
         <div class="btn_wrap ms-auto">
           <div>
+            <b-button v-show="isVN" class="second" @click="apiCallClick">API 호출</b-button>
             <b-button v-show="!isClosedMonth" @click="addViewRow" class="sub"> 추가</b-button>
             <b-button v-show="!isClosedMonth" class="second" @click="deleteRmaData"> 삭제</b-button>
             <b-button v-show="!isClosedMonth" class="main" @click="updateRmaData">저장</b-button>  
@@ -54,9 +55,11 @@ import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007009.js';
 import { RowState } from 'realgrid';
+import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
 
 export default {
   name: 'C0007009',
+  mixins: [ifaceApiMixin],
   props: {
     yearList: {
       type: Array,
@@ -100,6 +103,10 @@ export default {
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
+    },
+    // 인터페이스(API 호출)는 VN 전용
+    isVN() {
+      return this.siteMap[this.params.site] === 'VN';
     },
   },
   watch: {
@@ -258,6 +265,23 @@ export default {
       const gv = this.viewGridView;
       if (gv) {
       }
+    },
+
+    // 수출Claim(EXP_CLAIM) API 호출 → 적재 → 그리드 새로고침
+    apiCallClick() {
+      if (!this.params.yyyymm) {
+        this.$toast('error', '년월을 선택해 주세요.');
+        return;
+      }
+      const yyyymm = this.params.yyyymm.replaceAll('-', '');
+      // TODO(ERP 접근/cert 후 확정): DataBlock 필드 정확한 매핑.
+      this.callIface({
+        key: 'EXP_CLAIM',
+        selCode: yyyymm,
+        params: { yyyymm, site: this.siteMap[this.params.site] },
+        successLabel: '수출Claim',
+        onSuccess: () => this.searchClick(),
+      });
     },
 
     onCellClickedViewGrid(grid, clickData) {

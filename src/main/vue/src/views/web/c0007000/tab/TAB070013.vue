@@ -39,9 +39,11 @@
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007003TAB3.js';
+import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
 
 export default {
   props: {},
+  mixins: [ifaceApiMixin],
   components: {},
   setup() {
     const srchInfo = useC0001001();
@@ -231,7 +233,7 @@ export default {
       }
     },
     // MES 생산수불(WIP_SUBUL) API 호출 → 적재 → 그리드 새로고침
-    async apiCallClick() {
+    apiCallClick() {
       if (!this.params.yyyymm) {
         this.$toast && this.$toast('error', '년월 선택해주세요.');
         return;
@@ -239,27 +241,13 @@ export default {
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
       // TODO(MES 접근 후 확정): factory 코드 매핑 / workDate 일자 기준 / matId(공백=전체).
       //  현재 값은 정의서 샘플(DV01/일자/716AP) 기준의 잠정 매핑.
-      const payload = {
+      this.callIface({
         key: 'WIP_SUBUL',
         selCode: yyyymm,
-        params: {
-          factory: 'DV01',
-          workDate: yyyymm,
-          matId: '',
-        },
-      };
-      try {
-        const res = await this.$axios.api.iface(payload);
-        if (res && res.status === 'success') {
-          this.$toast && this.$toast('success', `MES 생산수불 ${res.loaded}건 수신·적재되었습니다.`);
-          this.getDataList();
-        } else {
-          this.$toast && this.$toast('error', `API 호출 실패: ${res ? res.message : '응답 없음'}`);
-        }
-      } catch (error) {
-        console.error('MES 생산수불 API 호출 실패:', error);
-        this.$toast && this.$toast('error', 'API 호출 중 오류가 발생했습니다.');
-      }
+        params: { factory: 'DV01', workDate: yyyymm, matId: '' },
+        successLabel: 'MES 생산수불',
+        onSuccess: () => this.getDataList(),
+      });
     },
   },
 };

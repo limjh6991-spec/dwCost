@@ -43,6 +43,7 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <b-button v-show="isVN" class="second" @click="apiCallClick">API 호출</b-button>
           <b-button v-show="!isClosedMonth && !isCurrencyReadonly" class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
           <b-button v-show="!isClosedMonth && !isCurrencyReadonly" class="sub" @click="addBtnClick">추가</b-button>
@@ -65,10 +66,11 @@ import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007001.js';
 import currencyConvert from '@web/c0007000/js/currencyConvert.js';
 import { applyAmtFormat } from '@/utils/gridUtils';
+import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
 
 export default {
   components: {},
-  mixins: [currencyConvert],
+  mixins: [currencyConvert, ifaceApiMixin],
   props: {},
   setup() {
     const srchInfo = useC0001001();
@@ -134,6 +136,10 @@ export default {
     },
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
+    },
+    // 인터페이스(API 호출)는 VN 전용
+    isVN() {
+      return this.siteMap[this.params.site] === 'VN';
     },
   },
   created() {
@@ -220,6 +226,22 @@ export default {
         return;
       }
       this.getDataList();
+    },
+    // 부서별계정별비용(DEPT_COST) API 호출 → 적재 → 그리드 새로고침
+    apiCallClick() {
+      if (!this.params.yyyymm) {
+        this.$toast && this.$toast('error', '년월 선택해주세요.');
+        return;
+      }
+      const yyyymm = this.params.yyyymm.replaceAll('-', '');
+      // TODO(ERP 접근/cert 후 확정): DataBlock 필드(AccDateFr/To 등) 정확한 매핑.
+      this.callIface({
+        key: 'DEPT_COST',
+        selCode: yyyymm,
+        params: { yyyymm, site: this.siteMap[this.params.site] },
+        successLabel: '부서별계정별비용',
+        onSuccess: () => this.getDataList(),
+      });
     },
     addBtnClick() {
       if (!this.gridView || !this.gridDataProvider) return;
