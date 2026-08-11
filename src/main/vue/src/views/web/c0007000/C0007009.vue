@@ -27,7 +27,7 @@
       <div class="left_box">
         <div class="btn_wrap ms-auto">
           <div>
-            <b-button v-show="false" class="second" @click="apiCallClick">API 호출</b-button>
+            <b-button v-show="showIfApiButton" class="second" @click="apiCallClick">API 호출</b-button>
             <b-button v-show="!isClosedMonth" @click="addViewRow" class="sub"> 추가</b-button>
             <b-button v-show="!isClosedMonth" class="second" @click="deleteRmaData"> 삭제</b-button>
             <b-button v-show="!isClosedMonth" class="main" @click="updateRmaData">저장</b-button>  

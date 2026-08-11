@@ -43,7 +43,7 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
-          <b-button v-show="false" class="second" @click="apiCallClick">API 호출</b-button>
+          <b-button v-show="showIfApiButton" class="second" @click="apiCallClick">API 호출</b-button>
           <b-button v-show="!isClosedMonth && !isCurrencyReadonly" class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
           <b-button v-show="!isClosedMonth && !isCurrencyReadonly" class="sub" @click="addBtnClick">추가</b-button>
