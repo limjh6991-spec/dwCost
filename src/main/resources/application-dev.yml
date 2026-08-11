@@ -60,4 +60,20 @@ batch:
   scheduler:
     enabled: true
   matScheduler:
-    enabled: true		
+    enabled: true
+
+# 타시스템 인터페이스(ERP/MES). 인증정보는 환경변수로 주입(비밀값 커밋 금지).
+iface:
+  erp:
+    base-url: http://172.16.21.32:8801   # TEST(8801) / 운영(8800)
+    cert-id: ${IFACE_ERP_CERT_ID:}
+    cert-key: ${IFACE_ERP_CERT_KEY:}
+    dsn-oper: ${IFACE_ERP_DSN_OPER:}
+    dsn-bis: ${IFACE_ERP_DSN_BIS:}
+    company-seq: 1
+    language-seq: 6
+    user-seq: 3
+  mes:
+    base-url: http://172.16.23.30:8888
+  connect-timeout-ms: 10000
+  read-timeout-ms: 120000		

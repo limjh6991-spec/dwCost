@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.common.iface.mapper.IfLoadMapper">
+
+    <!-- 적재 프로시저는 SELECT @@ROWCOUNT AS loaded 반환 -->
+    <select id="loadWithSel" resultType="int">
+        EXEC ${proc} #{json}, #{selCode}, #{requestId}
+    </select>
+
+    <select id="loadMaster" resultType="int">
+        EXEC ${proc} #{json}, #{requestId}
+    </select>
+
+</mapper>
