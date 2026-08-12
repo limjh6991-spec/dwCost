@@ -253,9 +253,9 @@ MODEL,
 	FROM (
         SELECT
             a.*,
-            a.ACCT_AMT * c.UTG AS Target_Total,
-            ROUND(a.ACCT_AMT * c.UTG, 0) AS Base_IN,
-            ROW_NUMBER() OVER (ORDER BY a.ACCT_AMT * c.UTG DESC) AS RN
+            a.ACCT_AMT * (CASE WHEN a.acct = '53020010' THEN 0 ELSE c.UTG END) AS Target_Total,  -- [카세트] 외주가공비(53020010)는 100% VINA → UTG 배부 제외
+            ROUND(a.ACCT_AMT * (CASE WHEN a.acct = '53020010' THEN 0 ELSE c.UTG END), 0) AS Base_IN,
+            ROW_NUMBER() OVER (ORDER BY a.ACCT_AMT * (CASE WHEN a.acct = '53020010' THEN 0 ELSE c.UTG END) DESC) AS RN
         FROM doi_acct_expen a
         LEFT JOIN doi_cst_rate c ON (a.yyyymm = c.yyyymm AND a.site = c.site)
         WHERE 1=1 
@@ -464,8 +464,8 @@ WITH VINA_CST_EXPEn as (
 	    FROM (
 	        SELECT
 	            a.*,
-	            a.ACCT_AMT * c.VINA_CST AS Target_Total,
-	            ROUND(a.ACCT_AMT * c.VINA_CST, 0) AS Base_IN
+	            a.ACCT_AMT * (CASE WHEN a.acct = '53020010' THEN 1.0 ELSE c.VINA_CST END) AS Target_Total,  -- [카세트] 외주가공비(53020010)는 100% VINA
+	            ROUND(a.ACCT_AMT * (CASE WHEN a.acct = '53020010' THEN 1.0 ELSE c.VINA_CST END), 0) AS Base_IN
 	        FROM doi_acct_expen a
 	        LEFT JOIN doi_cst_rate c ON (a.yyyymm = c.yyyymm AND a.site = c.site)
 	        WHERE 1=1 
