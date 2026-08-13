@@ -720,6 +720,8 @@ BEGIN
 
 					and not exists (select 1 from MAT_DISTRATE c where a.mat_code = c.자재번호)
 
+					and not exists (select 1 from DOI_BOM_MAST d where d.yyyymm=@YYYYMM and d.site=@SITE and d.품목중분류=N'VINA CST' and d.자재자산분류 NOT IN (N'카세트제품',N'제품') and d.자재번호 = a.mat_code) --[카세트 전용자재는 공통배부 제외, 카세트에만 귀속]
+
 				)A
 
 			)T
@@ -823,186 +825,106 @@ WHERE 배부금액+Final_BOH != 0
 
 
 		WITH CST_BOM AS (
-			-- [카세트] DOI_CST_BOM 별도 유지 대신 DOI_BOM_MAST에서 카세트 제품 BOM 직접 파생 (2026-08)
+			-- [카세트] 제품별 자재 이론소요 = 소요량 × 생산량(착수) : DOI_BOM_MAST(VINA CST) × DOI_PROD_SUBUL(착수 IN_MONTH)
 			SELECT
-				제품명,
-				자재번호,
-				SUM(소요량) AS 총소요량
+				b.제품번호 AS 도우모델,
+				b.자재번호,
+				SUM(b.소요량) * MAX(ps.IN_MONTH) AS 총소요량
 			FROM
-				DOI_BOM_MAST
+				DOI_BOM_MAST b
+				INNER JOIN DOI_PROD_SUBUL ps
+					ON ps.도우코드 = b.제품번호 AND ps.YYYYMM = b.YYYYMM AND ps.SITE = b.SITE
 			WHERE 1=1
-				AND 품목중분류 = 'VINA CST'
-				AND 자재자산분류 NOT IN ('카세트제품', '제품')
-				AND YYYYMM =  @YYYYMM
-				AND SITE = @SITE
-			GROUP BY 제품명, 자재번호
+				AND b.품목중분류 = 'VINA CST'
+				AND b.자재자산분류 NOT IN ('카세트제품', '제품')
+				AND b.YYYYMM = @YYYYMM
+				AND b.SITE = @SITE
+			GROUP BY b.제품번호, b.자재번호
 		), MAT_CST as (
-
+			-- [카세트] 소비 자재(원/부재료)의 투입금액 : DOI_MATL_RESC 중 VINA CST BOM 자재번호(완제품 아님)
 			select
-
 				품번 AS MAT_CODE,
-
 				SUM(투입수량) AS IN_QTY,
-
 				SUM(투입금액) AS IN_AMT,
-
-				재고자산종류 AS MAT_CLASS
-
+				MAX(재고자산종류) AS MAT_CLASS
 			from
-
 				DOI_MATL_RESC
-
-			WHERE 1 = 1 
-
-				 and YYYYMM = @YYYYMM
-
-            	and SITE = @SITE
-
-				AND 품목자산분류 = '카세트제품'
-
-			GROUP BY 품번,재고자산종류
-
+			WHERE 1 = 1
+				and YYYYMM = @YYYYMM
+				and SITE = @SITE
+				AND 품번 IN (
+					SELECT DISTINCT 자재번호 FROM DOI_BOM_MAST
+					WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND 품목중분류 = 'VINA CST'
+						AND 자재자산분류 NOT IN ('카세트제품', '제품')
+				)
+			GROUP BY 품번
+			HAVING SUM(투입금액) <> 0
 		)
-
 		INSERT INTO DOI_MAT_COST
-
 		(yyyymm,sel_code,site,구분,도우모델,자재번호,mat_gubun,mat_class,자재대분류,in_amt,boh_qty,in_qty,eoh_qty,out_qty,loss_qty,환산량,소요량,배부율,BOH_AMT,배부금액,사용량,배부방식,단가,ADJ_YN)
-
 		SELECT
-
-			YYYYMM ,
-
-			SEL_CODE ,
-
-			SITE ,
-
-			구분 ,
-
-			도우모델 ,
-
-			자재번호 ,
-
+			YYYYMM,
+			SEL_CODE,
+			SITE,
+			구분,
+			도우모델,
+			자재번호,
 			'카세트제품' as MAT_GUBUN,
-
-			MAT_CLASS ,
-
-			자재대분류 ,
-
-			IN_Amt as in_AMT ,
-
-			0 as BOH_QTY ,
-
-			in_QTY ,
-
+			MAT_CLASS,
+			자재대분류,
+			IN_Amt as in_AMT,
+			0 as BOH_QTY,
+			in_QTY,
 			0 as EOH_QTY,
-
 			in_QTY as OUT_QTY,
-
 			0 as LOSS_QTY,
-
-			ADJ_QTY ,
-
-			총소요량 ,
-
-			배부율 ,
-
+			ADJ_QTY,
+			총소요량,
+			배부율,
 			Final_BOH_Amt as BOH_AMT,
-
 			Final_IN_Amt as 배부금액,
-
-			사용량 ,
-
-			배부방식,Final_IN_Amt/in_QTY as 단가,
-
+			사용량,
+			배부방식, CASE WHEN in_QTY = 0 THEN 0 ELSE Final_IN_Amt/in_QTY END as 단가,
 			'Y' AS ADJ_YN
-
 		FROM
-
 		(
-
 			SELECT
-
-		        T.*,
-
-		        -- [4-3] 최종 보정: 1차 배부액 + (1등에게 잔액 몰아주기)
-
-		        -- IN 금액 보정
-
-		        Base_BOH_Amt + CASE WHEN RN = 1 THEN (IN_Amt/2 - Sum_Base_BOH_Amt) ELSE 0 END AS Final_BOH_Amt,
-
-		        Base_IN_Amt + CASE WHEN RN = 1 THEN (IN_Amt - Sum_Base_IN_Amt) ELSE 0 END AS Final_IN_Amt
-
-		     FROM(  
-
-				SELECT 
-
-		            A.*,
-
-		            -- [4-2] 그룹별(비용항목별) 원금액 합계 계산
-
-		            SUM(Base_BOH_Amt) OVER (PARTITION BY 자재번호) AS Sum_Base_BOH_Amt,
-
-		          SUM(Base_IN_Amt) OVER (PARTITION BY 자재번호) AS Sum_Base_IN_Amt,
-
-		            -- [4-2] 보정 대상 순위 (배부율 높은 순)
-
-		            ROW_NUMBER() OVER (PARTITION BY 자재번호 ORDER BY 배부율 DESC, 도우모델) AS RN
-
-		         FROM(
-
-		            -- [4-1] 1차 배부 계산 (Base Amount)    
-
+				T.*,
+				Base_BOH_Amt + CASE WHEN RN = 1 THEN (IN_Amt/2 - Sum_Base_BOH_Amt) ELSE 0 END AS Final_BOH_Amt,
+				Base_IN_Amt + CASE WHEN RN = 1 THEN (IN_Amt - Sum_Base_IN_Amt) ELSE 0 END AS Final_IN_Amt
+			FROM(
+				SELECT
+					A.*,
+					SUM(Base_BOH_Amt) OVER (PARTITION BY 자재번호) AS Sum_Base_BOH_Amt,
+					SUM(Base_IN_Amt) OVER (PARTITION BY 자재번호) AS Sum_Base_IN_Amt,
+					ROW_NUMBER() OVER (PARTITION BY 자재번호 ORDER BY 배부율 DESC, 도우모델) AS RN
+				FROM(
 					SELECT
-
 						@YYYYMM as YYYYMM,
-
 						@SEL_CODE as SEL_CODE,
-
 						@SITE as SITE,
-
 						'양산' as 구분,
-
-						b.제품명 as 도우모델,
-
+						b.도우모델 as 도우모델,
 						b.자재번호 as 자재번호,
-
 						a.MAT_CLASS,
-
-						'카세트' as  자재대분류,
-
+						'카세트' as 자재대분류,
 						a.in_AMT,
-
-						a.in_QTY,
-
-						a.in_QTY as ADJ_QTY, --sum(총소요량) over (partition by MAT_CODE) AS TOT,
-
+						b.총소요량 as in_QTY,
+						b.총소요량 as ADJ_QTY,
 						b.총소요량,
-
-						CAST(b.총소요량 as INT)/sum(총소요량) over (partition by MAT_CODE) as 배부율,
-
-						IN_AMT * CAST(b.총소요량 as INT)/sum(총소요량) over (partition by MAT_CODE) AS  Origin_Amt,
-
-						round(IN_AMT/2 * CAST(b.총소요량 as INT)/sum(총소요량) over (partition by MAT_CODE), 0) as Base_BOH_Amt,
-
-						round(IN_AMT * CAST(b.총소요량 as INT)/sum(총소요량) over (partition by MAT_CODE), 0) as Base_IN_Amt,
-
-						sum(총소요량) over (partition by MAT_CODE) * CAST(b.총소요량 as INT)/sum(총소요량) over (partition by MAT_CODE) as 사용량,
-
-						'CST' as 배부방식 
-
+						b.총소요량 / NULLIF(sum(b.총소요량) over (partition by a.MAT_CODE),0) as 배부율,
+						a.IN_AMT * b.총소요량 / NULLIF(sum(b.총소요량) over (partition by a.MAT_CODE),0) AS Origin_Amt,
+						round(a.IN_AMT/2 * b.총소요량 / NULLIF(sum(b.총소요량) over (partition by a.MAT_CODE),0), 0) as Base_BOH_Amt,
+						round(a.IN_AMT * b.총소요량 / NULLIF(sum(b.총소요량) over (partition by a.MAT_CODE),0), 0) as Base_IN_Amt,
+						b.총소요량 as 사용량,
+						'CST' as 배부방식
 					FROM
-
 						MAT_CST A
-
 					INNER JOIN CST_BOM B ON
-
 						(A.MAT_CODE = B.자재번호)
-
-			  	)a
-
-		  	)T
-
-	  )F;
+				)a
+			)T
+		)F;
 
 		
 

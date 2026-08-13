@@ -146,6 +146,9 @@ BEGIN
 
 	
 
+      -- [수정 2026-08] COMMIT(하단)에 대응하는 BEGIN TRANSACTION 누락 → 조기 RETURN(마감/검증) 이후, 첫 DML 직전에 추가
+      BEGIN TRANSACTION;
+
       --삭제
 
       DELETE FROM DOI_COST
@@ -434,6 +437,8 @@ BEGIN
 
 	        and sel_code = @SEL_CODE
 
+        and 도우모델 NOT LIKE 'VN034P[0-9]'
+
 		) b
 
 		   LEFT JOIN STUC_UC uc ON uc.구분=b.구분 AND uc.model=b.model AND uc.expen_sel=b.EXPEN_SEL AND uc.acct_name=b.acct_name
@@ -454,7 +459,7 @@ BEGIN
 
      	(YYYYMM,sel_code,SITE,구분,MODEL,EXPEN_SEL명,ACCT_NAME,ITEM_NAME,EXPEN_SEL,
 
-			BOH_QTY ,IN_QTY ,EOH_QTY ,OUT_QTY ,LOSS_QTY ,BAD_QTY ,TRANSFER_QTY ,ADJ_QTY ,UNIT_COST,OUT_단가,[IN],[OUT],ADJ_YN,UnitCost_YN)
+			BOH_QTY ,IN_QTY ,EOH_QTY ,OUT_QTY ,LOSS_QTY ,BAD_QTY ,TRANSFER_QTY ,ADJ_QTY ,UNIT_COST,OUT_단가,[IN],EOH,[OUT],LOSS,ADJ_YN,UnitCost_YN)
 
 		select
 
@@ -478,27 +483,32 @@ BEGIN
 
 				BOH_QTY = 0 ,
 
-				IN_QTY = A.수량 ,
+				IN_QTY = ISNULL(ps.IN_MONTH, 0) ,
 
-				EOH_QTY = 0 ,
+				EOH_QTY = ISNULL(ps.EOH_MONTH, 0) ,
 
-				OUT_QTY = A.수량,
+				OUT_QTY = ISNULL(ps.OUT_MONTH, 0) ,
 
-				LOSS_QTY = 0 ,
+				LOSS_QTY = ISNULL(ps.LOSS_MONTH, 0) ,
 
 				BAD_QTY = 0 ,
 
 				TRANSFER_QTY = 0 ,
 
-				ADJ_QTY = A.수량,
+				ADJ_QTY = ISNULL(ps.IN_MONTH, 0) ,
 
-				[IN]/ A.수량 as unit_cost,
+				CASE WHEN ISNULL(ps.IN_MONTH,0) = 0 THEN 0 ELSE [IN] * 1.0 / ps.IN_MONTH END as unit_cost,
 
-				[IN]/ A.수량 as out_단가,
+				CASE WHEN ISNULL(ps.IN_MONTH,0) = 0 THEN 0 ELSE [IN] * 1.0 / ps.IN_MONTH END as out_단가,
 
 				[IN],
 
-				[IN] AS [OUT],
+				[IN] - ROUND(CASE WHEN ISNULL(ps.IN_MONTH,0)=0 THEN 0 ELSE [IN]*1.0/ps.IN_MONTH * ps.OUT_MONTH END, 0)
+				      - ROUND(CASE WHEN ISNULL(ps.IN_MONTH,0)=0 THEN 0 ELSE [IN]*1.0/ps.IN_MONTH * ps.LOSS_MONTH END, 0) AS EOH,
+
+				ROUND(CASE WHEN ISNULL(ps.IN_MONTH,0)=0 THEN 0 ELSE [IN]*1.0/ps.IN_MONTH * ps.OUT_MONTH END, 0) AS [OUT],
+
+				ROUND(CASE WHEN ISNULL(ps.IN_MONTH,0)=0 THEN 0 ELSE [IN]*1.0/ps.IN_MONTH * ps.LOSS_MONTH END, 0) AS LOSS,
 
 				'Y' as ADJ_YN,
 
@@ -506,15 +516,62 @@ BEGIN
 
 			from doi_vncst_rate a
 
-			     INNER JOIN doi_expen_matl b 
+			     INNER JOIN doi_expen_matl b
 
 			     	ON (a.yyyymm=b.yyyymm and a.site=b.site and a.cst_no=b.model and b.sel_code = @SEL_CODE)
 
-		      where 1=1 
+			     LEFT JOIN DOI_PROD_SUBUL ps
+
+			     	ON (ps.yyyymm=a.yyyymm and ps.site=a.site and ps.sel_code=@SEL_CODE and ps.도우코드=a.cst_no)
+
+		      where 1=1
 
 		         and a.yyyymm = @YYYYMM
 
-		         and a.site = @SITE;
+		         and a.site = @SITE
+
+	         UNION ALL
+
+	         -- [카세트 재료비] doi_mat_cost 카세트분을 제품 물량(착수/완성/재공) 기준으로 완성/재공 배분 (경비와 동일)
+	         select
+	            m.YYYYMM,
+	            m.SEL_CODE,
+	            m.SITE,
+	            N'양산' AS 구분,
+	            m.도우모델 AS MODEL,
+	            CASE WHEN m.mat_class = N'원자재' THEN N'직접재료비' ELSE N'간접재료비' END AS EXPEN_SEL명,
+	            CASE WHEN m.mat_gubun = N'제품' AND m.mat_class = N'원자재' THEN N'원장'
+	                 WHEN m.자재대분류 = N'필름' THEN 'PF'
+	                 WHEN m.자재대분류 = N'트레이' THEN N'트레이'
+	                 WHEN m.mat_class = N'약액' THEN N'약액'
+	                 WHEN m.mat_class = N'더미글라스' THEN N'더미글라스'
+	                 ELSE N'기타' END AS ACCT_NAME,
+	            m.자재번호 AS ITEM_NAME,
+	            CASE WHEN m.mat_class = N'원자재' THEN 'MDAX' ELSE 'MIAX' END AS EXPEN_SEL,
+	            0 AS BOH_QTY,
+	            ISNULL(ps.IN_MONTH, 0) AS IN_QTY,
+	            ISNULL(ps.EOH_MONTH, 0) AS EOH_QTY,
+	            ISNULL(ps.OUT_MONTH, 0) AS OUT_QTY,
+	            ISNULL(ps.LOSS_MONTH, 0) AS LOSS_QTY,
+	            0 AS BAD_QTY,
+	            0 AS TRANSFER_QTY,
+	            ISNULL(ps.IN_MONTH, 0) AS ADJ_QTY,
+	            CASE WHEN ISNULL(ps.IN_MONTH,0) = 0 THEN 0 ELSE m.배부금액 * 1.0 / ps.IN_MONTH END AS unit_cost,
+	            CASE WHEN ISNULL(ps.IN_MONTH,0) = 0 THEN 0 ELSE m.배부금액 * 1.0 / ps.IN_MONTH END AS out_단가,
+	            m.배부금액 AS [IN],
+	            m.배부금액 - ROUND(CASE WHEN ISNULL(ps.IN_MONTH,0)=0 THEN 0 ELSE m.배부금액*1.0/ps.IN_MONTH * ps.OUT_MONTH END, 0)
+	                      - ROUND(CASE WHEN ISNULL(ps.IN_MONTH,0)=0 THEN 0 ELSE m.배부금액*1.0/ps.IN_MONTH * ps.LOSS_MONTH END, 0) AS EOH,
+	            ROUND(CASE WHEN ISNULL(ps.IN_MONTH,0)=0 THEN 0 ELSE m.배부금액*1.0/ps.IN_MONTH * ps.OUT_MONTH END, 0) AS [OUT],
+	            ROUND(CASE WHEN ISNULL(ps.IN_MONTH,0)=0 THEN 0 ELSE m.배부금액*1.0/ps.IN_MONTH * ps.LOSS_MONTH END, 0) AS LOSS,
+	            'Y' AS ADJ_YN,
+	            1 AS UmitCost_YN
+	         from doi_mat_cost m
+	              LEFT JOIN DOI_PROD_SUBUL ps
+	                ON (ps.yyyymm=m.yyyymm and ps.site=m.site and ps.sel_code=m.sel_code and ps.도우코드=m.도우모델)
+	         where m.yyyymm = @YYYYMM
+	           and m.site = @SITE
+	           and m.sel_code = @SEL_CODE
+	           and m.도우모델 LIKE 'VN034P[0-9]';
 
      
 

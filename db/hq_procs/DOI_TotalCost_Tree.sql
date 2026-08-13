@@ -47,6 +47,7 @@ BEGIN
         DECLARE @LossAdj DECIMAL(18,2) = 0;
         DECLARE @LossAdjYangsan DECIMAL(18,2) = 0;
 		DECLARE @LossAdjDev     DECIMAL(18,2) = 0;
+		DECLARE @LossAdjCassette DECIMAL(18,2) = 0;
 	
 		DECLARE @ACC_PREV_PRICE DECIMAL(18,2) = 0;   -- 이전가격 (기타매출/41004010/재경그룹)
 		DECLARE @ACC_IDLE_COMP  DECIMAL(18,2) = 0;   -- 비가동보상 (제품매출/41002010/재경그룹)
@@ -218,7 +219,7 @@ BEGIN
 		      END AS is_cassette
 			, CAST(
 			    (CASE
-			        WHEN 구분 = N'카세트' THEN N'카세트'
+			        WHEN 구분 = N'카세트' OR LEFT(model, 2) = N'VN' THEN N'카세트'
 			        WHEN 구분 = N'개발'   THEN N'개발'
 			        WHEN 구분 = N'구매'   THEN N'구매'
 			        ELSE N'양산'
@@ -229,9 +230,9 @@ BEGIN
 		          ELSE 1
 		      END AS sort_numeric
 		    , CASE
+		          WHEN 구분 = N'카세트' OR LEFT(model, 2) = N'VN' THEN 3
 		          WHEN 구분 = N'양산' THEN 1
 		          WHEN 구분 = N'개발' THEN 2
-		          WHEN 구분 = N'카세트' THEN 3
 		          WHEN 구분 = N'구매' THEN 4
 		          ELSE 9
 		      END AS sort_group
@@ -305,7 +306,15 @@ BEGIN
 		WHERE YYYYMM   = @YYYYMM
 		  AND SITE     = @SITE
 		  AND SEL_CODE = @SELCODE
-		  AND 구분      = N'양산';
+		  AND 구분      = N'양산'
+		  AND LEFT(model,2) <> N'VN';   -- 카세트 제외
+
+		SELECT @LossAdjCassette = COALESCE(SUM(COALESCE(LOSS,0)), 0)
+		FROM DOI_COST WITH(NOLOCK)
+		WHERE YYYYMM   = @YYYYMM
+		  AND SITE     = @SITE
+		  AND SEL_CODE = @SELCODE
+		  AND LEFT(model,2) = N'VN';
 		
 		SELECT @LossAdjDev = COALESCE(SUM(COALESCE(LOSS,0)), 0)
 		FROM DOI_COST WITH(NOLOCK)
@@ -1453,6 +1462,8 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 				CASE
 				  WHEN Cur.rn = 5 THEN 0
 				  WHEN Cur.rn = 4 THEN ((' + @SumCas_ProdSale + ') / NULLIF((' + @SumCas_Qty + '),0))
+				  WHEN Cur.rn = 44 THEN ((' + @SumCassette + ')) + @LossAdjCassette
+				  WHEN Cur.rn = 47 THEN @LossAdjCassette
 				  ELSE (' + @SumCassette + ')
 				END AS DECIMAL(18,2)) AS [카세트합계]
 
@@ -1520,12 +1531,13 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 		
 --		SELECT @SQL;
 		EXEC sp_executesql @SQL, 
-		N'@SCOF DECIMAL(18,2), @CostAdj DECIMAL(18,2), @LossAdj DECIMAL(18,2), @LossAdjYangsan DECIMAL(18,2), @LossAdjDev DECIMAL(18,2) ,@ACC_TOTAL decimal(18,2), @ACC_PREV_PRICE decimal(18,2), @ACC_IDLE_COMP decimal(18,2), @ACC_ADJ decimal(18,2), @SCOF_ACC decimal(18,2)',
+		N'@SCOF DECIMAL(18,2), @CostAdj DECIMAL(18,2), @LossAdj DECIMAL(18,2), @LossAdjYangsan DECIMAL(18,2), @LossAdjDev DECIMAL(18,2), @LossAdjCassette DECIMAL(18,2) ,@ACC_TOTAL decimal(18,2), @ACC_PREV_PRICE decimal(18,2), @ACC_IDLE_COMP decimal(18,2), @ACC_ADJ decimal(18,2), @SCOF_ACC decimal(18,2)',
 		@SCOF = @SCOFTotal,
     	@CostAdj = @CostAdj,
     	@LossAdj = @LossAdj,
         @LossAdjYangsan = @LossAdjYangsan,
    		@LossAdjDev     = @LossAdjDev,
+        @LossAdjCassette = @LossAdjCassette,
 		@ACC_TOTAL      = @ACC_TOTAL,
 		@ACC_PREV_PRICE = @ACC_PREV_PRICE,
 		@ACC_IDLE_COMP  = @ACC_IDLE_COMP,
