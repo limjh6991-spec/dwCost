@@ -253,9 +253,9 @@ MODEL,
 	FROM (
         SELECT
             a.*,
-            a.ACCT_AMT * (CASE WHEN a.acct = '53020010' THEN 0 ELSE c.UTG END) AS Target_Total,  -- [카세트] 외주가공비(53020010)는 100% VINA → UTG 배부 제외
-            ROUND(a.ACCT_AMT * (CASE WHEN a.acct = '53020010' THEN 0 ELSE c.UTG END), 0) AS Base_IN,
-            ROW_NUMBER() OVER (ORDER BY a.ACCT_AMT * (CASE WHEN a.acct = '53020010' THEN 0 ELSE c.UTG END) DESC) AS RN
+            a.ACCT_AMT * (CASE WHEN a.acct = '53020010' THEN 0 WHEN a.dept = '448' AND a.acct_name LIKE N'%소모품%' THEN 1.0 ELSE c.UTG END) AS Target_Total,  -- [카세트] 외주가공비(53020010)는 100% VINA → UTG 배부 제외
+            ROUND(a.ACCT_AMT * (CASE WHEN a.acct = '53020010' THEN 0 WHEN a.dept = '448' AND a.acct_name LIKE N'%소모품%' THEN 1.0 ELSE c.UTG END), 0) AS Base_IN,
+            ROW_NUMBER() OVER (ORDER BY a.ACCT_AMT * (CASE WHEN a.acct = '53020010' THEN 0 WHEN a.dept = '448' AND a.acct_name LIKE N'%소모품%' THEN 1.0 ELSE c.UTG END) DESC) AS RN
         FROM doi_acct_expen a
         LEFT JOIN doi_cst_rate c ON (a.yyyymm = c.yyyymm AND a.site = c.site)
         WHERE 1=1 
@@ -472,75 +472,59 @@ WITH VINA_CST_EXPEn as (
 	          AND a.yyyymm = @YYYYMM
 	          AND a.site = @SITE
 	          AND a.sel_code = @SEL_CODE
-	          AND a.dept IN ('400','448') -- 카세트팀 
+	          AND a.dept IN ('400','448') AND NOT (a.dept = '448' AND a.acct_name LIKE N'%소모품%') -- 카세트팀 
 	    		) A
 	)v 
+)
+, sub_raw AS (
+    -- 세부계정 × 모델 : 미반올림 배부액(Target_Total × 모델비율) + 상위계정과목(표시라인)
+    SELECT
+        a.SEL_CODE, D.CST_NO, C.utg, C.VINA_CST, B.EXPEN_SEL, B.EXPEN_SEL명, A.ACCT_NAME,
+        COALESCE(B.상위계정과목, A.ACCT_NAME) AS SANG,
+        SUM(a.Target_Total * d.rate) AS Sub_Raw
+    FROM VINA_CST_EXPEn a
+    LEFT JOIN doi_acct b ON (a.acct = b.acct AND a.yyyymm = b.yyyymm AND a.site = b.site)
+    LEFT JOIN doi_cst_rate c ON (a.yyyymm = c.yyyymm AND a.site = c.site)
+    LEFT JOIN doi_vncst_rate d ON (a.yyyymm = d.yyyymm AND a.site = d.site)
+    WHERE 1=1 AND c.vina_cst != 0 AND a.yyyymm = @YYYYMM AND a.site = @SITE
+      AND a.dept IN ('400','448') AND NOT (a.dept = '448' AND a.acct_name LIKE N'%소모품%')
+    GROUP BY a.SEL_CODE, D.CST_NO, C.utg, C.VINA_CST, B.EXPEN_SEL, B.EXPEN_SEL명, A.ACCT_NAME, COALESCE(B.상위계정과목, A.ACCT_NAME)
+),
+grp AS (
+    -- 표시라인(상위계정과목) × 모델 합산 미반올림 풀
+    SELECT SEL_CODE, EXPEN_SEL, SANG, CST_NO, SUM(Sub_Raw) AS Grp_Raw
+    FROM sub_raw GROUP BY SEL_CODE, EXPEN_SEL, SANG, CST_NO
+),
+grp_target AS (
+    -- 합산배분: 모델별 FLOOR + 그룹잔차(그룹 최대모델에 몰아주기)
+    SELECT SEL_CODE, EXPEN_SEL, SANG, CST_NO, Grp_Raw,
+        FLOOR(Grp_Raw)
+        + CASE WHEN ROW_NUMBER() OVER (PARTITION BY SEL_CODE, EXPEN_SEL, SANG ORDER BY Grp_Raw DESC, CST_NO) = 1
+               THEN ROUND(SUM(Grp_Raw) OVER (PARTITION BY SEL_CODE, EXPEN_SEL, SANG)
+                          - SUM(FLOOR(Grp_Raw)) OVER (PARTITION BY SEL_CODE, EXPEN_SEL, SANG), 0)
+               ELSE 0 END AS Grp_Target
+    FROM grp
+),
+split AS (
+    -- 세부계정 분할: (표시라인,모델)에서 최대 세부계정이 잔여를 흡수 → 세부계정 합 = 합산목표
+    SELECT s.SEL_CODE, s.CST_NO, s.utg, s.VINA_CST, s.EXPEN_SEL, s.EXPEN_SEL명, s.ACCT_NAME,
+        gt.Grp_Target,
+        FLOOR(s.Sub_Raw) AS Sub_Floor,
+        SUM(FLOOR(s.Sub_Raw)) OVER (PARTITION BY s.SEL_CODE, s.EXPEN_SEL, s.SANG, s.CST_NO) AS Sub_Floor_Sum,
+        ROW_NUMBER() OVER (PARTITION BY s.SEL_CODE, s.EXPEN_SEL, s.SANG, s.CST_NO ORDER BY s.Sub_Raw DESC, s.ACCT_NAME) AS Sub_RN,
+        SUM(s.Sub_Raw) OVER (PARTITION BY s.SEL_CODE, s.EXPEN_SEL, s.ACCT_NAME) AS Acct_Pool
+    FROM sub_raw s
+    JOIN grp_target gt ON gt.SEL_CODE=s.SEL_CODE AND gt.EXPEN_SEL=s.EXPEN_SEL AND gt.SANG=s.SANG AND gt.CST_NO=s.CST_NO
 )
 INSERT INTO doi_expen_matl (
     YYYYMM, sel_code, SITE, 구분, model, 면적, dist_rate, SUB_NAME, EXPEN_SEL, EXPEN_SEL명, ACCT_NAME, [in], in_ori
 )
-SELECT 
-    @YYYYMM,
-    SEL_CODE,
-    @SITE,
-    '양산' AS 구분,
-    CST_NO AS model,
-    utg AS 면적, -- 면적 컬럼에 utg 매핑 (원 쿼리 참조)
-    VINA_CST AS dist_rate, -- dist_rate 컬럼에 VINA_CST 매핑
-    'VINA CST' AS SUB_NAME,
-    --'카세트팀배부' AS ITEM_NAME,
-    EXPEN_SEL, 
-    EXPEN_SEL명,
-    ACCT_NAME,
-    -- [최종 보정]
-    Base_IN + CASE WHEN RN = 1 THEN ROUND((Target_Total - Grp_Sum_IN),0) ELSE 0  END AS [IN],
-    Target_Total as in_ori
-FROM (
-    SELECT 
-        A.*,
-        -- [3] 그룹별 배부액 합계
-       SUM(Base_IN) OVER (PARTITION BY SEL_CODE, EXPEN_SEL, ACCT_NAME) AS Grp_Sum_IN,
-        
-        -- [3] 보정 순위 (금액 큰 순서)
-        ROW_NUMBER() OVER (PARTITION BY SEL_CODE, EXPEN_SEL, ACCT_NAME ORDER BY Base_IN DESC, CST_NO) AS RN
-    FROM (
-        -- [1] 기초 데이터 집계 및 목표 금액 산출
-        -- 주의: 원본 쿼리는 sum(ACCT_AMT * VINA_CST * rate) 구조임.
-        -- 단수차 보정을 위해 "총액 * 비율" 구조인지, "개별 계산 합"인지 명확해야 함.
-        -- 여기서는 개별 행 단위 계산 후 합계 보정 방식을 적용.
-        SELECT
-            a.SEL_CODE,
-            D.CST_NO,
-            C.utg,
-            C.VINA_CST,
-            B.EXPEN_SEL,
-            B.EXPEN_SEL명,
-            A.ACCT_NAME,
-           -- 목표 총액 (그룹 전체의 합) : 이 부분은 로직에 따라 유동적일 수 있으나, 
-            -- 아래 Base_IN의 합계가 원본 계산 의도와 맞아야 함.
-            -- 여기서는 'rate'가 배부 비율이라고 가정하고, 전체 그룹의 Target을 구하기 위해 Window Function 사용
-            SUM(SUM(a.ACCT_AMT_ADJ * d.rate)) OVER (PARTITION BY a.SEL_CODE, a.ACCT_NAME,B.EXPEN_SEL) AS Target_Total,
-
-            -- 1차 계산 금액 (반올림 없음 or 소수점 처리)
-            -- 원 쿼리가 [IN] 컬럼 타입에 맞게 들어가야 하므로 여기서는 일단 계산
-    SUM(a.ACCT_AMT_ADJ * d.rate) AS Base_IN_Raw,
-            
-            -- 실제 Insert될 값 (반올림 처리 가정, 필요시 소수점 조정)
-            ROUND(SUM(a.ACCT_AMT_ADJ * d.rate), 0) AS Base_IN
-
-        FROM VINA_CST_EXPEn a
-        LEFT JOIN doi_acct b ON (a.acct = b.acct AND a.yyyymm = b.yyyymm AND a.site = b.site)
-	    LEFT JOIN doi_cst_rate c ON (a.yyyymm = c.yyyymm AND a.site = c.site)
-        LEFT JOIN doi_vncst_rate d ON (a.yyyymm = d.yyyymm AND a.site = d.site)
-        WHERE 1=1
-          AND c.vina_cst != 0
-          AND a.yyyymm = @YYYYMM
-          AND a.site = @SITE
-          AND a.dept IN ('400','448') -- 카세트팀 
-        GROUP BY  
-            a.SEL_CODE, D.CST_NO, C.utg, C.VINA_CST, B.EXPEN_SEL, B.EXPEN_SEL명,A.ACCT_NAME
-    ) A
-) Final;
+SELECT
+    @YYYYMM, SEL_CODE, @SITE, '양산' AS 구분, CST_NO AS model, utg AS 면적, VINA_CST AS dist_rate, 'VINA CST' AS SUB_NAME,
+    EXPEN_SEL, EXPEN_SEL명, ACCT_NAME,
+    CASE WHEN Sub_RN = 1 THEN Grp_Target - (Sub_Floor_Sum - Sub_Floor) ELSE Sub_Floor END AS [in],
+    Acct_Pool AS in_ori
+FROM split;
 	
 	SET  @Message =  @Message + char(10) + char(10) + ' [INFO] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 경비집계(DOI_EXPEN_MATL) 테이블에 '+@YYYYMM + '월 '
 						+ CASE WHEN @SITE ='HQ' THEN '본사' ELSE 'VINA' END + 'CST 부서별 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 집계했습니다';
