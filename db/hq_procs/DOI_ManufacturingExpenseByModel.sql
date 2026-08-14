@@ -23,6 +23,7 @@ BEGIN
 						  and site=@SITE 
 						  and sel_code=@SEL_CODE
 						  --and not (in_qty = 0 and out_qty = 0 and loss_qty = 0)
+						and not (구분 = N'개발' and 도우모델 like N'VN%')
 						group by 구분, 도우모델
 						UNION 
 						SELECT 구분, replace(model,' ','') as model 
@@ -31,6 +32,7 @@ BEGIN
 						   and site=@SITE 
 						   and sel_code=@SEL_CODE 
 						   and not (ISNULL(in_qty,0) = 0 and ISNULL(out_qty,0) = 0 and ISNULL(loss_qty,0) = 0 and ISNULL([in],0) = 0)
+							   and not (구분 = N'개발' and model like N'VN%')
 						group by 구분, model 
 						UNION
 						SELECT 'Z' 구분, CONCAT(구분, '합계') model 
@@ -69,6 +71,7 @@ BEGIN
 						   and site=@SITE 
 						   and sel_code=@SEL_CODE 
 						   --and not (in_qty = 0 and out_qty = 0 and loss_qty = 0)
+						and not (구분 = N'개발' and 도우모델 like N'VN%')
 						group by 구분, 도우모델 
 						UNION 
 						SELECT 구분, replace(model,' ','') as model 
@@ -77,6 +80,7 @@ BEGIN
 						   and site=@SITE 
 						   and sel_code=@SEL_CODE 
 						   and not (ISNULL(in_qty,0) = 0 and ISNULL(out_qty,0) = 0 and ISNULL(loss_qty,0) = 0 and ISNULL([in],0) = 0)
+							   and not (구분 = N'개발' and model like N'VN%')
 						group by 구분, model 
 						UNION
 						SELECT 'Z' 구분, CONCAT(구분, '합계') model 
@@ -117,6 +121,7 @@ with sourceTable as (
 				   and site=@SITE 
 				   and sel_code=@SEL_CODE
 				   and not (in_qty = 0 and out_qty = 0 and loss_qty = 0)
+				 and not (구분 = N'개발' and 도우모델 like N'VN%')
 				 group by 구분, 도우모델 
 				UNION 
 				SELECT 구분, replace(model,' ','') as model 
@@ -124,7 +129,8 @@ with sourceTable as (
 				 where yyyymm=@YYYYMM 
 				   and site=@SITE 
 				   and sel_code=@SEL_CODE
-				   and not (ISNULL(in_qty,0) = 0 and ISNULL(out_qty,0) = 0 and ISNULL(loss_qty,0) = 0 and ISNULL([in],0) = 0)	
+				   and not (ISNULL(in_qty,0) = 0 and ISNULL(out_qty,0) = 0 and ISNULL(loss_qty,0) = 0 and ISNULL([in],0) = 0)
+							   and not (구분 = N'개발' and model like N'VN%')	
 				 group by 구분, model
 			) A 
 		) A 
