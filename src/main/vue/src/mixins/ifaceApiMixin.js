@@ -20,11 +20,14 @@
  * 주의: ERP DataBlock / MES(factory·workDate·matId) 정확한 파라미터 매핑은
  *       해당 시스템 접근(및 ERP cert) 확보 후 화면별 params 구성에서 확정한다.
  */
+import { useUserAuthInfo } from '@store/auth/userAuthInfo';
+
 export default {
   computed: {
     /**
      * [API 호출] 버튼 노출 조건.
      * - 평소(현업): 숨김
+     * - SYSADMIN 로그인 시: 노출 (테스트 플래그 불필요)
      * - 테스터: 브라우저 콘솔에서 localStorage.setItem('IF_API_TEST','1') 실행 시 노출
      * - VN 사업장에서만 노출 (인터페이스는 VN 전용)
      * 끄기: localStorage.removeItem('IF_API_TEST')
@@ -32,8 +35,9 @@ export default {
     showIfApiButton() {
       try {
         const on = window.localStorage.getItem('IF_API_TEST') === '1';
+        const isSysAdmin = (useUserAuthInfo()?.roleList || []).includes('SYSADMIN');
         const vn = this.siteMap && this.siteMap[this.params.site] === 'VN';
-        return on && vn;
+        return (on || isSysAdmin) && vn;
       } catch (e) {
         return false;
       }
@@ -56,6 +60,9 @@ export default {
             this.$toast('success', `${successLabel || key} ${res.loaded}건 수신·적재되었습니다.`);
           if (typeof onSuccess === 'function') onSuccess(res);
         } else {
+          // 백엔드가 예외를 HTTP 200 + {status:'error'} 로 래핑하므로 axios는 throw하지 않음.
+          // → 콘솔에서 확인할 수 있도록 여기서 명시적으로 에러 로깅.
+          console.error('[IF] API 호출 실패', { key, selCode, params, response: res });
           this.$toast &&
             this.$toast('error', `API 호출 실패: ${res ? res.message : '응답 없음'}`);
         }
