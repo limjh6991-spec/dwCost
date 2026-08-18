@@ -1,4 +1,4 @@
-CREATE OR ALTER PROCEDURE DOI_PL_ByModel --운영
+CREATE   PROCEDURE DOI_PL_ByModel --운영
 (
     @YYYYMM VARCHAR(6),
     @SITE VARCHAR(4),
@@ -87,7 +87,7 @@ BEGIN
 		UNION
 		
 		SELECT
-			CASE WHEN O.모델 = N'회계-조정' THEN N'회계' ELSE O.구분 END AS 구분, CASE WHEN O.모델 = N'회계-조정' THEN O.모델 ELSE LEFT(O.모델, LEN(O.모델)-1) END AS model
+			CASE WHEN O.모델 = N'회계-조정' THEN N'회계' ELSE O.구분 END AS 구분, O.모델 AS model
 		FROM DOI_원장상계 O
 		WHERE 1=1
 		   AND YYYYMM = @YYYYMM
@@ -374,14 +374,14 @@ BEGIN
 		    LEFT JOIN (
 		        SELECT
 		              CASE WHEN 모델 = N'회계-조정' THEN N'회계' ELSE 구분 END AS 구분
-		            , CASE WHEN 모델 = N'회계-조정' THEN 모델 ELSE LEFT(모델, LEN(모델)-1) END AS model
+		            , 모델 AS model
 		            , SUM(COALESCE(매출상계,0)) AS scof_amt
 		        FROM DOI_원장상계
 		        where  1=1
 				   AND YYYYMM = @YYYYMM
 				   AND SITE   = @SITE
 				   AND SEL_CODE = @SEL_CODE
-		        GROUP BY CASE WHEN 모델 = N'회계-조정' THEN N'회계' ELSE 구분 END, CASE WHEN 모델 = N'회계-조정' THEN 모델 ELSE LEFT(모델, LEN(모델)-1) END
+		        GROUP BY CASE WHEN 모델 = N'회계-조정' THEN N'회계' ELSE 구분 END, 모델
 		    ) XX
 		       ON XX.model = M.model
 		      AND XX.구분 = M.구분

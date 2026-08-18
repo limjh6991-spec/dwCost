@@ -1,4 +1,4 @@
-CREATE OR ALTER PROCEDURE DOI_TotalCost_Tree
+CREATE   PROCEDURE DOI_TotalCost_Tree
 (
     @YYYYMM VARCHAR(6),
     @SITE   VARCHAR(4),
@@ -192,7 +192,7 @@ BEGIN
 		    UNION
 		
 		    SELECT
-		          CASE WHEN O.모델 = N'회계-조정' THEN O.모델 ELSE LEFT(O.모델, LEN(O.모델)-1) END
+		          O.모델
 		        , O.구분
 		    FROM DOI_원장상계 O
 			WHERE 1=1
@@ -496,13 +496,13 @@ BEGIN
 		     5 AS rn
 		    , N'    (2) 유상사급' AS gubun
             , 구분
-            , CASE WHEN 모델 = N'회계-조정' THEN 모델 ELSE LEFT(모델, LEN(모델)-1) END AS model
+            , 모델 AS model
             , SUM(COALESCE(매출상계,0)) AS amt
         FROM DOI_원장상계
         WHERE 1=1
 		  AND YYYYMM=@YYYYMM
 		  AND COALESCE(매출상계,0) <> 0
-		  GROUP BY 구분, CASE WHEN 모델 = N'회계-조정' THEN 모델 ELSE LEFT(모델, LEN(모델)-1) END
+		  GROUP BY 구분, 모델
 --    ) XX
 --       ON XX.model = M.model
 --      AND XX.구분 = M.구분
