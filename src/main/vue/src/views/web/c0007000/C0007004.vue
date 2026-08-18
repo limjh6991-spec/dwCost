@@ -23,6 +23,7 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <b-button v-show="showIfApiButton" class="second" @click="apiCallClick">API 호출</b-button>
           <b-button v-show="!isClosedMonth" class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
           <b-button v-show="!isClosedMonth" class="sub" @click="addBtnClick">추가</b-button>
@@ -43,10 +44,12 @@ import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007004.js';
+import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
 
 export default {
   components: {},
   props: {},
+  mixins: [ifaceApiMixin],
   setup() {
     const srchInfo = useC0001001();
     const userAuthInfo = useUserAuthInfo();
@@ -170,6 +173,24 @@ export default {
         target: this.dataGridRows,
       };
       let resp = await this.$axios.api.search(param);
+    },
+    // MES 재고수불(FG_SUBUL) API 호출 → 적재 → 그리드 새로고침
+    apiCallClick() {
+      if (!this.params.yyyymm) {
+        this.$toast && this.$toast('error', '년월 선택해주세요.');
+        return;
+      }
+      const yyyymm = this.params.yyyymm.replaceAll('-', '');
+      const y = Number(yyyymm.slice(0, 4));
+      const m = Number(yyyymm.slice(4, 6));
+      const workDate = `${yyyymm}${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`;
+      this.callIface({
+        key: 'FG_SUBUL',
+        selCode: yyyymm,
+        params: { factory: 'DV01', workDate, matId: '' },
+        successLabel: 'MES 재고수불',
+        onSuccess: () => this.getDataList(),
+      });
     },
     searchClick() {
       if (!this.params.yyyymm) {

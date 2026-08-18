@@ -234,11 +234,22 @@ export default {
         return;
       }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
-      // TODO(ERP 접근/cert 후 확정): DataBlock 필드(AccDateFr/To 등) 정확한 매핑.
+      // ERP DataBlock 조회조건 (InterFace 정의서 ver1.8 - 부서별계정별비용)
+      // 선택 년월 → 회계기간(월초~월말), 코스트센터 기준(DeptOrCCtr=1)
+      const y = Number(yyyymm.slice(0, 4));
+      const m = Number(yyyymm.slice(4, 6));
+      const lastDay = new Date(y, m, 0).getDate();
       this.callIface({
         key: 'DEPT_COST',
         selCode: yyyymm,
-        params: { yyyymm, site: this.siteMap[this.params.site] },
+        params: {
+          WorkingTag: '', IDX_NO: 0, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: '', UserName: '',
+          AccSeqFr: 0, AccSeqTo: 0, AccUnit: 0, CCtrSeq: 0, SMAccStd: 0,
+          AccDateFr: `${yyyymm}01`,
+          AccDateTo: `${yyyymm}${String(lastDay).padStart(2, '0')}`,
+          UMCostType: 0, SlipUnit: 0, DeptSeq: 0, IncludeLow: '',
+          DeptOrCCtr: 1, UMCCtrKind: 0, LanguageSeq: 0,
+        },
         successLabel: '부서별계정별비용',
         onSuccess: () => this.getDataList(),
       });

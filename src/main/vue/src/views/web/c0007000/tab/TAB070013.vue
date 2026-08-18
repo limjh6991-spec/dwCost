@@ -239,12 +239,15 @@ export default {
         return;
       }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
-      // TODO(MES 접근 후 확정): factory 코드 매핑 / workDate 일자 기준 / matId(공백=전체).
-      //  현재 값은 정의서 샘플(DV01/일자/716AP) 기준의 잠정 매핑.
+      // MES 파라미터 (InterFace 정의서 ver1.8 - 생산수불)
+      // workDate = 선택 년월의 월말(YYYYMMDD 8자리), factory = VN 공장코드(DV01), matId 공백 = 전체
+      const y = Number(yyyymm.slice(0, 4));
+      const m = Number(yyyymm.slice(4, 6));
+      const workDate = `${yyyymm}${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`;
       this.callIface({
         key: 'WIP_SUBUL',
         selCode: yyyymm,
-        params: { factory: 'DV01', workDate: yyyymm, matId: '' },
+        params: { factory: 'DV01', workDate, matId: '' },
         successLabel: 'MES 생산수불',
         onSuccess: () => this.getDataList(),
       });
