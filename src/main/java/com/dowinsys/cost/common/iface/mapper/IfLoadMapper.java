@@ -22,4 +22,10 @@ public interface IfLoadMapper {
     int loadMaster(@Param("proc") String proc,
                    @Param("json") String json,
                    @Param("requestId") String requestId);
+
+    /** 적재 후 운영 테이블 변환 프로시저 실행 (반환: 반영 건수). proc은 IfEndpoint 레지스트리에서만 옴. */
+    int runXform(@Param("proc") String proc,
+                 @Param("yyyymm") String yyyymm,
+                 @Param("selCode") String selCode,
+                 @Param("site") String site);
 }

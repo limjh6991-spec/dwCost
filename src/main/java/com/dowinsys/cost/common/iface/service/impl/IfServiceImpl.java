@@ -16,6 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -32,6 +34,7 @@ public class IfServiceImpl implements IfService {
     private final MesApiClient mes;
     private final IfLoadMapper loadMapper;
     private final IfProperties props;
+    private final ObjectMapper om = new ObjectMapper();
 
     public IfServiceImpl(ErpApiClient erp, MesApiClient mes, IfLoadMapper loadMapper, IfProperties props) {
         this.erp = erp;
@@ -57,13 +60,57 @@ public class IfServiceImpl implements IfService {
             throw new IllegalStateException("응답 본문이 비어 있음");
         }
 
+        // 응답 본문에 오류(ERP ErrorMessage / MES success=false)가 있으면 실패로 처리
+        // → "성공 0건"으로 숨기지 않고 실제 메시지를 화면 토스트에 노출
+        assertNoResponseError(ep, json);
+
         // 2) 적재 프로시저
         int loaded = ep.useSelCode()
                 ? loadMapper.loadWithSel(ep.loadProc(), json, req.getSelCode(), requestId)
                 : loadMapper.loadMaster(ep.loadProc(), json, requestId);
 
         log.info("[IF] {} 적재 {}건 (selCode={}, requestId={})", ep.name(), loaded, req.getSelCode(), requestId);
+
+        // 3) 운영 반영: 변환 프로시저가 지정된 인터페이스는 적재 직후 자동 실행 (적재→운영 한 흐름, 수동 EXEC 불필요)
+        if (ep.xformProc() != null && ep.useSelCode()) {
+            int applied = loadMapper.runXform(ep.xformProc(), req.getSelCode(), req.getSelCode(), "VN");
+            log.info("[IF] {} 변환({}) → 운영 {}건", ep.name(), ep.xformProc(), applied);
+        }
+
         return IfFetchResult.ok(ep.name(), requestId, loaded);
+    }
+
+    /**
+     * ERP/MES 응답 본문에 오류가 담겨 있으면 예외로 던져 실패 처리한다.
+     * (ERP가 권한오류 등을 200 OK + ErrorMessage 로 주고, MES는 success=false 로 주므로
+     *  적재 0건 '성공'으로 위장되는 것을 방지 → 실제 메시지를 화면에 노출)
+     */
+    private void assertNoResponseError(IfEndpoint ep, String json) {
+        JsonNode root;
+        try {
+            root = om.readTree(json);
+        } catch (Exception e) {
+            return; // 파싱 불가 응답은 적재 단계에 위임
+        }
+        if (ep.source() == IfSource.MES) {
+            JsonNode ok = root.get("success");
+            if (ok != null && ok.isBoolean() && !ok.asBoolean()) {
+                String code = root.hasNonNull("code") ? root.get("code").asText() : "";
+                String msg = root.hasNonNull("message") ? root.get("message").asText() : "";
+                throw new IllegalStateException("MES 오류" + (code.isBlank() ? "" : "(" + code + ")") + ": " + msg);
+            }
+        } else {
+            JsonNode err = root.get("ErrorMessage");
+            if (err != null && err.isArray() && err.size() > 0) {
+                JsonNode first = err.get(0);
+                String status = first.hasNonNull("Status") ? first.get("Status").asText() : "";
+                String result = first.hasNonNull("Result") ? first.get("Result").asText() : first.toString();
+                // Result 형식 예: "50000|권한없음 메시지|서비스경로|16" → 사람이 읽을 부분 추출
+                String[] seg = result.split("\\|");
+                String msg = seg.length > 1 ? seg[1] : result;
+                throw new IllegalStateException("ERP 오류" + (status.isBlank() ? "" : "(" + status + ")") + ": " + msg);
+            }
+        }
     }
 
     @Override

@@ -13,4 +13,9 @@
         EXEC ${proc} #{json}, #{requestId}
     </select>
 
+    <!-- 적재 후 운영 반영 변환 (proc은 IfEndpoint 레지스트리에서만) -->
+    <select id="runXform" resultType="int">
+        EXEC ${proc} #{yyyymm}, #{selCode}, #{site}
+    </select>
+
 </mapper>
