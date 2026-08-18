@@ -51,6 +51,11 @@ public class IfServiceImpl implements IfService {
 
         String requestId = "IF-" + ep.name() + "-" + UUID.randomUUID().toString().substring(0, 8);
 
+        // 화면은 결산단위(selCode) 자리에 조회 '년월'을 전달한다.
+        // VN 인터페이스 적재/운영 반영은 결산코드 'ACTUAL' 고정이므로 여기서 분리한다.
+        String yyyymm  = req.getSelCode();   // 화면이 넘긴 년월 (예: 202607)
+        String selCode = "ACTUAL";           // 적재(스테이징)·운영 공통 결산코드
+
         // 1) 소스 호출
         String json = (ep.source() == IfSource.MES)
                 ? mes.call(ep, req.getParams())
@@ -64,16 +69,16 @@ public class IfServiceImpl implements IfService {
         // → "성공 0건"으로 숨기지 않고 실제 메시지를 화면 토스트에 노출
         assertNoResponseError(ep, json);
 
-        // 2) 적재 프로시저
+        // 2) 적재 프로시저 (SEL_CODE = 'ACTUAL')
         int loaded = ep.useSelCode()
-                ? loadMapper.loadWithSel(ep.loadProc(), json, req.getSelCode(), requestId)
+                ? loadMapper.loadWithSel(ep.loadProc(), json, selCode, requestId)
                 : loadMapper.loadMaster(ep.loadProc(), json, requestId);
 
-        log.info("[IF] {} 적재 {}건 (selCode={}, requestId={})", ep.name(), loaded, req.getSelCode(), requestId);
+        log.info("[IF] {} 적재 {}건 (yyyymm={}, selCode={}, requestId={})", ep.name(), loaded, yyyymm, selCode, requestId);
 
         // 3) 운영 반영: 변환 프로시저가 지정된 인터페이스는 적재 직후 자동 실행 (적재→운영 한 흐름, 수동 EXEC 불필요)
         if (ep.xformProc() != null && ep.useSelCode()) {
-            int applied = loadMapper.runXform(ep.xformProc(), req.getSelCode(), req.getSelCode(), "VN");
+            int applied = loadMapper.runXform(ep.xformProc(), yyyymm, selCode, "VN");
             log.info("[IF] {} 변환({}) → 운영 {}건", ep.name(), ep.xformProc(), applied);
         }
 
