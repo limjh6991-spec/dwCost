@@ -26,18 +26,14 @@ export default {
   computed: {
     /**
      * [API 호출] 버튼 노출 조건.
-     * - 평소(현업): 숨김
-     * - SYSADMIN 로그인 시: 노출 (테스트 플래그 불필요)
-     * - 테스터: 브라우저 콘솔에서 localStorage.setItem('IF_API_TEST','1') 실행 시 노출
+     * - SUPERADMIN 계정(= roleList에 'SUPERADMIN' 역할)에게만 노출
      * - VN 사업장에서만 노출 (인터페이스는 VN 전용)
-     * 끄기: localStorage.removeItem('IF_API_TEST')
      */
     showIfApiButton() {
       try {
-        const on = window.localStorage.getItem('IF_API_TEST') === '1';
-        const isSysAdmin = (useUserAuthInfo()?.roleList || []).includes('SYSADMIN');
+        const isSuperAdmin = (useUserAuthInfo()?.roleList || []).includes('SUPERADMIN');
         const vn = this.siteMap && this.siteMap[this.params.site] === 'VN';
-        return (on || isSysAdmin) && vn;
+        return isSuperAdmin && vn;
       } catch (e) {
         return false;
       }
