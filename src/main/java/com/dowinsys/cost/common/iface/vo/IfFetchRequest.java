@@ -10,11 +10,14 @@ import java.util.Map;
 
 public class IfFetchRequest {
     private String key;
-    private String selCode;
+    private String yyyymm;     // 조회 년월 (운영 반영 대상 기간)
+    private String selCode;    // 결산코드 (VN 실적='ACTUAL')
     private Map<String, Object> params;
 
     public String getKey() { return key; }
     public void setKey(String key) { this.key = key; }
+    public String getYyyymm() { return yyyymm; }
+    public void setYyyymm(String yyyymm) { this.yyyymm = yyyymm; }
     public String getSelCode() { return selCode; }
     public void setSelCode(String selCode) { this.selCode = selCode; }
     public Map<String, Object> getParams() { return params; }

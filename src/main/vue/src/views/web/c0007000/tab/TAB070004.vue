@@ -238,7 +238,8 @@ export default {
       // TODO(ERP 접근/cert 후 확정): DataBlock 필드 정확한 매핑.
       this.callIface({
         key: 'EXP_PERMIT',
-        selCode: yyyymm,
+        selCode: 'ACTUAL',
+        yyyymm: yyyymm,
         params: { yyyymm, site: this.siteMap[this.params.site] },
         successLabel: '수출신고필증',
         onSuccess: () => this.getDataList(),

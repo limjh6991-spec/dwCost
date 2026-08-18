@@ -177,7 +177,8 @@ export default {
       const workDate = `${yyyymm}${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`;
       this.callIface({
         key: 'WIP_SUBUL',
-        selCode: yyyymm,
+        selCode: 'ACTUAL',
+        yyyymm: yyyymm,
         params: { factory: 'DV01', workDate, matId: '' },
         successLabel: 'MES 생산수불',
         onSuccess: () => this.getDataList(),

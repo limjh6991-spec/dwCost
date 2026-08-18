@@ -228,7 +228,8 @@ export default {
       // TODO(ERP 접근/cert 후 확정): DataBlock 필드 정확한 매핑.
       this.callIface({
         key: 'ITEM_INPUT',
-        selCode: yyyymm,
+        selCode: 'ACTUAL',
+        yyyymm: yyyymm,
         params: { yyyymm, site: this.siteMap[this.params.site] },
         successLabel: '품목별투입',
         onSuccess: () => this.getDataList(),

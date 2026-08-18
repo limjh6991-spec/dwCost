@@ -51,10 +51,10 @@ public class IfServiceImpl implements IfService {
 
         String requestId = "IF-" + ep.name() + "-" + UUID.randomUUID().toString().substring(0, 8);
 
-        // 화면은 결산단위(selCode) 자리에 조회 '년월'을 전달한다.
-        // VN 인터페이스 적재/운영 반영은 결산코드 'ACTUAL' 고정이므로 여기서 분리한다.
-        String yyyymm  = req.getSelCode();   // 화면이 넘긴 년월 (예: 202607)
-        String selCode = "ACTUAL";           // 적재(스테이징)·운영 공통 결산코드
+        // 화면은 selCode='ACTUAL' + yyyymm 을 분리해 보낸다.
+        // VN 인터페이스 적재/운영 반영은 결산코드 'ACTUAL' 고정. (구버전 핸들러 폴백: selCode 자리에 년월)
+        String yyyymm  = req.getYyyymm() != null ? req.getYyyymm() : req.getSelCode();
+        String selCode = "ACTUAL";           // 적재(스테이징)·운영 공통 결산코드 고정
 
         // 1) 소스 호출
         String json = (ep.source() == IfSource.MES)

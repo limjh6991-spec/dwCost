@@ -48,9 +48,9 @@ export default {
      * @param {string}  [opt.successLabel] 토스트 표기명
      * @param {Function}[opt.onSuccess]   성공 콜백 (보통 그리드 새로고침)
      */
-    async callIface({ key, selCode, params, successLabel, onSuccess }) {
+    async callIface({ key, yyyymm, selCode, params, successLabel, onSuccess }) {
       try {
-        const res = await this.$axios.api.iface({ key, selCode, params });
+        const res = await this.$axios.api.iface({ key, yyyymm, selCode, params });
         if (res && res.status === 'success') {
           this.$toast &&
             this.$toast('success', `${successLabel || key} ${res.loaded}건 수신·적재되었습니다.`);

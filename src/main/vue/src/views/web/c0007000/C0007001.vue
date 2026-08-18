@@ -241,7 +241,8 @@ export default {
       const lastDay = new Date(y, m, 0).getDate();
       this.callIface({
         key: 'DEPT_COST',
-        selCode: yyyymm,
+        selCode: 'ACTUAL',
+        yyyymm: yyyymm,
         params: {
           WorkingTag: '', IDX_NO: 0, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: '', UserName: '',
           AccSeqFr: 0, AccSeqTo: 0, AccUnit: 0, CCtrSeq: 0, SMAccStd: 0,
