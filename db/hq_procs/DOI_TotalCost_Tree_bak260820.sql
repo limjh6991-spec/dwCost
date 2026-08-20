@@ -1,4 +1,4 @@
-CREATE OR ALTER PROCEDURE DOI_TotalCost_Tree
+CREATE   PROCEDURE DOI_TotalCost_Tree
 (
     @YYYYMM VARCHAR(6),
     @SITE   VARCHAR(4),
@@ -1334,13 +1334,13 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 					WHEN Cur.rn = 7 THEN @ACC_PREV_PRICE   -- 기타매출 총합계: 이전가격만
 
 					WHEN Cur.rn = 44 THEN
-					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + ( @CostAdj + @LossAdj )
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')) + ( @CostAdj + @LossAdj )
 					
 					WHEN Cur.rn = 47 THEN
 					    @CostAdj + @LossAdj
 					
 					WHEN Cur.rn = 77 THEN
-					  ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + ( @CostAdj )
+					  ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')) + ( @CostAdj )
 					
 					WHEN Cur.rn = 78 THEN
 					    /*(
@@ -1349,11 +1349,11 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 					    )
 					    -*/
 					    (
-					      ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ') - @SCOF + (@ACC_TOTAL - @ACC_ADJ) )
+					      ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ') - @SCOF + (@ACC_TOTAL - @ACC_ADJ) )
 					     -- + ( @CostAdj )
 					    )
 					ELSE
-					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + '))
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + '))
 					END		      
 					AS DECIMAL(18,2)) AS [총합계]
 		

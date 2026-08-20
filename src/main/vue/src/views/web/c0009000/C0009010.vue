@@ -404,7 +404,13 @@ export default {
       ];
 
       tcmTreeView.setColumnLayout(layout);
-      
+
+      // 구매합계까지 열 고정. HQ는 '회계합계' 열이 추가되어 앞쪽 고정 열 수가 달라지므로 동적 계산.
+      // (고정열은 .rg-fixed-body 배경 #ededed 를 받으므로 구매합계도 좌측 합계열과 동일 색이 된다)
+      const fixedLeadCols = ['gubun', '총합계', '양산합계', '개발합계', '카세트합계', '회계합계', '구매합계'];
+      const fixedColCount = fixedLeadCols.filter((k) => k === 'gubun' || keys.includes(k)).length;
+      tcmTreeView.setFixedOptions({ colCount: fixedColCount });
+
       tcmTreeView.setCellStyleCallback(this.setCellStyleCallbackGrid.bind(this));
       tcmTreeView.setRowStyleCallback(this.setRowStyleCallbackGrid.bind(this));
 
