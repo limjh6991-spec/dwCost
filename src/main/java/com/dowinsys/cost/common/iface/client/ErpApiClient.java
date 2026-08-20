@@ -9,6 +9,8 @@ package com.dowinsys.cost.common.iface.client;
 import com.dowinsys.cost.common.iface.IfEndpoint;
 import com.dowinsys.cost.common.iface.config.IfProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -23,6 +25,8 @@ import java.util.Map;
 
 @Component
 public class ErpApiClient {
+
+    private static final Logger log = LoggerFactory.getLogger(ErpApiClient.class);
 
     private final RestTemplate rest;
     private final IfProperties props;
@@ -49,33 +53,50 @@ public class ErpApiClient {
         }
 
         String url = erp.getBaseUrl() + endpoint.path();
-        String body = buildEnvelope(erp, dataBlock);
+        String body = buildEnvelope(erp, endpoint, dataBlock);
+
+        // 진단용: 실제 전송 요청 로깅 (인증정보 마스킹)
+        log.info("[ERP-REQ] {} serviceSeq={} pgmSeq={} methodSeq={} POST {}",
+                endpoint.name(), endpoint.serviceSeq(), endpoint.pgmSeq(), endpoint.methodSeq(), url);
+        log.info("[ERP-REQ] {} body={}", endpoint.name(), maskSecrets(body, erp));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> req = new HttpEntity<>(body, headers);
 
         ResponseEntity<String> res = rest.postForEntity(url, req, String.class);
+        log.info("[ERP-RES] {} status={} body={}", endpoint.name(), res.getStatusCode(), res.getBody());
         return res.getBody();
     }
 
-    /** 영림원 봉투 구성: { "ROOT": { cert..., "data": { "ROOT": { "DataBlock1": [dataBlock] } } } } */
-    private String buildEnvelope(IfProperties.Erp erp, Map<String, Object> dataBlock) {
+    /** 영림원 봉투 구성: { "ROOT": { cert..., serviceSeq/pgmSeq(인터페이스별), "data": { "ROOT": { "DataBlock1": [dataBlock] } } } } */
+    private String buildEnvelope(IfProperties.Erp erp, IfEndpoint ep, Map<String, Object> dataBlock) {
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("certId", erp.getCertId());
         root.put("certKey", erp.getCertKey());
         root.put("dsnOper", erp.getDsnOper());
         root.put("dsnBis", erp.getDsnBis());
         root.put("companySeq", erp.getCompanySeq());
-        root.put("languageSeq", erp.getLanguageSeq());
+        root.put("languageSeq", ep.languageSeq() != null ? ep.languageSeq() : erp.getLanguageSeq());
         root.put("securityType", 0);
         root.put("userId", "");
-        root.put("methodSeq", 1);
-        root.put("workingTag", "I");
-        root.put("userSeq", erp.getUserSeq());
+        // 인터페이스별 seq (InterFace 정의서 ver1.8). serviceSeq/pgmSeq = ERP Method 라우팅·권한 판단 키.
+        if (ep.serviceSeq() != null) root.put("serviceSeq", ep.serviceSeq());
+        root.put("methodSeq", ep.methodSeq() != null ? ep.methodSeq() : 1);
+        root.put("userSeq", ep.userSeq() != null ? ep.userSeq() : erp.getUserSeq());
+        if (ep.pgmSeq() != null) root.put("pgmSeq", ep.pgmSeq());
         root.put("isTransaction", 1);
 
-        Map<String, Object> block = (dataBlock == null) ? new LinkedHashMap<>() : dataBlock;
+        // DataBlock1 = 영림원 표준 envelope 필드 + 화면 조회조건 병합 (거래처 샘플 구조)
+        Map<String, Object> block = new LinkedHashMap<>();
+        block.put("WorkingTag", "A");
+        block.put("IDX_NO", 1);
+        block.put("Status", "0");
+        block.put("DataSeq", 1);
+        block.put("Selected", 1);
+        block.put("TABLE_NAME", "DataBlock1");
+        block.put("UserName", "");
+        if (dataBlock != null) block.putAll(dataBlock);
         Map<String, Object> innerRoot = new LinkedHashMap<>();
         innerRoot.put("DataBlock1", List.of(block));
         Map<String, Object> data = new LinkedHashMap<>();
@@ -89,5 +110,15 @@ public class ErpApiClient {
         } catch (Exception e) {
             throw new RuntimeException("ERP 요청 직렬화 실패", e);
         }
+    }
+
+    /** 로그용: 인증정보(certId/certKey/dsnOper/dsnBis) 값 마스킹 */
+    private static String maskSecrets(String body, IfProperties.Erp erp) {
+        if (body == null) return null;
+        String s = body;
+        for (String v : new String[]{erp.getCertId(), erp.getCertKey(), erp.getDsnOper(), erp.getDsnBis()}) {
+            if (v != null && !v.isBlank()) s = s.replace(v, "***");
+        }
+        return s;
     }
 }

@@ -23,6 +23,7 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <b-button v-show="showIfApiButton" class="second" @click="apiCallClick">API 호출</b-button>
           <b-button v-show="!isClosedMonth" class="second" @click="onClickCarryOver">이월 데이터</b-button>
           <b-button v-show="!isClosedMonth" class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
@@ -43,7 +44,9 @@ import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0001000/js/TAB010001.js';
+import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
 export default {
+  mixins: [ifaceApiMixin],
   components: {},
   props: {
     yearList: {
@@ -187,6 +190,15 @@ export default {
         return;
       }
       this.getDataList();
+    },
+    // ERP 계정코드(ACCOUNT) API 호출 → 적재 → 그리드 새로고침 (마스터: selCode/yyyymm 미사용)
+    apiCallClick() {
+      this.callIface({
+        key: 'ACCOUNT',
+        params: { SMAccKind: 0, AccNoText: '', AccNameText: '', IsSlip: '1', SMAccType: 0, IsBase: '1', IsRNP: '1', IsBgt: '0', IsNotUse: '0' },
+        successLabel: '계정코드',
+        onSuccess: () => this.getDataList(),
+      });
     },
     addBtnClick() {
       if (!this.gridView || !this.gridDataProvider) return;
