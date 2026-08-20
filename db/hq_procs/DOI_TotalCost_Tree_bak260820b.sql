@@ -758,7 +758,7 @@ BEGIN
               AND a.acct_name = '*'
               AND a.out_amt != 0*/
         ),
-  EXP_AGG AS (
+        EXP_AGG AS (
             SELECT 22 rn, N'  IV. 제조경비' gubun, 구분, model,
                    SUM(amt) AS amt
             FROM EXP_BASE 
@@ -805,7 +805,7 @@ BEGIN
             GROUP BY M.구분, M.MODEL*/
             -- V 매출원가 =  II.재료비 +  III.노무비 +  IV.제조경비
 			SELECT 44 rn, N'  V. 매출원가' gubun, M.구분, M.model,
-                   CAST(COALESCE(II.amt,0) + COALESCE(III.amt,0) + COALESCE(IV.amt,0) + COALESCE(XX.amt,0) + COALESCE(LB.loss_amt,0) AS DECIMAL(18,2)) AS amt
+                   CAST(COALESCE(II.amt,0) + COALESCE(III.amt,0) + COALESCE(IV.amt,0) + COALESCE(XX.amt,0) /*+ COALESCE(LB.loss_amt,0)*/ AS DECIMAL(18,2)) AS amt
             FROM #MODEL M
    			LEFT JOIN #SALES_BASE SB ON SB.model = M.model AND SB.구분  = M.구분            
             LEFT JOIN (SELECT 구분, model, SUM(amt) amt FROM MAT_BASE GROUP BY 구분, model) II ON II.model = M.model AND II.구분 = M.구분 
@@ -1334,7 +1334,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 					WHEN Cur.rn = 7 THEN @ACC_PREV_PRICE   -- 기타매출 총합계: 이전가격만
 
 					WHEN Cur.rn = 44 THEN
-					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + ( @CostAdj /*+ @LossAdj*/ )
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + ( @CostAdj + @LossAdj )
 					
 					WHEN Cur.rn = 47 THEN
 					    @CostAdj + @LossAdj
