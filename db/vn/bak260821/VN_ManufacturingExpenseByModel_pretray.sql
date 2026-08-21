@@ -178,20 +178,15 @@ BEGIN
 
 	SELECT @vSubTot = ISNULL(SUM(amt),0) FROM #amt WHERE sec=1 AND item=N'부재료비 (6272)';
 
-	WITH sub AS (
-    SELECT 구분, model, CAST(amt AS decimal(18,2)) amt,
-      CASE WHEN @vSubTot=0 THEN 0 ELSE CAST(CAST(amt AS float)*@vTrayTot/@vSubTot AS decimal(18,2)) END tray_raw,
-      ROW_NUMBER() OVER (ORDER BY CAST(amt AS float) DESC) rn
-    FROM #amt WHERE sec=1 AND item=N'부재료비 (6272)'
-  ),
-  subx AS (SELECT *, SUM(tray_raw) OVER() tray_sum FROM sub)
-  INSERT #amt(구분, model, sec, item, iord, amt)
-  SELECT 구분, model, 1, N'부재료비 (6272)_TRAY', 62720,
-     tray_raw + CASE WHEN rn=1 THEN (@vTrayTot - tray_sum) ELSE 0 END FROM subx
-  UNION ALL
-  SELECT 구분, model, 1, N'부재료비 (6272)_기타', 62721,
-     amt - (tray_raw + CASE WHEN rn=1 THEN (@vTrayTot - tray_sum) ELSE 0 END) FROM subx;
-  DELETE FROM #amt WHERE sec=1 AND item=N'부재료비 (6272)';
+	INSERT #amt(구분, model, sec, item, iord, amt)
+
+	SELECT 구분, model, 1, N'부재료비 (6272)_TRAY', 62720, CASE WHEN @vSubTot=0 THEN 0 ELSE CAST(amt*@vTrayTot/@vSubTot AS decimal(28,4)) END FROM #amt WHERE sec=1 AND item=N'부재료비 (6272)'
+
+	UNION ALL
+
+	SELECT 구분, model, 1, N'부재료비 (6272)_기타', 62721, amt - CASE WHEN @vSubTot=0 THEN 0 ELSE CAST(amt*@vTrayTot/@vSubTot AS decimal(28,4)) END FROM #amt WHERE sec=1 AND item=N'부재료비 (6272)';
+
+	DELETE FROM #amt WHERE sec=1 AND item=N'부재료비 (6272)';
 
 
 
