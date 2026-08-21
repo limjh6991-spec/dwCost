@@ -116,7 +116,11 @@ public class IfServiceImpl implements IfService {
                 // Result 형식 예: "50000|권한없음 메시지|서비스경로|16" → 사람이 읽을 부분 추출
                 String[] seg = result.split("\\|");
                 String msg = seg.length > 1 ? seg[1] : result;
-                throw new IllegalStateException("ERP 오류" + (status.isBlank() ? "" : "(" + status + ")") + ": " + msg);
+                // 진단: 실제 보낸 라우팅/권한 키(배포 반영 여부·userSeq 확인) + ERP 원문 Result(서비스경로 포함) 노출
+                String sent = String.format(" [보낸값 serviceSeq=%s pgmSeq=%s methodSeq=%s userSeq=%s]",
+                        ep.serviceSeq(), ep.pgmSeq(), ep.methodSeq(), ep.userSeq());
+                throw new IllegalStateException("ERP 오류" + (status.isBlank() ? "" : "(" + status + ")") + ": " + msg
+                        + sent + " [ERP원문 Result: " + result + "]");
             }
         }
     }
