@@ -62,26 +62,32 @@ public enum IfEndpoint {
 
     // ================================================================
     // 영림원 ERP OpenAPI 요청 seq 매핑 (InterFace 정의서 ver1.8 기준).
+    //   배열 = {serviceSeq, pgmSeq, methodSeq, userSeq, languageSeq}
     //   - languageSeq=6 : 베트남어(VN). ※HQ 1, VN 6 .
+    //   - userSeq : "권한 적용 사용자". 정의서 요청 JSON 샘플의 실동작값 사용.
+    //       조회형(부서코드/부서별계정별비용/품목/투입/소요자재/기타입출고/재고상세/창고별수불/수출신고필증)=3,
+    //       마스터일괄(계정/언어별계정/자재)·사업단위별수불=1.
+    //       ※표 Discription은 전부 1로 찍혀 있으나 신뢰불가(languageSeq도 표=1이나 실제=6) → JSON샘플 우선.
+    //       PROCESS/EXP_CLAIM/EXP_SALES 는 정의서 JSON샘플 부재 → 표값(userSeq=1) 유지, 테스트 시 확정.
     // ================================================================
     private static final Map<IfEndpoint, int[]> ERP_SEQ = new EnumMap<>(IfEndpoint.class);
     static {
         ERP_SEQ.put(ACCOUNT,       new int[]{500768,    500167,     1, 1, 6}); // 계정코드
-        ERP_SEQ.put(ACCLANG,       new int[]{502221,    503002,     1, 1, 6}); // 언어별계정항목
-        ERP_SEQ.put(DEPT,          new int[]{2720265,   2720412,    1, 1, 6}); // 부서코드
-        ERP_SEQ.put(ITEM,          new int[]{501631,    500260,     1, 1, 6}); // 품목
+        ERP_SEQ.put(ACCLANG,       new int[]{502221,    503002,     1, 1, 1}); // 언어별계정항목
+        ERP_SEQ.put(DEPT,          new int[]{2720265,   2720412,    1, 3, 6}); // 부서코드
+        ERP_SEQ.put(ITEM,          new int[]{501631,    500260,     1, 3, 6}); // 품목
         ERP_SEQ.put(MATERIAL,      new int[]{501631,    500261,     1, 1, 6}); // 자재코드
-        ERP_SEQ.put(PROCESS,       new int[]{500172,    500173,     1, 1, 6}); // 공정
-        ERP_SEQ.put(DEPT_COST,     new int[]{501057,    500532,     1, 1, 6}); // 부서별계정별비용
-        ERP_SEQ.put(ITEM_INPUT,    new int[]{501351,    500770,     1, 1, 6}); // 품목별투입조회
-        ERP_SEQ.put(EXP_CLAIM,     new int[]{118021152, 118021828,  1, 1, 6}); // 수출Claim
-        ERP_SEQ.put(ITEM_PROC_MAT, new int[]{501138,    500315,     1, 1, 6}); // 제품별공정별소요자재
-        ERP_SEQ.put(ETC_INOUT,     new int[]{520148,    520234,     1, 1, 6}); // 기타입출고금액조회
-        ERP_SEQ.put(STOCK_DETAIL,  new int[]{501175,    500675,     1, 1, 6}); // 재고금액상세조회
-        ERP_SEQ.put(WH_STOCK_SUM,  new int[]{501534,    501187,     2, 1, 6}); // 창고별수불집계조회
-        ERP_SEQ.put(BIZ_STOCK_SUM, new int[]{501534,    521995,    17, 1, 6}); // 사업단위별수불집계
-        ERP_SEQ.put(EXP_SALES,     new int[]{501278,    501047,     3, 1, 6}); // 매출정보-수출매출품목조회
-        ERP_SEQ.put(EXP_PERMIT,    new int[]{501306,    501043,     2, 1, 6}); // 매출정보-수출신고필증조회
+        ERP_SEQ.put(PROCESS,       new int[]{500172,    500173,     1, 1, 6}); // 공정(JSON샘플 없음)
+        ERP_SEQ.put(DEPT_COST,     new int[]{501057,    500532,     1, 3, 6}); // 부서별계정별비용
+        ERP_SEQ.put(ITEM_INPUT,    new int[]{501351,    500770,     1, 3, 6}); // 품목별투입조회
+        ERP_SEQ.put(EXP_CLAIM,     new int[]{118021152, 118021828,  1, 1, 6}); // 수출Claim(JSON샘플 없음)
+        ERP_SEQ.put(ITEM_PROC_MAT, new int[]{501138,    500315,     1, 3, 6}); // 제품별공정별소요자재
+        ERP_SEQ.put(ETC_INOUT,     new int[]{520148,    520234,     1, 3, 6}); // 기타입출고금액조회
+        ERP_SEQ.put(STOCK_DETAIL,  new int[]{501175,    500675,     1, 3, 6}); // 재고금액상세조회
+        ERP_SEQ.put(WH_STOCK_SUM,  new int[]{501534,    501187,     2, 3, 6}); // 창고별수불집계조회
+        ERP_SEQ.put(BIZ_STOCK_SUM, new int[]{501534,    521995,    17, 1, 1}); // 사업단위별수불집계
+        ERP_SEQ.put(EXP_SALES,     new int[]{501278,    501047,     3, 1, 6}); // 매출정보-수출매출품목조회(JSON샘플 없음)
+        ERP_SEQ.put(EXP_PERMIT,    new int[]{501306,    501043,     2, 3, 6}); // 매출정보-수출신고필증조회
     }
     public Integer serviceSeq()  { int[] s = ERP_SEQ.get(this); return s == null ? null : s[0]; }
     public Integer pgmSeq()      { int[] s = ERP_SEQ.get(this); return s == null ? null : s[1]; }
