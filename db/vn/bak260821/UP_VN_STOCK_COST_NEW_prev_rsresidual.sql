@@ -55,9 +55,7 @@ BEGIN
     FROM c),
   r2 AS (SELECT *, (CAST(inv_amt AS numeric(18,2)) - (a_rs+a_rw) - a_free - a_eo_etc - a_loss - a_eoh) out_total FROM r),
   r3 AS (SELECT *, ISNULL(ROUND(out_total*OUT_SHIP_A_FREE/NULLIF(T_OUTPUT,0),2),0) a_saf,
-                   ISNULL(ROUND(out_total*OUT_SHIP_B/NULLIF(T_OUTPUT,0),2),0) a_sb,
-                   CASE WHEN T_OUTPUT=0 THEN 0 ELSE out_total END AS sale_amt,
-                   CASE WHEN T_OUTPUT=0 THEN out_total ELSE 0 END AS etc_plug FROM r2)
+                   ISNULL(ROUND(out_total*OUT_SHIP_B/NULLIF(T_OUTPUT,0),2),0) a_sb FROM r2)
   INSERT INTO doi_vn_stco
    (yyyymm, sel_code, 도우코드, division, EXPEN_SEL, 구분, MODEL, expen_sel명, ACCT_NAME, ITEM_NAME, UNIT_COST,
     BOH_QTY,BOH_AMT, IN_NORMAL_LAST_QTY,IN_NORMAL_LAST_AMT, IN_NORMAL_THIS_QTY,IN_NORMAL_THIS_AMT,
@@ -75,8 +73,8 @@ BEGIN
     IN_RW_WHRET_SORT,a_wh_sort, IN_RW_WHRET_PFRW,a_wh_pfrw, IN_RW_WHRET_PLRW,a_wh_plrw,
     T_INPUT, CAST(input_amt AS numeric(18,2)),
     ETCIN_RMA,0, ETCIN_SEMI_PAID,CAST(sp_amt AS numeric(18,2)), ETCIN_SEMI_FREE,CAST(sf_amt AS numeric(18,2)), ETCIN_ETC,0, ETCIN_TOTAL, CAST(sp_amt+sf_amt AS numeric(18,2)),
-    OUT_SHIP_A_PAID, sale_amt - a_saf - a_sb, OUT_SHIP_A_FREE,a_saf, OUT_SHIP_B,a_sb, T_OUTPUT, sale_amt,
-    ETCOUT_RESORT,a_rs, ETCOUT_REWORK,a_rw, ETCOUT_FREESALE,a_free, ETCOUT_ETC,a_eo_etc+etc_plug, ETCOUT_TOTAL, a_rs+a_rw+a_free+a_eo_etc+etc_plug,
+    OUT_SHIP_A_PAID, out_total - a_saf - a_sb, OUT_SHIP_A_FREE,a_saf, OUT_SHIP_B,a_sb, T_OUTPUT, out_total,
+    ETCOUT_RESORT,a_rs, ETCOUT_REWORK,a_rw, ETCOUT_FREESALE,a_free, ETCOUT_ETC,a_eo_etc, ETCOUT_TOTAL, a_rs+a_rw+a_free+a_eo_etc,
     LOSS,a_loss, EOH_WH0006, a_eoh,
     (BOH+T_INPUT+ETCIN_SEMI_PAID+ETCIN_SEMI_FREE+ETCIN_ETC-T_OUTPUT-ETCOUT_TOTAL-LOSS-EOH_WH0006), 'import'
   FROM r3;
