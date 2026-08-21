@@ -1,4 +1,5 @@
-CREATE PROCEDURE UP_VN_MAT_COST_NEW @YYYYMM varchar(6), @SITE varchar(2), @SEL_CODE varchar(10)
+
+CREATE   PROCEDURE UP_VN_MAT_COST_NEW @YYYYMM varchar(6), @SITE varchar(2), @SEL_CODE varchar(10)
 AS BEGIN
   SET NOCOUNT ON;
   DELETE FROM doi_mat_cost WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE;
@@ -8,7 +9,7 @@ AS BEGIN
       SUM(CAST(ISNULL(EOH_MONTH,0) AS float)) eoh_qty, SUM(CAST(ISNULL(OUT_MONTH,0) AS float)) out_qty,
       SUM(CAST(ISNULL(LOSS_MONTH,0) AS float)) loss_qty,
       SUM(CAST(ISNULL(IN_MONTH,0)+ISNULL(OUT_MONTH,0)+ISNULL(LOSS_MONTH,0) AS float))/2.0 환산량
-    FROM V_VN_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 도우모델),
+    FROM V_DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 도우모델),
   prod AS (SELECT * FROM prod_all WHERE 환산량>0),
   mmap AS (SELECT 제품번호,(SELECT TOP 1 p.도우모델 FROM prod_all p WHERE mi.제품번호 LIKE p.도우모델+'%' ORDER BY LEN(p.도우모델) DESC) 도우모델
            FROM (SELECT DISTINCT 제품번호 FROM DOI_VN_MAT_INPUT WHERE yyyymm=@YYYYMM) mi),
