@@ -4,13 +4,13 @@ CREATE PROCEDURE UP_VN_SMCE_COST_NEW
 AS
 BEGIN
     SET NOCOUNT ON;
-    -- [VN 260821] 판관비: doi_acct_expen(acct_class='CC') 을 매출(doi_invoice_resc)비율 배부. 단수차 최대매출모델 보정.
+    -- [VN 260821] 판관비: doi_acct_expen(CC) 을 매출(doi_invoice_resc)비율 배부. model=도우모델(LEFT(품번,LEN-1)) → 리포트 DOI_VN_STCO.MODEL 조인 일치.
     DELETE FROM DOI_SMCE_COST WHERE yyyymm=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SEL_CODE;
     WITH sale_data AS (
         SELECT 구분, model, Local구분, 판매단위, 거래처, SUM(SALE_AMT) SALE_AMT FROM (
             SELECT CASE WHEN RIGHT(품번,1)='D' THEN N'개발' ELSE N'양산' END 구분,
-                   품명 model, N'일반수출' Local구분, N'CELL' 판매단위, N'*' 거래처,
-                   CAST(원화판매금액 AS float) SALE_AMT
+                   CASE WHEN LEN(품번)>1 THEN LEFT(품번,LEN(품번)-1) ELSE 품번 END model,
+                   N'일반수출' Local구분, N'CELL' 판매단위, N'*' 거래처, CAST(원화판매금액 AS float) SALE_AMT
             FROM DOI_INVOICE_RESC WHERE yyyymm=@YYYYMM AND site=@SITE
         ) x GROUP BY 구분, model, Local구분, 판매단위, 거래처
     ),

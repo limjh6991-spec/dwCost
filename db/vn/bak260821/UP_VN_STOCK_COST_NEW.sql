@@ -27,7 +27,7 @@ BEGIN
   base AS (
     SELECT k.도우코드, k.division, k.EXPEN_SEL,
        COALESCE(b.구분,w.구분, CASE WHEN k.division='MP' THEN N'양산' ELSE N'개발' END) 구분,
-       COALESCE(NULLIF(b.MODEL,''),NULLIF(w.MODEL,''),CASE WHEN LEN(k.도우코드)>1 THEN LEFT(k.도우코드,LEN(k.도우코드)-1) ELSE k.도우코드 END) MODEL, COALESCE(b.es명,w.es명,'') es명,
+       COALESCE(b.MODEL,w.MODEL,'') MODEL, COALESCE(b.es명,w.es명,'') es명,
        COALESCE(b.an,w.an, CASE WHEN LEFT(k.EXPEN_SEL,1)='M' THEN N'재료비' ELSE N'가공비' END) an, COALESCE(b.it,w.it,'') it,
        ISNULL(b.boh_amt,0) boh_amt, ISNULL(w.input_amt,0) input_amt, ISNULL(w.sp_amt,0) sp_amt, ISNULL(w.sf_amt,0) sf_amt, ISNULL(rr.rs_amt,0) rs_amt, ISNULL(rr.rw_amt,0) rw_amt,
        sr.BOH,sr.IN_NORMAL_LAST,sr.IN_NORMAL_THIS,sr.IN_RW_BACKSHIP_SORT,sr.IN_RW_BACKSHIP_PFRW,sr.IN_RW_BACKSHIP_PLRW,
