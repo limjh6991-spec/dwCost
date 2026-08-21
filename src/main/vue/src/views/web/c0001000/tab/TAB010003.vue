@@ -186,11 +186,12 @@ export default {
       }
       this.getDataList();
     },
-    // ERP 자재코드(MATERIAL) API 호출 → 적재 → 그리드 새로고침 (마스터: selCode/yyyymm 미사용)
+    // ERP 자재코드(MATERIAL) API 호출 → 적재 → 그리드 새로고침
+    // 조회조건: 정의서 ver1.8. SMStatus=2001002(사용중) 필터 + 나머지 빈값(전체).
     apiCallClick() {
       this.callIface({
         key: 'MATERIAL',
-        params: {},
+        params: { SMStatus: '2001002', ItemName: '', ItemNo: '', Spec: '', IsSTDItem: '0', IsSet: '0', UMItemClass: '', UMItemClassL: '', UMItemClassM: '' },
         successLabel: '자재코드',
         onSuccess: () => this.getDataList(),
       });

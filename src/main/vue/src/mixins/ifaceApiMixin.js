@@ -51,6 +51,8 @@ export default {
     async callIface({ key, yyyymm, selCode, params, successLabel, onSuccess }) {
       try {
         const res = await this.$axios.api.iface({ key, yyyymm, selCode, params });
+        // 진단용(F12 콘솔): 보낸 조회조건 + ERP/MES 실응답(res.debug)
+        console.log(`[IF] ${key} 요청params=`, params, '\n적재=', res && res.loaded, '\nERP응답(debug)=', res && res.debug);
         if (res && res.status === 'success') {
           this.$toast &&
             this.$toast('success', `${successLabel || key} ${res.loaded}건 수신·적재되었습니다.`);

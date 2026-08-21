@@ -82,7 +82,10 @@ public class IfServiceImpl implements IfService {
             log.info("[IF] {} 변환({}) → 운영 {}건", ep.name(), ep.xformProc(), applied);
         }
 
-        return IfFetchResult.ok(ep.name(), requestId, loaded);
+        IfFetchResult result = IfFetchResult.ok(ep.name(), requestId, loaded);
+        // 진단용: ERP/MES 실응답을 결과에 실어 화면 콘솔(F12)에서 확인 가능 (서버 로그 미가용 대비, 4KB 축약)
+        result.setDebug(json.length() > 4000 ? json.substring(0, 4000) + " ...(truncated)" : json);
+        return result;
     }
 
     /**

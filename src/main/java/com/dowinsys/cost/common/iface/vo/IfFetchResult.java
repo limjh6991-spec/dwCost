@@ -9,6 +9,7 @@ public class IfFetchResult {
     private String requestId;
     private int loaded;        // 적재 건수
     private String message;
+    private String debug;      // 진단용: 외부(ERP/MES) 실응답 원문(마스킹, 축약)
 
     public static IfFetchResult ok(String key, String requestId, int loaded) {
         IfFetchResult r = new IfFetchResult();
@@ -34,4 +35,6 @@ public class IfFetchResult {
     public String getRequestId() { return requestId; }
     public int getLoaded() { return loaded; }
     public String getMessage() { return message; }
+    public String getDebug() { return debug; }
+    public void setDebug(String debug) { this.debug = debug; }
 }
