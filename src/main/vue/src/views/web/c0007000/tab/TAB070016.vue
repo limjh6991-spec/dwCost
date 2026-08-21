@@ -23,11 +23,12 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <b-button v-show="showIfApiButton" class="second" @click="apiCallClick">API 호출</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="dataGrid" :uid="'claimGrid'" :step="'1'" :rows="gridRows" style="height: 100%" :fixLayoutWidth="false" />
+        <RealGrid ref="claimGrid" :uid="'claimGrid'" :step="'1'" :rows="gridRows" style="height: 100%" :fixLayoutWidth="false" />
       </div>
     </div>
   </div>
@@ -36,15 +37,22 @@
 <script>
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/TAB070016.js';
+import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
 
 export default {
   props: { tabId: { type: String, default: '' } },
+  mixins: [ifaceApiMixin],
   setup() {
     const srchInfo = useC0001001();
     return { srchInfo };
   },
   data() {
-    return { dataGrid: null, gridRows: [], params: { yyyymm: null, site: 'VINA' } };
+    return {
+      claimGrid: null,
+      gridRows: [],
+      params: { yyyymm: null, site: 'VINA' },
+      siteMap: { 본사: 'HQ', VINA: 'VN', HQ: 'HQ', VN: 'VN' },
+    };
   },
   watch: {
     'params.yyyymm': function (newVal) {
@@ -53,9 +61,9 @@ export default {
     'srchInfo.yyyymm': { handler(newVal) { if (newVal) this.params.yyyymm = newVal; } },
   },
   computed: {
-    gridView() { return this.$refs.dataGrid?.getGridView(); },
+    gridView() { return this.$refs.claimGrid?.getGridView(); },
   },
-  created() { this.dataGrid = _.cloneDeep(gridField); },
+  created() { this.claimGrid = _.cloneDeep(gridField); },
   mounted() {
     this.params.yyyymm = this.srchInfo.yyyymm;
     this.$nextTick(() => { this.searchClick(); });
@@ -73,6 +81,19 @@ export default {
     searchClick() {
       if (!this.params.yyyymm) { this.$toast && this.$toast('error', '년월 선택해주세요.'); return; }
       this.getDataList();
+    },
+    // 수출Claim(EXP_CLAIM, ERP) API 호출 → 적재 → 그리드 새로고침. SUPERADMIN·VN 전용(showIfApiButton).
+    apiCallClick() {
+      if (!this.params.yyyymm) { this.$toast && this.$toast('error', '년월 선택해주세요.'); return; }
+      const yyyymm = this.params.yyyymm.replaceAll('-', '');
+      this.callIface({
+        key: 'EXP_CLAIM',
+        selCode: 'ACTUAL',
+        yyyymm: yyyymm,
+        params: { yyyymm, site: this.siteMap[this.params.site] },
+        successLabel: '수출Claim',
+        onSuccess: () => this.getDataList(),
+      });
     },
     excelBtnClick() {
       const now = new Date();
