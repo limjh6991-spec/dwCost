@@ -9,12 +9,17 @@
     <template #tab-content-TAB070004>
       <TAB070004 tabId="TAB070004" />
     </template>
+    <!-- Tab 2 수출Claim (참고/조회용, VN) -->
+    <template #tab-content-TAB070005>
+      <TAB070005 tabId="TAB070005" />
+    </template>
   </auth-tabs>
 </template>
 
 <script>
 import TAB070003 from './tab/TAB070003.vue';
 import TAB070004 from './tab/TAB070004.vue';
+import TAB070005 from './tab/TAB070005.vue';
 
 export default {
   name: 'DOI_C0007005',
@@ -22,6 +27,7 @@ export default {
   components: {
     TAB070003,
     TAB070004,
+    TAB070005,
   },
   watch: {},
   data() {

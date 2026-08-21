@@ -775,4 +775,15 @@
 		;
 	</update>
 
+	<!-- 수출Claim (참고/조회용, DOI_VN_EXP_CLAIM) — 반품물량은 FGS 수불에 이미 반영, 결산 미연동 -->
+	<select id="TAB070005_Sch1" resultType="CamelMap">
+		SELECT yyyymm, 사업단위, Claim번호 AS 클레임번호, ClaimDate AS 클레임일자,
+			반품종류, 반품구분, 재수출진행, 반품진행, 부서, 담당자,
+			Buyer AS 바이어, Agent AS 에이전트, 통화, 환율, 품명, 품번, 규격,
+			판매단위, 판매단가, 수량, 판매금액, 원화판매금액, 창고, Remarks AS 비고
+		FROM DOI_VN_EXP_CLAIM
+		WHERE yyyymm = #{yyyymm} AND site = 'VN'
+		ORDER BY Claim번호, 품번
+	</select>
+
 </mapper>
