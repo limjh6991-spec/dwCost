@@ -1,4 +1,4 @@
-CREATE PROCEDURE dbo.UP_VN_COST_BOH @YYYYMM varchar(6), @SITE varchar(4), @SEL_CODE varchar(10) AS
+CREATE   PROCEDURE dbo.UP_VN_COST_BOH @YYYYMM varchar(6), @SITE varchar(4), @SEL_CODE varchar(10) AS
 /* [VN 리팩토링 260731-4] 기초금액 → DOI_COST_BOH  (★ doi_mat_cost/doi_expen_matl 미사용)
    정상월: 전월 DOI_COST.EOH 이월(원가항목 그레인)
    초기월(전월 EOH 없음): 통 기초(doi_boh_amt.PRE_EOH_AMT, 제품별)를 재료/경비 = 실제 투입금액 비율로 배분
@@ -40,7 +40,7 @@ BEGIN
      INTO #boh
      FROM (SELECT MODEL_TYPE 도우코드, MAX(MODEL) 도우모델, MAX(구분) 구분, SUM(CAST(PRE_EOH_AMT AS float)) pre
            FROM doi_boh_amt WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE GROUP BY MODEL_TYPE) b
-     LEFT JOIN (SELECT 도우코드, SUM(CAST(ISNULL(BOH_MONTH,0) AS float)) boh_qty FROM V_VN_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 도우코드) pb
+     LEFT JOIN (SELECT 도우코드, SUM(CAST(ISNULL(BOH_MONTH,0) AS float)) boh_qty FROM V_DOI_PROD_SUBUL WHERE yyyymm=@YYYYMM AND site=@SITE GROUP BY 도우코드) pb
             ON pb.도우코드=b.도우코드;
 
      -- 전역 가공 계정 구조(비율) : 투입없는 모델의 경비기초를 실제 가공계정으로 분해할 템플릿

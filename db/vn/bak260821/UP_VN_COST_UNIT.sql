@@ -1,7 +1,7 @@
-CREATE PROCEDURE dbo.UP_VN_COST_UNIT @YYYYMM varchar(6), @SITE varchar(4), @SEL_CODE varchar(10) AS
+CREATE   PROCEDURE dbo.UP_VN_COST_UNIT @YYYYMM varchar(6), @SITE varchar(4), @SEL_CODE varchar(10) AS
 /* [VN 리팩토링 260731-2] 재공단가 → doi_cost_unit  (★ doi_mat_cost/doi_expen_matl 미사용)
    단가 = (기초BOH + 투입) / (OUT_QTY + EOHEQ)   [도우코드 공통 분모, 원가항목별 분자]
-   입력: doi_expn_matl(투입) + DOI_COST_BOH(기초) + V_VN_PROD_SUBUL(OUT) + V_VN_WIP_CONV(EOHEQ=PL전×0.5+PL후×0.9)
+   입력: doi_expn_matl(투입) + DOI_COST_BOH(기초) + V_DOI_PROD_SUBUL(OUT) + V_VN_WIP_CONV(EOHEQ=PL전×0.5+PL후×0.9)
    공정은 EOHEQ에 반영. 대표행('*',투입없음)은 단가 생성 제외(하류 BOH=EOH 특수케이스). */
 BEGIN
   SET NOCOUNT ON;
@@ -12,7 +12,7 @@ BEGIN
 
   ;WITH
   den AS (SELECT p.도우코드, SUM(CAST(ISNULL(p.OUT_MONTH,0) AS float)) + ISNULL(cv.EOHEQ,0) denom
-          FROM V_VN_PROD_SUBUL p
+          FROM V_DOI_PROD_SUBUL p
           LEFT JOIN V_VN_WIP_CONV cv ON cv.wc_ym=@YYYYMM AND cv.wc_site=@SITE AND cv.wc_gubun=p.구분 AND cv.wc_code=p.도우코드
           WHERE p.yyyymm=@YYYYMM AND p.site=@SITE GROUP BY p.도우코드, cv.EOHEQ),
   inp AS (SELECT 구분,도우코드,도우모델,원가구분,EXPEN_SEL,분류,항목, SUM(CAST(투입금액 AS float)) inn
