@@ -236,11 +236,20 @@ export default {
       }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
       // TODO(ERP 접근/cert 후 확정): DataBlock 필드 정확한 매핑.
+      // ERP DataBlock 조회조건 (정의서 ver1.8 - 수출신고필증). PermitDateFr/To=기준월 범위(필수)
+      const y = Number(yyyymm.slice(0, 4));
+      const m = Number(yyyymm.slice(4, 6));
+      const lastDay = new Date(y, m, 0).getDate();
       this.callIface({
         key: 'EXP_PERMIT',
         selCode: 'ACTUAL',
         yyyymm: yyyymm,
-        params: { yyyymm, site: this.siteMap[this.params.site] },
+        params: {
+          SMExpKind: '', PermitNo: '', PermitRefNo: '', CustSeq: '', EmpSeq: '', DeptSeq: '', UMPriceTerms: '',
+          PermitDateFr: `${yyyymm}01`,
+          PermitDateTo: `${yyyymm}${String(lastDay).padStart(2, '0')}`,
+          ItemName: '', ItemNo: '', SMProgressType: '', InvoiceRefNo: '', SourceNo: '', SourceRefNo: '', SourceTableSeq: '', CustNo: '',
+        },
         successLabel: '수출신고필증',
         onSuccess: () => this.getDataList(),
       });
