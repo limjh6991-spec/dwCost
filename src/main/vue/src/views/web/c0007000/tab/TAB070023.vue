@@ -23,6 +23,7 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <b-button v-show="showIfApiButton" class="second" @click="apiCallClick">API 호출</b-button>
           <b-button v-show="!isClosedMonth" class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
           <b-button v-show="!isClosedMonth" @click="delBtnClick">삭제</b-button>
@@ -41,7 +42,10 @@ import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007015.js';
 
+import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
+
 export default {
+  mixins: [ifaceApiMixin],
   props: { tabId: { type: String, default: '' } },
   setup() {
     const srchInfo = useC0001001();
@@ -49,7 +53,7 @@ export default {
     return { srchInfo, userAuthInfo };
   },
   data() {
-    return { dataGrid: null, gridRows: [], params: { yyyymm: null, site: 'VINA' }, isClosedMonth: false };
+    return { dataGrid: null, gridRows: [], params: { yyyymm: null, site: 'VINA' }, siteMap: { 본사: 'HQ', VINA: 'VN', HQ: 'HQ', VN: 'VN' }, isClosedMonth: false };
   },
   watch: {
     'params.yyyymm': async function (newVal) {
@@ -83,6 +87,16 @@ export default {
       const rows = [];
       await this.$axios.api.search({ menuId: 'c0007015', queryId: 'C0007015_Sch1', queryParams: params, target: rows });
       this.gridRows.splice(0, this.gridRows.length, ...rows);
+    },
+    apiCallClick() {
+      if (!this.params.yyyymm) { this.$toast && this.$toast('error', '년월 선택해주세요.'); return; }
+      const yyyymm = this.params.yyyymm.replaceAll('-', '');
+      // TODO(정의서 요청 기간필드 확정 후 월범위 스코프): 현재 {yyyymm,site} 임시
+      this.callIface({
+        key: 'MATERIAL', selCode: 'ACTUAL', yyyymm: yyyymm,
+        params: { yyyymm, site: this.siteMap[this.params.site] },
+        successLabel: '자재정보', onSuccess: () => this.getDataList(),
+      });
     },
     searchClick() {
       if (!this.params.yyyymm) { this.$toast && this.$toast('error', '년월 선택해주세요.'); return; }
