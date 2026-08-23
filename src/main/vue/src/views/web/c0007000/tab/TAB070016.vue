@@ -86,11 +86,15 @@ export default {
     apiCallClick() {
       if (!this.params.yyyymm) { this.$toast && this.$toast('error', '년월 선택해주세요.'); return; }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
+      // ERP DataBlock 조회조건 (정의서_수출 v1.1): Claim일 월초~월말(ClaimDateFr/To, YYYYMMDD), BizUnit 필수
+      const y = Number(yyyymm.slice(0, 4));
+      const m = Number(yyyymm.slice(4, 6));
+      const lastDay = String(new Date(y, m, 0).getDate()).padStart(2, '0');
       this.callIface({
         key: 'EXP_CLAIM',
         selCode: 'ACTUAL',
         yyyymm: yyyymm,
-        params: { yyyymm, site: this.siteMap[this.params.site] },
+        params: { BizUnit: 0, ClaimDateFr: `${yyyymm}01`, ClaimDateTo: `${yyyymm}${lastDay}`, site: this.siteMap[this.params.site] },
         successLabel: '수출Claim',
         onSuccess: () => this.getDataList(),
       });
