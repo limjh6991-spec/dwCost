@@ -49,8 +49,7 @@ BEGIN
          0,                                   -- VERIFY (검증용, 후속 산식화)
          'IF_API', GETDATE()
     FROM DOI_VN_IF_FG_SUBUL s
-    WHERE s.SITE = @site AND s.SEL_CODE = @selCode
-      AND LEFT(REPLACE(REPLACE(LTRIM(RTRIM(CONVERT(varchar(20), s.work_date))),'-',''),'/',''),6) = @yyyymm;
+    WHERE s.SITE = @site AND s.SEL_CODE = @selCode;
 
     SELECT @@ROWCOUNT AS loaded;
 END
