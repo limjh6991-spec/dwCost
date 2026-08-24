@@ -32,14 +32,20 @@ export default {
     showIfApiButton() {
       try {
         const isSuperAdmin = (useUserAuthInfo()?.roleList || []).includes('SUPERADMIN');
-        const vn = this.siteMap && this.siteMap[this.params.site] === 'VN';
-        return isSuperAdmin && vn;
+        const s = this.siteMap && this.siteMap[this.params.site];
+        return isSuperAdmin && (s === 'VN' || s === 'HQ');   // VN(비나)·HQ(본사) 공통 노출
       } catch (e) {
         return false;
       }
     },
   },
   methods: {
+    /** 사업장별 인터페이스 키: 본사(HQ)면 baseKey+'_HQ', 아니면 VN baseKey.
+     *  같은 화면에서 로그인 사업장에 따라 HQ/VN 인터페이스를 호출한다. */
+    ifaceKey(baseKey) {
+      const s = this.siteMap && this.siteMap[this.params.site];
+      return s === 'HQ' ? `${baseKey}_HQ` : baseKey;
+    },
     /**
      * @param {object}   opt
      * @param {string}   opt.key          인터페이스 식별자 (IfEndpoint 이름)

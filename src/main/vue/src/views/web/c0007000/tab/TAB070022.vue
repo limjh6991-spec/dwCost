@@ -121,7 +121,7 @@ export default {
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
       // ERP DataBlock (정의서_자재투입 v1.0 재고금액상세 JSON 샘플 전체): 누락 필드 있으면 0건. IsDetailQry='1' 상세조회 플래그 포함.
       this.callIface({
-        key: 'STOCK_DETAIL', selCode: 'ACTUAL', yyyymm: yyyymm,
+        key: this.ifaceKey('STOCK_DETAIL'), selCode: 'ACTUAL', yyyymm: yyyymm,   // 본사→STOCK_DETAIL_HQ
         params: {
           WorkingTag: 'A', IDX_NO: 1, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: 'DataBlock1', UserName: '',
           WHType: 0, WHName: '', BizUnit: 0, Result: '', ROW_IDX: '', IsChangedMst: '0',

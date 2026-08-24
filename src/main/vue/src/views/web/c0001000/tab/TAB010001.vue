@@ -197,7 +197,7 @@ export default {
       if (!this.params.yyyymm) { this.$toast && this.$toast('error', '기준월을 선택해주세요.'); return; }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
       this.callIface({
-        key: 'ACCOUNT',
+        key: this.ifaceKey('ACCOUNT'),   // 본사→ACCOUNT_HQ
         yyyymm: yyyymm,
         params: { SMAccKind: 0, AccNoText: '', AccNameText: '', IsSlip: '1', SMAccType: 0, IsBase: '1', IsRNP: '1', IsBgt: '0', IsNotUse: '0' },
         successLabel: '계정코드',

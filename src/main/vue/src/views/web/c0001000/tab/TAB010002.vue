@@ -200,7 +200,7 @@ export default {
         qBegDate = `${yyyymm}${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`;
       }
       this.callIface({
-        key: 'DEPT',
+        key: this.ifaceKey('DEPT'),   // 본사→DEPT_HQ(코스트센터)
         yyyymm: yyyymm,
         params: { DeptSeq: 0, DeptName: '', SMDeptType: 0, QBegDate: qBegDate, QEndDate: '', IsUse: '', IsAll: '', UMDeptAttr: 0 },
         successLabel: '부서코드',

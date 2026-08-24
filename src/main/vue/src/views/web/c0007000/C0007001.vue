@@ -240,7 +240,7 @@ export default {
       const m = Number(yyyymm.slice(4, 6));
       const lastDay = new Date(y, m, 0).getDate();
       this.callIface({
-        key: 'DEPT_COST',
+        key: this.ifaceKey('DEPT_COST'),   // 본사→DEPT_COST_HQ
         selCode: 'ACTUAL',
         yyyymm: yyyymm,
         params: {
