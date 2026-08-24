@@ -91,10 +91,10 @@ export default {
     apiCallClick() {
       if (!this.params.yyyymm) { this.$toast && this.$toast('error', '년월 선택해주세요.'); return; }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
-      // TODO(정의서 요청 기간필드 확정 후 월범위 스코프): 현재 {yyyymm,site} 임시
+      // ERP DataBlock (정의서_자재 v1.0 - 자재조회 BSSDAItemInfo): 필수 필드 없음(마스터 전체조회), 필터는 빈값
       this.callIface({
         key: 'MATERIAL', selCode: 'ACTUAL', yyyymm: yyyymm,
-        params: { yyyymm, site: this.siteMap[this.params.site] },
+        params: { ItemName: '', ItemNo: '', Spec: '', AssetName: '', site: this.siteMap[this.params.site] },
         successLabel: '자재정보', onSuccess: () => this.getDataList(),
       });
     },
