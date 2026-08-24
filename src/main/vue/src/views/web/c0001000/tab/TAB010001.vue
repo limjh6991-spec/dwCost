@@ -191,10 +191,14 @@ export default {
       }
       this.getDataList();
     },
-    // ERP 계정코드(ACCOUNT) API 호출 → 적재 → 그리드 새로고침 (마스터: selCode/yyyymm 미사용)
+    // ERP 계정코드(ACCOUNT) API 호출 → 적재 → 업서트 변환 → 그리드 새로고침
+    // 업서트가 doi_acct(YYYYMM 그레인)에 반영하므로 선택 기준월을 전달한다.
     apiCallClick() {
+      if (!this.params.yyyymm) { this.$toast && this.$toast('error', '기준월을 선택해주세요.'); return; }
+      const yyyymm = this.params.yyyymm.replaceAll('-', '');
       this.callIface({
         key: 'ACCOUNT',
+        yyyymm: yyyymm,
         params: { SMAccKind: 0, AccNoText: '', AccNameText: '', IsSlip: '1', SMAccType: 0, IsBase: '1', IsRNP: '1', IsBgt: '0', IsNotUse: '0' },
         successLabel: '계정코드',
         onSuccess: () => this.getDataList(),

@@ -187,10 +187,12 @@ export default {
       }
       this.getDataList();
     },
-    // ERP 부서코드(DEPT) API 호출 → 적재 → 그리드 새로고침
+    // ERP 부서코드(DEPT) API 호출 → 적재 → 업서트 변환 → 그리드 새로고침
     // 조회조건: 정의서 ver1.8 Request Param. QBegDate(부서시작일, 필수)=기준월 말일.
+    // 업서트가 doi_dept(YYYYMM 그레인)에 반영하므로 선택 기준월을 전달한다.
     apiCallClick() {
-      const yyyymm = this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : '';
+      if (!this.params.yyyymm) { this.$toast && this.$toast('error', '기준월을 선택해주세요.'); return; }
+      const yyyymm = this.params.yyyymm.replaceAll('-', '');
       let qBegDate = '';
       if (yyyymm.length === 6) {
         const y = Number(yyyymm.slice(0, 4));
@@ -199,6 +201,7 @@ export default {
       }
       this.callIface({
         key: 'DEPT',
+        yyyymm: yyyymm,
         params: { DeptSeq: 0, DeptName: '', SMDeptType: 0, QBegDate: qBegDate, QEndDate: '', IsUse: '', IsAll: '', UMDeptAttr: 0 },
         successLabel: '부서코드',
         onSuccess: () => this.getDataList(),

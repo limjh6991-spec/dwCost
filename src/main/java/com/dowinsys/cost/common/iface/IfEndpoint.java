@@ -13,8 +13,8 @@ import java.util.Optional;
 public enum IfEndpoint {
 
     // ===== 마스터(원가기준정보) - @selCode 미사용 =====
-    ACCOUNT      (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/Wbs.Ylw.Account.BSSDAAccount/Query_Acc",                                    "UP_VN_IF_LOAD_ACCOUNT",       false),
-    DEPT         (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/VEN.Ylw.XHR.BssDept/Query",                                                  "UP_VN_IF_LOAD_DEPT",          false),
+    ACCOUNT      (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/Wbs.Ylw.Account.BSSDAAccount/Query_Acc",                                    "UP_VN_IF_LOAD_ACCOUNT",       false, "UP_VN_IF_XFORM_ACCOUNT"),
+    DEPT         (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/VEN.Ylw.XHR.BssDept/Query",                                                  "UP_VN_IF_LOAD_DEPT",          false, "UP_VN_IF_XFORM_DEPT"),
     ITEM         (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Sales.BSSDAItemInfo/Query",                                          "UP_VN_IF_LOAD_ITEM",          false),
     MATERIAL     (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Sales.BSSDAItemInfo/Query",                                          "UP_VN_IF_LOAD_MATERIAL",      false),
     PROCESS      (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Production.BSSPDBaseProcess/Query",                                  "UP_VN_IF_LOAD_PROCESS",       false),
