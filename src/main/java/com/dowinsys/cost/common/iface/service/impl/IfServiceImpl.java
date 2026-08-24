@@ -93,8 +93,8 @@ public class IfServiceImpl implements IfService {
         // 3) 운영 반영: 변환 프로시저가 지정된 인터페이스는 적재 직후 자동 실행 (적재→운영 한 흐름, 수동 EXEC 불필요)
         //    ※마스터(useSelCode=false)도 xform 지정 시 실행 — @selCode='ACTUAL' 고정 전달 (예: ACCOUNT/DEPT 업서트)
         if (ep.xformProc() != null) {
-            int applied = loadMapper.runXform(ep.xformProc(), yyyymm, selCode, "VN");
-            log.info("[IF] {} 변환({}) → 운영 {}건", ep.name(), ep.xformProc(), applied);
+            int applied = loadMapper.runXform(ep.xformProc(), yyyymm, selCode, ep.site());  // 사업장(VN/HQ) 파라미터화
+            log.info("[IF] {} 변환({}) → 운영({}) {}건", ep.name(), ep.xformProc(), ep.site(), applied);
         }
 
         IfFetchResult result = IfFetchResult.ok(ep.name(), requestId, loaded);

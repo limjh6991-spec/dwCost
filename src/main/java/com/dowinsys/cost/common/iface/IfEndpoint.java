@@ -59,6 +59,9 @@ public enum IfEndpoint {
     public String  loadProc()   { return loadProc; }
     public boolean useSelCode() { return useSelCode; }
     public String  xformProc()  { return xformProc; }
+    /** 사업장 구분: 엔드포인트명이 _HQ 로 끝나면 본사(HQ), 아니면 비나(VN).
+     *  (적재/변환 @site 인자·ERP base-url 선택에 사용 — VN 하드코딩 제거) */
+    public String  site()       { return name().endsWith("_HQ") ? "HQ" : "VN"; }
 
     // ================================================================
     // 영림원 ERP OpenAPI 요청 seq 매핑 (InterFace 정의서 ver1.8 기준).

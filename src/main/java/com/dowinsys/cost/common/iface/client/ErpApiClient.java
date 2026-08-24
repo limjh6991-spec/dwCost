@@ -44,15 +44,16 @@ public class ErpApiClient {
      */
     public String call(IfEndpoint endpoint, Map<String, Object> dataBlock) {
         IfProperties.Erp erp = props.getErp();
-        if (erp.getBaseUrl() == null || erp.getBaseUrl().isBlank()) {
-            throw new IllegalStateException("iface.erp.base-url 미설정");
+        String base = erp.baseUrlFor(endpoint.site());   // HQ→hqBaseUrl, VN→baseUrl (없으면 baseUrl 폴백)
+        if (base == null || base.isBlank()) {
+            throw new IllegalStateException("iface.erp." + ("HQ".equals(endpoint.site()) ? "hq-base-url" : "base-url") + " 미설정");
         }
         if (!props.isErpCertConfigured()) {
             throw new IllegalStateException(
                 "ERP 인증정보(certId/certKey/dsnOper/dsnBis) 미설정 - 환경변수로 주입 필요");
         }
 
-        String url = erp.getBaseUrl() + endpoint.path();
+        String url = base + endpoint.path();
         String body = buildEnvelope(erp, endpoint, dataBlock);
 
         // 진단용: 실제 전송 요청 로깅 (인증정보 마스킹)

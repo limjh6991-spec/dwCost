@@ -18,8 +18,10 @@ public class IfProperties {
     private int readTimeoutMs = 120000;
 
     public static class Erp {
-        /** 예) http://172.16.21.32:8801 (TEST) */
+        /** 예) http://172.16.21.32:8801 (TEST) — VN(비나) 영림원 서버 */
         private String baseUrl;
+        /** HQ(본사) 영림원 서버 base-url. 미설정 시 baseUrl 로 폴백. (HQ는 회사구분=서버주소 상이) */
+        private String hqBaseUrl;
         private String certId;
         private String certKey;
         private String dsnOper;
@@ -30,6 +32,13 @@ public class IfProperties {
 
         public String getBaseUrl() { return baseUrl; }
         public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
+        public String getHqBaseUrl() { return hqBaseUrl; }
+        public void setHqBaseUrl(String hqBaseUrl) { this.hqBaseUrl = hqBaseUrl; }
+        /** site 별 ERP base-url (HQ→hqBaseUrl, 없으면 baseUrl 폴백) */
+        public String baseUrlFor(String site) {
+            if ("HQ".equalsIgnoreCase(site) && hqBaseUrl != null && !hqBaseUrl.isBlank()) return hqBaseUrl;
+            return baseUrl;
+        }
         public String getCertId() { return certId; }
         public void setCertId(String certId) { this.certId = certId; }
         public String getCertKey() { return certKey; }
