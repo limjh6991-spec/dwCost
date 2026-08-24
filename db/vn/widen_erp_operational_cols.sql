@@ -15,7 +15,8 @@ SET NOCOUNT ON;
 
 DECLARE @tables TABLE (tbl SYSNAME);
 INSERT INTO @tables(tbl) VALUES
-    ('doi_vn_etc_inout'), ('DOI_VN_STOCK_DETAIL'), ('DOI_VN_MAT_INPUT'), ('DOI_MATL_RESC');
+    ('doi_vn_etc_inout'), ('DOI_VN_STOCK_DETAIL'), ('DOI_VN_MAT_INPUT'), ('DOI_MATL_RESC'),
+    ('doi_vn_material');   -- MATERIAL xform 대상 (85컬럼 nvarchar20 → VN 자재명/관리부서 등 잘림)
 
 DECLARE @sql NVARCHAR(MAX) = N'';
 
@@ -28,7 +29,7 @@ JOIN sys.types  ty ON c.user_type_id = ty.user_type_id
 WHERE ty.name = 'nvarchar'
   AND c.max_length <> -1            -- MAX 제외
   AND c.max_length / 2 < 200        -- 200자 미만만
-  AND LOWER(c.name) NOT IN ('yyyymm','edit_user','sel_code','site','request_id','load_dttm')
+  AND LOWER(c.name) NOT IN ('yyyymm','edit_user','edit_date','sel_code','site','request_id','load_dttm')
   -- DOI_MATL_RESC(공유 결산테이블)는 STOCK_DETAIL xform 이 실제 INSERT 하는 텍스트 컬럼만
   AND ( t.tbl <> 'DOI_MATL_RESC'
         OR c.name IN (N'자산처리계정',N'품목자산분류',N'재고자산종류',N'매출원가계정',

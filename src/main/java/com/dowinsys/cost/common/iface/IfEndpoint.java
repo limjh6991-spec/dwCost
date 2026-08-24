@@ -16,7 +16,7 @@ public enum IfEndpoint {
     ACCOUNT      (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/Wbs.Ylw.Account.BSSDAAccount/Query_Acc",                                    "UP_VN_IF_LOAD_ACCOUNT",       false, "UP_VN_IF_XFORM_ACCOUNT"),
     DEPT         (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/VEN.Ylw.XHR.BssDept/Query",                                                  "UP_VN_IF_LOAD_DEPT",          false, "UP_VN_IF_XFORM_DEPT"),
     ITEM         (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Sales.BSSDAItemInfo/Query",                                          "UP_VN_IF_LOAD_ITEM",          false),
-    MATERIAL     (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Sales.BSSDAItemInfo/Query",                                          "UP_VN_IF_LOAD_MATERIAL",      false),
+    MATERIAL     (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Sales.BSSDAItemInfo/Query",                                          "UP_VN_IF_LOAD_MATERIAL",      false, "UP_VN_IF_XFORM_MATERIAL"),
     PROCESS      (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Production.BSSPDBaseProcess/Query",                                  "UP_VN_IF_LOAD_PROCESS",       false),
 
     // ===== 트랜잭션/조회 - @selCode 사용 =====
