@@ -38,8 +38,14 @@ public enum IfEndpoint {
 
     // ===== HQ(본사) - InterFace 정의서 ver1.0 HQ. site()='HQ'(_HQ 접미), ERP=hq-base-url =====
     //   계정코드=ACCOUNT(VN동일 500768), 부서별계정별비용=DEPT_COST(501057, 메서드명 List)
-    ACCOUNT_HQ   (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/Wbs.Ylw.Account.BSSDAAccount/Query_Acc",                                       "UP_HQ_IF_LOAD_ACCOUNT",       false, "UP_HQ_IF_XFORM_ACCOUNT"),
-    DEPT_COST_HQ (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/Wbs.Ylw.Account.BSSACCCtrCostAmtExeList/Query_ACCCtrCostAmtExeList",            "UP_HQ_IF_LOAD_DEPT_COST",     true,  "UP_HQ_IF_XFORM_DEPT_COST");
+    ACCOUNT_HQ      (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/Wbs.Ylw.Account.BSSDAAccount/Query_Acc",                                     "UP_HQ_IF_LOAD_ACCOUNT",       false, "UP_HQ_IF_XFORM_ACCOUNT"),
+    DEPT_COST_HQ    (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/Wbs.Ylw.Account.BSSACCCtrCostAmtExeList/Query_ACCCtrCostAmtExeList",          "UP_HQ_IF_LOAD_DEPT_COST",     true,  "UP_HQ_IF_XFORM_DEPT_COST"),
+    STOCK_DETAIL_HQ (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.ESM.BSSESMZStockMonthlyAmt/Query",                                   "UP_HQ_IF_LOAD_STOCK_DETAIL",  true,  "UP_HQ_IF_XFORM_STOCK_DETAIL"),  // 자재투입(재고금액상세)
+    WH_STOCK_SUM_HQ (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Logistics.BSSLGWHStock/WHStockSumQuery",                             "UP_HQ_IF_LOAD_WH_STOCK_SUM",  true),                                  // 제품정보(창고별수불집계)
+    DEPT_HQ         (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.ESM.BSSDACCtr/Query",                                                "UP_HQ_IF_LOAD_DEPT",          false),                                 // 부서코드(코스트센터) ※변환 후속
+    MATERIAL_HQ     (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Production.BSSPDROUItemProcMatList/Query",                           "UP_HQ_IF_LOAD_MATERIAL",      false),                                 // 자재코드(제품별공정별소요자재)
+    SALES_HQ        (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Sales.BSSSLInvoiceInfo/ItemQuery",                                   "UP_HQ_IF_LOAD_SALES",         true),                                  // 매출정보-거래명세서 ※변환 후속
+    EXP_INVOICE_HQ  (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Sales.BSSSLInvoiceInfo/ExpInvoiceItemQuery",                         "UP_HQ_IF_LOAD_EXP_INVOICE",   true);                                  // 매출정보-수출Invoice ※변환 후속
 
     private final IfSource source;
     private final String path;
@@ -97,8 +103,14 @@ public enum IfEndpoint {
         ERP_SEQ.put(EXP_SALES,     new int[]{501278,    501047,     3, 1, 6}); // 매출정보-수출매출품목조회(JSON샘플 없음)
         ERP_SEQ.put(EXP_PERMIT,    new int[]{501306,    501043,     2, 3, 6}); // 매출정보-수출신고필증조회
         // ===== HQ(본사) — languageSeq=1(한국어), companySeq=1(동일), userSeq는 정의서 Root Param =====
-        ERP_SEQ.put(ACCOUNT_HQ,    new int[]{500768,    500167,     1, 1, 1}); // 계정코드(VN과 동일 메서드/seq, 언어만 1)
-        ERP_SEQ.put(DEPT_COST_HQ,  new int[]{501057,    500532,     1, 1, 1}); // 부서별계정별비용
+        ERP_SEQ.put(ACCOUNT_HQ,      new int[]{500768,    500167,     1, 1, 1}); // 계정코드(VN과 동일 메서드/seq, 언어만 1)
+        ERP_SEQ.put(DEPT_COST_HQ,    new int[]{501057,    500532,     1, 1, 1}); // 부서별계정별비용
+        ERP_SEQ.put(STOCK_DETAIL_HQ, new int[]{501175,    500675,     1, 1, 1}); // 자재투입(재고금액상세)
+        ERP_SEQ.put(WH_STOCK_SUM_HQ, new int[]{501534,    501187,     2, 1, 1}); // 제품정보(창고별수불집계, method2)
+        ERP_SEQ.put(DEPT_HQ,         new int[]{500746,    500517,     1, 1, 1}); // 부서코드(코스트센터)
+        ERP_SEQ.put(MATERIAL_HQ,     new int[]{501138,    500315,     1, 1, 1}); // 자재코드(소요자재)
+        ERP_SEQ.put(SALES_HQ,        new int[]{501278,    501047,     3, 1, 1}); // 거래명세서(method3)
+        ERP_SEQ.put(EXP_INVOICE_HQ,  new int[]{501229,    501032,     4, 1, 1}); // 수출Invoice(method4)
     }
     public Integer serviceSeq()  { int[] s = ERP_SEQ.get(this); return s == null ? null : s[0]; }
     public Integer pgmSeq()      { int[] s = ERP_SEQ.get(this); return s == null ? null : s[1]; }
