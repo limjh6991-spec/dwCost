@@ -34,7 +34,12 @@ public enum IfEndpoint {
 
     // ===== MES(미라콤) - @selCode 사용, data.rows =====
     WIP_SUBUL    (IfSource.MES, "/api/v1/wip_inv", "UP_VN_IF_LOAD_WIP_SUBUL", true, "UP_VN_IF_XFORM_WIP_SUBUL"),
-    FG_SUBUL     (IfSource.MES, "/api/v1/fg_inv",  "UP_VN_IF_LOAD_FG_SUBUL",  true, "UP_VN_IF_XFORM_FG_SUBUL");
+    FG_SUBUL     (IfSource.MES, "/api/v1/fg_inv",  "UP_VN_IF_LOAD_FG_SUBUL",  true, "UP_VN_IF_XFORM_FG_SUBUL"),
+
+    // ===== HQ(본사) - InterFace 정의서 ver1.0 HQ. site()='HQ'(_HQ 접미), ERP=hq-base-url =====
+    //   계정코드=ACCOUNT(VN동일 500768), 부서별계정별비용=DEPT_COST(501057, 메서드명 List)
+    ACCOUNT_HQ   (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/Wbs.Ylw.Account.BSSDAAccount/Query_Acc",                                       "UP_HQ_IF_LOAD_ACCOUNT",       false, "UP_HQ_IF_XFORM_ACCOUNT"),
+    DEPT_COST_HQ (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/Wbs.Ylw.Account.BSSACCCtrCostAmtExeList/Query_ACCCtrCostAmtExeList",            "UP_HQ_IF_LOAD_DEPT_COST",     true,  "UP_HQ_IF_XFORM_DEPT_COST");
 
     private final IfSource source;
     private final String path;
@@ -91,6 +96,9 @@ public enum IfEndpoint {
         ERP_SEQ.put(BIZ_STOCK_SUM, new int[]{501534,    521995,    17, 1, 1}); // 사업단위별수불집계
         ERP_SEQ.put(EXP_SALES,     new int[]{501278,    501047,     3, 1, 6}); // 매출정보-수출매출품목조회(JSON샘플 없음)
         ERP_SEQ.put(EXP_PERMIT,    new int[]{501306,    501043,     2, 3, 6}); // 매출정보-수출신고필증조회
+        // ===== HQ(본사) — languageSeq=1(한국어), companySeq=1(동일), userSeq는 정의서 Root Param =====
+        ERP_SEQ.put(ACCOUNT_HQ,    new int[]{500768,    500167,     1, 1, 1}); // 계정코드(VN과 동일 메서드/seq, 언어만 1)
+        ERP_SEQ.put(DEPT_COST_HQ,  new int[]{501057,    500532,     1, 1, 1}); // 부서별계정별비용
     }
     public Integer serviceSeq()  { int[] s = ERP_SEQ.get(this); return s == null ? null : s[0]; }
     public Integer pgmSeq()      { int[] s = ERP_SEQ.get(this); return s == null ? null : s[1]; }
