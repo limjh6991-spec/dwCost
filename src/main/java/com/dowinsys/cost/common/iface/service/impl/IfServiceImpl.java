@@ -4,6 +4,7 @@
 package com.dowinsys.cost.common.iface.service.impl;
 
 import com.dowinsys.cost.common.iface.IfEndpoint;
+import com.dowinsys.cost.common.iface.IfFetchException;
 import com.dowinsys.cost.common.iface.IfSource;
 import com.dowinsys.cost.common.iface.client.ErpApiClient;
 import com.dowinsys.cost.common.iface.client.MesApiClient;
@@ -56,18 +57,31 @@ public class IfServiceImpl implements IfService {
         String yyyymm  = req.getYyyymm() != null ? req.getYyyymm() : req.getSelCode();
         String selCode = "ACTUAL";           // 적재(스테이징)·운영 공통 결산코드 고정
 
+        // 진단용: 실제 전송할 요청(인증정보 마스킹). 서버 로그 미가용 대비 → 실패해도 F12 res.debug 로 확인.
+        String maskedReq = (ep.source() == IfSource.ERP) ? safeMaskedReq(ep, req.getParams()) : null;
+
         // 1) 소스 호출
-        String json = (ep.source() == IfSource.MES)
-                ? mes.call(ep, req.getParams())
-                : erp.call(ep, req.getParams());
+        String json;
+        try {
+            json = (ep.source() == IfSource.MES)
+                    ? mes.call(ep, req.getParams())
+                    : erp.call(ep, req.getParams());
+        } catch (RuntimeException ex) {
+            // 호출 자체 실패(네트워크/cert 미설정 등)도 요청 내용과 함께 화면에 노출
+            throw new IfFetchException(ex.getMessage(), debugPayload(maskedReq, null));
+        }
 
         if (json == null || json.isBlank()) {
-            throw new IllegalStateException("응답 본문이 비어 있음");
+            throw new IfFetchException("응답 본문이 비어 있음", debugPayload(maskedReq, json));
         }
 
         // 응답 본문에 오류(ERP ErrorMessage / MES success=false)가 있으면 실패로 처리
-        // → "성공 0건"으로 숨기지 않고 실제 메시지를 화면 토스트에 노출
-        assertNoResponseError(ep, json);
+        // → "성공 0건"으로 숨기지 않고 실제 메시지 + 요청/응답을 화면(토스트·F12)에 노출
+        try {
+            assertNoResponseError(ep, json);
+        } catch (RuntimeException ex) {
+            throw new IfFetchException(ex.getMessage(), debugPayload(maskedReq, json));
+        }
 
         // 2) 적재 프로시저 (SEL_CODE = 'ACTUAL')
         int loaded = ep.useSelCode()
@@ -83,8 +97,8 @@ public class IfServiceImpl implements IfService {
         }
 
         IfFetchResult result = IfFetchResult.ok(ep.name(), requestId, loaded);
-        // 진단용: ERP/MES 실응답을 결과에 실어 화면 콘솔(F12)에서 확인 가능 (서버 로그 미가용 대비, 4KB 축약)
-        result.setDebug(json.length() > 4000 ? json.substring(0, 4000) + " ...(truncated)" : json);
+        // 진단용: 마스킹 요청 + ERP/MES 실응답을 결과에 실어 화면 콘솔(F12)에서 확인 가능
+        result.setDebug(debugPayload(maskedReq, json));
         return result;
     }
 
@@ -123,6 +137,27 @@ public class IfServiceImpl implements IfService {
                         + sent + " [ERP원문 Result: " + result + "]");
             }
         }
+    }
+
+    /** ERP 마스킹 요청 생성 (실패해도 예외 없이 사유 문자열 반환) */
+    private String safeMaskedReq(IfEndpoint ep, Map<String, Object> params) {
+        try {
+            return erp.maskedRequest(ep, params);
+        } catch (Exception e) {
+            return "(요청 생성 실패: " + e.getMessage() + ")";
+        }
+    }
+
+    /** F12 res.debug 용 진단 페이로드: 마스킹 요청 + 실응답 (각 4KB 축약) */
+    private String debugPayload(String maskedReq, String response) {
+        String req = trunc(maskedReq);
+        String res = trunc(response);
+        return "REQUEST=" + (req == null ? "" : req) + "\n\nRESPONSE=" + (res == null ? "" : res);
+    }
+
+    private static String trunc(String s) {
+        if (s == null) return null;
+        return s.length() > 4000 ? s.substring(0, 4000) + " ...(truncated)" : s;
     }
 
     @Override

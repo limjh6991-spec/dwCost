@@ -69,6 +69,12 @@ public class ErpApiClient {
         return res.getBody();
     }
 
+    /** 진단용: 실제 전송할 봉투를 인증정보 마스킹한 문자열로 반환 (F12 debug 노출용, 비밀값 미포함) */
+    public String maskedRequest(IfEndpoint endpoint, Map<String, Object> dataBlock) {
+        IfProperties.Erp erp = props.getErp();
+        return maskSecrets(buildEnvelope(erp, endpoint, dataBlock), erp);
+    }
+
     /** 영림원 봉투 구성: { "ROOT": { cert..., serviceSeq/pgmSeq(인터페이스별), "data": { "ROOT": { "DataBlock1": [dataBlock] } } } } */
     private String buildEnvelope(IfProperties.Erp erp, IfEndpoint ep, Map<String, Object> dataBlock) {
         Map<String, Object> root = new LinkedHashMap<>();

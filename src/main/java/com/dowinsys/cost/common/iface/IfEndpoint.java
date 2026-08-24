@@ -78,7 +78,7 @@ public enum IfEndpoint {
         ERP_SEQ.put(ITEM,          new int[]{501631,    500260,     1, 3, 6}); // 품목
         ERP_SEQ.put(MATERIAL,      new int[]{501631,    500261,     1, 1, 6}); // 자재코드
         ERP_SEQ.put(PROCESS,       new int[]{500172,    500173,     1, 1, 6}); // 공정(JSON샘플 없음)
-        ERP_SEQ.put(DEPT_COST,     new int[]{501057,    500532,     1, 3, 6}); // 부서별계정별비용
+        ERP_SEQ.put(DEPT_COST,     new int[]{501057,    500532,     1, 1, 6}); // 부서별계정별비용 (userSeq=1: Account 메서드 인가 계정)
         ERP_SEQ.put(ITEM_INPUT,    new int[]{501351,    500770,     1, 3, 6}); // 품목별투입조회
         ERP_SEQ.put(EXP_CLAIM,     new int[]{118021152, 118021828,  1, 1, 6}); // 수출Claim(JSON샘플 없음)
         ERP_SEQ.put(ITEM_PROC_MAT, new int[]{501138,    500315,     1, 3, 6}); // 제품별공정별소요자재

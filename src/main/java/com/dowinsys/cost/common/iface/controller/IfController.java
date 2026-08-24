@@ -5,6 +5,7 @@
  */
 package com.dowinsys.cost.common.iface.controller;
 
+import com.dowinsys.cost.common.iface.IfFetchException;
 import com.dowinsys.cost.common.iface.service.IfService;
 import com.dowinsys.cost.common.iface.vo.IfFetchRequest;
 import com.dowinsys.cost.common.iface.vo.IfFetchResult;
@@ -39,11 +40,17 @@ public class IfController {
 
     @PostMapping("/fetch")
     public ResponseEntity<IfFetchResult> fetch(@RequestBody IfFetchRequest req) {
+        String key = (req == null) ? null : req.getKey();
         try {
             return ResponseEntity.ok(service.fetch(req));
+        } catch (IfFetchException e) {
+            // 진단용 debug(마스킹 요청 + 실응답)를 화면(F12 res.debug)으로 전달 — 서버 로그 미가용 대비
+            log.error("[IF] fetch 실패 key={}", key, e);
+            IfFetchResult r = IfFetchResult.error(key, e.getMessage());
+            r.setDebug(e.getDebug());
+            return ResponseEntity.ok(r);
         } catch (Exception e) {
-            log.error("[IF] fetch 실패 key={}", req == null ? null : req.getKey(), e);
-            String key = (req == null) ? null : req.getKey();
+            log.error("[IF] fetch 실패 key={}", key, e);
             return ResponseEntity.ok(IfFetchResult.error(key, e.getMessage()));
         }
     }
