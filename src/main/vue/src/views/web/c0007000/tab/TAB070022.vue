@@ -119,10 +119,10 @@ export default {
     apiCallClick() {
       if (!this.params.yyyymm) { this.$toast && this.$toast('error', '년월 선택해주세요.'); return; }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
-      // TODO(정의서 요청 기간필드 확정 후 월범위 스코프): 현재 {yyyymm,site} 임시
+      // ERP DataBlock (정의서_자재투입 v1.0 - 재고금액상세조회): SMCostMng=5512001·AppPriceKind=5533001 고정 필수 + CostYMFr/To(YYYYMM)
       this.callIface({
         key: 'STOCK_DETAIL', selCode: 'ACTUAL', yyyymm: yyyymm,
-        params: { yyyymm, site: this.siteMap[this.params.site] },
+        params: { SMCostMng: 5512001, AppPriceKind: 5533001, CostYMFr: yyyymm, CostYMTo: yyyymm, site: this.siteMap[this.params.site] },
         successLabel: '재고금액상세', onSuccess: () => this.getDataList(),
       });
     },

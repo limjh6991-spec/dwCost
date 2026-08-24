@@ -235,7 +235,8 @@ export default {
         return;
       }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
-      // ERP DataBlock 조회조건 (정의서_수출 v1.0 - 수출매출품목): 매출일 월초~월말(SalesDateFr/To, YYYYMMDD, 필수)
+      // ERP DataBlock 조회조건 (정의서_수출 v1.0 - 수출매출품목): 매출일 월초~월말(SalesDateFr/To, YYYYMMDD).
+      // ★샘플대로 전체 DataBlock 필드 전송(누락 시 빈 결과) — BizUnit/SMExpKind 등 0/'' 기본값.
       const y = Number(yyyymm.slice(0, 4));
       const m = Number(yyyymm.slice(4, 6));
       const lastDay = new Date(y, m, 0).getDate();
@@ -244,8 +245,10 @@ export default {
         selCode: 'ACTUAL',
         yyyymm: yyyymm,
         params: {
+          BizUnit: 0, SMExpKind: 0, SalesNo: '', DeptSeq: 0, EmpSeq: 0, CustSeq: 0, CustNo: '', ItemName: '', ItemNo: '',
           SalesDateFr: `${yyyymm}01`,
           SalesDateTo: `${yyyymm}${String(lastDay).padStart(2, '0')}`,
+          AssetSeq: 0, BillNo: '', UMPriceTerms: 0, InvoiceRefNo: '', SourceNo: '', SourceRefNo: '', SourceTableSeq: 0, UMChannel: 0,
           site: this.siteMap[this.params.site],
         },
         successLabel: '수출매출품목',
