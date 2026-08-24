@@ -21,7 +21,7 @@ public enum IfEndpoint {
 
     // ===== 트랜잭션/조회 - @selCode 사용 =====
     ACCLANG      (IfSource.ERP, "//Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/Wbs.Ylw.AC.BSSACFSItemForName/Query",                                       "UP_VN_IF_LOAD_ACCLANG",       true),
-    DEPT_COST    (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/Wbs.Ylw.Account.BSSACCCtrCostAmtExeList/Query_ACCCtrCostAmtExeL",            "UP_VN_IF_LOAD_DEPT_COST",     true, "UP_VN_IF_XFORM_DEPT_COST"),
+    DEPT_COST    (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/Wbs.Ylw.Account.BSSACCCtrCostAmtExeList/Query_ACCCtrCostAmtExeList",         "UP_VN_IF_LOAD_DEPT_COST",     true, "UP_VN_IF_XFORM_DEPT_COST"),
     ITEM_INPUT   (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.ESM.BSSESMCProdFMatInputAmt/Query",                                 "UP_VN_IF_LOAD_ITEM_INPUT",    true, "UP_VN_IF_XFORM_ITEM_INPUT"),
     EXP_CLAIM    (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Export.BSSSLExpSalesClaimItemList_DOWOO/Query",                     "UP_VN_IF_LOAD_EXP_CLAIM",     true, "UP_VN_IF_XFORM_EXP_CLAIM"),
     ITEM_PROC_MAT(IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Production.BSSPDROUItemProcMatList/Query",                          "UP_VN_IF_LOAD_ITEM_PROC_MAT", true),
