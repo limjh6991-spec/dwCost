@@ -119,10 +119,18 @@ export default {
     apiCallClick() {
       if (!this.params.yyyymm) { this.$toast && this.$toast('error', '년월 선택해주세요.'); return; }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
-      // ERP DataBlock (정의서_자재투입 v1.0 - 재고금액상세조회): SMCostMng=5512001·AppPriceKind=5533001 고정 필수 + CostYMFr/To(YYYYMM)
+      // ERP DataBlock (정의서_자재투입 v1.0 재고금액상세 JSON 샘플 전체): 누락 필드 있으면 0건. IsDetailQry='1' 상세조회 플래그 포함.
       this.callIface({
         key: 'STOCK_DETAIL', selCode: 'ACTUAL', yyyymm: yyyymm,
-        params: { SMCostMng: 5512001, AppPriceKind: 5533001, CostYMFr: yyyymm, CostYMTo: yyyymm, site: this.siteMap[this.params.site] },
+        params: {
+          WorkingTag: 'A', IDX_NO: 1, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: 'DataBlock1', UserName: '',
+          WHType: 0, WHName: '', BizUnit: 0, Result: '', ROW_IDX: '', IsChangedMst: '0',
+          SMCostMng: 5512001, CostMngAmdSeq: '', RptUnit: '', PlanYear: '', CostYMFr: yyyymm, CostYMTo: yyyymm,
+          PriceUnit: '', ItemKind: '', ItemName: '', ItemNo: '', ItemSeq: '', AssetSeq: '',
+          AppPriceKind: 5533001, ItemClassKind: '', ItemClassSeq: '', IsAssetType: '0', IsDetailQry: '1',
+          AssetGroupSeq: '', ItemEtcClassKind: '', ItemEtcClassSeq: '', IsAssetAcc: '0', IsDiff: '0', AccUnit: '',
+          site: this.siteMap[this.params.site],
+        },
         successLabel: '재고금액상세', onSuccess: () => this.getDataList(),
       });
     },

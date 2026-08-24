@@ -119,10 +119,15 @@ export default {
     apiCallClick() {
       if (!this.params.yyyymm) { this.$toast && this.$toast('error', '년월 선택해주세요.'); return; }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
-      // ERP DataBlock (ESM 원가): SMCostMng=5512001 고정 필수 + CostYMFr/To(YYYYMM). ⚠️품목별투입 전용 스펙 미확보 → 동일 ESM 패턴 적용(검증필요)
+      // ERP DataBlock (정의서_자재 v1.0 품목별투입 JSON 샘플 전체): 누락 필드 있으면 0건. 샘플대로 전체 전송.
       this.callIface({
         key: 'ITEM_INPUT', selCode: 'ACTUAL', yyyymm: yyyymm,
-        params: { SMCostMng: 5512001, CostYMFr: yyyymm, CostYMTo: yyyymm, site: this.siteMap[this.params.site] },
+        params: {
+          WorkingTag: '', IDX_NO: 0, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: '', UserName: '',
+          CostUnit: 0, CostYMFr: yyyymm, SMCostMng: 5512001, CostMngAmdSeq: 0, RptUnit: 0, PlanYear: '',
+          AssetSeq: 0, ItemName: '', ItemNo: '', MatName: '', MatNo: '', ProcSeq: 0, MatAssetSeq: 0,
+          WorkOrderNo: '', IsGroup: '', CostYMTo: yyyymm, site: this.siteMap[this.params.site],
+        },
         successLabel: '품목별투입', onSuccess: () => this.getDataList(),
       });
     },

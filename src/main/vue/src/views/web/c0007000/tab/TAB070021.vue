@@ -119,10 +119,16 @@ export default {
     apiCallClick() {
       if (!this.params.yyyymm) { this.$toast && this.$toast('error', '년월 선택해주세요.'); return; }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
-      // ERP DataBlock (정의서_자재투입 v1.0 - 기타입출고금액조회): SMCostMng=5512001 고정 필수 + CostYMFr/To(YYYYMM)
+      // ERP DataBlock (정의서_자재투입 v1.0 기타입출고 JSON 샘플 전체): 누락 필드 있으면 동적쿼리가 전 행 필터 → 0건. 샘플대로 전체 전송.
       this.callIface({
         key: 'ETC_INOUT', selCode: 'ACTUAL', yyyymm: yyyymm,
-        params: { SMCostMng: 5512001, CostYMFr: yyyymm, CostYMTo: yyyymm, site: this.siteMap[this.params.site] },
+        params: {
+          WorkingTag: '', IDX_NO: 0, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: '', UserName: '',
+          SMCostMng: 5512001, CostMngAmdSeq: 0, RptUnit: 0, PlanYear: '', CostYMFr: yyyymm, CostYMTo: yyyymm,
+          PriceUnit: 0, ItemKind: '', ItemName: '', ItemNo: '', ItemSeq: 0, AssetSeq: 0, ItemClassKind: 0,
+          ItemClassSeq: 0, AssetGroupSeq: 0, LotNo: '', DeptSeq: 0, UMEtcOutKindSourceSeq: 0,
+          UMEtcOutKindDetailSeq: 0, InOutSeq: 0, AccUnit: 0, site: this.siteMap[this.params.site],
+        },
         successLabel: '기타입출고금액', onSuccess: () => this.getDataList(),
       });
     },
