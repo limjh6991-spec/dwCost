@@ -33,7 +33,7 @@ public enum IfEndpoint {
     EXP_PERMIT   (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Export.BSSSLExpPermitList/ItemQuery",                               "UP_VN_IF_LOAD_EXP_PERMIT",    true),
 
     // ===== MES(미라콤) - @selCode 사용, data.rows =====
-    WIP_SUBUL    (IfSource.MES, "/api/v1/wip_inv", "UP_VN_IF_LOAD_WIP_SUBUL", true),
+    WIP_SUBUL    (IfSource.MES, "/api/v1/wip_inv", "UP_VN_IF_LOAD_WIP_SUBUL", true, "UP_VN_IF_XFORM_WIP_SUBUL"),
     FG_SUBUL     (IfSource.MES, "/api/v1/fg_inv",  "UP_VN_IF_LOAD_FG_SUBUL",  true, "UP_VN_IF_XFORM_FG_SUBUL");
 
     private final IfSource source;
