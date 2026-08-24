@@ -16,7 +16,10 @@ SET NOCOUNT ON;
 DECLARE @tables TABLE (tbl SYSNAME);
 INSERT INTO @tables(tbl) VALUES
     ('doi_vn_etc_inout'), ('DOI_VN_STOCK_DETAIL'), ('DOI_VN_MAT_INPUT'), ('DOI_MATL_RESC'),
-    ('doi_vn_material');   -- MATERIAL xform 대상 (85컬럼 nvarchar20 → VN 자재명/관리부서 등 잘림)
+    ('doi_vn_material'),   -- MATERIAL xform 대상 (85컬럼 nvarchar20 → VN 자재명/관리부서 등 잘림)
+    ('doi_invoice_resc'),  -- EXP_SALES xform 대상 (수출구분 nvarchar8 → 'Xuất khẩu' 잘림)
+    ('DOI_VN_EXP_CLAIM'),  -- EXP_CLAIM xform 대상 (반품종류/구분 등 VN 텍스트)
+    ('doi_dept_cost');     -- DEPT_COST xform 대상 (비용구분 nvarchar8 / 계정과목 VN, 권한 열리면)
 
 DECLARE @sql NVARCHAR(MAX) = N'';
 
