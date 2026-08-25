@@ -45,7 +45,7 @@ public enum IfEndpoint {
     DEPT_HQ         (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.ESM.BSSDACCtr/Query",                                                "UP_HQ_IF_LOAD_DEPT",          false, "UP_HQ_IF_XFORM_DEPT"),                 // 부서코드(코스트센터)→doi_dept 업서트
     MATERIAL_HQ     (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Production.BSSPDROUItemProcMatList/Query",                           "UP_HQ_IF_LOAD_MATERIAL",      false),                                 // 자재코드(제품별공정별소요자재)
     SALES_HQ        (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Sales.BSSSLInvoiceInfo/ItemQuery",                                   "UP_HQ_IF_LOAD_SALES",         true),                                  // 매출정보-거래명세서 ※변환 후속
-    EXP_INVOICE_HQ  (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Sales.BSSSLInvoiceInfo/ExpInvoiceItemQuery",                         "UP_HQ_IF_LOAD_EXP_INVOICE",   true);                                  // 매출정보-수출Invoice ※변환 후속
+    EXP_INVOICE_HQ  (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Sales.BSSSLInvoiceInfo/ExpInvoiceItemQuery",                         "UP_HQ_IF_LOAD_EXP_INVOICE",   true,  "UP_HQ_IF_XFORM_EXP_INVOICE");           // 매출정보-수출Invoice→DOI_INVOICE_RESC[HQ]
 
     private final IfSource source;
     private final String path;
