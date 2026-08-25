@@ -240,16 +240,38 @@ export default {
       const y = Number(yyyymm.slice(0, 4));
       const m = Number(yyyymm.slice(4, 6));
       const lastDay = new Date(y, m, 0).getDate();
+      const dfr = `${yyyymm}01`;
+      const dto = `${yyyymm}${String(lastDay).padStart(2, '0')}`;
+      const site = this.siteMap[this.params.site];
+      if (site === 'HQ') {
+        // 본사 수출Invoice (정의서_HQ v1.0 수출Invoice): BizUnit/InvoiceDateFr·To 필수 + 전체 DataBlock
+        this.callIface({
+          key: 'EXP_INVOICE_HQ',
+          selCode: 'ACTUAL',
+          yyyymm: yyyymm,
+          params: {
+            InvoiceNo: '', BizUnit: 0, SMExpKind: 0, UMOutKind: 0, DeptSeq: 0, EmpSeq: 0, CustSeq: 0, SMProgressType: 0,
+            InvoiceDateFr: dfr, InvoiceDateTo: dto,
+            ItemName: '', ItemNo: '', Spec: '', LotNo: '', WHSeq: 0, AssetSeq: 0, SourceRefNo: '', SourceNo: '',
+            UMPriceTerms: 0, InvoiceRefNo: '', PONo: '', SourceTableSeq: 0, SMDelvStatus: 0, IsEtcOut: '', SMSalesProgType: 0,
+            site,
+          },
+          successLabel: '수출Invoice',
+          onSuccess: () => this.getDataList(),
+        });
+        return;
+      }
+      // 비나 수출매출품목 (EXP_SALES)
       this.callIface({
         key: 'EXP_SALES',
         selCode: 'ACTUAL',
         yyyymm: yyyymm,
         params: {
           BizUnit: 0, SMExpKind: 0, SalesNo: '', DeptSeq: 0, EmpSeq: 0, CustSeq: 0, CustNo: '', ItemName: '', ItemNo: '',
-          SalesDateFr: `${yyyymm}01`,
-          SalesDateTo: `${yyyymm}${String(lastDay).padStart(2, '0')}`,
+          SalesDateFr: dfr,
+          SalesDateTo: dto,
           AssetSeq: 0, BillNo: '', UMPriceTerms: 0, InvoiceRefNo: '', SourceNo: '', SourceRefNo: '', SourceTableSeq: 0, UMChannel: 0,
-          site: this.siteMap[this.params.site],
+          site,
         },
         successLabel: '수출매출품목',
         onSuccess: () => this.getDataList(),
