@@ -26,6 +26,11 @@ public class IfProperties {
         private String certKey;
         private String dsnOper;
         private String dsnBis;
+        // HQ(본사) 전용 인증정보 — HQ 영림원 서버는 자체 cert/DSN 필요(VN과 상이). 미설정 시 VN 값 폴백.
+        private String hqCertId;
+        private String hqCertKey;
+        private String hqDsnOper;
+        private String hqDsnBis;
         private int companySeq = 1;
         private int languageSeq = 6;
         private int userSeq = 3;
@@ -47,6 +52,22 @@ public class IfProperties {
         public void setDsnOper(String dsnOper) { this.dsnOper = dsnOper; }
         public String getDsnBis() { return dsnBis; }
         public void setDsnBis(String dsnBis) { this.dsnBis = dsnBis; }
+        public String getHqCertId() { return hqCertId; }
+        public void setHqCertId(String v) { this.hqCertId = v; }
+        public String getHqCertKey() { return hqCertKey; }
+        public void setHqCertKey(String v) { this.hqCertKey = v; }
+        public String getHqDsnOper() { return hqDsnOper; }
+        public void setHqDsnOper(String v) { this.hqDsnOper = v; }
+        public String getHqDsnBis() { return hqDsnBis; }
+        public void setHqDsnBis(String v) { this.hqDsnBis = v; }
+        /** site 별 인증정보 (HQ→hq* 값, 미설정 시 VN 폴백) */
+        private static String pick(String site, String hq, String vn) {
+            return ("HQ".equalsIgnoreCase(site) && hq != null && !hq.isBlank()) ? hq : vn;
+        }
+        public String certIdFor(String site)  { return pick(site, hqCertId,  certId);  }
+        public String certKeyFor(String site) { return pick(site, hqCertKey, certKey); }
+        public String dsnOperFor(String site) { return pick(site, hqDsnOper, dsnOper); }
+        public String dsnBisFor(String site)  { return pick(site, hqDsnBis,  dsnBis);  }
         public int getCompanySeq() { return companySeq; }
         public void setCompanySeq(int companySeq) { this.companySeq = companySeq; }
         public int getLanguageSeq() { return languageSeq; }
@@ -74,6 +95,12 @@ public class IfProperties {
     public boolean isErpCertConfigured() {
         return notBlank(erp.certId) && notBlank(erp.certKey)
                 && notBlank(erp.dsnOper) && notBlank(erp.dsnBis);
+    }
+
+    /** site 별 ERP 인증정보 주입 여부 (HQ→hq* 폴백 VN) */
+    public boolean isErpCertConfiguredFor(String site) {
+        return notBlank(erp.certIdFor(site)) && notBlank(erp.certKeyFor(site))
+                && notBlank(erp.dsnOperFor(site)) && notBlank(erp.dsnBisFor(site));
     }
 
     private static boolean notBlank(String s) { return s != null && !s.isBlank(); }

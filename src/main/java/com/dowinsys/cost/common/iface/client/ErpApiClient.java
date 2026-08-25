@@ -48,9 +48,9 @@ public class ErpApiClient {
         if (base == null || base.isBlank()) {
             throw new IllegalStateException("iface.erp." + ("HQ".equals(endpoint.site()) ? "hq-base-url" : "base-url") + " 미설정");
         }
-        if (!props.isErpCertConfigured()) {
+        if (!props.isErpCertConfiguredFor(endpoint.site())) {
             throw new IllegalStateException(
-                "ERP 인증정보(certId/certKey/dsnOper/dsnBis) 미설정 - 환경변수로 주입 필요");
+                "ERP 인증정보(" + endpoint.site() + " certId/certKey/dsnOper/dsnBis) 미설정 - 환경변수로 주입 필요");
         }
 
         String url = base + endpoint.path();
@@ -78,11 +78,12 @@ public class ErpApiClient {
 
     /** 영림원 봉투 구성: { "ROOT": { cert..., serviceSeq/pgmSeq(인터페이스별), "data": { "ROOT": { "DataBlock1": [dataBlock] } } } } */
     private String buildEnvelope(IfProperties.Erp erp, IfEndpoint ep, Map<String, Object> dataBlock) {
+        String site = ep.site();   // site 별 인증정보 (HQ→hq* 폴백 VN)
         Map<String, Object> root = new LinkedHashMap<>();
-        root.put("certId", erp.getCertId());
-        root.put("certKey", erp.getCertKey());
-        root.put("dsnOper", erp.getDsnOper());
-        root.put("dsnBis", erp.getDsnBis());
+        root.put("certId", erp.certIdFor(site));
+        root.put("certKey", erp.certKeyFor(site));
+        root.put("dsnOper", erp.dsnOperFor(site));
+        root.put("dsnBis", erp.dsnBisFor(site));
         root.put("companySeq", erp.getCompanySeq());
         root.put("languageSeq", ep.languageSeq() != null ? ep.languageSeq() : erp.getLanguageSeq());
         root.put("securityType", 0);
@@ -123,7 +124,8 @@ public class ErpApiClient {
     private static String maskSecrets(String body, IfProperties.Erp erp) {
         if (body == null) return null;
         String s = body;
-        for (String v : new String[]{erp.getCertId(), erp.getCertKey(), erp.getDsnOper(), erp.getDsnBis()}) {
+        for (String v : new String[]{erp.getCertId(), erp.getCertKey(), erp.getDsnOper(), erp.getDsnBis(),
+                                     erp.getHqCertId(), erp.getHqCertKey(), erp.getHqDsnOper(), erp.getHqDsnBis()}) {
             if (v != null && !v.isBlank()) s = s.replace(v, "***");
         }
         return s;

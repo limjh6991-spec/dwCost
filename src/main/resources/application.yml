@@ -62,6 +62,11 @@ iface:
   erp:
     base-url: http://172.16.21.32:8801   # VN(비나) TEST(8801) / 운영(8800)
     hq-base-url: ${IFACE_ERP_HQ_BASE_URL:http://10.100.40.16:8300}   # HQ(본사) 영림원 TEST(8300). 회사구분=서버주소. env로 override 가능
+    # HQ 전용 인증정보 (HQ 영림원 서버는 자체 cert/DSN). env 주입, 미설정 시 VN 값 폴백. 값은 깃 금지.
+    hq-cert-id: ${IFACE_ERP_HQ_CERT_ID:}
+    hq-cert-key: ${IFACE_ERP_HQ_CERT_KEY:}
+    hq-dsn-oper: ${IFACE_ERP_HQ_DSN_OPER:}
+    hq-dsn-bis: ${IFACE_ERP_HQ_DSN_BIS:}
     cert-id: ${IFACE_ERP_CERT_ID:}
     cert-key: ${IFACE_ERP_CERT_KEY:}
     dsn-oper: ${IFACE_ERP_DSN_OPER:}
