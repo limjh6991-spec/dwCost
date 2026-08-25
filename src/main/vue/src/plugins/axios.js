@@ -29,9 +29,18 @@ instance.interceptors.request.use(
       token = userAuthStore.curToken;
     }
 
-    if(token !== null) {      
+    if(token !== null) {
       config.headers.Authorization = `Bearer ${token}`;
-    }    
+    }
+
+    // 마감월 체크는 사업장(SITE)별 판정 — 로그인 사업장을 자동 첨부 (31개 화면 공통, 개별 수정 불필요)
+    // HQ가 202607을 마감해도 VN 202607은 차단되지 않도록 site 를 항상 전달한다.
+    if (config.url && config.url.includes('/api/common/closing-month/check')) {
+      config.params = config.params || {};
+      if (!config.params.site) {
+        config.params.site = userAuthStore.curProdCtg === 'VN' ? 'VN' : 'HQ';
+      }
+    }
     
     //start - 2025.4.11 로그 관련 추가
     try{

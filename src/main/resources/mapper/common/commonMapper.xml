@@ -2,10 +2,15 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.dowinsys.cost.common.closingmonth.mapper.CommonMapper">
+    <!-- 마감월 체크. site(HQ/VN) 전달 시 해당 사업장 마감만 판정 — HQ 마감이 VN을 막지 않음.
+         site 미전달(구버전 호환) 시 어느 사업장이든 마감이면 차단(보수적). -->
     <select id="isClosedMonth" parameterType="map" resultType="int">
         SELECT COUNT(1)
         FROM DOI_CLOSING_MONTH
         WHERE YYYYMM = #{yyyymm}
           AND IS_CLOSED = 'Y'
+        <if test="site != null and site != ''">
+          AND SITE = #{site}
+        </if>
     </select>
 </mapper>

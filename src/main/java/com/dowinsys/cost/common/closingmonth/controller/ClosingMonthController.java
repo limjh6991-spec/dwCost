@@ -18,11 +18,13 @@ public class ClosingMonthController {
     private CommonService commonService;
 
     @GetMapping("/check")
-    public Map<String, Object> checkClosingMonth(@RequestParam("yyyymm") String yyyymm) {
-        boolean isClosed = commonService.isClosedMonth(yyyymm);
+    public Map<String, Object> checkClosingMonth(@RequestParam("yyyymm") String yyyymm,
+                                                 @RequestParam(value = "site", required = false) String site) {
+        boolean isClosed = commonService.isClosedMonth(yyyymm, site);
 
         Map<String, Object> result = new HashMap<>();
         result.put("yyyymm", yyyymm);
+        result.put("site", site);
         result.put("isClosed", isClosed);
         return result;
     }
