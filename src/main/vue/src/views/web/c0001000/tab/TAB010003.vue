@@ -186,9 +186,33 @@ export default {
       }
       this.getDataList();
     },
-    // ERP 자재코드(MATERIAL) API 호출 → 적재 → 그리드 새로고침
-    // 조회조건: 정의서 ver1.8. SMStatus=2001002(사용중) 필터 + 나머지 빈값(전체).
+    // ERP 자재코드 API 호출 → 적재 → 그리드 새로고침
+    // 본사(HQ)=소요자재 MATERIAL_HQ(제품별공정별소요자재), 비나=MATERIAL(BSSDAItemInfo)
     apiCallClick() {
+      const site = this.siteMap[this.params.site];
+      if (site === 'HQ') {
+        const yyyymm = this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : '';
+        const y = Number(yyyymm.slice(0, 4));
+        const m = Number(yyyymm.slice(4, 6));
+        const lastDay = yyyymm.length === 6 ? String(new Date(y, m, 0).getDate()).padStart(2, '0') : '31';
+        // 정의서_HQ 소요자재 요청 DataBlock: 내부코드 다수 필수→0, 등록일=결산월 범위, 최종차수 Y
+        this.callIface({
+          key: 'MATERIAL_HQ',
+          selCode: 'ACTUAL',
+          yyyymm: yyyymm,
+          params: {
+            ItemName: '', ItemNo: '', Spec: '', ItemSeq: 0, ProcRev: 0, ProcName: '', ProcSeq: 0,
+            AssyItemName: '', AssyItemNo: '', AssySpec: '', MatItemName: '', MatItemNo: '', MatSpec: '',
+            SMDelvType: 0, AssetSeq: 0, BizUnit: 0, BizUnitName: '', UptEmpSeq: 0, IsLastRev: 'Y', SMStatus: 0,
+            RegDate: `${yyyymm}01`, RegDateTo: `${yyyymm}${lastDay}`,
+            UMItemClassL: 0, UMItemClassM: 0, UMItemClass: 0, MatUMItemClassL: 0, MatUMItemClass: 0, MatAssetSeq: 0,
+            site,
+          },
+          successLabel: '자재코드(소요자재)',
+          onSuccess: () => this.getDataList(),
+        });
+        return;
+      }
       this.callIface({
         key: 'MATERIAL',
         params: { SMStatus: '2001002', ItemName: '', ItemNo: '', Spec: '', IsSTDItem: '0', IsSet: '0', UMItemClass: '', UMItemClassL: '', UMItemClassM: '' },

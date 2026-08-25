@@ -183,7 +183,26 @@ export default {
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
       const y = Number(yyyymm.slice(0, 4));
       const m = Number(yyyymm.slice(4, 6));
-      const workDate = `${yyyymm}${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`;
+      const lastDay = String(new Date(y, m, 0).getDate()).padStart(2, '0');
+      const site = this.siteMap[this.params.site];
+      if (site === 'HQ') {
+        // 본사 제품정보(창고별수불집계 WH_STOCK_SUM_HQ): BizUnit·DateFr/To 필수 + 전체필드
+        this.callIface({
+          key: 'WH_STOCK_SUM_HQ',
+          selCode: 'ACTUAL',
+          yyyymm: yyyymm,
+          params: {
+            BizUnit: 0, DateFr: `${yyyymm}01`, DateTo: `${yyyymm}${lastDay}`, SMQryType: 0, WHSeq: 0, SMWHKind: 0,
+            AssetSeq: 0, SMStatus: 0, ItemClassSSeq: 0, ItemName: '', ItemNo: '', Spec: '', SMUnitType: 0,
+            ConvUnitSeq: 0, SMWHType: 0, IsZeroQty: '', ItemClassLSeq: 0, ItemClassMSeq: 0, EmpSeq: 0, UMCostWHGroup: 0, site,
+          },
+          successLabel: '제품정보(창고별수불)',
+          onSuccess: () => this.getDataList(),
+        });
+        return;
+      }
+      // 비나 제품정보(MES 재고수불 FG_SUBUL)
+      const workDate = `${yyyymm}${lastDay}`;
       this.callIface({
         key: 'FG_SUBUL',
         selCode: 'ACTUAL',

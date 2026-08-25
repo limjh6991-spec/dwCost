@@ -229,20 +229,35 @@ export default {
       }
       this.getDataList();
     },
-    // 수출매출품목(EXP_SALES) API 호출 → 적재 → 그리드 새로고침
+    // 세금계산서(국내매출) API 호출 → 적재 → 그리드 새로고침. 본사(HQ) 전용 = SALES_HQ→DOI_SALE_RESC
     apiCallClick() {
       if (!this.params.yyyymm) {
         this.$toast && this.$toast('error', '년월 선택해주세요.');
         return;
       }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
-      // TODO(ERP 접근/cert 후 확정): DataBlock 필드 정확한 매핑.
+      const site = this.siteMap[this.params.site];
+      if (site !== 'HQ') {
+        this.$toast && this.$toast('info', '세금계산서(국내매출) API 호출은 본사 전용입니다.');
+        return;
+      }
+      const y = Number(yyyymm.slice(0, 4));
+      const m = Number(yyyymm.slice(4, 6));
+      const lastDay = String(new Date(y, m, 0).getDate()).padStart(2, '0');
+      // 정의서_HQ 거래명세서 요청 DataBlock: BizUnit·InvoiceDateFr/To 필수 + 전체필드
       this.callIface({
-        key: 'EXP_SALES',
+        key: 'SALES_HQ',
         selCode: 'ACTUAL',
         yyyymm: yyyymm,
-        params: { yyyymm, site: this.siteMap[this.params.site] },
-        successLabel: '수출매출품목',
+        params: {
+          InvoiceNo: '', BizUnit: 0, SMExpKind: 0, UMOutKind: 0, DeptSeq: 0, EmpSeq: 0, CustSeq: 0,
+          SMSalesCrtKind: 0, BillCustSeq: 0, SMProgressType: 0,
+          InvoiceDateFr: `${yyyymm}01`, InvoiceDateTo: `${yyyymm}${lastDay}`,
+          ItemName: '', ItemNo: '', Spec: '', LotNo: '', WHSeq: 0, AssetSeq: 0,
+          SourceRefNo: '', SourceNo: '', SourceTableSeq: 0, DVPlaceSeq: 0, SMDelvStatus: 0,
+          IsEtcOut: '', UMChannel: 0, IsExceptIsSale: '', site,
+        },
+        successLabel: '거래명세서(국내매출)',
         onSuccess: () => this.getDataList(),
       });
     },
