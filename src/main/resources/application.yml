@@ -61,7 +61,7 @@ cors:
 iface:
   erp:
     base-url: http://172.16.21.32:8801   # VN(비나) TEST(8801) / 운영(8800)
-    hq-base-url: ${IFACE_ERP_HQ_BASE_URL:}   # HQ(본사) 영림원 서버 (회사구분=서버주소 상이). 미설정시 base-url 폴백
+    hq-base-url: ${IFACE_ERP_HQ_BASE_URL:http://10.100.40.16:8300}   # HQ(본사) 영림원 TEST(8300). 회사구분=서버주소. env로 override 가능
     cert-id: ${IFACE_ERP_CERT_ID:}
     cert-key: ${IFACE_ERP_CERT_KEY:}
     dsn-oper: ${IFACE_ERP_DSN_OPER:}
