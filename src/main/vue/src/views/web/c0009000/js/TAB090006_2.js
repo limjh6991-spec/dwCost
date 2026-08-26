@@ -62,6 +62,8 @@ const grid = {
     { fieldName: 'outEtcAmt', dataType: ValueType.NUMBER },
     { fieldName: 'etcOutLotQty', dataType: ValueType.NUMBER },
     { fieldName: 'etcOutLotAmt', dataType: ValueType.NUMBER },
+    { fieldName: 'etcOutScrapQty', dataType: ValueType.NUMBER },
+    { fieldName: 'etcOutScrapAmt', dataType: ValueType.NUMBER },
     { fieldName: 'etcOutEtcQty', dataType: ValueType.NUMBER },
     { fieldName: 'etcOutEtcAmt', dataType: ValueType.NUMBER },
     { fieldName: '불량률', dataType: ValueType.NUMBER },
@@ -140,6 +142,9 @@ const grid = {
           direction: 'horizontal', items: [{ column: 'outEtcQty' }, { column: 'outEtcAmt' }] },
         { name: 'grpEtcOutLot', header: { text: '기타출고(LOT변환)' }, groupShowMode: 'expand',
           direction: 'horizontal', items: [{ column: 'etcOutLotQty' }, { column: 'etcOutLotAmt' }] },
+        // 기타출고(폐기) : 화면(헤더)만 선반영. 집계 로직·데이터는 추후 배선 예정.
+        { name: 'grpEtcOutScrap', header: { text: '기타출고(폐기)' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'etcOutScrapQty' }, { column: 'etcOutScrapAmt' }] },
         { name: 'grpEtcOutEtc', header: { text: '기타출고(기타)' }, groupShowMode: 'expand',
           direction: 'horizontal', items: [{ column: 'etcOutEtcQty' }, { column: 'etcOutEtcAmt' }] },
       ],
@@ -205,6 +210,9 @@ const grid = {
     // 기타출고(LOT변환)
     { name: 'etcOutLotQty', fieldName: 'etcOutLotQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'etcOutLotAmt', fieldName: 'etcOutLotAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+    // 기타출고(폐기)
+    { name: 'etcOutScrapQty', fieldName: 'etcOutScrapQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'etcOutScrapAmt', fieldName: 'etcOutScrapAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
     // 기타출고(기타)
     { name: 'etcOutEtcQty', fieldName: 'etcOutEtcQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'etcOutEtcAmt', fieldName: 'etcOutEtcAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
