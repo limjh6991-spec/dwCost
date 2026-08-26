@@ -13,7 +13,7 @@ BEGIN
          SYS_RESOURCE_TYPE_CODE_ID, DESCRIPTION, SEQ, URL, INIT_DT, INIT_USER, DEL_YN)
     VALUES
         ('HQ', 'C0007017', N'기타입출고금액', 'C0007000',
-         'MENU', N'ERP 기타입출고금액조회(통합) - DOI_ETC_INOUT', 11, '/c0007017', GETDATE(), 'SYSADMIN', 'N');
+         'MENU', N'ERP 기타입출고금액조회(통합) - DOI_ETC_INOUT', 12, '/c0007017', GETDATE(), 'SYSADMIN', 'N');
 END
 GO
 

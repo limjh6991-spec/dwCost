@@ -502,6 +502,9 @@ export default {
 
           result.push({
             ...r,
+            // 기타출고(폐기) : 프로시저 미반환 → 공란 대신 0 표시
+            etcOutScrapQty: Number(r.etcOutScrapQty) || 0,
+            etcOutScrapAmt: Number(r.etcOutScrapAmt) || 0,
             rowType: 'DATA',
             mergeKey,
             mergeKeyGubun,
@@ -599,6 +602,8 @@ export default {
         inRmaQty: 0, inRmaAmt: 0,
         outGoodQty: 0, outGoodAmt: 0,
         outEtcQty: 0, outEtcAmt: 0,
+        // 기타출고(폐기) : 집계 로직 미배선. 공란 대신 0 표시
+        etcOutScrapQty: 0, etcOutScrapAmt: 0,
       };
     },
 
@@ -621,6 +626,8 @@ export default {
         ['ETC_IN_CUR_DEF_QTY','etcInCurDefQty'], ['ETC_IN_CUR_DEF_AMT','etcInCurDefAmt'],
         ['OUT_ETC_QTY','outEtcQty'], ['OUT_ETC_AMT','outEtcAmt'],
         ['ETC_OUT_LOT_QTY','etcOutLotQty'], ['ETC_OUT_LOT_AMT','etcOutLotAmt'],
+        // 기타출고(폐기) : 집계 로직 미배선. 프로시저가 값을 안 주므로 0 으로 채워진다
+        ['ETC_OUT_SCRAP_QTY','etcOutScrapQty'], ['ETC_OUT_SCRAP_AMT','etcOutScrapAmt'],
         ['ETC_OUT_ETC_QTY','etcOutEtcQty'], ['ETC_OUT_ETC_AMT','etcOutEtcAmt'],
         ['PL_BEFORE','plBefore'], ['PL_AFTER','plAfter'],
         ['PL_BEFORE_AMT','plBeforeAmt'], ['PL_AFTER_AMT','plAfterAmt'],
@@ -634,6 +641,9 @@ export default {
           if (k1 in r) dataRow[k2] = Number(r[k1]) || 0;
           else if (k2 in r) dataRow[k2] = Number(r[k2]) || 0;
         });
+        // 기타출고(폐기) : 프로시저 미반환 → 공란 대신 0 표시
+        if (dataRow.etcOutScrapQty == null) dataRow.etcOutScrapQty = 0;
+        if (dataRow.etcOutScrapAmt == null) dataRow.etcOutScrapAmt = 0;
         result.push(dataRow);
       });
 
