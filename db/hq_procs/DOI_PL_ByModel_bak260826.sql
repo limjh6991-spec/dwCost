@@ -18,7 +18,6 @@ BEGIN
 		DECLARE @CostAdj     DECIMAL(18,2) = 0;
 		DECLARE @LossAdj     DECIMAL(18,2) = 0;
 		DECLARE @SCOF_ACC    DECIMAL(18,2) = 0;   -- 회계-조정 유상사급 (DOI_원장상계 구분='회계')
-		DECLARE @SCRAP_ADJ   DECIMAL(18,2) = 0;   -- 원부재료 재고폐기 (DOI_ETC_INOUT, 본사 전용)
 
        	DROP TABLE IF EXISTS #MODEL;
 
@@ -124,17 +123,6 @@ BEGIN
 		SELECT @SCOF_ACC = CAST(COALESCE(SUM(매출상계),0) AS DECIMAL(18,2))
 		FROM DOI_원장상계 WITH(NOLOCK)
 		WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SEL_CODE AND 구분 = N'회계';
-
-		-- 원부재료 재고폐기: 기타입출고금액(통합)에서 '재고폐기' AND 품목자산분류<>'제품'.
-		-- 회계 열('회계-조정')의 (3)제품매출원가조정에 가산한다. 본사 전용(VN 미적용).
-		IF @SITE = 'HQ'
-		BEGIN
-			SELECT @SCRAP_ADJ = CAST(COALESCE(SUM(금액),0) AS DECIMAL(18,2))
-			FROM DOI_ETC_INOUT WITH(NOLOCK)
-			WHERE yyyymm = @YYYYMM
-			  AND 기타입출고구분 = N'재고폐기'
-			  AND 품목자산분류 <> N'제품';
-		END
 		 
 		DROP TABLE IF EXISTS #sourceTable;
 		 ;WITH MERCH_ITEM AS (
@@ -531,22 +519,7 @@ BEGIN
             , amt
         INTO #sourceTable
         FROM PL_SOURCE;
-
-        ----------------------------------------------------------------------
-        -- 9-1. 원부재료 재고폐기를 회계 열('회계-조정')에 반영
-        --      (3)제품매출원가조정(rn12)에 가산 → II.매출원가(rn5) 증가,
-        --      III.매출총이익(rn13)·V.영업이익(rn141) 은 그만큼 감소.
-        --      Z합계/Z합계회계 보다 먼저 적용해야 상위 합계에 전파된다.
-        ----------------------------------------------------------------------
-        IF @SCRAP_ADJ <> 0
-        BEGIN
-            UPDATE #sourceTable SET amt = COALESCE(amt,0) + @SCRAP_ADJ
-             WHERE 구분 = N'회계' AND model = N'회계-조정' AND rn IN (5, 12);
-
-            UPDATE #sourceTable SET amt = COALESCE(amt,0) - @SCRAP_ADJ
-             WHERE 구분 = N'회계' AND model = N'회계-조정' AND rn IN (13, 141);
-        END
-
+       
         ----------------------------------------------------------------------
         -- 10. Z합계 행 추가
         ----------------------------------------------------------------------

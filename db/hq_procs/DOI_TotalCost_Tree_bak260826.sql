@@ -54,7 +54,6 @@ BEGIN
 		DECLARE @ACC_ADJ        DECIMAL(18,2) = 0;   -- 조정 (제품매출/41002020/영업그룹 제외)
 		DECLARE @ACC_TOTAL      DECIMAL(18,2) = 0;   -- 회계합계
 		DECLARE @SCOF_ACC       DECIMAL(18,2) = 0;   -- 회계-조정 유상사급 (DOI_원장상계 구분='회계')
-		DECLARE @ACC_SCRAP      DECIMAL(18,2) = 0;   -- 원부재료 재고폐기 (DOI_ETC_INOUT, 본사 전용)
 
         DECLARE @SQL             NVARCHAR(MAX);
 
@@ -295,17 +294,6 @@ BEGIN
 		      @ACC_PREV_PRICE
 		    + @ACC_IDLE_COMP
 		    + @ACC_ADJ;
-
-		-- 원부재료 재고폐기: 기타입출고금액(통합)에서 '재고폐기' AND 품목자산분류<>'제품'.
-		-- 회계-기타 열의 (3)제품매출원가조정 위치에 표시하고 V.매출원가까지 올린다. 본사 전용(VN 미적용).
-		IF @SITE = 'HQ'
-		BEGIN
-			SELECT @ACC_SCRAP = CAST(COALESCE(SUM(금액),0) AS DECIMAL(18,2))
-			FROM DOI_ETC_INOUT WITH(NOLOCK)
-			WHERE yyyymm = @YYYYMM
-			  AND 기타입출고구분 = N'재고폐기'
-			  AND 품목자산분류 <> N'제품';
-		END
 		 
 		SELECT @LossAdj = COALESCE(SUM(COALESCE(LOSS,0)), 0)
 		FROM DOI_COST WITH(NOLOCK)
@@ -1453,10 +1441,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 			    CASE
 			        WHEN Cur.rn = 2 THEN (@ACC_IDLE_COMP)  -- 제품매출: 비가동보상 (조정은 매출액으로 이동)
 			        WHEN Cur.rn = 7 THEN @ACC_PREV_PRICE              -- 기타매출: 이전가격
-			        WHEN Cur.rn = 1 THEN @ACC_TOTAL
-			        -- 재고폐기는 매출원가 가산 → 총원가(77) 증가, 영업이익(78) 감소
-			        WHEN Cur.rn = 78 THEN @ACC_TOTAL - @ACC_SCRAP
-			        WHEN Cur.rn IN (44,47,77) THEN @ACC_SCRAP
+			        WHEN Cur.rn in (1,78) THEN @ACC_TOTAL
 			        WHEN Cur.rn = 5 THEN @SCOF_ACC   -- 유상사급 란: 회계-조정 유상사급
 			        ELSE 0
 			    END
@@ -1483,8 +1468,6 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 			, CAST(
 			    CASE
 			        WHEN Cur.rn IN (1,7) THEN @ACC_PREV_PRICE
-			        -- 원부재료 재고폐기: (3)제품매출원가조정(47) 및 상위 V.매출원가(44)
-			        WHEN Cur.rn IN (44,47) THEN @ACC_SCRAP
 			        ELSE 0
 			    END
 			  AS DECIMAL(18,2)) AS [회계_이전가격]
@@ -1501,7 +1484,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 		
 --		SELECT @SQL;
 		EXEC sp_executesql @SQL, 
-		N'@SCOF DECIMAL(18,2), @CostAdj DECIMAL(18,2), @LossAdj DECIMAL(18,2), @LossAdjYangsan DECIMAL(18,2), @LossAdjDev DECIMAL(18,2), @LossAdjCassette DECIMAL(18,2) ,@ACC_TOTAL decimal(18,2), @ACC_PREV_PRICE decimal(18,2), @ACC_IDLE_COMP decimal(18,2), @ACC_ADJ decimal(18,2), @SCOF_ACC decimal(18,2), @ACC_SCRAP decimal(18,2)',
+		N'@SCOF DECIMAL(18,2), @CostAdj DECIMAL(18,2), @LossAdj DECIMAL(18,2), @LossAdjYangsan DECIMAL(18,2), @LossAdjDev DECIMAL(18,2), @LossAdjCassette DECIMAL(18,2) ,@ACC_TOTAL decimal(18,2), @ACC_PREV_PRICE decimal(18,2), @ACC_IDLE_COMP decimal(18,2), @ACC_ADJ decimal(18,2), @SCOF_ACC decimal(18,2)',
 		@SCOF = @SCOFTotal,
     	@CostAdj = @CostAdj,
     	@LossAdj = @LossAdj,
@@ -1512,8 +1495,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 		@ACC_PREV_PRICE = @ACC_PREV_PRICE,
 		@ACC_IDLE_COMP  = @ACC_IDLE_COMP,
 		@ACC_ADJ        = @ACC_ADJ,
-		@SCOF_ACC       = @SCOF_ACC,
-		@ACC_SCRAP      = @ACC_SCRAP;
+		@SCOF_ACC       = @SCOF_ACC;
 
         DROP TABLE #BASE;
         DROP TABLE #RN;
