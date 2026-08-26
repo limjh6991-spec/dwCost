@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dowinsys.cost.web.c0007000.mapper.C0007017Mapper">
+	<!-- 타시스템 > 기타입출고금액 (본사, DOI_ETC_INOUT) -->
+	<select id="C0007017_Sch1" resultType="CamelMap">
+		SELECT yyyymm, 회계단위, 일자, 입출고구분, 원천구분, 기타입출고구분,
+			품목자산분류, 대분류, 중분류, 소분류,
+			품명, 품번, 규격, 단위, 단수보정구분,
+			수량, 금액, 단가, 계정과목, 창고, 사용부서, 거래처,
+			특이사항, 품목특이사항
+		FROM DOI_ETC_INOUT
+		WHERE yyyymm = #{yyyymm}
+		ORDER BY 일자, 품번, 품명
+	</select>
+
+	<!-- 업로드는 기준월 단위 재적재(멱등) -->
+	<delete id="deleteMonth">
+		DELETE FROM DOI_ETC_INOUT
+		WHERE yyyymm = #{yyyymm}
+	</delete>
+
+	<insert id="uploadExcel" parameterType="java.util.List">
+		<foreach collection="list" item="item" separator=";">
+		INSERT INTO DOI_ETC_INOUT (회계단위, 일자, 입출고구분, 원천구분, 기타입출고구분,
+			품목자산분류, 대분류, 중분류, 소분류, 품명, 품번, 규격, 단위, 단수보정구분,
+			수량, 금액, 단가, 계정과목, 창고, 사용부서, 거래처, 특이사항, 품목특이사항,
+			yyyymm, edit_user, edit_date)
+		VALUES (#{item.field1}, #{item.field2}, #{item.field3}, #{item.field4}, #{item.field5},
+			#{item.field6}, #{item.field7}, #{item.field8}, #{item.field9}, #{item.field10},
+			#{item.field11}, #{item.field12}, #{item.field13}, #{item.field14},
+			TRY_CONVERT(numeric(28,8), #{item.field15}),
+			TRY_CONVERT(numeric(28,8), #{item.field16}),
+			TRY_CONVERT(numeric(28,8), #{item.field17}),
+			#{item.field18}, #{item.field19}, #{item.field20}, #{item.field21},
+			#{item.field22}, #{item.field23},
+			#{item.yyyymm}, #{item.editUser}, GETDATE())
+		</foreach>
+	</insert>
+</mapper>

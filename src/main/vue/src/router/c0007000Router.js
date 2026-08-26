@@ -108,6 +108,16 @@ const c0007000Router = [
       requiresAuth: false,
     },
   },
+  {
+    path: '/c0007017',
+    name: '기타입출고금액',
+    component: () => import('../views/web/c0007000/C0007017.vue'),
+    meta: {
+      upperSysResourceId: 'C0007000',
+      sysResourceId: 'C0007017',
+      requiresAuth: true,
+    },
+  },
 ];
 
 export default c0007000Router;
