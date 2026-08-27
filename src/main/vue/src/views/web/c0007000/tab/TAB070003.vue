@@ -244,18 +244,19 @@ export default {
       const y = Number(yyyymm.slice(0, 4));
       const m = Number(yyyymm.slice(4, 6));
       const lastDay = String(new Date(y, m, 0).getDate()).padStart(2, '0');
-      // 정의서_HQ 거래명세서 요청 DataBlock: BizUnit·InvoiceDateFr/To 필수 + 전체필드
+      // 정의서_HQ 거래명세서 요청 JSON 샘플 그대로(33필드): BizUnit=1, WorkingTag ''/IDX_NO 0, 문자플래그 '0'
       this.callIface({
         key: 'SALES_HQ',
         selCode: 'ACTUAL',
         yyyymm: yyyymm,
         params: {
-          InvoiceNo: '', BizUnit: 0, SMExpKind: 0, UMOutKind: 0, DeptSeq: 0, EmpSeq: 0, CustSeq: 0,
+          WorkingTag: '', IDX_NO: 0, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: '', UserName: '',
+          InvoiceNo: '', BizUnit: 1, SMExpKind: 0, UMOutKind: 0, DeptSeq: 0, EmpSeq: 0, CustSeq: 0,
           SMSalesCrtKind: 0, BillCustSeq: 0, SMProgressType: 0,
           InvoiceDateFr: `${yyyymm}01`, InvoiceDateTo: `${yyyymm}${lastDay}`,
           ItemName: '', ItemNo: '', Spec: '', LotNo: '', WHSeq: 0, AssetSeq: 0,
-          SourceRefNo: '', SourceNo: '', SourceTableSeq: 0, DVPlaceSeq: 0, SMDelvStatus: 0,
-          IsEtcOut: '', UMChannel: 0, IsExceptIsSale: '', site,
+          SourceRefNo: '', SourceNo: '', SourceTableSeq: 0, DVPlaceSeq: 0, SMDelvStatus: '',
+          IsEtcOut: '0', UMChannel: 0, IsExceptIsSale: '0', site,
         },
         successLabel: '거래명세서(국내매출)',
         onSuccess: () => this.getDataList(),

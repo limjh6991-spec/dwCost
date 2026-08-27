@@ -186,15 +186,17 @@ export default {
       const lastDay = String(new Date(y, m, 0).getDate()).padStart(2, '0');
       const site = this.siteMap[this.params.site];
       if (site === 'HQ') {
-        // 본사 제품정보(창고별수불집계 WH_STOCK_SUM_HQ): BizUnit·DateFr/To 필수 + 전체필드
+        // 정의서_HQ 제품정보 요청 JSON 샘플 그대로(27필드): BizUnit=1, SMQryType='S', AssetSeq=2(제품),
+        // SMUnitType=8103001, SMWHType=8104001 — 코드값 불일치 시 빈 결과
         this.callIface({
           key: 'WH_STOCK_SUM_HQ',
           selCode: 'ACTUAL',
           yyyymm: yyyymm,
           params: {
-            BizUnit: 0, DateFr: `${yyyymm}01`, DateTo: `${yyyymm}${lastDay}`, SMQryType: 0, WHSeq: 0, SMWHKind: 0,
-            AssetSeq: 0, SMStatus: 0, ItemClassSSeq: 0, ItemName: '', ItemNo: '', Spec: '', SMUnitType: 0,
-            ConvUnitSeq: 0, SMWHType: 0, IsZeroQty: '', ItemClassLSeq: 0, ItemClassMSeq: 0, EmpSeq: 0, UMCostWHGroup: 0, site,
+            WorkingTag: '', IDX_NO: 0, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: '', UserName: '',
+            BizUnit: 1, DateFr: `${yyyymm}01`, DateTo: `${yyyymm}${lastDay}`, SMQryType: 'S', WHSeq: 0, SMWHKind: 0,
+            AssetSeq: 2, SMStatus: 0, ItemClassSSeq: 0, ItemName: '', ItemNo: '', Spec: '', SMUnitType: 8103001,
+            ConvUnitSeq: 0, SMWHType: 8104001, IsZeroQty: '0', ItemClassLSeq: 0, ItemClassMSeq: 0, EmpSeq: 0, UMCostWHGroup: 0, site,
           },
           successLabel: '제품정보(창고별수불)',
           onSuccess: () => this.getDataList(),

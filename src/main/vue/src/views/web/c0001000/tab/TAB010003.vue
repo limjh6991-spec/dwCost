@@ -195,17 +195,20 @@ export default {
         const y = Number(yyyymm.slice(0, 4));
         const m = Number(yyyymm.slice(4, 6));
         const lastDay = yyyymm.length === 6 ? String(new Date(y, m, 0).getDate()).padStart(2, '0') : '31';
-        // 정의서_HQ 소요자재 요청 DataBlock: 내부코드 다수 필수→0, 등록일=결산월 범위, 최종차수 Y
+        // 정의서_HQ 소요자재 요청 JSON 샘플 그대로(41필드): BizUnit=1·BizUnitName='본사', IsLastRev='0',
+        // ProcRev 문자, 등록일=결산월 범위(정의서 표: 결산기간 1일~말일)
         this.callIface({
           key: 'MATERIAL_HQ',
           selCode: 'ACTUAL',
           yyyymm: yyyymm,
           params: {
-            ItemName: '', ItemNo: '', Spec: '', ItemSeq: 0, ProcRev: 0, ProcName: '', ProcSeq: 0,
+            WorkingTag: '', IDX_NO: 0, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: '', UserName: '',
+            ItemName: '', ItemNo: '', Spec: '', ItemSeq: 0, ProcRevName: '', ProcRev: '', ProcName: '', ProcSeq: 0,
             AssyItemName: '', AssyItemNo: '', AssySpec: '', MatItemName: '', MatItemNo: '', MatSpec: '',
-            SMDelvType: 0, AssetSeq: 0, BizUnit: 0, BizUnitName: '', UptEmpSeq: 0, IsLastRev: 'Y', SMStatus: 0,
+            SMDelvTypeName: '', SMDelvType: 0, AssetSeq: 0, BizUnit: 1, BizUnitName: '본사',
+            UptDate: '', UptDateTo: '', UptEmpSeq: 0, IsLastRev: '0', SMStatus: 0, SMStatusName: '',
             RegDate: `${yyyymm}01`, RegDateTo: `${yyyymm}${lastDay}`,
-            UMItemClassL: 0, UMItemClassM: 0, UMItemClass: 0, MatUMItemClassL: 0, MatUMItemClass: 0, MatAssetSeq: 0,
+            UMItemClassL: 0, UMItemClassM: 0, UMItemClass: 0, MatUMItemClassL: 0, MatUMItemClassM: 0, MatUMItemClass: 0, MatAssetSeq: 0,
             site,
           },
           successLabel: '자재코드(소요자재)',

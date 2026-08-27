@@ -244,16 +244,17 @@ export default {
       const dto = `${yyyymm}${String(lastDay).padStart(2, '0')}`;
       const site = this.siteMap[this.params.site];
       if (site === 'HQ') {
-        // 본사 수출Invoice (정의서_HQ v1.0 수출Invoice): BizUnit/InvoiceDateFr·To 필수 + 전체 DataBlock
+        // 정의서_HQ 수출Invoice 요청 JSON 샘플 그대로(32필드): BizUnit=1, WorkingTag ''/IDX_NO 0, 문자플래그 '0'
         this.callIface({
           key: 'EXP_INVOICE_HQ',
           selCode: 'ACTUAL',
           yyyymm: yyyymm,
           params: {
-            InvoiceNo: '', BizUnit: 0, SMExpKind: 0, UMOutKind: 0, DeptSeq: 0, EmpSeq: 0, CustSeq: 0, SMProgressType: 0,
+            WorkingTag: '', IDX_NO: 0, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: '', UserName: '',
+            InvoiceNo: '', BizUnit: 1, SMExpKind: 0, UMOutKind: 0, DeptSeq: 0, EmpSeq: 0, CustSeq: 0, SMProgressType: 0,
             InvoiceDateFr: dfr, InvoiceDateTo: dto,
             ItemName: '', ItemNo: '', Spec: '', LotNo: '', WHSeq: 0, AssetSeq: 0, SourceRefNo: '', SourceNo: '',
-            UMPriceTerms: 0, InvoiceRefNo: '', PONo: '', SourceTableSeq: 0, SMDelvStatus: 0, IsEtcOut: '', SMSalesProgType: 0,
+            UMPriceTerms: 0, InvoiceRefNo: '', PONo: '', SourceTableSeq: 0, SMDelvStatus: '', IsEtcOut: '0', SMSalesProgType: 0,
             site,
           },
           successLabel: '수출Invoice',
