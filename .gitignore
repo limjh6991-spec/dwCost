@@ -47,3 +47,4 @@ src/원가SQL/*.backup
 
 ### Lock 파일 ###
 .~lock.*
+.mcp.json

@@ -119,9 +119,29 @@ export default {
     apiCallClick() {
       if (!this.params.yyyymm) { this.$toast && this.$toast('error', '년월 선택해주세요.'); return; }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
-      // ERP DataBlock (정의서_자재투입 v1.0 재고금액상세 JSON 샘플 전체): 누락 필드 있으면 0건. IsDetailQry='1' 상세조회 플래그 포함.
+      // ERP DataBlock: 누락 필드 있으면 동적쿼리가 전 행 필터 → 0건. 정의서 JSON 샘플 전체 전송.
+      const site = this.siteMap[this.params.site];
+      if (site === 'HQ') {
+        // 본사 자재투입(재고금액상세) — 정의서_HQ v1.0 샘플: VN과 달리 가격필드 16종 포함, WorkingTag ''/IDX_NO 0
+        this.callIface({
+          key: 'STOCK_DETAIL_HQ', selCode: 'ACTUAL', yyyymm: yyyymm,
+          params: {
+            WorkingTag: '', IDX_NO: 0, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: '', UserName: '',
+            SMCostMng: 5512001, CostMngAmdSeq: 0, RptUnit: 0, PlanYear: '', CostYMFr: yyyymm, CostYMTo: yyyymm,
+            PriceUnit: 0, ItemKind: '', ItemName: '', ItemNo: '', ItemSeq: 0, AssetSeq: 0,
+            AppPriceKind: 5533001, ItemClassKind: 0, ItemClassSeq: 0, IsAssetType: '0', IsDetailQry: '1',
+            AssetGroupSeq: 0, ItemEtcClassKind: 0, ItemEtcClassSeq: 0, IsAssetAcc: '0', IsDiff: '0', AccUnit: 0,
+            PrePrice: 0, ProdPrice: 0, BuyPrice: 0, MvinPrice: 0, EtcInPrice: 0, ExchangeInPrice: 0,
+            SalesPrice: 0, InputPrice: 0, MvOutPrice: 0, EtcOutPrice: 0, ExchangeOutPrice: 0,
+            InPrice: 0, OutPrice: 0, StockPrice: 0, StockPrice2: 0, PJTOutPrice: 0,
+            site,
+          },
+          successLabel: '재고금액상세', onSuccess: () => this.getDataList(),
+        });
+        return;
+      }
       this.callIface({
-        key: this.ifaceKey('STOCK_DETAIL'), selCode: 'ACTUAL', yyyymm: yyyymm,   // 본사→STOCK_DETAIL_HQ
+        key: 'STOCK_DETAIL', selCode: 'ACTUAL', yyyymm: yyyymm,
         params: {
           WorkingTag: 'A', IDX_NO: 1, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: 'DataBlock1', UserName: '',
           WHType: 0, WHName: '', BizUnit: 0, Result: '', ROW_IDX: '', IsChangedMst: '0',
