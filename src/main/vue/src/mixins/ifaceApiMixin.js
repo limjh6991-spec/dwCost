@@ -53,6 +53,19 @@ export default {
      * @param {Function}[opt.onSuccess]   성공 콜백 (보통 그리드 새로고침)
      */
     async callIface({ key, yyyymm, selCode, params, successLabel, onSuccess }) {
+      // 확인 팝업: 실수 방지. 적재는 해당 월 운영데이터를 갱신(덮어쓰기)하므로 한 번 더 확인.
+      const proceed = await new Promise((resolve) => {
+        try {
+          this.$confirm(
+            '확인',
+            `${successLabel || key} API를 호출하시겠습니까? (해당 월 데이터가 갱신됩니다)`,
+            (ok) => resolve(ok === true)
+          );
+        } catch (e) {
+          resolve(window.confirm(`${successLabel || key} API를 호출하시겠습니까?`));
+        }
+      });
+      if (!proceed) return null;
       try {
         const res = await this.$axios.api.iface({ key, yyyymm, selCode, params });
         // 진단용(F12 콘솔): 보낸 조회조건 + ERP/MES 실응답(res.debug)
