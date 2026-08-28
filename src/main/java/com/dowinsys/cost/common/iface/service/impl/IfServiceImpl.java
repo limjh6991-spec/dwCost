@@ -67,8 +67,7 @@ public class IfServiceImpl implements IfService {
         String ymNorm = (yyyymm == null) ? null : yyyymm.replace("-", "");
         if (ymNorm != null && !ymNorm.isBlank() && closingSvc.isClosedMonth(ymNorm, ep.site())) {
             throw new IfFetchException(
-                    "마감된 월입니다 (" + ymNorm + " / " + ep.site()
-                    + "). 마감을 해제한 후 다시 적재하세요. (결산 데이터 보호를 위해 API 적재가 차단됩니다)", null);
+                    "마감된 월입니다 (" + ymNorm + " / " + ep.site() + ").", null);
         }
 
         // 진단용: 실제 전송할 요청(인증정보 마스킹). 서버 로그 미가용 대비 → 실패해도 F12 res.debug 로 확인.

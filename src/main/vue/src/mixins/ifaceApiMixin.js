@@ -58,7 +58,7 @@ export default {
         try {
           this.$confirm(
             '확인',
-            `${successLabel || key} API를 호출하시겠습니까? (해당 월 데이터가 갱신됩니다)`,
+            `${successLabel || key} API를 호출하시겠습니까?`,
             (ok) => resolve(ok === true)
           );
         } catch (e) {
