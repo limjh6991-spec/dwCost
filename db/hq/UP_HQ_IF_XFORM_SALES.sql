@@ -30,14 +30,14 @@ BEGIN
          s.BizUnitName, s.InvoiceNo, s.InvoiceDate, s.SMExpKindName, s.UMOutKindName,
          s.DeptName, s.EmpName, s.BillCustName, s.CustName, s.CustNo, s.BKCustName, s.DVPlaceName, s.DVCondition,
          s.ItemName, s.ItemNo, s.Spec, s.UnitName,
-         TRY_CONVERT(numeric(18,2), s.Price), TRY_CONVERT(int, s.Qty), s.IsInclusedVAT, s.CurrName,
+         TRY_CONVERT(numeric(18,2), s.Price), TRY_CONVERT(int, TRY_CONVERT(numeric(38,6), s.Qty)), s.IsInclusedVAT, s.CurrName,   -- 수량: numeric 경유(직접 int 변환은 소수문자열→NULL)
          TRY_CONVERT(numeric(18,2), s.ExRate),
          TRY_CONVERT(numeric(18,2), s.CustPrice), TRY_CONVERT(numeric(18,2), s.CurAmt),
          TRY_CONVERT(numeric(18,2), s.CurVAT), TRY_CONVERT(numeric(18,2), s.TotCurAmt),
          TRY_CONVERT(numeric(18,2), s.DomAmt), TRY_CONVERT(numeric(18,2), s.DomVAT),
          TRY_CONVERT(numeric(18,2), s.TotDomAmt),
          s.WHName, s.Location, s.LotNo, s.SMProgressTypeName, s.SMTransStatusName,
-         TRY_CONVERT(int, s.SalesQty), s.IsReturn, s.UMEtcOutKindName, s.AssetName, s.PONo,
+         TRY_CONVERT(int, TRY_CONVERT(numeric(38,6), s.SalesQty)), s.IsReturn, s.UMEtcOutKindName, s.AssetName, s.PONo,   -- 매출수량: numeric 경유
          ROW_NUMBER() OVER (ORDER BY s.InvoiceNo, s.ItemNo, s.InvoiceDate)   -- SEQ_NO (PK, 행 고유번호)
       FROM DOI_HQ_IF_SALES s
      WHERE s.SITE=@site AND ISNULL(s.SEL_CODE,N'')=ISNULL(@selCode,N'')

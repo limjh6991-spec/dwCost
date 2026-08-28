@@ -19,16 +19,17 @@ BEGIN
      WHERE site=@site AND yyyymm=@yyyymm AND sel_code=@selCode;
 
     INSERT INTO DOI_INVOICE_RESC
-        (yyyymm, sel_code, site, 사업단위, Invoice_No, Invoice_Date, 수출구분, 출고구분, 가격조건,
+        (yyyymm, sel_code, site, 사업단위, Invoice_No, Invoice관리번호, Invoice_Date, 수출구분, 출고구분, 가격조건,
          부서, 담당자, Buyer, Agent, 통화, 환율, 품명, 품번, 규격, 단위,
          판매기준가, 판매단가, 수량, 판매금액, 원화판매금액, 창고, 진행상태, Remarks, 특이사항)
     SELECT
          @yyyymm, @selCode, @site,
-         s.BizUnitName, s.InvoiceNo, s.InvoiceDate, s.SMExpKindName, s.UMOutKindName, s.UMPriceTermName,
+         s.BizUnitName, s.InvoiceNo, s.InvoiceRefNo, s.InvoiceDate, s.SMExpKindName, s.UMOutKindName, s.UMPriceTermName,
          s.DeptName, s.EmpName, s.CustName, s.BKCustName, s.CurrName,
          TRY_CONVERT(numeric(18,2), s.ExRate), s.ItemName, s.ItemNo, s.Spec, s.UnitName,
          TRY_CONVERT(numeric(18,0), s.ItemPrice), TRY_CONVERT(numeric(18,2), s.CustPrice),
-         TRY_CONVERT(bigint, s.Qty), TRY_CONVERT(numeric(15,2), s.CurAmt), TRY_CONVERT(numeric(15,2), s.DomAmt),
+         TRY_CONVERT(bigint, TRY_CONVERT(numeric(38,6), s.Qty)),   -- 수량: 소수문자열→numeric→bigint (직접 bigint 변환은 NULL)
+         TRY_CONVERT(numeric(15,2), s.CurAmt), TRY_CONVERT(numeric(15,2), s.DomAmt),
          s.WHName, s.SMProgressTypeName, s.Remark, s.RemarkM
       FROM DOI_HQ_IF_EXP_INVOICE s
      WHERE s.SITE=@site AND ISNULL(s.SEL_CODE,N'')=ISNULL(@selCode,N'')
