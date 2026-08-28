@@ -13,6 +13,7 @@ import com.dowinsys.cost.common.iface.mapper.IfLoadMapper;
 import com.dowinsys.cost.common.iface.service.IfService;
 import com.dowinsys.cost.common.iface.vo.IfFetchRequest;
 import com.dowinsys.cost.common.iface.vo.IfFetchResult;
+import com.dowinsys.cost.common.closingmonth.service.CommonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -35,13 +36,16 @@ public class IfServiceImpl implements IfService {
     private final MesApiClient mes;
     private final IfLoadMapper loadMapper;
     private final IfProperties props;
+    private final CommonService closingSvc;    // 마감월 가드
     private final ObjectMapper om = new ObjectMapper();
 
-    public IfServiceImpl(ErpApiClient erp, MesApiClient mes, IfLoadMapper loadMapper, IfProperties props) {
+    public IfServiceImpl(ErpApiClient erp, MesApiClient mes, IfLoadMapper loadMapper, IfProperties props,
+                         CommonService closingSvc) {
         this.erp = erp;
         this.mes = mes;
         this.loadMapper = loadMapper;
         this.props = props;
+        this.closingSvc = closingSvc;
     }
 
     @Override
@@ -56,6 +60,16 @@ public class IfServiceImpl implements IfService {
         // VN 인터페이스 적재/운영 반영은 결산코드 'ACTUAL' 고정. (구버전 핸들러 폴백: selCode 자리에 년월)
         String yyyymm  = req.getYyyymm() != null ? req.getYyyymm() : req.getSelCode();
         String selCode = "ACTUAL";           // 적재(스테이징)·운영 공통 결산코드 고정
+
+        // ★마감월 가드: 마감된 (yyyymm, site)는 적재/변환이 운영테이블(doi_*)을 덮어써 결산 데이터를
+        //   훼손할 수 있으므로 소스 호출 전에 차단. (결산 프로시저와 달리 적재 인터페이스엔 가드가 없었음)
+        //   site = ep.site()(HQ/VN). yyyymm 없으면(마스터 등 예외) 검사 불가 → 통과.
+        String ymNorm = (yyyymm == null) ? null : yyyymm.replace("-", "");
+        if (ymNorm != null && !ymNorm.isBlank() && closingSvc.isClosedMonth(ymNorm, ep.site())) {
+            throw new IfFetchException(
+                    "마감된 월입니다 (" + ymNorm + " / " + ep.site()
+                    + "). 마감을 해제한 후 다시 적재하세요. (결산 데이터 보호를 위해 API 적재가 차단됩니다)", null);
+        }
 
         // 진단용: 실제 전송할 요청(인증정보 마스킹). 서버 로그 미가용 대비 → 실패해도 F12 res.debug 로 확인.
         String maskedReq = (ep.source() == IfSource.ERP) ? safeMaskedReq(ep, req.getParams()) : null;
