@@ -218,19 +218,40 @@ export default {
       }
       this.getDataList();
     },
-    // 품목별투입(ITEM_INPUT) API 호출 → 적재 → 그리드 새로고침
+    // 자재투입(재고금액상세) API 호출 → DOI_MATL_RESC 적재 → 그리드 새로고침
     apiCallClick() {
       if (!this.params.yyyymm) {
         this.$toast && this.$toast('error', '년월 선택해주세요.');
         return;
       }
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
-      // TODO(ERP 접근/cert 후 확정): DataBlock 필드 정확한 매핑.
+      const site = this.siteMap[this.params.site];
+      if (site === 'HQ') {
+        // 본사 자재투입(재고금액상세) → STOCK_DETAIL_HQ → DOI_MATL_RESC.
+        // ERP DataBlock은 누락 필드 있으면 동적쿼리가 전행 필터→0건 이므로 정의서_HQ '자재투입' JSON 샘플 전체(가격필드 16종 포함) 전송.
+        this.callIface({
+          key: 'STOCK_DETAIL_HQ', selCode: 'ACTUAL', yyyymm: yyyymm,
+          params: {
+            WorkingTag: '', IDX_NO: 0, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: '', UserName: '',
+            SMCostMng: 5512001, CostMngAmdSeq: 0, RptUnit: 0, PlanYear: '', CostYMFr: yyyymm, CostYMTo: yyyymm,
+            PriceUnit: 0, ItemKind: '', ItemName: '', ItemNo: '', ItemSeq: 0, AssetSeq: 0,
+            AppPriceKind: 5533001, ItemClassKind: 0, ItemClassSeq: 0, IsAssetType: '0', IsDetailQry: '1',
+            AssetGroupSeq: 0, ItemEtcClassKind: 0, ItemEtcClassSeq: 0, IsAssetAcc: '0', IsDiff: '0', AccUnit: 0,
+            PrePrice: 0, ProdPrice: 0, BuyPrice: 0, MvinPrice: 0, EtcInPrice: 0, ExchangeInPrice: 0,
+            SalesPrice: 0, InputPrice: 0, MvOutPrice: 0, EtcOutPrice: 0, ExchangeOutPrice: 0,
+            InPrice: 0, OutPrice: 0, StockPrice: 0, StockPrice2: 0, PJTOutPrice: 0,
+            site,
+          },
+          successLabel: '자재투입(재고금액상세)', onSuccess: () => this.getDataList(),
+        });
+        return;
+      }
+      // 비나(VN): 기존 품목별투입(ITEM_INPUT) 유지 — VN 화면 정책 확정 시 STOCK_DETAIL 전환 검토
       this.callIface({
         key: 'ITEM_INPUT',
         selCode: 'ACTUAL',
         yyyymm: yyyymm,
-        params: { yyyymm, site: this.siteMap[this.params.site] },
+        params: { yyyymm, site },
         successLabel: '품목별투입',
         onSuccess: () => this.getDataList(),
       });
