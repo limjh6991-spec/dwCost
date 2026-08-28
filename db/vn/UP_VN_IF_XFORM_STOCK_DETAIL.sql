@@ -1,5 +1,5 @@
 
-CREATE PROCEDURE UP_VN_IF_XFORM_STOCK_DETAIL
+CREATE OR ALTER PROCEDURE UP_VN_IF_XFORM_STOCK_DETAIL
     @yyyymm  VARCHAR(6), @selCode VARCHAR(10) = N'ACTUAL', @site VARCHAR(4) = N'VN'
 AS
 BEGIN
@@ -14,7 +14,7 @@ BEGIN
          최종결산월재고단가, 생산수량, 생산금액, 구매수량, 구매금액, 적송입고수량, 적송입고금액, 기타입고수량, 기타입고금액,
          판매수량, 판매원가, 투입수량, 투입금액, 적송출고수량, 적송출고금액, 기타출고수량, 기타출고금액, yyyymm, edit_user, edit_date)
     SELECT s.AssetAccName, s.AssetName, s.AssetGroupName, TRY_CONVERT(numeric(28,8), LEFT(LTRIM(s.SalesAccName), NULLIF(PATINDEX('%[^0-9]%', LTRIM(s.SalesAccName)+'x')-1,-1))),
-        s.UMItemClassLName, s.UMItmeClassMName, s.UMItemClassSName, s.UMItemEtcClassName, s.ItemName, s.ItemNo, s.Spec, s.UnitName,
+        s.UMItemClassLName, JSON_VALUE(s.RAW_JSON, N'$.UMItemClassMName'), s.UMItemClassSName, s.UMItemEtcClassName, s.ItemName, s.ItemNo, s.Spec, s.UnitName,
         CAST(s.PreQty AS numeric(28,8)), CAST(s.PreAmt AS numeric(28,8)), CAST(s.InQty AS numeric(28,8)), CAST(s.InAmt AS numeric(28,8)),
         CAST(s.OutQty AS numeric(28,8)), CAST(s.OutAmt AS numeric(28,8)), CAST(s.StockQty AS numeric(28,8)), CAST(s.StockQty2 AS numeric(28,8)),
         CAST(s.DiffQty AS numeric(28,8)), CAST(s.StockAmt AS numeric(28,8)), CAST(s.StockAmt2 AS numeric(28,8)), CAST(s.DiffAmt AS numeric(28,8)),
@@ -31,7 +31,7 @@ BEGIN
     INSERT INTO DOI_MATL_RESC
         ([YYYYMM],[SEL_CODE],[SITE],[자산처리계정],[품목자산분류],[재고자산종류],[매출원가계정],[대분류],[중분류],[소분류],[품목기타분류],[품명],[품번],[규격],[단위],[기초수량],[기초금액],[입고수량],[입고금액],[출고수량],[출고금액],[재고수량],[결산후재고수량],[차이수량],[재고금액],[결산후재고금액],[차이금액],[최종결산월재고단가],[생산수량],[생산금액],[구매수량],[구매금액],[적송입고수량],[적송입고금액],[기타입고수량],[기타입고금액],[판매수량],[판매원가],[투입수량],[투입금액],[적송출고수량],[적송출고금액],[기타출고수량],[기타출고금액])
     SELECT @yyyymm,@selCode,@site, s.AssetAccName, s.AssetName, s.AssetGroupName, s.SalesAccName,
-        s.UMItemClassLName, s.UMItmeClassMName, s.UMItemClassSName, s.UMItemEtcClassName, s.ItemName, s.ItemNo, s.Spec, s.UnitName,
+        s.UMItemClassLName, JSON_VALUE(s.RAW_JSON, N'$.UMItemClassMName'), s.UMItemClassSName, s.UMItemEtcClassName, s.ItemName, s.ItemNo, s.Spec, s.UnitName,
         CAST(s.PreQty AS real), CAST(s.PreAmt AS numeric(15,2)), CAST(s.InQty AS real), CAST(s.InAmt AS numeric(15,2)),
         CAST(s.OutQty AS real), CAST(s.OutAmt AS numeric(15,2)), CAST(s.StockQty AS real), CAST(s.StockQty2 AS real), CAST(s.DiffQty AS real),
         CAST(s.StockAmt AS numeric(15,2)), CAST(s.StockAmt2 AS numeric(15,2)), CAST(s.DiffAmt AS numeric(15,2)), CAST(s.StkPrice AS real),

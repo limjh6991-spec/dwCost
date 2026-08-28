@@ -28,19 +28,37 @@ BEGIN
           WHERE YYYYMM = @yyyymm AND SEL_CODE = @selCode AND SITE = @site);
 
     ;WITH newdept AS (
-        SELECT LTRIM(RTRIM(e.DeptName)) AS nm
-          FROM (SELECT DISTINCT DeptName FROM DOI_VN_IF_DEPT WHERE SITE = @site) e
+        SELECT LTRIM(RTRIM(e.DeptName)) AS nm,
+               MAX(e.Remark)      AS remark,     -- ERP원천 → 비고
+               MAX(e.EngDeptName) AS engnm       -- ERP원천 → 영문부서명
+          FROM (SELECT DeptName, Remark, EngDeptName FROM DOI_VN_IF_DEPT WHERE SITE = @site) e
          WHERE LTRIM(RTRIM(e.DeptName)) <> ''
            AND NOT EXISTS (
                    SELECT 1 FROM doi_dept o
                     WHERE o.YYYYMM = @yyyymm AND o.SEL_CODE = @selCode AND o.SITE = @site
                       AND LTRIM(RTRIM(o.DEPT_NAME)) = LTRIM(RTRIM(e.DeptName)))
+         GROUP BY LTRIM(RTRIM(e.DeptName))
     )
-    INSERT INTO doi_dept (YYYYMM, SEL_CODE, SITE, DEPT, DEPT_NAME)
+    INSERT INTO doi_dept (YYYYMM, SEL_CODE, SITE, DEPT, DEPT_NAME, 비고, 영문부서명)
     SELECT @yyyymm, @selCode, @site,
            CAST(@maxDept + ROW_NUMBER() OVER (ORDER BY nm) AS VARCHAR(10)),
-           nm
+           nm,
+           NULLIF(LTRIM(RTRIM(remark)), ''),
+           NULLIF(LTRIM(RTRIM(engnm)),  '')
       FROM newdept;
+    DECLARE @ins INT = @@ROWCOUNT;   -- 신규 추가 건수
 
-    SELECT @@ROWCOUNT;   -- 신규 추가 건수
+    -- ERP원천 명칭 컬럼 backfill: 기존 행에 비고/영문부서명이 비어있을 때만 채움
+    -- (배부 컬럼 EXPEN_AREA/RND_YN/COST_DIST/COST_DIST_RATE, 사용자 수기 편집분 보존)
+    UPDATE o
+       SET o.비고      = COALESCE(NULLIF(LTRIM(RTRIM(o.비고)), ''),      NULLIF(LTRIM(RTRIM(s.Remark)), '')),
+           o.영문부서명 = COALESCE(NULLIF(LTRIM(RTRIM(o.영문부서명)), ''), NULLIF(LTRIM(RTRIM(s.EngDeptName)), ''))
+      FROM doi_dept o
+      JOIN DOI_VN_IF_DEPT s
+        ON s.SITE = @site AND LTRIM(RTRIM(s.DeptName)) = LTRIM(RTRIM(o.DEPT_NAME))
+     WHERE o.YYYYMM = @yyyymm AND o.SEL_CODE = @selCode AND o.SITE = @site
+       AND (NULLIF(LTRIM(RTRIM(o.비고)), '') IS NULL
+         OR NULLIF(LTRIM(RTRIM(o.영문부서명)), '') IS NULL);
+
+    SELECT @ins;   -- 신규 추가 건수
 END
