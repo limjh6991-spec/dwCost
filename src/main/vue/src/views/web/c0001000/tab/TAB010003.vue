@@ -195,8 +195,9 @@ export default {
         const y = Number(yyyymm.slice(0, 4));
         const m = Number(yyyymm.slice(4, 6));
         const lastDay = yyyymm.length === 6 ? String(new Date(y, m, 0).getDate()).padStart(2, '0') : '31';
-        // 정의서_HQ 소요자재 요청 JSON 샘플 그대로(41필드): BizUnit=1·BizUnitName='본사', IsLastRev='0',
-        // ProcRev 문자, 등록일=결산월 범위(정의서 표: 결산기간 1일~말일)
+        // 정의서_HQ 소요자재 요청 JSON 샘플(41필드): BizUnit=1·BizUnitName='본사', IsLastRev='0', ProcRev 문자
+        // ※등록일(RegDate) 하한을 열어 '이전부터 현재월까지 누적' 조회(RegDateTo=현재월 말일).
+        //   당월범위(${yyyymm}01~말일)로 두면 당월 등록분만 와서 누적이 안 됨.
         this.callIface({
           key: 'MATERIAL_HQ',
           selCode: 'ACTUAL',
@@ -207,7 +208,7 @@ export default {
             AssyItemName: '', AssyItemNo: '', AssySpec: '', MatItemName: '', MatItemNo: '', MatSpec: '',
             SMDelvTypeName: '', SMDelvType: 0, AssetSeq: 0, BizUnit: 1, BizUnitName: '본사',
             UptDate: '', UptDateTo: '', UptEmpSeq: 0, IsLastRev: '0', SMStatus: 0, SMStatusName: '',
-            RegDate: `${yyyymm}01`, RegDateTo: `${yyyymm}${lastDay}`,
+            RegDate: '', RegDateTo: `${yyyymm}${lastDay}`,   // 누적: 등록일 하한 열기(이전~현재월)
             UMItemClassL: 0, UMItemClassM: 0, UMItemClass: 0, MatUMItemClassL: 0, MatUMItemClassM: 0, MatUMItemClass: 0, MatAssetSeq: 0,
             site,
           },
