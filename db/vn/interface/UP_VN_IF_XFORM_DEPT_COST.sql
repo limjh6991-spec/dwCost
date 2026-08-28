@@ -55,15 +55,21 @@ BEGIN
 
     IF @prevYm IS NOT NULL
     BEGIN
-        -- 2a) 계정과목: 전월 clean명(한국어) 계승 — 계정코드 1:1
-        UPDATE d SET d.계정과목 = p.계정과목
+        -- 2a) 계정과목: clean명(한국어) 계승 — 계정코드 기준, ★다중월 룩백.
+        --     직전월 1개월만 보면 그 달에 결번인 계정(예: 퇴직급여)이 원천 잔존하므로,
+        --     계정별로 '가장 최근 과거월의 clean명'(코드접두형 제외)을 계승.
+        UPDATE d
+           SET d.계정과목 = p.계정과목
           FROM DOI_DEPT_COST d
-          JOIN (SELECT 계정코드, MAX(계정과목) AS 계정과목
-                  FROM DOI_DEPT_COST
-                 WHERE site=@site AND sel_code=@selCode AND yyyymm=@prevYm
-                   AND ISNULL(계정과목,N'')<>N''
-                 GROUP BY 계정코드) p
-            ON RTRIM(p.계정코드) = RTRIM(d.계정코드)
+          CROSS APPLY (
+              SELECT TOP 1 x.계정과목
+                FROM DOI_DEPT_COST x
+               WHERE x.site=@site AND x.sel_code=@selCode AND x.yyyymm < @yyyymm
+                 AND RTRIM(x.계정코드) = RTRIM(d.계정코드)
+                 AND ISNULL(x.계정과목,N'') <> N''
+                 AND x.계정과목 NOT LIKE x.계정코드 + ' - %'   -- 코드접두형 제외(clean만)
+               ORDER BY x.yyyymm DESC
+          ) p
          WHERE d.site=@site AND d.sel_code=@selCode AND d.yyyymm=@yyyymm;
 
         -- 2b) 코스트센터분류/유형: 전월 계승 — 코스트센터 1:1(혼재 0 확인)
