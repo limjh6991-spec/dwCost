@@ -20,20 +20,18 @@
  * 주의: ERP DataBlock / MES(factory·workDate·matId) 정확한 파라미터 매핑은
  *       해당 시스템 접근(및 ERP cert) 확보 후 화면별 params 구성에서 확정한다.
  */
-import { useUserAuthInfo } from '@store/auth/userAuthInfo';
-
 export default {
   computed: {
     /**
      * [API 호출] 버튼 노출 조건.
-     * - SUPERADMIN 계정(= roleList에 'SUPERADMIN' 역할)에게만 노출
-     * - VN 사업장에서만 노출 (인터페이스는 VN 전용)
+     * - VN(비나)·HQ(본사) 사업장 화면에서 노출.
+     * - 화면 접근 자체가 메뉴 권한으로 통제되므로, 화면을 볼 수 있는 사용자면 API호출 가능.
+     *   (2026-08-28: SUPERADMIN 전용 제한 제거 — 실사용자에게도 버튼이 보이도록)
      */
     showIfApiButton() {
       try {
-        const isSuperAdmin = (useUserAuthInfo()?.roleList || []).includes('SUPERADMIN');
         const s = this.siteMap && this.siteMap[this.params.site];
-        return isSuperAdmin && (s === 'VN' || s === 'HQ');   // VN(비나)·HQ(본사) 공통 노출
+        return (s === 'VN' || s === 'HQ');   // VN(비나)·HQ(본사) 공통 노출
       } catch (e) {
         return false;
       }
