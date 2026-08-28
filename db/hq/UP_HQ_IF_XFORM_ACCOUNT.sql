@@ -10,7 +10,11 @@
  *       관리항목유형(UMRemTypeName=예금/어음/부가세 유형, RAW_JSON)
  *       ⚠️관리항목유형은 ERP값이 있을 때만 갱신(COALESCE) — ERP 606/625 공란이며,
  *         운영엔 도우 큐레이션 원가분류가 들어있을 수 있어 공란으로 덮지 않음.
- *     - 도우 분류(절대 미접촉): ACCT_CLASS/expen_sel/대·중·소분류/경영계획과목 등
+ *     - 도우 분류: ACCT_CLASS/expen_sel/expen_sel명/대·중·소분류/경영계획과목/특이사항 은
+ *       ERP 원천이 아니라 도우 자체분류(계정관리 C0001004에서 관리).
+ *       ★3)단계에서 '직전월 이월(backfill)'로 자동 채움 — 단 이미 값이 있는 계정은
+ *         미접촉(수기편집 보존). 전월에 없던 신규계정은 공란 → 화면 수기.
+ *       (dev는 전월 HQ월이 없으므로 운영 최신월 큐레이션을 1회 시드해야 이월 동작)
  *     - 운영에 없는 신규 계정 추가(분류=빈값 → 화면·이월로 보완), DELETE 없음
  *   ※VN판(UP_VN_IF_XFORM_ACCOUNT)은 상위계정과목이 도우 큐레이션 매핑(판)지급수수료
  *     병합 등, 리포트 item)이므로 이 확장을 적용하지 않는다(2026-08-26).
@@ -87,5 +91,36 @@ BEGIN
                WHERE a.YYYYMM = @yyyymm AND a.SEL_CODE = @selCode AND a.SITE = @site
                  AND RTRIM(a.ACCT) = e.acct);
 
-    SELECT @@ROWCOUNT;   -- 신규 추가 건수
+    DECLARE @added int = @@ROWCOUNT;   -- 신규 추가 건수(반환용)
+
+    -- 3) 도우 큐레이션 이월(backfill): 직전월(같은 SITE/SEL_CODE) doi_acct 에서
+    --    큐레이션이 아직 공란인 계정에만 복사. 수기 편집분은 미접촉(expen_sel 있으면 스킵).
+    --    ※ERP 원천 컬럼은 위 1)·2)에서 이미 최신화. 여기서는 도우 자체분류만 이월.
+    DECLARE @prevYm VARCHAR(20);
+    SELECT @prevYm = MAX(YYYYMM)
+      FROM doi_acct
+     WHERE SITE = @site AND SEL_CODE = @selCode AND YYYYMM < @yyyymm
+       AND ISNULL(expen_sel, N'') <> N'';   -- 큐레이션이 존재하는 가장 최근 과거월
+
+    IF @prevYm IS NOT NULL
+    BEGIN
+        UPDATE a
+           SET a.ACCT_CLASS   = p.ACCT_CLASS,
+               a.expen_sel    = p.expen_sel,
+               a.expen_sel명  = p.expen_sel명,
+               a.경영계획과목 = p.경영계획과목,
+               a.대분류       = p.대분류,
+               a.중분류       = p.중분류,
+               a.소분류       = p.소분류,
+               a.특이사항     = p.특이사항
+          FROM doi_acct a
+          JOIN doi_acct p
+            ON p.SITE = @site AND p.SEL_CODE = @selCode AND p.YYYYMM = @prevYm
+           AND RTRIM(p.ACCT) = RTRIM(a.ACCT)
+         WHERE a.SITE = @site AND a.SEL_CODE = @selCode AND a.YYYYMM = @yyyymm
+           AND ISNULL(a.expen_sel, N'') = N''    -- 아직 미큐레이션 계정만(수기분 보존)
+           AND ISNULL(p.expen_sel, N'') <> N'';  -- 원천에 세목이 있는 경우만
+    END
+
+    SELECT @added;   -- 신규 추가 건수
 END
