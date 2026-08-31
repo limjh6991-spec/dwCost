@@ -154,9 +154,9 @@ export default {
       };
     });
   },
-  activated() {
-    this.reInitScreen();
-  },
+  // keep-alive 전역 적용(App.vue) — 화면 재진입 시 이전 조회조건/결과를 유지한다.
+  //  (과거 activated()에서 reInitScreen()으로 매번 초기화했으나, 사용자가 화면 전환 후
+  //   돌아왔을 때 선택·조회 내용이 그대로 남도록 재진입 리셋을 제거함. 2026-08-31)
   methods: {
     initializeGrid() {
       this.modelGrid = _.cloneDeep(gridField);
@@ -184,20 +184,6 @@ export default {
         this.isClosedMonth = false;
       }
     },
-    reInitScreen() {
-      this.params.yyyymm = this.srchInfo.yyyymm;
-      this.params.site = this.srchInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
-
-      this.viewGridRows = [];
-      this.deletedRows = [];
-      this.hasSearched = false;
-
-      if (this.viewGridDataProvider) this.viewGridDataProvider.clearRows();
-
-      this.selectedModel = '';
-      this.selectedRowIndex = null;
-    },
-
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
     },
