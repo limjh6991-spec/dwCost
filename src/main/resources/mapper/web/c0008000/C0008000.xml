@@ -197,7 +197,7 @@
         A.SEL_CODE,
         A.SITE as SITE,
         A.구분,
-        A.도우모델 as MODEL,
+        A.도우코드 as MODEL,
         A.도우코드,
         sum(A.BOH_MONTH) as BOH_MONTH,
         sum(A.IN_MONTH) as IN_MONTH,
@@ -251,8 +251,9 @@
           <choose>
           <when test="site != null and site == 'VN'">
             <!-- [VN 260801] DOI_COST 단일 소스(재료 MDAX/MIAX + 가공). DOI_MAT_COST 미참조 -->
+            <!-- [260831] 표시모델을 전체 도우코드로 (도우모델=끝자리 잘림) — GROUP BY도 도우코드 (제품별 상세 그레인) -->
             select
-            model,
+            도우코드 as model,
             case when expen_sel='MDAX' then '직접재료비' when LEFT(expen_sel,1)='M' then '간접재료비' else '가공비' end c_cost,
             avg(in_qty) in_qty,
             avg((in_qty + OUT_QTY + loss_qty)/ 2.0) as 환산수량,
@@ -266,7 +267,7 @@
             <if test="site != null and site != ''">
                 and SITE = #{site}
             </if>
-            group by model,
+            group by 도우코드,
             case when expen_sel='MDAX' then '직접재료비' when LEFT(expen_sel,1)='M' then '간접재료비' else '가공비' end
           </when>
           <otherwise>
@@ -338,7 +339,7 @@
         <!-- [VN 260801] DOI_COST 단일(재료 MDAX/MIAX + 가공). 재료행도 실제 구분/BOH/자재번호(ITEM_NAME) 표시 -->
         select
         구분,
-        MODEL,
+        도우코드 AS MODEL,
         EXPEN_SEL,
         expen_sel명 AS EXPEN_SEL명,
         IN_QTY AS in_qty,
@@ -355,7 +356,7 @@
             and SITE = #{site}
         </if>
         <if test="model != null and model != ''">
-            and MODEL = #{model}
+            and 도우코드 = #{model}
         </if>
         order by 구분,EXPEN_SEL;
       </when>
@@ -516,7 +517,7 @@
               GROUP BY 품번)
         SELECT e.구분, e.YYYYMM as yyyymm, e.SEL_CODE as sel_code,
                CASE WHEN e.SITE='HQ' THEN '본사' WHEN e.SITE='VN' THEN 'VINA' END AS SITE,
-               e.도우모델, e.항목 자재번호, mi.품명 자재명,
+               e.도우코드 as 도우모델, e.항목 자재번호, mi.품명 자재명,
                e.EXPEN_SEL expen_sel, e.expen_sel명,
                CASE WHEN e.EXPEN_SEL='MDAX' THEN N'원자재' ELSE N'부자재' END mat_class,
                CAST(e.투입금액 AS numeric(18,2)) in_amt, r.환산량, NULL 소요량,
@@ -621,7 +622,7 @@
       <choose>
       <when test="site != null and site == 'VN'">
         <!-- [VN 260801 v2] 재료 요약: doi_expn_matl(재료 MDAX직과/MIAX공통, 신배부) -->
-        select 구분, 도우모델,
+        select 구분, 도우코드 as 도우모델,
             case when EXPEN_SEL='MDAX' then 'MDAX' else 'MIDX' end as expen_sel,
             case when EXPEN_SEL='MDAX' then N'직접재료비' else N'간접재료비' end as expen_sel명,
             sum(CAST(투입금액 AS numeric(18,2))) 배부금액
@@ -629,7 +630,7 @@
         where sel_code='ACTUAL' and 원가구분=N'재료비'
         <if test="yyyymm != null and yyyymm != ''">and YYYYMM = #{yyyymm}</if>
         <if test="site != null and site != ''">and SITE = #{site}</if>
-        group by 구분, 도우모델,
+        group by 구분, 도우코드,
             case when EXPEN_SEL='MDAX' then 'MDAX' else 'MIDX' end,
             case when EXPEN_SEL='MDAX' then N'직접재료비' else N'간접재료비' end
         order by 1,2;
@@ -670,7 +671,7 @@
               <if test="yyyymm != null and yyyymm != ''">AND p.YYYYMM = #{yyyymm}</if>
               GROUP BY p.division, p.도우코드),   <!-- [VN 260801 v2] 환산량 DOI_COST→doi_vn_prod_resc(OUT+eoheq) -->
         tot AS (SELECT SUM(환산량*면적) s FROM gc)
-        select e.YYYYMM as yyyymm, e.SEL_CODE as sel_code, e.SITE as site, e.도우모델, e.항목 자재번호,
+        select e.YYYYMM as yyyymm, e.SEL_CODE as sel_code, e.SITE as site, e.도우코드 as 도우모델, e.항목 자재번호,
                CASE WHEN e.EXPEN_SEL='MDAX' THEN N'원자재' ELSE N'부자재' END mat_class,
                e.분류 자재대분류, CAST(e.투입금액 AS numeric(18,2)) in_amt, r.환산량, NULL 소요량,
                CASE WHEN e.배부방식=N'공통' THEN r.환산량*r.면적/NULLIF(t.s,0) ELSE NULL END 배부율,
@@ -683,7 +684,7 @@
         where e.원가구분=N'재료비' AND e.sel_code='ACTUAL'
         <if test="yyyymm != null and yyyymm != ''">AND e.YYYYMM = #{yyyymm}</if>
         <if test="site != null and site != ''">AND e.SITE = #{site}</if>
-        <if test="model != null and model != ''">AND e.도우모델 = #{model}</if>
+        <if test="model != null and model != ''">AND e.도우코드 = #{model}</if>
         <if test="gubun != null and gubun != ''">AND e.구분 = #{gubun}</if>
         order by 1,2,3,4,5,6;
       </when>
@@ -729,7 +730,7 @@
         SEL_CODE,
         CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end SITE,
         구분,
-        MODEL,
+        ISNULL(NULLIF(LTRIM(RTRIM(도우코드)),N''),MODEL) as MODEL,
         EXPEN_SEL,
         EXPEN_SEL명,
         ACCT_NAME,
@@ -759,7 +760,7 @@
     </if>
     GROUP BY YYYYMM,SEL_CODE,
     CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end,
-    구분,MODEL,EXPEN_SEL,EXPEN_SEL명,ACCT_NAME--,ITEM_NAME
+    구분,ISNULL(NULLIF(LTRIM(RTRIM(도우코드)),N''),MODEL),EXPEN_SEL,EXPEN_SEL명,ACCT_NAME--,ITEM_NAME
     order BY 1 desc,2 desc,3,4,5,6,7,8;
     </select>
 
