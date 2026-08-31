@@ -83,12 +83,13 @@
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { applyAmtFormatLive } from '@/utils/gridUtils';
 import currencyConvert from '@web/c0007000/js/currencyConvert.js';
+import searchStatePersist from '@/mixins/searchStatePersist.js';
 import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
 import { useC0001001 } from '@web/store/C0001001.js';
 
 export default {
   props: {},
-  mixins: [currencyConvert],
+  mixins: [currencyConvert, searchStatePersist],
   components: { ExchangeRatePopup },
   setup() {
     const srchInfo = useC0001001();
@@ -141,6 +142,7 @@ export default {
         HQ: 'HQ',
         VN: 'VN',
       },
+      stateKey: 'C0009007_TAB090007',   // 조회조건 유지(searchStatePersist)
     };
   },
   watch: {
@@ -252,6 +254,17 @@ export default {
     gv.onSorted = () => gv.refresh();
     gv.onSortingChanged = () => gv.refresh();
     gv.onDataSorted = () => gv.refresh();
+
+    // keep-alive 미보존으로 재mount된 경우: 직전 조회조건 복원 후 자동 재조회 → 초기화 방지
+    const s = this.getSearchState();
+    if (s) {
+      this.params.year = s.year;
+      this.params.month = s.month;
+      this.params.yyyymm = s.yyyymm;
+      this.params.viewMode = s.viewMode;
+      this.params.selCode = s.selCode;
+      this.$nextTick(() => this.searchClick());
+    }
   },
   beforeUnmount() {},
   methods: {
@@ -674,6 +687,11 @@ export default {
       };
     },
     async searchClick() {
+      // 조회조건 유지: 재mount(화면 복귀) 시 복원용 스냅샷 저장
+      this.saveSearchState({
+        year: this.params.year, month: this.params.month, yyyymm: this.params.yyyymm,
+        viewMode: this.params.viewMode, selCode: this.params.selCode,
+      });
       const yearRowsRaw = await this.fetchYearRowsIfNeeded();
       // VINA·비USD: 원본(USD) 행의 금액(*Amt)을 각 행 소속 월(YYYYMM) 환율로 환산 후 집계
       this.currencyFields = yearRowsRaw.length ? Object.keys(yearRowsRaw[0]).filter((k) => /Amt$/i.test(k)) : [];

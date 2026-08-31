@@ -76,13 +76,14 @@
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import currencyConvert from '@web/c0007000/js/currencyConvert.js';
+import searchStatePersist from '@/mixins/searchStatePersist.js';
 import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
 import gridField from '@web/c0009000/js/TAB090016.js';
 import _ from 'lodash';
 
 export default {
   name: 'TAB090016',
-  mixins: [currencyConvert],
+  mixins: [currencyConvert, searchStatePersist],
   components: { ExchangeRatePopup },
   setup() {
     const srchInfo = useC0001001();
@@ -103,6 +104,7 @@ export default {
       ],
       params: { year: null, month: null, yyyymm: null, site: 'VINA' },
       siteMap: { 본사: 'HQ', VINA: 'VN', HQ: 'HQ', VN: 'VN' },
+      stateKey: 'C0009007_TAB090016',   // 조회조건 유지(searchStatePersist)
     };
   },
   watch: {
@@ -125,7 +127,14 @@ export default {
     this.$nextTick(() => { this.isInitializing = false; });
   },
   mounted() {
-    // 자동 조회하지 않음 — 조회 버튼 클릭 시에만 데이터 조회
+    // 최초 진입 시엔 자동 조회하지 않음. 단, keep-alive 미보존으로 재mount된 경우
+    // 직전 조회조건을 복원하여 자동 재조회 → 화면 복귀 시 초기화 방지.
+    const s = this.getSearchState();
+    if (s) {
+      this.params.year = s.year;
+      this.params.month = s.month;
+      this.$nextTick(() => this.searchClick());
+    }
   },
   methods: {
     initialize() {
@@ -168,6 +177,7 @@ export default {
       const raw = Array.isArray(resp) ? resp : (resp && resp.data ? resp.data : []);
       this.currencyFields = raw.length ? Object.keys(raw[0]).filter((k) => /Amt$/i.test(k)) : [];
       this.wipCostGridRows = await this.buildCurrencyRows(raw);
+      this.saveSearchState({ year: this.params.year, month: this.params.month });
     },
     onCurrencyChange(currency) {
       this.setCurrency(currency);
