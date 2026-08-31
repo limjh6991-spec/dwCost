@@ -43,7 +43,7 @@
 import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0009000/js/TAB090016.js';   // 제품수불부(VN)와 동일 테이블·포맷 (DOI_VN_STOCK_RESC)
+import gridField from '@web/c0009000/js/C0009002_VN.js';   // 제품수불부(VN) 탭과 동일 그리드 (DOI_VN_STOCK_RESC / VN_StockLedger_Detail)
 import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
 
 export default {
@@ -122,6 +122,11 @@ export default {
     this.params.yyyymm = this.srchInfo.yyyymm;
     this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     this.$nextTick(async () => {
+      // 제품수불부(VN) 다단계 헤더: RealGrid 래퍼는 .layout만 자동적용 → columnLayout은 수동 적용(C0009002 동일)
+      const gv = this.gridView;
+      if (gv && this.dataGrid && this.dataGrid.columnLayout) {
+        gv.setColumnLayout(this.dataGrid.columnLayout);
+      }
       await this.checkClosingMonth();
       this.searchClick();
     });
@@ -161,17 +166,19 @@ export default {
 
       this.gridView.commit();
 
-      // 제품수불부(VN) 화면과 동일 쿼리 — DOI_VN_STOCK_RESC (C0009007_Tab090016)
-      const yyyymm = this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : '';
-      const yyyy = yyyymm ? yyyymm.slice(0, 4) : '';
-      const site = this.siteMap[this.params.site];
-      const resp = await this.$axios.api.search({
+      // 제품수불부(VN) 탭과 동일 쿼리 — DOI_VN_STOCK_RESC (C0009002_Detail → VN_StockLedger_Detail)
+      const params = {
+        yyyymm: this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : null,
+        site: this.siteMap[this.params.site],
+        selCode: 'ACTUAL',
+      };
+      const rows = [];
+      await this.$axios.api.search({
         menuId: 'c0009000',
-        queryId: 'C0009007_Tab090016',
-        queryParams: { yyyy, yyyymm, site },
-        target: [],
+        queryId: 'C0009002_Detail',
+        queryParams: params,
+        target: rows,
       });
-      const rows = Array.isArray(resp) ? resp : (resp && resp.data ? resp.data : []);
       this.dataGridRows = rows;
     },
     // MES 재고수불(FG_SUBUL) API 호출 → 적재 → 그리드 새로고침
