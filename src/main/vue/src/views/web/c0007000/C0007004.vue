@@ -43,7 +43,7 @@
 import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0007000/js/C0007004.js';
+import gridField from '@web/c0009000/js/TAB090016.js';   // 제품수불부(VN)와 동일 테이블·포맷 (DOI_VN_STOCK_RESC)
 import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
 
 export default {
@@ -161,18 +161,18 @@ export default {
 
       this.gridView.commit();
 
-      let params = {
-        yyyymm: this.params.yyyymm != null ? this.params.yyyymm.replaceAll('-', '') : null,
-        site: this.siteMap[this.params.site],
-      };
-
-      let param = {
-        menuId: 'c0007004',
-        queryId: 'C0007004_Sch1',
-        queryParams: params,
-        target: this.dataGridRows,
-      };
-      let resp = await this.$axios.api.search(param);
+      // 제품수불부(VN) 화면과 동일 쿼리 — DOI_VN_STOCK_RESC (C0009007_Tab090016)
+      const yyyymm = this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : '';
+      const yyyy = yyyymm ? yyyymm.slice(0, 4) : '';
+      const site = this.siteMap[this.params.site];
+      const resp = await this.$axios.api.search({
+        menuId: 'c0009000',
+        queryId: 'C0009007_Tab090016',
+        queryParams: { yyyy, yyyymm, site },
+        target: [],
+      });
+      const rows = Array.isArray(resp) ? resp : (resp && resp.data ? resp.data : []);
+      this.dataGridRows = rows;
     },
     // MES 재고수불(FG_SUBUL) API 호출 → 적재 → 그리드 새로고침
     apiCallClick() {
