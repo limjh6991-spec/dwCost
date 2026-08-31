@@ -3,6 +3,49 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.dowinsys.cost.web.c0008000.mapper.C0008000Mapper">
+    <!-- ============================================================================
+      [VN 260901] doi_vn_cost(신 재공평가·포지션형) → DOI_COST flat 수불/원가 컬럼 사상.
+        · doi_cost(구)는 _NEW 결산체인 미기록(BOH 옛값·EOH=0) → VN은 반드시 doi_vn_cost 조회.
+        · 금액 롤업은 재공 항등식(BOH+IN-OUT-LOSS=EOH) 차이 0 검증(진단_doi_cost_vs_doi_vn_cost_202607).
+        · IN/OUT(수불 gross)=USC_INPUT+기타입고 / OUTPUT_A+기타출고.  BOH/EOH=8포지션 합.
+        · 원가명세용 원가투입/생산기준 수량은 USC_INPUT_AMT/USC_INPUT_QTY/OUTPUT_A_QTY 별도 노출.
+        · doi_vn_cost 미보유 컬럼(ADJ_QTY/RMAIN)은 0. 그레인=도우코드×EXPEN_SEL(=DOI_COST 동일).
+    ============================================================================= -->
+    <sql id="vnCostFlat">
+      SELECT
+        YYYYMM, SEL_CODE, SITE, 구분, 도우코드, MODEL, EXPEN_SEL, expen_sel명,
+        ACCT_NAME, ITEM_NAME, ITEM_NAME AS SUB_NAME, UNIT_COST, ADJ_YN,
+        <!-- ★QTY 포지션은 doi_vn_prod_resc(q) LEFT JOIN 산출이라 이월전용 모델(당월 생산이동 無)에서 NULL 가능
+             → 각 항 ISNULL(...,0). (AMT는 프로시저에서 전부 ISNULL 보장이라 raw 합 유지) -->
+        ISNULL([USC_INPUT_QTY],0) AS USC_INPUT_QTY, ISNULL([OUTPUT_A_QTY],0) AS OUTPUT_A_QTY, [USC_INPUT_AMT],
+        (ISNULL([BOH_LINE_WIP_전_QTY],0)+ISNULL([BOH_LINE_WIP_후_QTY],0)+ISNULL([BOH_LINE_FGS_전_QTY],0)+ISNULL([BOH_LINE_FGS_후_QTY],0)
+         +ISNULL([BOH_B_WIP_전_QTY],0)+ISNULL([BOH_B_WIP_후_QTY],0)+ISNULL([BOH_B_FGS_전_QTY],0)+ISNULL([BOH_B_FGS_후_QTY],0)) AS BOH_QTY,
+        (ISNULL([EOH_LINE_WIP_전_QTY],0)+ISNULL([EOH_LINE_WIP_후_QTY],0)+ISNULL([EOH_LINE_FGS_전_QTY],0)+ISNULL([EOH_LINE_FGS_후_QTY],0)
+         +ISNULL([EOH_B_WIP_전_QTY],0)+ISNULL([EOH_B_WIP_후_QTY],0)+ISNULL([EOH_B_FGS_전_QTY],0)+ISNULL([EOH_B_FGS_후_QTY],0)) AS EOH_QTY,
+        (ISNULL([USC_INPUT_QTY],0)+ISNULL([ETCIN_CODE_QTY],0)+ISNULL([ETCIN_RESORT_QTY],0)+ISNULL([ETCIN_REWORK_QTY],0)+ISNULL([ETCIN_SEMI_QTY],0)+ISNULL([ETCIN_ETC_QTY],0)) AS IN_QTY,
+        (ISNULL([OUTPUT_A_QTY],0)+ISNULL([ETCOUT_CODE_전_QTY],0)+ISNULL([ETCOUT_CODE_후_QTY],0)+ISNULL([ETCOUT_SEMI_PAID_전_QTY],0)+ISNULL([ETCOUT_SEMI_PAID_후_QTY],0)
+         +ISNULL([ETCOUT_SEMI_FREE_전_QTY],0)+ISNULL([ETCOUT_SEMI_FREE_후_QTY],0)+ISNULL([ETCOUT_ETC_전_QTY],0)+ISNULL([ETCOUT_ETC_후_QTY],0)) AS OUT_QTY,
+        (ISNULL([LOSS_전_QTY],0)+ISNULL([LOSS_후_QTY],0)) AS LOSS_QTY,
+        CAST(0 AS numeric(18,2)) AS ADJ_QTY, CAST(0 AS numeric(18,2)) AS RMAIN_QTY,
+        ([BOH_LINE_WIP_전_AMT]+[BOH_LINE_WIP_후_AMT]+[BOH_LINE_FGS_전_AMT]+[BOH_LINE_FGS_후_AMT]
+         +[BOH_B_WIP_전_AMT]+[BOH_B_WIP_후_AMT]+[BOH_B_FGS_전_AMT]+[BOH_B_FGS_후_AMT]) AS BOH,
+        ([EOH_LINE_WIP_전_AMT]+[EOH_LINE_WIP_후_AMT]+[EOH_LINE_FGS_전_AMT]+[EOH_LINE_FGS_후_AMT]
+         +[EOH_B_WIP_전_AMT]+[EOH_B_WIP_후_AMT]+[EOH_B_FGS_전_AMT]+[EOH_B_FGS_후_AMT]) AS EOH,
+        ([USC_INPUT_AMT]+[ETCIN_CODE_AMT]+[ETCIN_RESORT_AMT]+[ETCIN_REWORK_AMT]+[ETCIN_SEMI_AMT]+[ETCIN_ETC_AMT]) AS [IN],
+        ([OUTPUT_A_AMT]+[ETCOUT_CODE_전_AMT]+[ETCOUT_CODE_후_AMT]+[ETCOUT_SEMI_PAID_전_AMT]+[ETCOUT_SEMI_PAID_후_AMT]
+         +[ETCOUT_SEMI_FREE_전_AMT]+[ETCOUT_SEMI_FREE_후_AMT]+[ETCOUT_ETC_전_AMT]+[ETCOUT_ETC_후_AMT]) AS [OUT],
+        ([LOSS_전_AMT]+[LOSS_후_AMT]) AS LOSS,
+        CAST(0 AS numeric(18,2)) AS RMAIN_AMT
+      FROM doi_vn_cost
+      WHERE 1=1
+      <if test="yyyymm != null and yyyymm != ''">
+          and YYYYMM = #{yyyymm}
+      </if>
+      <if test="site != null and site != ''">
+          and SITE = #{site}
+      </if>
+    </sql>
+
     <select id="C0008001_Sch1" resultType="CamelMap">
         select
             CASE WHEN ACCT_CLASS='AA' then '가공비' WHEN ACCT_CLASS='CC' then '판매관리비' WHEN ACCT_CLASS='BB' then '개발비' else ACCT_CLASS end as ACCT_CLASS,
@@ -250,23 +293,17 @@
         with base_cost as (
           <choose>
           <when test="site != null and site == 'VN'">
-            <!-- [VN 260801] DOI_COST 단일 소스(재료 MDAX/MIAX + 가공). DOI_MAT_COST 미참조 -->
-            <!-- [260831] 표시모델을 전체 도우코드로 (도우모델=끝자리 잘림) — GROUP BY도 도우코드 (제품별 상세 그레인) -->
+            <!-- [VN 260901] 원천을 doi_cost(구·미갱신) → doi_vn_cost(신 재공평가) projection 으로 전환.
+                 원가투입=USC_INPUT_AMT(구 [in]과 총액 일치 검증), 생산투입=USC_INPUT_QTY, 완성출고=OUTPUT_A_QTY -->
             select
             도우코드 as model,
             case when expen_sel='MDAX' then '직접재료비' when LEFT(expen_sel,1)='M' then '간접재료비' else '가공비' end c_cost,
-            avg(in_qty) in_qty,
-            avg((in_qty + OUT_QTY + loss_qty)/ 2.0) as 환산수량,
-            sum([in]) as 투입금액
-            from doi_cost
+            avg(USC_INPUT_QTY) in_qty,
+            avg((USC_INPUT_QTY + OUTPUT_A_QTY + LOSS_QTY)/ 2.0) as 환산수량,
+            sum(USC_INPUT_AMT) as 투입금액
+            from ( <include refid="vnCostFlat"/> ) v
             where 1=1
             and expen_sel not in ('NONE') and expen_sel &lt;&gt; '*'
-            <if test="yyyymm != null and yyyymm != ''">
-                and YYYYMM = #{yyyymm}
-            </if>
-            <if test="site != null and site != ''">
-                and SITE = #{site}
-            </if>
             group by 도우코드,
             case when expen_sel='MDAX' then '직접재료비' when LEFT(expen_sel,1)='M' then '간접재료비' else '가공비' end
           </when>
@@ -336,25 +373,19 @@
     <select id="C0008004_Sch2" resultType="CamelMap">
       <choose>
       <when test="site != null and site == 'VN'">
-        <!-- [VN 260801] DOI_COST 단일(재료 MDAX/MIAX + 가공). 재료행도 실제 구분/BOH/자재번호(ITEM_NAME) 표시 -->
+        <!-- [VN 260901] doi_cost(구) → doi_vn_cost projection. BOH=8포지션 합(옛 BOH 아님), 원가투입=USC_INPUT_AMT -->
         select
         구분,
         도우코드 AS MODEL,
         EXPEN_SEL,
         expen_sel명 AS EXPEN_SEL명,
-        IN_QTY AS in_qty,
+        USC_INPUT_QTY AS in_qty,
         ADJ_QTY AS adj_qty,
         BOH,
-        [IN] AS INPUT_AMT,
-        ITEM_NAME AS SUB_NAME
-        from doi_cost
-        where sel_code='ACTUAL' and EXPEN_SEL not in ('NONE') and EXPEN_SEL &lt;&gt; '*'
-        <if test="yyyymm != null and yyyymm != ''">
-            and YYYYMM = #{yyyymm}
-        </if>
-        <if test="site != null and site != ''">
-            and SITE = #{site}
-        </if>
+        USC_INPUT_AMT AS INPUT_AMT,
+        SUB_NAME
+        from ( <include refid="vnCostFlat"/> ) v
+        where SEL_CODE='ACTUAL' and EXPEN_SEL not in ('NONE') and EXPEN_SEL &lt;&gt; '*'
         <if test="model != null and model != ''">
             and 도우코드 = #{model}
         </if>
@@ -725,6 +756,41 @@
     </select>
 
     <select id="C0008008_Sch1" resultType="CamelMap">
+      <choose>
+      <when test="site != null and site == 'VN'">
+        <!-- [VN 260901] doi_cost(구·BOH옛값·EOH=0) → doi_vn_cost projection(재공 항등식 검증). gross 입출고 -->
+        select
+        YYYYMM,
+        SEL_CODE,
+        'VINA' SITE,
+        구분,
+        ISNULL(NULLIF(LTRIM(RTRIM(도우코드)),N''),MODEL) as MODEL,
+        EXPEN_SEL,
+        expen_sel명 AS EXPEN_SEL명,
+        ACCT_NAME,
+        AVG(BOH_QTY) BOH_QTY,
+        AVG(IN_QTY) IN_QTY,
+        AVG(EOH_QTY) EOH_QTY,
+        AVG(OUT_QTY) OUT_QTY,
+        AVG(LOSS_QTY) LOSS_QTY,
+        AVG(RMAIN_QTY) RMAIN_QTY,
+        AVG(ADJ_QTY) ADJ_QTY,
+        SUM(BOH) BOH,
+        SUM([IN]) INPUT_AMT,
+        SUM(EOH) EOH,
+        SUM([OUT]) OUT_AMT,
+        SUM(LOSS) LOSS,
+        SUM(RMAIN_AMT) RMA_IN
+        from ( <include refid="vnCostFlat"/> ) v
+        where 1=1
+        <if test="acctName != null and acctName != '' and acctName != '전체'">
+            and SUB_NAME LIKE '%' + #{acctName}
+        </if>
+        GROUP BY YYYYMM,SEL_CODE,구분,
+        ISNULL(NULLIF(LTRIM(RTRIM(도우코드)),N''),MODEL),EXPEN_SEL,expen_sel명,ACCT_NAME
+        order BY 1 desc,2 desc,4,5,6;
+      </when>
+      <otherwise>
  	select
         YYYYMM,
         SEL_CODE,
@@ -762,6 +828,8 @@
     CASE WHEN SITE='HQ' then '본사' WHEN SITE='VN' then 'VINA' else SITE end,
     구분,ISNULL(NULLIF(LTRIM(RTRIM(도우코드)),N''),MODEL),EXPEN_SEL,EXPEN_SEL명,ACCT_NAME--,ITEM_NAME
     order BY 1 desc,2 desc,3,4,5,6,7,8;
+      </otherwise>
+      </choose>
     </select>
 
     <select id="C0008009_Sch1" resultType="CamelMap">
