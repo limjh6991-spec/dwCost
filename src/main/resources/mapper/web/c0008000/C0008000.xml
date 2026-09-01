@@ -253,7 +253,8 @@
         sum(A.REWORK진행_MONTH) as REWORK진행_MONTH,
         sum(A.material_loss) as material_loss,
         sum(COALESCE(B.RMA_OUT,0)) AS RMA_IN
-        from V_DOI_PROD_SUBUL A
+        <!-- [VN 260901] 생산수불 증빙: VN은 V_DOI_PROD_SUBUL(구·_NEW 미갱신 stale) → V_VN_PROD_SUBUL(신, 동일 시그니처). FROM만 교체 -->
+        from <choose><when test="site != null and site == 'VN'">V_VN_PROD_SUBUL</when><otherwise>V_DOI_PROD_SUBUL</otherwise></choose> A
         LEFT JOIN DOI_RMA_INOUT B ON (A.YYYYMM=B.YYYYMM and A.SITE=B.SITE and a.도우코드=b.도우코드)
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
@@ -634,6 +635,31 @@
     </select>
 
     <select id="C0008006_Sch2" resultType="CamelMap">
+      <choose>
+      <when test="site != null and site == 'VN'">
+        <!-- [VN 260901] 원가항목별 재료비 상세 드릴다운: doi_mat_cost(구·stale) → doi_expn_matl(신). C0008006_Sch1 VN패턴 미러링.
+             필터: 원가구분=재료비 + sel_code=ACTUAL + mat_class(EXPEN_SEL 파생 '원자재'/'부자재') 드릴다운. 도우코드 전체표시. 환산량/배부적수=doi_vn_prod_resc×DOI_MODEL_MAST(면적) -->
+        ;WITH gc AS (SELECT CASE WHEN p.division='MP' THEN N'양산' ELSE N'개발' END 구분, p.도우코드,
+                 SUM(ISNULL(p.OUTPUT_A,0)+ISNULL(p.TOTAL_EOH_전,0)*0.5+ISNULL(p.TOTAL_EOH_후,0)*0.9) 환산량, MAX(ISNULL(mm.xy,0)) 면적
+              FROM doi_vn_prod_resc p LEFT JOIN DOI_MODEL_MAST mm ON mm.MODEL=p.도우코드 AND mm.yyyymm=p.yyyymm AND mm.site='VN' AND mm.sel_code=p.sel_code
+              WHERE p.sel_code='ACTUAL'
+              <if test="yyyymm != null and yyyymm != ''">AND p.YYYYMM = #{yyyymm}</if>
+              GROUP BY p.division, p.도우코드)
+        SELECT e.YYYYMM as yyyymm, e.SEL_CODE as sel_code, e.SITE as site, e.도우코드 as 도우모델, e.항목 자재번호,
+               CASE WHEN e.EXPEN_SEL='MDAX' THEN N'원자재' ELSE N'부자재' END mat_class,
+               e.분류 자재대분류, CAST(e.투입금액 AS numeric(18,2)) in_amt, r.환산량, NULL 소요량,
+               CASE WHEN e.배부방식=N'공통' THEN CAST(r.환산량*r.면적 AS numeric(18,2)) ELSE NULL END 배부적수,
+               CAST(e.투입금액 AS numeric(18,2)) 배부금액,
+               CASE WHEN e.배부방식=N'공통' THEN CAST(r.환산량*r.면적 AS numeric(18,2)) ELSE NULL END 사용량
+        FROM doi_expn_matl e
+        LEFT JOIN gc r ON r.구분=e.구분 AND r.도우코드=e.도우코드
+        WHERE e.원가구분=N'재료비' AND e.sel_code='ACTUAL'
+        <if test="yyyymm != null and yyyymm != ''">AND e.YYYYMM = #{yyyymm}</if>
+        <if test="site != null and site != ''">AND e.SITE = #{site}</if>
+        <if test="matClass != null and matClass != ''">AND (CASE WHEN e.EXPEN_SEL='MDAX' THEN N'원자재' ELSE N'부자재' END) = #{matClass}</if>
+        order by 1,2,3,4,5,6;
+      </when>
+      <otherwise>
         select *
         from doi_mat_cost
         where 1=1
@@ -647,6 +673,8 @@
             and mat_class = #{matClass}
         </if>
         order by 1,2,3,4,5,6;
+      </otherwise>
+      </choose>
     </select>
 
     <select id="C0008007_Sch1" resultType="CamelMap">
@@ -833,6 +861,39 @@
     </select>
 
     <select id="C0008009_Sch1" resultType="CamelMap">
+      <choose>
+      <when test="site != null and site == 'VN'">
+        <!-- [VN 260901] 제품수불_수량: doi_stock(구·_NEW 미갱신 → 202607 VN stale/빈값) → doi_vn_stock_resc(신 WH0006 제품수불).
+             신 소스=완제품창고(WH0006) 단일창고·도우코드 그레인(전체 도우코드).
+             IN수량=총입고(T_INPUT+기타입고 ETCIN_TOTAL), OUT수량=총출고(T_OUTPUT+기타출고 ETCOUT_TOTAL+LOSS)
+               → BOH+IN-OUT=EOH_WH0006 항등(제품수불부 C0009002_VN 헤더와 동일).
+             RMA_OUT: 구 doi_rma_inout(_NEW 미갱신·VN stale)·신 원장 대응 없음 → 0. SITE/MODEL/STOCK 상수(VINA/도우코드/WH0006)로 계약 보존. -->
+        <!-- ★도우코드당 division 다중행(PK 도우코드×division) 대비 GROUP BY 도우코드+SUM(footer 중복합 방지). 구분=권위 division(MP/R&amp;D) 우선, 공백시 도우코드 접미(D) 폴백 -->
+        SELECT
+            s.yyyymm AS YYYYMM,
+            s.sel_code AS SEL_CODE,
+            'VINA' AS SITE,
+            CASE WHEN MAX(NULLIF(LTRIM(RTRIM(s.division)),'')) = 'MP' THEN N'양산'
+                 WHEN MAX(NULLIF(LTRIM(RTRIM(s.division)),'')) IS NOT NULL THEN N'개발'
+                 ELSE (CASE WHEN RIGHT(s.도우코드,1)='D' THEN N'개발' ELSE N'양산' END) END AS 구분,
+            s.도우코드 AS 도우코드,
+            s.도우코드 AS MODEL,
+            'WH0006' AS STOCK,
+            CAST(SUM(ISNULL(s.BOH,0)) AS numeric(18,2)) AS BOH,
+            CAST(SUM(ISNULL(s.T_INPUT,0) + ISNULL(s.ETCIN_TOTAL,0)) AS numeric(18,2)) AS IN_QTY,
+            CAST(SUM(ISNULL(s.T_OUTPUT,0) + ISNULL(s.ETCOUT_TOTAL,0) + ISNULL(s.LOSS,0)) AS numeric(18,2)) AS OUT_QTY,
+            CAST(SUM(ISNULL(s.EOH_WH0006,0)) AS numeric(18,2)) AS EOH,
+            0 AS RMA_OUT
+        FROM doi_vn_stock_resc s
+        WHERE s.sel_code = 'ACTUAL'
+          AND s.도우코드 IS NOT NULL AND LTRIM(RTRIM(s.도우코드)) &lt;&gt; '' AND s.도우코드 &lt;&gt; N'TOTAL'
+        <if test="yyyymm != null and yyyymm != ''">
+            AND s.yyyymm = #{yyyymm}
+        </if>
+        GROUP BY s.yyyymm, s.sel_code, s.도우코드
+        ORDER BY 구분, s.도우코드;
+      </when>
+      <otherwise>
 	select
         A.YYYYMM,
         A.SEL_CODE,
@@ -856,9 +917,48 @@
             and a.SITE = #{site}
         </if>
         ORDER BY 1,2,3,4,5
+      </otherwise>
+      </choose>
     </select>
 
     <select id="C0008011_Sch1" resultType="CamelMap">
+      <choose>
+      <when test="site != null and site == 'VN'">
+        <!-- [VN 260901] 제품수불_금액: doi_stco(구·_NEW 결산체인 미기록 → 202607 VN stale/빈값) → doi_vn_stco(신 제품 매출원가) 전환.
+             · 그리드 계약 보존: BOH/IN/EOH/OUT × (수량·금액) 8지표를 old alias 그대로 매핑.
+             · IN=정상입고(T_INPUT=재공 완성출고 OUTPUT_A), OUT=매출출하(T_OUTPUT=SHIP_A유상/무상+B).
+               old도 [INPUT]/[OUT]만 노출(반제품·기타입출고·LOSS는 4포지션 제외) → 동일 규칙 유지.
+             · MODEL=도우코드(전체·끝자리 유지). doi_vn_stco엔 SITE 컬럼 없음(VN 전용) → 'VINA' 상수, site 필터 미적용(테이블 자체가 VN). -->
+        select
+        YYYYMM,
+        SEL_CODE,
+        'VINA' SITE,
+        구분,
+        도우코드 AS MODEL,
+        EXPEN_SEL,
+        expen_sel명 AS EXPEN_SEL명,
+        ACCT_NAME,
+        BOH_QTY,
+        BOH_AMT,
+        T_INPUT_QTY AS IN_QTY,
+        T_INPUT_AMT AS IN_AMT,
+        EOH_WH0006_QTY AS EOH_QTY,
+        EOH_WH0006_AMT AS EOH_AMT,
+        T_OUTPUT_QTY AS OUT_QTY,
+        T_OUTPUT_AMT AS OUT_AMT
+        from doi_vn_stco
+        where 1=1
+            and sel_code = 'ACTUAL'
+        <if test="yyyymm != null and yyyymm != ''">
+            and YYYYMM = #{yyyymm}
+        </if>
+        <if test="gubun != null and gubun != '' and gubun != '전체'">
+            and 구분 = #{gubun}
+        </if>
+            and ACCT_NAME != N'기타출고'
+        order BY 구분, 도우코드, EXPEN_SEL;
+      </when>
+      <otherwise>
         select
         YYYYMM,
         SEL_CODE,
@@ -891,6 +991,8 @@
             and  ACCT_NAME != N'기타출고'
             --and BOH_AMT+IN_AMT+EOH_AMT+OUT_AMT > 0
         order BY 1,2,3,4,5;
+      </otherwise>
+      </choose>
     </select>
 
     <select id="C0008012_Sch1" resultType="CamelMap">
@@ -1044,6 +1146,40 @@
     </select>
 
     <select id="C0008013_Sch1" resultType="CamelMap">
+      <choose>
+      <when test="site != null and site == 'VN'">
+        <!-- [VN 260901] 판관비 배부: DOI_SMCE_COST.model=도우모델(끝자리 절삭)·도우코드 컬럼 공백(데이터 자체는 step14 UP_VN_SMCE_COST_NEW로 유효).
+             표시모델만 DOI_VN_STCO(MODEL→도우코드)로 보강. DOI_VN_STCO는 1:다 가능 → ROW_NUMBER 대표1건(rn=1)만 조인해 팬아웃(중복합) 방지 → 그레인/합계 불변.
+             DOI_VN_STCO엔 SITE 컬럼 없음 → yyyymm/sel_code만 필터. 미매핑 시 b.model(도우모델) fallback. 출력 별칭 현행 100% 동일. -->
+        select
+            b.구분,
+            ISNULL(NULLIF(LTRIM(RTRIM(mc.도우코드)),''), b.model) as model,
+            b.SUB_NAME, b.ITEM_NAME, b.EXPEN_SEL, b.EXPEN_SEL명,
+            b.SALE_AMT, b.TOT_AMT, b.TOT_SMCE, b.TOT_ACCT, b.DIST_RATE, b.DIST_AMT
+        from DOI_SMCE_COST b
+        left join (
+            select MODEL, 도우코드 from (
+                select MODEL, 도우코드, row_number() over (partition by MODEL order by 도우코드) rn
+                from ( select distinct MODEL, 도우코드 from DOI_VN_STCO
+                       where 1=1
+                       <if test="yyyymm != null and yyyymm != ''">and YYYYMM = #{yyyymm}</if>
+                       <if test="selCode != null and selCode != ''">and SEL_CODE = #{selCode}</if>
+                     ) d
+            ) z where z.rn = 1
+        ) mc on mc.MODEL = b.model
+        where 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            and b.YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+            and b.SITE = #{site}
+        </if>
+        <if test="selCode != null and selCode != ''">
+            and b.SEL_CODE = #{selCode}
+        </if>
+        order by model, b.EXPEN_SEL, b.EXPEN_SEL명, b.구분;
+      </when>
+      <otherwise>
         select 구분,model,SUB_NAME,ITEM_NAME,EXPEN_SEL,EXPEN_SEL명,SALE_AMT,TOT_AMT,TOT_SMCE,TOT_ACCT,DIST_RATE,DIST_AMT
         from DOI_SMCE_COST
         where 1=1
@@ -1057,6 +1193,8 @@
             and SEL_CODE = #{selCode}
         </if>
         order by  model, EXPEN_SEL, EXPEN_SEL명 ,구분 ;  --SUB_NAME, ITEM_NAME,
+      </otherwise>
+      </choose>
     </select>
 
     <select id="C0008014_Sch1" resultType="CamelMap">
