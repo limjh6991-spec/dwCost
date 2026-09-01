@@ -164,7 +164,8 @@ export default {
         return ret;
       }
       var gubun = dataCell.value;
-      if (this.$utils.containsValue(['매출액', '매출원가', '재료비', '노무비', '제조경비', '매출총이익', '판매관리비', '영업이익'], gubun)) {
+      // [VN 260901] VN 경영실행은 헤더 라벨이 HQ와 다름(직접노무비/간접제조경비/판매비와관리비) → VN 라벨 병기(HQ 라벨 유지)
+      if (this.$utils.containsValue(['매출액', '매출원가', '재료비', '노무비', '제조경비', '매출총이익', '판매관리비', '영업이익', '직접노무비', '간접제조경비', '판매비와관리비'], gubun)) {
         ret.style = { fontWeight: 'bold', whiteSpace: 'pre' };
       } else {
         ret.style = { fontWeight: 'normal', whiteSpace: 'pre' };
