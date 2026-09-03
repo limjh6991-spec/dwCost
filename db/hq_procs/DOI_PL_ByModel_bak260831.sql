@@ -95,40 +95,11 @@ BEGIN
 		   AND SITE   = @SITE
 		   AND SEL_CODE = @SEL_CODE
 		   AND COALESCE(O.매출상계,0) <> 0
-
-		UNION
-
-		-- 제품 폐기만 발생한 모델도 손익 대상에 포함.
-		-- 매출이 없으면 위 UNION 들에 안 잡히는데, 폐기는 (3)제품매출원가조정으로 반영해야 하므로 모델을 살린다.
-		-- DOI_STCO 의 폐기 행은 구분='RMA' 로 들어오므로 같은 모델의 정상 구분을 끌어온다.
-		SELECT
-		    COALESCE(MAX(CASE WHEN D.구분 <> N'RMA' THEN D.구분 END),
-		             CASE WHEN LEFT(D.MODEL,2) = N'VN' THEN N'카세트' ELSE N'양산' END) AS 구분,
-		    D.MODEL AS model
-		FROM DOI_STCO D WITH(NOLOCK)
-		WHERE D.YYYYMM = @YYYYMM AND D.SITE = @SITE AND D.SEL_CODE = @SEL_CODE
-		GROUP BY D.MODEL
-		HAVING SUM(COALESCE(D.OUT_DISPOSE_AMT,0)) <> 0
-		)
+		)  
 		SELECT DISTINCT
 		    model, 구분
 		INTO #MODEL
 		FROM MODEL_LIST;
-
-		----------------------------------------------------------------------
-		-- 1-1. 제품 폐기 (매출원가(제품) 화면 출고상세-폐기) : 모델별
-		----------------------------------------------------------------------
-		DROP TABLE IF EXISTS #DISPOSE;
-		SELECT
-		    COALESCE(MAX(CASE WHEN D.구분 <> N'RMA' THEN D.구분 END),
-		             CASE WHEN LEFT(D.MODEL,2) = N'VN' THEN N'카세트' ELSE N'양산' END) AS 구분,
-		    D.MODEL AS model,
-		    CAST(SUM(COALESCE(D.OUT_DISPOSE_AMT,0)) AS DECIMAL(18,2)) AS amt
-		INTO #DISPOSE
-		FROM DOI_STCO D WITH(NOLOCK)
-		WHERE D.YYYYMM = @YYYYMM AND D.SITE = @SITE AND D.SEL_CODE = @SEL_CODE
-		GROUP BY D.MODEL
-		HAVING SUM(COALESCE(D.OUT_DISPOSE_AMT,0)) <> 0;
 
 		SELECT @SCOFTotal = CAST(COALESCE(SUM(FINAL_AMT),0) AS DECIMAL(18,2))
 		FROM DOI_SCOF WITH(NOLOCK)
@@ -575,22 +546,6 @@ BEGIN
             UPDATE #sourceTable SET amt = COALESCE(amt,0) - @SCRAP_ADJ
              WHERE 구분 = N'회계' AND model = N'회계-조정' AND rn IN (13, 141);
         END
-
-        ----------------------------------------------------------------------
-        -- 9-2. 제품 폐기를 모델별 (3)제품매출원가조정 에 반영
-        --      매출원가(제품) 화면 출고상세-폐기(DOI_STCO.OUT_DISPOSE_AMT) 기준.
-        --      rn12 가산 → rn5(II.매출원가) 증가, rn13·rn141 은 그만큼 감소.
-        --      Z합계/구분별 합계보다 먼저 적용해야 상위 합계에 전파된다.
-        ----------------------------------------------------------------------
-        UPDATE s SET amt = COALESCE(s.amt,0) + d.amt
-          FROM #sourceTable s
-          JOIN #DISPOSE d ON d.구분 = s.구분 AND d.model = s.model
-         WHERE s.rn IN (5, 12);
-
-        UPDATE s SET amt = COALESCE(s.amt,0) - d.amt
-          FROM #sourceTable s
-          JOIN #DISPOSE d ON d.구분 = s.구분 AND d.model = s.model
-         WHERE s.rn IN (13, 141);
 
         ----------------------------------------------------------------------
         -- 10. Z합계 행 추가

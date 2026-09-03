@@ -55,11 +55,6 @@ BEGIN
 		DECLARE @ACC_TOTAL      DECIMAL(18,2) = 0;   -- 회계합계
 		DECLARE @SCOF_ACC       DECIMAL(18,2) = 0;   -- 회계-조정 유상사급 (DOI_원장상계 구분='회계')
 		DECLARE @ACC_SCRAP      DECIMAL(18,2) = 0;   -- 원부재료 재고폐기 (DOI_ETC_INOUT, 본사 전용)
-		-- 제품 폐기 (매출원가(제품) 출고상세-폐기, DOI_STCO.OUT_DISPOSE_AMT) : 구분별 합계 열용
-		DECLARE @DispAdj          DECIMAL(18,2) = 0;
-		DECLARE @DispAdjYangsan   DECIMAL(18,2) = 0;
-		DECLARE @DispAdjDev       DECIMAL(18,2) = 0;
-		DECLARE @DispAdjCassette  DECIMAL(18,2) = 0;
 
         DECLARE @SQL             NVARCHAR(MAX);
 
@@ -182,40 +177,19 @@ BEGIN
 		      AND C.SEL_CODE = @SELCODE
 		      AND COALESCE(C.LOSS, 0) <> 0
 		),
-		DISPOSE_MODEL AS (
-		    -- 제품 폐기만 발생한 모델도 열을 만든다 (매출·LOSS 가 없으면 위 소스에 안 잡힘).
-		    -- 폐기 행은 구분='RMA' 라서 같은 모델의 정상 구분으로 되돌린다.
-		    SELECT
-		          D.MODEL AS model
-		        , COALESCE(MAX(CASE WHEN D.구분 <> N'RMA' THEN D.구분 END),
-		                   CASE WHEN LEFT(D.MODEL,2) = N'VN' THEN N'카세트' ELSE N'양산' END) AS 구분
-		    FROM DOI_STCO D WITH(NOLOCK)
-		    WHERE D.YYYYMM   = @YYYYMM
-		      AND D.SITE     = @SITE
-		      AND D.SEL_CODE = @SELCODE
-		    GROUP BY D.MODEL
-		    HAVING SUM(COALESCE(D.OUT_DISPOSE_AMT,0)) <> 0
-		),
 		MODEL_BASE AS (
 		    SELECT
 		          S.model
 		        , S.구분
 		    FROM #SALES_BASE S
-
+		
 		    UNION
-
+		
 		    SELECT
 		          L.model
 		        , L.구분
 		    FROM LOSS_MODEL L
-
-		    UNION
-
-		    SELECT
-		          P.model
-		        , P.구분
-		    FROM DISPOSE_MODEL P
-
+		
 		    UNION
 		
 		    SELECT
@@ -359,27 +333,7 @@ BEGIN
 		WHERE YYYYMM   = @YYYYMM
 		  AND SITE     = @SITE
 		  AND SEL_CODE = @SELCODE
-		  AND 구분      = N'개발';
-
-		/* 제품 폐기(출고상세-폐기)를 구분별로 집계.
-		   DOI_STCO 의 폐기 행은 구분='RMA' 로 들어오므로, 모델 단위로 묶은 뒤
-		   같은 모델의 정상 구분(양산/개발/카세트)으로 되돌려 판정한다. */
-		DROP TABLE IF EXISTS #DISPOSE;
-		SELECT
-		    COALESCE(MAX(CASE WHEN D.구분 <> N'RMA' THEN D.구분 END),
-		             CASE WHEN LEFT(D.MODEL,2) = N'VN' THEN N'카세트' ELSE N'양산' END) AS 구분,
-		    D.MODEL AS model,
-		    CAST(SUM(COALESCE(D.OUT_DISPOSE_AMT,0)) AS DECIMAL(18,2)) AS amt
-		INTO #DISPOSE
-		FROM DOI_STCO D WITH(NOLOCK)
-		WHERE D.YYYYMM = @YYYYMM AND D.SITE = @SITE AND D.SEL_CODE = @SELCODE
-		GROUP BY D.MODEL
-		HAVING SUM(COALESCE(D.OUT_DISPOSE_AMT,0)) <> 0;
-
-		SELECT @DispAdj = COALESCE(SUM(amt),0) FROM #DISPOSE;
-		SELECT @DispAdjYangsan  = COALESCE(SUM(amt),0) FROM #DISPOSE WHERE 구분 = N'양산'   AND LEFT(model,2) <> N'VN';
-		SELECT @DispAdjCassette = COALESCE(SUM(amt),0) FROM #DISPOSE WHERE LEFT(model,2) = N'VN';
-		SELECT @DispAdjDev      = COALESCE(SUM(amt),0) FROM #DISPOSE WHERE 구분 = N'개발';
+		  AND 구분      = N'개발';		 
 
 		/*==============================================================
 		  (추가) 1-1) 변동비/고정비 프로시저 결과 받아오기 (세로형)
@@ -923,16 +877,6 @@ BEGIN
 		    GROUP BY C.구분, C.model
     		HAVING SUM(COALESCE(C.LOSS,0)) <> 0		    
 		),		
-		DISPOSE_ADJ_BASE AS (
-		    -- 제품 폐기를 모델별 (3)제품매출원가조정 에 반영
-		    SELECT
-		          47 AS rn
-		        , N'    (3) 제품매출원가조정' AS gubun
-		        , D.구분
-		        , D.model
-		        , D.amt
-		    FROM #DISPOSE D
-		),
 		PROD_COGS_ADJ AS (
 		    -- 제품매출원가조정: 총합계 전용이라 모델별 0
 		    SELECT
@@ -1161,8 +1105,7 @@ BEGIN
 		    UNION ALL SELECT rn, gubun, 구분, model, amt FROM PROD_COGS
 		    UNION ALL SELECT rn, gubun, 구분, model, amt FROM MERCH_COGS_FACT
 		    UNION ALL SELECT rn, gubun, 구분, model, amt FROM LOSS_ADJ_BASE
-		    UNION ALL SELECT rn, gubun, 구분, model, amt FROM DISPOSE_ADJ_BASE
-		    UNION ALL SELECT rn, gubun, 구분, model, amt FROM PROD_COGS_ADJ
+		    UNION ALL SELECT rn, gubun, 구분, model, amt FROM PROD_COGS_ADJ            
 --            UNION ALL SELECT rn, gubun, 구분, model, amt FROM ADJ_SALE
 --  UNION ALL SELECT rn, gubun, 구분, model, amt FROM INV_ADJ  --26/02/13 KYH삭제
 --            UNION ALL SELECT rn, gubun, 구분, model, amt FROM MERCH_COGS    --26/02/13 KYH삭제         
@@ -1403,13 +1346,13 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 					WHEN Cur.rn = 7 THEN @ACC_PREV_PRICE   -- 기타매출 총합계: 이전가격만
 
 					WHEN Cur.rn = 44 THEN
-					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + ( @CostAdj /*+ @LossAdj*/ ) + @DispAdj
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + ( @CostAdj /*+ @LossAdj*/ )
 					
 					WHEN Cur.rn = 47 THEN
-					    @CostAdj + @LossAdj + @DispAdj
+					    @CostAdj + @LossAdj
 					
 					WHEN Cur.rn = 77 THEN
-					  ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + ( @CostAdj ) + @DispAdj
+					  ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + ( @CostAdj )
 					
 					WHEN Cur.rn = 78 THEN
 					    /*(
@@ -1438,13 +1381,13 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 					  ('+@SumYangsan_FiX +')
 				      /NULLIF(((' + @SumYangsan_Bep +')),0)*100
 		      WHEN Cur.rn = 44 THEN
-		          ((' + @SumYangsan + ')) + @LossAdjYangsan + @DispAdjYangsan
+		          ((' + @SumYangsan + ')) + @LossAdjYangsan
 		
 		      WHEN Cur.rn = 47 THEN
-		          @LossAdjYangsan + @DispAdjYangsan
+		          @LossAdjYangsan
 		
 		      WHEN Cur.rn = 77 THEN
-		   ((' + @SumYangsan + ')) + @DispAdjYangsan
+		   ((' + @SumYangsan + '))
 		
 		      WHEN Cur.rn = 78 THEN
 		          /*((' + @SumYangsan_Sale + '))
@@ -1465,13 +1408,13 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 				      /NULLIF(((' + @SumDev_Bep +')),0)*100
 
 			      WHEN Cur.rn = 44 THEN
-			          ((' + @SumDev + ')) + @LossAdjDev + @DispAdjDev
+			          ((' + @SumDev + ')) + @LossAdjDev
 			
 			      WHEN Cur.rn = 47 THEN
-			          @LossAdjDev + @DispAdjDev
+			          @LossAdjDev
 			
 			      WHEN Cur.rn = 77 THEN
-			          ((' + @SumDev + ')) + @DispAdjDev
+			          ((' + @SumDev + '))
 			
 			      WHEN Cur.rn = 78 THEN
 			          /*((' + @SumDev_Sale + '))
@@ -1484,8 +1427,8 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 				CASE
 				  WHEN Cur.rn = 5 THEN 0
 				  WHEN Cur.rn = 4 THEN ((' + @SumCas_ProdSale + ') / NULLIF((' + @SumCas_Qty + '),0))
-				  WHEN Cur.rn = 44 THEN ((' + @SumCassette + ')) + @LossAdjCassette + @DispAdjCassette
-				  WHEN Cur.rn = 47 THEN @LossAdjCassette + @DispAdjCassette
+				  WHEN Cur.rn = 44 THEN ((' + @SumCassette + ')) + @LossAdjCassette
+				  WHEN Cur.rn = 47 THEN @LossAdjCassette
 				  ELSE (' + @SumCassette + ')
 				END AS DECIMAL(18,2)) AS [카세트합계]
 
@@ -1558,7 +1501,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 		
 --		SELECT @SQL;
 		EXEC sp_executesql @SQL, 
-		N'@SCOF DECIMAL(18,2), @CostAdj DECIMAL(18,2), @LossAdj DECIMAL(18,2), @LossAdjYangsan DECIMAL(18,2), @LossAdjDev DECIMAL(18,2), @LossAdjCassette DECIMAL(18,2) ,@ACC_TOTAL decimal(18,2), @ACC_PREV_PRICE decimal(18,2), @ACC_IDLE_COMP decimal(18,2), @ACC_ADJ decimal(18,2), @SCOF_ACC decimal(18,2), @ACC_SCRAP decimal(18,2), @DispAdj decimal(18,2), @DispAdjYangsan decimal(18,2), @DispAdjDev decimal(18,2), @DispAdjCassette decimal(18,2)',
+		N'@SCOF DECIMAL(18,2), @CostAdj DECIMAL(18,2), @LossAdj DECIMAL(18,2), @LossAdjYangsan DECIMAL(18,2), @LossAdjDev DECIMAL(18,2), @LossAdjCassette DECIMAL(18,2) ,@ACC_TOTAL decimal(18,2), @ACC_PREV_PRICE decimal(18,2), @ACC_IDLE_COMP decimal(18,2), @ACC_ADJ decimal(18,2), @SCOF_ACC decimal(18,2), @ACC_SCRAP decimal(18,2)',
 		@SCOF = @SCOFTotal,
     	@CostAdj = @CostAdj,
     	@LossAdj = @LossAdj,
@@ -1570,11 +1513,7 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 		@ACC_IDLE_COMP  = @ACC_IDLE_COMP,
 		@ACC_ADJ        = @ACC_ADJ,
 		@SCOF_ACC       = @SCOF_ACC,
-		@ACC_SCRAP      = @ACC_SCRAP,
-		@DispAdj        = @DispAdj,
-		@DispAdjYangsan = @DispAdjYangsan,
-		@DispAdjDev     = @DispAdjDev,
-		@DispAdjCassette= @DispAdjCassette;
+		@ACC_SCRAP      = @ACC_SCRAP;
 
         DROP TABLE #BASE;
         DROP TABLE #RN;
