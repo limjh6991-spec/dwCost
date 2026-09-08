@@ -24,7 +24,7 @@
       <div class="left_box">
         <div class="btn_wrap ms-auto">
           <!-- <b-button class="second" @click="uploadClick">업로드</b-button> -->
-          <b-button v-show="showItemApiButton" class="second" @click="itemApiCallClick">품목 API 호출</b-button>
+          <b-button v-show="showItemApiButton" class="second" @click="itemApiCallClick">API 호출</b-button>
           <!-- 데이터 생성(GEN_DOI_MODEL_MAST)은 VN 미사용 → HQ 전용 노출. VN은 품목 API로 적재 -->
           <b-button v-show="!isClosedMonth && siteMap[params.site] !== 'VN'" class="second" @click="genData">데이터 생성</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>

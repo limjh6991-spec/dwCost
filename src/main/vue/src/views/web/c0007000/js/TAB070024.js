@@ -16,6 +16,7 @@ const grid = {
     { fieldName: '수출구분', dataType: ValueType.TEXT },
     { fieldName: '거래처', dataType: ValueType.TEXT },
     { fieldName: '통화', dataType: ValueType.TEXT },
+    { fieldName: '환율', dataType: ValueType.NUMBER },
     { fieldName: '가격조건', dataType: ValueType.TEXT },
   ],
   columns: [
@@ -25,8 +26,9 @@ const grid = {
     { name: '수출구분', fieldName: '수출구분', width: 100, header: { text: '수출구분' }, styleName: 'tc' },
     { name: '거래처', fieldName: '거래처', width: 200, header: { text: '거래처' }, styleName: 'tl' },
     { name: '통화', fieldName: '통화', width: 80, header: { text: '통화' }, styleName: 'tc' },
+    { name: '환율', fieldName: '환율', width: 100, header: { text: '환율' }, styleName: 'tr', numberFormat: '#,##0.00' },
     { name: '가격조건', fieldName: '가격조건', width: 120, header: { text: '가격조건' }, styleName: 'tc' },
   ],
-  layout: ['사업부문', '수입통관일', '수입통관관리번호', '수출구분', '거래처', '통화', '가격조건'],
+  layout: ['사업부문', '수입통관일', '수입통관관리번호', '수출구분', '거래처', '통화', '환율', '가격조건'],
 };
 module.exports = grid;

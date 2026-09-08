@@ -786,13 +786,15 @@
 		ORDER BY Claim번호, 품번
 	</select>
 
-	<!-- 수출신고필증조회 (EXP_PERMIT 적재조회, 원천 DOI_VN_IF_EXP_PERMIT — 스테이징) -->
+	<!-- 수출신고필증조회 (EXP_PERMIT 적재조회, 원천 DOI_VN_IF_EXP_PERMIT — 스테이징)
+	     통화=CurrName, 환율=수출신고필증의 ERP 환율(ExRate). 월평균 관리환율은 화면의 [환율관리] 버튼(ExchangeRatePopup, C0007012)에서 관리 -->
 	<select id="TAB070024_Sch1" resultType="CamelMap">
-		SELECT BizUnitName AS 사업부문, PermitDate AS 수입통관일, PermitNo AS 수입통관관리번호,
-			SMExpKindName AS 수출구분, CustName AS 거래처, CurrName AS 통화, UMPriceTermsName AS 가격조건
-		FROM DOI_VN_IF_EXP_PERMIT
-		WHERE SITE = N'VN'
-		ORDER BY PermitDate, PermitNo
+		SELECT s.BizUnitName AS 사업부문, s.PermitDate AS 수입통관일, s.PermitNo AS 수입통관관리번호,
+			s.SMExpKindName AS 수출구분, s.CustName AS 거래처, s.CurrName AS 통화,
+			s.ExRate AS 환율, s.UMPriceTermsName AS 가격조건
+		FROM DOI_VN_IF_EXP_PERMIT s
+		WHERE s.SITE = N'VN'
+		ORDER BY s.PermitDate, s.PermitNo
 	</select>
 
 </mapper>

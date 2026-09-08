@@ -24,6 +24,7 @@
       <div class="left_box">
         <div class="btn_wrap ms-auto">
           <b-button v-show="showIfApiButton" class="second" @click="apiCallClick">API 호출</b-button>
+          <b-button v-show="siteMap[params.site] === 'VN'" class="second" @click="openExchangeRate">환율관리</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
         </div>
       </div>
@@ -31,6 +32,7 @@
         <RealGrid ref="permitGrid" :uid="'permitGrid'" :step="'1'" :rows="gridRows" style="height: 100%" :fixLayoutWidth="false" />
       </div>
     </div>
+    <ExchangeRatePopup ref="exchangeRatePopup" @closePopup="onExchangeRateClosed" />
   </div>
 </template>
 
@@ -38,9 +40,11 @@
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/TAB070024.js';
 import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
+import ExchangeRatePopup from '@/components/ExchangeRatePopup.vue';
 
 export default {
   props: { tabId: { type: String, default: '' } },
+  components: { ExchangeRatePopup },
   mixins: [ifaceApiMixin],
   setup() {
     const srchInfo = useC0001001();
@@ -95,6 +99,13 @@ export default {
         successLabel: '수출신고필증조회',
         onSuccess: () => this.getDataList(),
       });
+    },
+    // 환율관리(월평균 관리환율) 팝업 — ExchangeRatePopup(C0007012, DOI_EXCHANGE_RATE) 재사용
+    openExchangeRate() {
+      this.$refs.exchangeRatePopup.openDialog({ yyyymm: this.params.yyyymm });
+    },
+    onExchangeRateClosed() {
+      this.searchClick();
     },
     excelBtnClick() {
       const now = new Date();
