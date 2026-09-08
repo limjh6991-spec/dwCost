@@ -217,10 +217,26 @@ export default {
         });
         return;
       }
+      // 비나(VN)=제품별공정별소요자재(ITEM_PROC_MAT, BSSPDROUItemProcMatList) → DOI_BOM_MAST[VN]. HQ MATERIAL_HQ 미러(그리드=DOI_BOM_MAST 일치).
+      const yyyymm = this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : '';
+      const y = Number(yyyymm.slice(0, 4));
+      const m = Number(yyyymm.slice(4, 6));
+      const lastDay = yyyymm.length === 6 ? String(new Date(y, m, 0).getDate()).padStart(2, '0') : '31';
       this.callIface({
-        key: 'MATERIAL',
-        params: { SMStatus: '2001002', ItemName: '', ItemNo: '', Spec: '', IsSTDItem: '0', IsSet: '0', UMItemClass: '', UMItemClassL: '', UMItemClassM: '' },
-        successLabel: '자재코드',
+        key: 'ITEM_PROC_MAT',
+        selCode: 'ACTUAL',
+        yyyymm: yyyymm,
+        params: {
+          WorkingTag: '', IDX_NO: 0, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: '', UserName: '',
+          ItemName: '', ItemNo: '', Spec: '', ItemSeq: 0, ProcRevName: '', ProcRev: '', ProcName: '', ProcSeq: 0,
+          AssyItemName: '', AssyItemNo: '', AssySpec: '', MatItemName: '', MatItemNo: '', MatSpec: '',
+          SMDelvTypeName: '', SMDelvType: 0, AssetSeq: 0, BizUnit: 0, BizUnitName: '',
+          UptDate: '', UptDateTo: '', UptEmpSeq: 0, IsLastRev: '0', SMStatus: 0, SMStatusName: '',
+          RegDate: '', RegDateTo: `${yyyymm}${lastDay}`,   // 누적: 등록일 하한 열기(이전~현재월)
+          UMItemClassL: 0, UMItemClassM: 0, UMItemClass: 0, MatUMItemClassL: 0, MatUMItemClassM: 0, MatUMItemClass: 0, MatAssetSeq: 0,
+          site,
+        },
+        successLabel: '제품별공정별소요자재',
         onSuccess: () => this.getDataList(),
       });
     },
