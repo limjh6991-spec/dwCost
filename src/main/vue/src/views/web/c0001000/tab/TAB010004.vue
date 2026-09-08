@@ -145,14 +145,18 @@ export default {
     // [SUPERADMIN·VN] 품목(ITEM) API 호출 → DOI_VN_IF_ITEM 적재 (면적기준 DOI_MODEL_MAST 원천).
     //   ※현재 ITEM은 xform 미연결(스테이징 적재까지). 응답 구조 확정 후 UP_VN_IF_XFORM_ITEM(→DOI_MODEL_MAST) 배선 예정.
     itemApiCallClick() {
+      if (!this.params.yyyymm) { this.$toast && this.$toast('error', '기준월을 선택해주세요.'); return; }
       const site = this.siteMap[this.params.site];
+      const yyyymm = this.params.yyyymm.replaceAll('-', '');
       // 정의서(품목) 요청 샘플과 동일한 기본 필터로 호출.
       //  ⚠️ SMStatus는 반드시 '2001002'(품목상태=사용). 빈 값('')이면 상태코드 미매칭으로 0건 조회됨.
       //  PAGE_SIZE는 전량 적재 위해 크게(기본 50 페이징 회피).
-      //  ※ 장변/단변(CMF ITEM_CMF_11/12)은 이 API 응답에 값이 오지 않음(전수검증: 마스터행 48키 고정, 부가정보 블록 빈배열).
-      //    TitleSerl은 AddInfo 트리거가 아니라 필터(값 지정 시 마스터까지 0건) — 넣지 말 것. CMF 원천은 엑셀/영림원 확인.
+      //  장변/단변(CMF ITEM_CMF_11/12)은 응답 DataBlock4 {RowIDX,ColIDX,AddInfoName}로 옴 → 로더 적재 후
+      //  UP_VN_IF_XFORM_ITEM 이 DOI_MODEL_MAST(X/Y/XY)에 자동 반영. yyyymm은 면적기준 기준월.
+      //  ※ TitleSerl은 필터(값 지정 시 마스터까지 0건) — 넣지 말 것.
       this.callIface({
         key: 'ITEM',
+        yyyymm: yyyymm,
         params: {
           IsChangedMst: '0',
           SMStatus: '2001002',

@@ -170,11 +170,12 @@ AS
 BEGIN
   SET NOCOUNT ON;
   DELETE FROM DOI_VN_IF_ITEM WHERE SITE=N'VN';
-  INSERT INTO DOI_VN_IF_ITEM (SITE, LOAD_DTTM, REQUEST_ID, ItemSeq, ItemName, ItemNo, Spec, TrunName, AssetName, AssetSeq, UnitName, UnitSeq, SMABC, SMABCName, SMStatus, SMStatusName, SMInOutKind, SMInOutKindName, DeptName, DeptSeq, EmpName, EmpSeq, STDItemName, STDItemSeq, ItemEngName, ItemClassLName, ItemClassMName, ItemClassSName, UMItemClass, RegUser, LastUser, RegDate, LastDate, IsSTDItem, IsOption, IsSet, IsQC, SMOutKindName, IsBOMReg, IsProcReg, IsProcMat, SMLimitTermKindName, SMLimitTermKind, IsLotMng, IsSerialMng, SMAssetGrp, PurCustName, TrustCustName, Remark, SMVatKindName, PriceInVat, IsFileCheck, IsImangeCheck, StdItemNo, STDItemSpec, MKCustName, IsPrice, URL, SMPurKind, PurKind, UMProperty, UMPropertyName, RowIDX, ColIDX, AddInfoName, RAW_JSON)
-  SELECT N'VN', GETDATE(), @requestId, j.ItemSeq, j.ItemName, j.ItemNo, j.Spec, j.TrunName, j.AssetName, j.AssetSeq, j.UnitName, j.UnitSeq, j.SMABC, j.SMABCName, j.SMStatus, j.SMStatusName, j.SMInOutKind, j.SMInOutKindName, j.DeptName, j.DeptSeq, j.EmpName, j.EmpSeq, j.STDItemName, j.STDItemSeq, j.ItemEngName, j.ItemClassLName, j.ItemClassMName, j.ItemClassSName, j.UMItemClass, j.RegUser, j.LastUser, j.RegDate, j.LastDate, j.IsSTDItem, j.IsOption, j.IsSet, j.IsQC, j.SMOutKindName, j.IsBOMReg, j.IsProcReg, j.IsProcMat, j.SMLimitTermKindName, j.SMLimitTermKind, j.IsLotMng, j.IsSerialMng, j.SMAssetGrp, j.PurCustName, j.TrustCustName, j.Remark, j.SMVatKindName, j.PriceInVat, j.IsFileCheck, j.IsImangeCheck, j.StdItemNo, j.STDItemSpec, j.MKCustName, j.IsPrice, j.URL, j.SMPurKind, j.PurKind, j.UMProperty, j.UMPropertyName, j.RowIDX, j.ColIDX, j.AddInfoName, j.[RAW_JSON]
+  INSERT INTO DOI_VN_IF_ITEM (SITE, LOAD_DTTM, REQUEST_ID, IDX_NO, ItemSeq, ItemName, ItemNo, Spec, TrunName, AssetName, AssetSeq, UnitName, UnitSeq, SMABC, SMABCName, SMStatus, SMStatusName, SMInOutKind, SMInOutKindName, DeptName, DeptSeq, EmpName, EmpSeq, STDItemName, STDItemSeq, ItemEngName, ItemClassLName, ItemClassMName, ItemClassSName, UMItemClass, RegUser, LastUser, RegDate, LastDate, IsSTDItem, IsOption, IsSet, IsQC, SMOutKindName, IsBOMReg, IsProcReg, IsProcMat, SMLimitTermKindName, SMLimitTermKind, IsLotMng, IsSerialMng, SMAssetGrp, PurCustName, TrustCustName, Remark, SMVatKindName, PriceInVat, IsFileCheck, IsImangeCheck, StdItemNo, STDItemSpec, MKCustName, IsPrice, URL, SMPurKind, PurKind, UMProperty, UMPropertyName, RowIDX, ColIDX, AddInfoName, RAW_JSON)
+  SELECT N'VN', GETDATE(), @requestId, j.IDX_NO, j.ItemSeq, j.ItemName, j.ItemNo, j.Spec, j.TrunName, j.AssetName, j.AssetSeq, j.UnitName, j.UnitSeq, j.SMABC, j.SMABCName, j.SMStatus, j.SMStatusName, j.SMInOutKind, j.SMInOutKindName, j.DeptName, j.DeptSeq, j.EmpName, j.EmpSeq, j.STDItemName, j.STDItemSeq, j.ItemEngName, j.ItemClassLName, j.ItemClassMName, j.ItemClassSName, j.UMItemClass, j.RegUser, j.LastUser, j.RegDate, j.LastDate, j.IsSTDItem, j.IsOption, j.IsSet, j.IsQC, j.SMOutKindName, j.IsBOMReg, j.IsProcReg, j.IsProcMat, j.SMLimitTermKindName, j.SMLimitTermKind, j.IsLotMng, j.IsSerialMng, j.SMAssetGrp, j.PurCustName, j.TrustCustName, j.Remark, j.SMVatKindName, j.PriceInVat, j.IsFileCheck, j.IsImangeCheck, j.StdItemNo, j.STDItemSpec, j.MKCustName, j.IsPrice, j.URL, j.SMPurKind, j.PurKind, j.UMProperty, j.UMPropertyName, j.RowIDX, j.ColIDX, j.AddInfoName, j.[RAW_JSON]
   -- 품목 응답 메인행은 DataBlock3 (부가정의 장변/단변=DataBlock2, 부가값=DataBlock4). DataBlock1로는 0건이던 버그
   FROM OPENJSON(@json, '$.DataBlock3')
   WITH (
+    IDX_NO INT '$."IDX_NO"',
     ItemSeq INT '$."ItemSeq"',
     ItemName NVARCHAR(100) '$."ItemName"',
     ItemNo NVARCHAR(100) '$."ItemNo"',
@@ -239,7 +240,14 @@ BEGIN
     AddInfoName NVARCHAR(200) '$."AddInfoName"',
     [RAW_JSON] NVARCHAR(MAX) '$' AS JSON
   ) j;
-  SELECT @@ROWCOUNT AS loaded;
+  DECLARE @loaded INT = @@ROWCOUNT;   -- 마스터 적재건수 (뒤 INSERT에 덮이지 않도록 먼저 보관)
+  -- 장변/단변 부가정보(CMF): DataBlock4 {RowIDX(0-based=IDX_NO-1), ColIDX 0=ITEM_CMF_11 장변 / 1=ITEM_CMF_12 단변, AddInfoName=값}
+  DELETE FROM DOI_VN_IF_ITEM_CMF WHERE SITE=N'VN';
+  INSERT INTO DOI_VN_IF_ITEM_CMF (SITE, RowIDX, ColIDX, AddInfoName, RAW_JSON)
+  SELECT N'VN', j2.RowIDX, j2.ColIDX, j2.AddInfoName, j2.[RAW_JSON]
+  FROM OPENJSON(@json, '$.DataBlock4')
+  WITH (RowIDX INT '$."RowIDX"', ColIDX INT '$."ColIDX"', AddInfoName NVARCHAR(100) '$."AddInfoName"', [RAW_JSON] NVARCHAR(MAX) '$' AS JSON) j2;
+  SELECT @loaded AS loaded;
 END;
 
 CREATE OR ALTER PROCEDURE UP_VN_IF_LOAD_PROCESS @json NVARCHAR(MAX), @requestId NVARCHAR(50)=NULL
