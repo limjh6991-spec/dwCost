@@ -149,8 +149,9 @@ export default {
       // 정의서(품목) 요청 샘플과 동일한 기본 필터로 호출.
       //  ⚠️ SMStatus는 반드시 '2001002'(품목상태=사용). 빈 값('')이면 상태코드 미매칭으로 0건 조회됨.
       //  PAGE_SIZE는 전량 적재 위해 크게(기본 50 페이징 회피).
-      //  ※ 장변/단변(CMF ITEM_CMF_11/12)은 이 API 응답에 값이 오지 않음(부가정보 블록 빈 배열).
-      //    TitleSerl은 정수 스칼라라 복수 지정 불가 — CMF 값 조회 파라미터는 영림원 확인 필요. 현재는 마스터만 적재.
+      //  ※ 장변/단변(CMF) 검증: TitleSerl은 스칼라 INT라 단일 TitleSeq만 가능.
+      //    1000001(ITEM_CMF_11 장변)으로 AddInfo 블록(RowIDX/ColIDX/값)이 채워지는지 시험.
+      //    채워지면 단변은 1000002. (안 채워지면 이 API로 CMF값 조회 불가 → 엑셀 경로)
       this.callIface({
         key: 'ITEM',
         params: {
@@ -160,6 +161,7 @@ export default {
           IsSTDItem: '0',
           IsSet: '0',
           AddText6: '0',
+          TitleSerl: '1000001',
           ItemName: '', ItemNo: '', Spec: '',
           UMItemClass: '', UMItemClassL: '', UMItemClassM: '',
           PAGE_NO: 1, PAGE_SIZE: 10000,
