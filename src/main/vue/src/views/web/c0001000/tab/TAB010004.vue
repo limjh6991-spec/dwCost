@@ -24,7 +24,8 @@
       <div class="left_box">
         <div class="btn_wrap ms-auto">
           <!-- <b-button class="second" @click="uploadClick">업로드</b-button> -->
-          <b-button v-show="!isClosedMonth" class="second" @click="genData">데이터 생성</b-button>          
+          <b-button v-show="showItemApiButton" class="second" @click="itemApiCallClick">품목 API 호출</b-button>
+          <b-button v-show="!isClosedMonth" class="second" @click="genData">데이터 생성</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
           <b-button v-show="!isClosedMonth" class="sub" @click="addBtnClick">추가</b-button>
           <b-button v-show="!isClosedMonth" @click="delBtnClick">삭제</b-button>
@@ -44,8 +45,10 @@ import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0001000/js/TAB010004.js';
 import axios from 'axios';
+import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
 export default {
   components: {},
+  mixins: [ifaceApiMixin],
   props: {
     yearList: {
       type: Array,
@@ -90,6 +93,13 @@ export default {
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
     },
+    // 품목(ITEM) [API 호출] 버튼: SUPERADMIN 계정 + VN 전용(면적기준정보 원천 적재)
+    showItemApiButton() {
+      try {
+        const roles = (this.userAuthInfo && this.userAuthInfo.roleList) || [];
+        return roles.includes('SUPERADMIN') && this.siteMap[this.params.site] === 'VN';
+      } catch (e) { return false; }
+    },
   },
   watch: {
     'params.yyyymm': async function(newVal) {
@@ -131,6 +141,16 @@ export default {
     });
   },
   methods: {
+    // [SUPERADMIN·VN] 품목(ITEM) API 호출 → DOI_VN_IF_ITEM 적재 (면적기준 DOI_MODEL_MAST 원천).
+    //   ※현재 ITEM은 xform 미연결(스테이징 적재까지). 응답 구조 확정 후 UP_VN_IF_XFORM_ITEM(→DOI_MODEL_MAST) 배선 예정.
+    itemApiCallClick() {
+      const site = this.siteMap[this.params.site];
+      this.callIface({
+        key: 'ITEM',
+        params: { SMStatus: '', ItemName: '', ItemNo: '', Spec: '', IsSTDItem: '', IsSet: '', UMItemClass: '', UMItemClassL: '', UMItemClassM: '', site },
+        successLabel: '품목',
+      });
+    },
     initializeGrid() {
       this.modelGrid = _.cloneDeep(gridField);
     },
