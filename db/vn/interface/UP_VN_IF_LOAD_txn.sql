@@ -8,7 +8,8 @@ BEGIN
   DELETE FROM DOI_VN_IF_ACCLANG WHERE SITE=N'VN' AND ISNULL(SEL_CODE,N'')=ISNULL(@selCode,N'');
   INSERT INTO DOI_VN_IF_ACCLANG (SITE, SEL_CODE, LOAD_DTTM, REQUEST_ID, FSItemNo, FSItemName, RowIDX, RAW_JSON)
   SELECT N'VN', @selCode, GETDATE(), @requestId, j.FSItemNo, j.FSItemName, j.RowIDX, j.[RAW_JSON]
-  FROM OPENJSON(@json, '$.DataBlock1')
+  -- 언어별계정항목 응답 메인행은 DataBlock3 (언어정의=DataBlock2, 언어별명칭=DataBlock4). DataBlock1로는 0건이던 버그
+  FROM OPENJSON(@json, '$.DataBlock3')
   WITH (
     FSItemNo NVARCHAR(100) '$."FSItemNo"',
     FSItemName NVARCHAR(100) '$."FSItemName"',

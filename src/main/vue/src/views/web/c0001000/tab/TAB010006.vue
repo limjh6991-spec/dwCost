@@ -84,11 +84,17 @@ export default {
     // 언어별계정항목(ACCLANG, BSSACFSItemForName) API 호출 → DOI_VN_IF_ACCLANG 적재 → 그리드 새로고침
     apiCallClick() {
       const yyyymm = this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : null;
+      // 정의서(언어별계정항목) 요청 샘플: FSTypeName='계정과목', TableName='_TDAAccountForName' 필수.
+      //  이 필터가 없으면 응답 DataBlock3가 빈 배열로 0건 조회됨.
       this.callIface({
         key: 'ACCLANG',
         yyyymm: yyyymm,
         selCode: 'ACTUAL',
-        params: { site: this.siteMap[this.params.site] },
+        params: {
+          FSTypeName: '계정과목', TableName: '_TDAAccountForName', IsChangedMst: '0',
+          FSItemNo: '', FSItemName: '', LanguageSeq: '',
+          site: this.siteMap[this.params.site],
+        },
         successLabel: '언어별계정항목',
         onSuccess: () => this.getDataList(),
       });
