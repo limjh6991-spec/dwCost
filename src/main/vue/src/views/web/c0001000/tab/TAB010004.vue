@@ -149,6 +149,8 @@ export default {
       // 정의서(품목) 요청 샘플과 동일한 기본 필터로 호출.
       //  ⚠️ SMStatus는 반드시 '2001002'(품목상태=사용). 빈 값('')이면 상태코드 미매칭으로 0건 조회됨.
       //  PAGE_SIZE는 전량 적재 위해 크게(기본 50 페이징 회피).
+      //  TitleSerl: 사용자정의필드(CMF) 조회 지정 — 1000001(ITEM_CMF_11 장변)/1000002(ITEM_CMF_12 단변).
+      //    미지정 시 응답 부가정보 블록(장변/단변)이 빈 배열로 옴.
       this.callIface({
         key: 'ITEM',
         params: {
@@ -158,6 +160,8 @@ export default {
           IsSTDItem: '0',
           IsSet: '0',
           AddText6: '0',
+          TitleSerl: '1000001,1000002',
+          InPutType: '',
           ItemName: '', ItemNo: '', Spec: '',
           UMItemClass: '', UMItemClassL: '', UMItemClassM: '',
           PAGE_NO: 1, PAGE_SIZE: 10000,
