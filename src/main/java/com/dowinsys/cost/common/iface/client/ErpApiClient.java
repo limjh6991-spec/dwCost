@@ -88,6 +88,7 @@ public class ErpApiClient {
         root.put("languageSeq", ep.languageSeq() != null ? ep.languageSeq() : erp.getLanguageSeq());
         root.put("securityType", 0);
         root.put("userId", "");
+        root.put("workingTag", "I");   // 정의서 Root Param 필수(I=조회). 품목 등 부가정보(AddInfo) 포함 응답 경로에 필요 — 영림원 정상 샘플 재현
         // 인터페이스별 seq (InterFace 정의서 ver1.8). serviceSeq/pgmSeq = ERP Method 라우팅·권한 판단 키.
         if (ep.serviceSeq() != null) root.put("serviceSeq", ep.serviceSeq());
         root.put("methodSeq", ep.methodSeq() != null ? ep.methodSeq() : 1);

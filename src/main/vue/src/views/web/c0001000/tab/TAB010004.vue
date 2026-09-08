@@ -143,14 +143,14 @@ export default {
   },
   methods: {
     // [SUPERADMIN·VN] 품목(ITEM) API 호출 → DOI_VN_IF_ITEM 적재 (면적기준 DOI_MODEL_MAST 원천).
-    //   ※현재 ITEM은 xform 미연결(스테이징 적재까지). 응답 구조 확정 후 UP_VN_IF_XFORM_ITEM(→DOI_MODEL_MAST) 배선 예정.
+    //   적재 직후 UP_VN_IF_XFORM_ITEM 자동 실행 → DOI_MODEL_MAST(X=장변, Y=단변, XY=면적) 반영.
     itemApiCallClick() {
       if (!this.params.yyyymm) { this.$toast && this.$toast('error', '기준월을 선택해주세요.'); return; }
       const site = this.siteMap[this.params.site];
       const yyyymm = this.params.yyyymm.replaceAll('-', '');
       // 정의서(품목) 요청 샘플과 동일한 기본 필터로 호출.
       //  ⚠️ SMStatus는 반드시 '2001002'(품목상태=사용). 빈 값('')이면 상태코드 미매칭으로 0건 조회됨.
-      //  PAGE_SIZE는 전량 적재 위해 크게(기본 50 페이징 회피).
+      //  ※ PAGE_NO/PAGE_SIZE 미지정(넣으면 ERP가 전량·부가정보 생략 경로). 부가정보 포함 요청은 영림원 정상 샘플 재현.
       //  장변/단변(CMF ITEM_CMF_11/12)은 응답 DataBlock4 {RowIDX,ColIDX,AddInfoName}로 옴 → 로더 적재 후
       //  UP_VN_IF_XFORM_ITEM 이 DOI_MODEL_MAST(X/Y/XY)에 자동 반영. yyyymm은 면적기준 기준월.
       //  ※ TitleSerl은 필터(값 지정 시 마스터까지 0건) — 넣지 말 것.
@@ -158,17 +158,21 @@ export default {
         key: 'ITEM',
         yyyymm: yyyymm,
         params: {
-          IsChangedMst: '0',
-          SMStatus: '2001002',
-          SMStatusName: 'Sử dụng',
-          IsSTDItem: '0',
+          // 영림원 정상 요청 샘플(531건, 부가정보 DataBlock4 포함) 재현 — 필드 구성을 그대로 맞춤.
+          //  ⚠️ PAGE_NO/PAGE_SIZE를 넣으면 ERP가 전량(4,908건)·부가정보 생략 경로로 감 → 넣지 말 것.
+          //  ⚠️ SMStatus='2001002'(사용) 필수, SMStatusName은 빈값. TitleSerl/InPutType 등은 빈값(값 지정 시 필터로 동작).
+          Result: '', ROW_IDX: '', IsChangedMst: '0',
+          ItemName: '', AssetSeq: '', AssetName: '',
+          UMItemClass: '', UMItemClassName: '',
+          UMEtcItemClass: '', UMEtcItemClassName: '', UMEtcItemClassValue: '', UMEtcItemClassValueName: '',
+          IsSTDItem: '0', ItemSeq: '', ItemNo: '', Spec: '',
+          SMStatus: '2001002', SMStatusName: '',
           IsSet: '0',
-          AddText6: '0',
-          ItemName: '', ItemNo: '', Spec: '',
-          UMItemClass: '', UMItemClassL: '', UMItemClassM: '',
-          // [진단] ERP는 AssetName 필터를 무시(4,908건 그대로). 결과가 크면 부가정보(DataBlock4)를 생략하므로
-          //  PAGE_SIZE를 임계치(샘플 531건에서 포함) 이하로 낮춰 페이징 작동·AddInfo 포함 여부 확인. 확인되면 백엔드 전페이지 순회로 전환.
-          PAGE_NO: 1, PAGE_SIZE: 500,
+          RegDateFr: '', RegDateTo: '', RegUserSeq: '', RegUser: '', EmpSeq: '', DeptSeq: '',
+          UMItemClassL: '', UMItemClassLName: '', UMItemClassM: '', UMItemClassMName: '',
+          InPutType: '', TitleSerl: '',
+          AddText1: '', AddText2: '', AddText3: '', AddText4: '', AddText5: '', AddText6: '0', AddText7: '',
+          AddCd3: '', AddCd5: '',
           site,
         },
         successLabel: '품목',
