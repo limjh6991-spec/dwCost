@@ -146,9 +146,23 @@ export default {
     //   ※현재 ITEM은 xform 미연결(스테이징 적재까지). 응답 구조 확정 후 UP_VN_IF_XFORM_ITEM(→DOI_MODEL_MAST) 배선 예정.
     itemApiCallClick() {
       const site = this.siteMap[this.params.site];
+      // 정의서(품목) 요청 샘플과 동일한 기본 필터로 호출.
+      //  ⚠️ SMStatus는 반드시 '2001002'(품목상태=사용). 빈 값('')이면 상태코드 미매칭으로 0건 조회됨.
+      //  PAGE_SIZE는 전량 적재 위해 크게(기본 50 페이징 회피).
       this.callIface({
         key: 'ITEM',
-        params: { SMStatus: '', ItemName: '', ItemNo: '', Spec: '', IsSTDItem: '', IsSet: '', UMItemClass: '', UMItemClassL: '', UMItemClassM: '', site },
+        params: {
+          IsChangedMst: '0',
+          SMStatus: '2001002',
+          SMStatusName: 'Sử dụng',
+          IsSTDItem: '0',
+          IsSet: '0',
+          AddText6: '0',
+          ItemName: '', ItemNo: '', Spec: '',
+          UMItemClass: '', UMItemClassL: '', UMItemClassM: '',
+          PAGE_NO: 1, PAGE_SIZE: 10000,
+          site,
+        },
         successLabel: '품목',
       });
     },
