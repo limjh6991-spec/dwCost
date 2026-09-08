@@ -164,6 +164,7 @@ export default {
           IsSTDItem: '0',
           IsSet: '0',
           AddText6: '0',
+          AssetName: 'Product',   // 제품만: 결과가 크면(4,908건) ERP가 부가정보(장변/단변)를 생략 → 제품(≈301건)으로 좁혀 DataBlock4 포함 유도
           ItemName: '', ItemNo: '', Spec: '',
           UMItemClass: '', UMItemClassL: '', UMItemClassM: '',
           PAGE_NO: 1, PAGE_SIZE: 10000,
