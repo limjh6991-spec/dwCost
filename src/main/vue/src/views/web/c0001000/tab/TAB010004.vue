@@ -164,10 +164,11 @@ export default {
           IsSTDItem: '0',
           IsSet: '0',
           AddText6: '0',
-          AssetName: 'Product',   // 제품만: 결과가 크면(4,908건) ERP가 부가정보(장변/단변)를 생략 → 제품(≈301건)으로 좁혀 DataBlock4 포함 유도
           ItemName: '', ItemNo: '', Spec: '',
           UMItemClass: '', UMItemClassL: '', UMItemClassM: '',
-          PAGE_NO: 1, PAGE_SIZE: 10000,
+          // [진단] ERP는 AssetName 필터를 무시(4,908건 그대로). 결과가 크면 부가정보(DataBlock4)를 생략하므로
+          //  PAGE_SIZE를 임계치(샘플 531건에서 포함) 이하로 낮춰 페이징 작동·AddInfo 포함 여부 확인. 확인되면 백엔드 전페이지 순회로 전환.
+          PAGE_NO: 1, PAGE_SIZE: 500,
           site,
         },
         successLabel: '품목',
