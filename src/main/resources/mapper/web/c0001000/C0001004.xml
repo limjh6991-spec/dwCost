@@ -1080,10 +1080,19 @@
 
 	<!-- 언어별계정항목 (ACCLANG 적재조회, 원천 DOI_VN_IF_ACCLANG — 스테이징) -->
 	<select id="TAB010006_Sch1" resultType="CamelMap">
-		SELECT FSItemNo AS 계정대분류코드, FSItemName AS 계정항목, RowIDX AS 조회순서
-		FROM DOI_VN_IF_ACCLANG
-		WHERE SITE = N'VN'
-		ORDER BY RowIDX
+		SELECT a.FSItemNo AS 계정대분류코드, a.FSItemName AS 계정항목,
+			MAX(CASE WHEN l.ColIDX=0 THEN l.FSItemForName END) AS 한국어,
+			MAX(CASE WHEN l.ColIDX=1 THEN l.FSItemForName END) AS 영어,
+			MAX(CASE WHEN l.ColIDX=2 THEN l.FSItemForName END) AS 일본어,
+			MAX(CASE WHEN l.ColIDX=3 THEN l.FSItemForName END) AS 简体中文,
+			MAX(CASE WHEN l.ColIDX=4 THEN l.FSItemForName END) AS 繁體中文,
+			MAX(CASE WHEN l.ColIDX=5 THEN l.FSItemForName END) AS 베트남어,
+			a.RowIDX AS 조회순서
+		FROM DOI_VN_IF_ACCLANG a
+		LEFT JOIN DOI_VN_IF_ACCLANG_LANG l ON l.SITE=a.SITE AND l.RowIDX=a.RowIDX
+		WHERE a.SITE = N'VN'
+		GROUP BY a.FSItemNo, a.FSItemName, a.RowIDX
+		ORDER BY a.RowIDX
 	</select>
 
 	<!-- 공정 (PROCESS 적재조회, 원천 DOI_VN_IF_PROCESS — 스테이징) -->

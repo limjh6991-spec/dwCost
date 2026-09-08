@@ -5,18 +5,20 @@ CREATE OR ALTER PROCEDURE UP_VN_IF_LOAD_ACCLANG @json NVARCHAR(MAX), @selCode NV
 AS
 BEGIN
   SET NOCOUNT ON;
+  -- 언어별계정항목 응답: DataBlock2=언어정의(TitleSeq 1~6: 한국어/English/日本語/简体中文/繁體中文/Tiếng việt),
+  --   DataBlock3=계정행(FSItemNo/FSItemName/FSItemSeq), DataBlock4=언어별 명칭 {RowIDX(0-based=DataBlock3 배열위치), ColIDX(0..5=언어), FSItemForName}
   DELETE FROM DOI_VN_IF_ACCLANG WHERE SITE=N'VN' AND ISNULL(SEL_CODE,N'')=ISNULL(@selCode,N'');
   INSERT INTO DOI_VN_IF_ACCLANG (SITE, SEL_CODE, LOAD_DTTM, REQUEST_ID, FSItemNo, FSItemName, RowIDX, RAW_JSON)
-  SELECT N'VN', @selCode, GETDATE(), @requestId, j.FSItemNo, j.FSItemName, j.RowIDX, j.[RAW_JSON]
-  -- 언어별계정항목 응답 메인행은 DataBlock3 (언어정의=DataBlock2, 언어별명칭=DataBlock4). DataBlock1로는 0건이던 버그
-  FROM OPENJSON(@json, '$.DataBlock3')
-  WITH (
-    FSItemNo NVARCHAR(100) '$."FSItemNo"',
-    FSItemName NVARCHAR(100) '$."FSItemName"',
-    RowIDX INT '$."RowIDX"',
-    [RAW_JSON] NVARCHAR(MAX) '$' AS JSON
-  ) j;
-  SELECT @@ROWCOUNT AS loaded;
+  SELECT N'VN', @selCode, GETDATE(), @requestId,
+         JSON_VALUE(a.value,'$.FSItemNo'), JSON_VALUE(a.value,'$.FSItemName'), CAST(a.[key] AS INT), a.value
+  FROM OPENJSON(@json, '$.DataBlock3') a;   -- [key]=배열위치(0-based) = DataBlock4.RowIDX 조인키
+  DECLARE @loaded INT = @@ROWCOUNT;          -- 마스터 적재건수 선보관(뒤 INSERT에 덮이지 않게)
+  DELETE FROM DOI_VN_IF_ACCLANG_LANG WHERE SITE=N'VN';
+  INSERT INTO DOI_VN_IF_ACCLANG_LANG (SITE, RowIDX, ColIDX, FSItemForName, RAW_JSON)
+  SELECT N'VN', j.RowIDX, j.ColIDX, j.FSItemForName, j.[RAW_JSON]
+  FROM OPENJSON(@json, '$.DataBlock4')
+  WITH (RowIDX INT '$."RowIDX"', ColIDX INT '$."ColIDX"', FSItemForName NVARCHAR(200) '$."FSItemForName"', [RAW_JSON] NVARCHAR(MAX) '$' AS JSON) j;
+  SELECT @loaded AS loaded;
 END;
 
 CREATE OR ALTER PROCEDURE UP_VN_IF_LOAD_DEPT_COST @json NVARCHAR(MAX), @selCode NVARCHAR(10)=NULL, @requestId NVARCHAR(50)=NULL
