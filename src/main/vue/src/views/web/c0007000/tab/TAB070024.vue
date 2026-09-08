@@ -95,7 +95,15 @@ export default {
         key: 'EXP_PERMIT',
         selCode: 'ACTUAL',
         yyyymm: yyyymm,
-        params: { BizUnit: 0, PermitDateFr: `${yyyymm}01`, PermitDateTo: `${yyyymm}${lastDay}`, site: this.siteMap[this.params.site] },
+        // 영림원 정의서(수출신고필증) 요청 샘플과 동일 구성 — 빈 필드 전부 포함(없으면 NULL 매칭 실패로 0건).
+        //  ⚠️ BizUnit은 샘플에 없음: 0을 보내면 필터로 동작해 0건이 될 수 있어 생략.
+        params: {
+          Result: '', ROW_IDX: '', IsChangedMst: '0',
+          SMExpKind: '', PermitNo: '', PermitRefNo: '', CustSeq: '', EmpSeq: '', DeptSeq: '', UMPriceTerms: '',
+          PermitDateFr: `${yyyymm}01`, PermitDateTo: `${yyyymm}${lastDay}`,
+          ItemName: '', ItemNo: '', SMProgressType: '', InvoiceRefNo: '', SourceNo: '', SourceRefNo: '', SourceTableSeq: '', CustNo: '',
+          site: this.siteMap[this.params.site],
+        },
         successLabel: '수출신고필증조회',
         onSuccess: () => this.getDataList(),
       });
