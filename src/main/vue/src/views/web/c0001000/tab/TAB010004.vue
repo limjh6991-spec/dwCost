@@ -94,11 +94,11 @@ export default {
     prodCtg() {
       return this.userAuthInfo.curProdCtg;
     },
-    // 품목(ITEM) [API 호출] 버튼: SUPERADMIN 계정 + VN 전용(면적기준정보 원천 적재)
+    // 품목(ITEM) [API 호출] 버튼: VN 전용(면적기준정보 원천 적재). 2026-09-08 SUPERADMIN 제한 제거 — 화면 접근 권한이 있는 모든 사용자 노출
+    //   (ITEM은 VN 엔드포인트만 있어 HQ에선 숨김. ifaceApiMixin.showIfApiButton 정책과 동일)
     showItemApiButton() {
       try {
-        const roles = (this.userAuthInfo && this.userAuthInfo.roleList) || [];
-        return roles.includes('SUPERADMIN') && this.siteMap[this.params.site] === 'VN';
+        return this.siteMap[this.params.site] === 'VN';
       } catch (e) { return false; }
     },
   },
