@@ -786,4 +786,13 @@
 		ORDER BY Claim번호, 품번
 	</select>
 
+	<!-- 수출신고필증조회 (EXP_PERMIT 적재조회, 원천 DOI_VN_IF_EXP_PERMIT — 스테이징) -->
+	<select id="TAB070024_Sch1" resultType="CamelMap">
+		SELECT BizUnitName AS 사업부문, PermitDate AS 수입통관일, PermitNo AS 수입통관관리번호,
+			SMExpKindName AS 수출구분, CustName AS 거래처, CurrName AS 통화, UMPriceTermsName AS 가격조건
+		FROM DOI_VN_IF_EXP_PERMIT
+		WHERE SITE = N'VN'
+		ORDER BY PermitDate, PermitNo
+	</select>
+
 </mapper>

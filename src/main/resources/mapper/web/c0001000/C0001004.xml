@@ -1077,4 +1077,21 @@
 	<update id="callGenDoiModelMastProcedure">
 		EXEC GEN_DOI_MODEL_MAST @YYYYMM=#{yyyymm}, @SITE=#{site}
 	</update>
+
+	<!-- 언어별계정항목 (ACCLANG 적재조회, 원천 DOI_VN_IF_ACCLANG — 스테이징) -->
+	<select id="TAB010006_Sch1" resultType="CamelMap">
+		SELECT FSItemNo AS 계정대분류코드, FSItemName AS 계정항목, RowIDX AS 조회순서
+		FROM DOI_VN_IF_ACCLANG
+		WHERE SITE = N'VN'
+		ORDER BY RowIDX
+	</select>
+
+	<!-- 공정 (PROCESS 적재조회, 원천 DOI_VN_IF_PROCESS — 스테이징) -->
+	<select id="TAB010007_Sch1" resultType="CamelMap">
+		SELECT BizUnit AS 사업단위, ProcSeq AS 공정내부코드, ProcName AS 공정명,
+			IsProcQC AS 공정검사여부, Remark AS 비고
+		FROM DOI_VN_IF_PROCESS
+		WHERE SITE = N'VN'
+		ORDER BY ProcName
+	</select>
 </mapper>

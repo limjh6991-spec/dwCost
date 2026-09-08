@@ -5,9 +5,13 @@
     <template #tab-content-TAB070003>
       <TAB070003 tabId="TAB070003" />
     </template>
-    <!-- Tab 1 수출신고필증 -->
+    <!-- Tab 1 수출매출품목조회 (EXP_SALES) -->
     <template #tab-content-TAB070004>
       <TAB070004 tabId="TAB070004" />
+    </template>
+    <!-- 수출신고필증조회 (수출매출품목조회~수출Claim 사이, EXP_PERMIT) -->
+    <template #tab-content-TAB070024>
+      <TAB070024 tabId="TAB070024" />
     </template>
     <!-- Tab 2 수출Claim (참고/조회용, VN) -->
     <template #tab-content-TAB070016>
@@ -20,6 +24,7 @@
 import TAB070003 from './tab/TAB070003.vue';
 import TAB070004 from './tab/TAB070004.vue';
 import TAB070016 from './tab/TAB070016.vue';
+import TAB070024 from './tab/TAB070024.vue';
 
 export default {
   name: 'DOI_C0007005',
@@ -28,6 +33,7 @@ export default {
     TAB070003,
     TAB070004,
     TAB070016,
+    TAB070024,
   },
   watch: {},
   data() {
