@@ -24,6 +24,31 @@
 		AND ISNULL(자재번호,'') = ISNULL(#{품번},'')
 	</delete>
 
+	<!-- 창고별수불집계조회 (WH_STOCK_SUM 적재조회, 원천 DOI_VN_IF_WH_STOCK_SUM — 스테이징)
+	     수량 컬럼은 스테이징 NVARCHAR → 그리드 숫자표시 위해 numeric 캐스팅 -->
+	<select id="WHStockSum_Sch1" resultType="CamelMap">
+		SELECT SMAssetGrpName AS 재고자산종류, WHName AS 창고, SMWHKindName AS 창고구분,
+			AssetName AS 품목자산분류, ItemClassLName AS 품목대분류, ItemClassMName AS 품목중분류, ItemClassSName AS 품목소분류,
+			ItemName AS 품명, ItemNo AS 품번, Spec AS 규격, UnitName AS 단위, SMStatusName AS 품목상태,
+			TRY_CONVERT(numeric(18,3), PrevQty) AS 이월수량, TRY_CONVERT(numeric(18,3), InQty) AS 입고수량,
+			TRY_CONVERT(numeric(18,3), OutQty) AS 출고수량, TRY_CONVERT(numeric(18,3), StockQty) AS 재고수량
+		FROM DOI_VN_IF_WH_STOCK_SUM
+		WHERE SITE = N'VN'
+		ORDER BY WHName, ItemNo
+	</select>
+
+	<!-- 사업단위별수불집계조회 (BIZ_STOCK_SUM 적재조회, 원천 DOI_VN_IF_BIZ_STOCK_SUM — 스테이징)
+	     수량 컬럼은 스테이징에서 DECIMAL(19,5) 이므로 캐스팅 불필요 -->
+	<select id="BizStockSum_Sch1" resultType="CamelMap">
+		SELECT BizUnitName AS 사업부문, AssetName AS 품목자산분류, SMAssetGrpName AS 재고자산종류,
+			ItemClassLName AS 품목대분류, ItemClassMName AS 품목중분류, ItemClassSName AS 품목소분류,
+			ItemName AS 품명, ItemNo AS 품번, Spec AS 규격, UnitName AS 단위, SMStatusName AS 품목상태,
+			PrevQty AS 이월수량, InQty AS 입고수량, OutQty AS 출고수량, StockQty AS 재고수량
+		FROM DOI_VN_IF_BIZ_STOCK_SUM
+		WHERE SITE = N'VN'
+		ORDER BY ItemNo
+	</select>
+
 	<insert id="uploadExcel" parameterType="java.util.List">
 		<foreach collection="list" item="item" separator=";">
 		INSERT INTO DOI_VN_MATERIAL (품명, 품번, 규격, 품목자산분류,

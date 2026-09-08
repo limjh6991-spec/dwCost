@@ -384,9 +384,10 @@ AS
 BEGIN
   SET NOCOUNT ON;
   DELETE FROM DOI_VN_IF_WH_STOCK_SUM WHERE SITE=N'VN' AND ISNULL(SEL_CODE,N'')=ISNULL(@selCode,N'');
+  -- 창고별수불집계 응답 메인행은 DataBlock3 (DataBlock1 아님 — HQ UP_HQ_IF_LOAD_WH_STOCK_SUM 동일). DataBlock4=입출고 유형별 세부(미적재)
   INSERT INTO DOI_VN_IF_WH_STOCK_SUM (SITE, SEL_CODE, LOAD_DTTM, REQUEST_ID, SMAssetGrpName, WHName, SMWHKindName, AssetName, ItemClassLName, ItemClassMName, ItemClassSName, ItemName, ItemNo, Spec, UnitName, SMStatusName, PrevQty, InQty, OutQty, StockQty, ItemSeq, UnitSeq, WHSeq, SMWHKind, Location, SafetyQty, CostWHName, IsLot, RAW_JSON)
   SELECT N'VN', @selCode, GETDATE(), @requestId, j.SMAssetGrpName, j.WHName, j.SMWHKindName, j.AssetName, j.ItemClassLName, j.ItemClassMName, j.ItemClassSName, j.ItemName, j.ItemNo, j.Spec, j.UnitName, j.SMStatusName, j.PrevQty, j.InQty, j.OutQty, j.StockQty, j.ItemSeq, j.UnitSeq, j.WHSeq, j.SMWHKind, j.Location, j.SafetyQty, j.CostWHName, j.IsLot, j.[RAW_JSON]
-  FROM OPENJSON(@json, '$.DataBlock1')
+  FROM OPENJSON(@json, '$.DataBlock3')
   WITH (
     SMAssetGrpName NVARCHAR(200) '$."SMAssetGrpName"',
     WHName NVARCHAR(200) '$."WHName"',
@@ -422,14 +423,11 @@ AS
 BEGIN
   SET NOCOUNT ON;
   DELETE FROM DOI_VN_IF_BIZ_STOCK_SUM WHERE SITE=N'VN' AND ISNULL(SEL_CODE,N'')=ISNULL(@selCode,N'');
-  INSERT INTO DOI_VN_IF_BIZ_STOCK_SUM (SITE, SEL_CODE, LOAD_DTTM, REQUEST_ID, Title, TitleSeq, Title2, TitleSeq2, BizUnit, BizUnitName, AssetName, SMAssetGrpName, ItemClassLName, ItemClassMName, ItemClassSName, ItemName, ItemNo, Spec, UnitName, SMStatusName, ItemSeq, UnitSeq, PrevQty, InQty, OutQty, StockQty, RowIDX, ColIDX, Qty, RAW_JSON)
-  SELECT N'VN', @selCode, GETDATE(), @requestId, j.Title, j.TitleSeq, j.Title2, j.TitleSeq2, j.BizUnit, j.BizUnitName, j.AssetName, j.SMAssetGrpName, j.ItemClassLName, j.ItemClassMName, j.ItemClassSName, j.ItemName, j.ItemNo, j.Spec, j.UnitName, j.SMStatusName, j.ItemSeq, j.UnitSeq, j.PrevQty, j.InQty, j.OutQty, j.StockQty, j.RowIDX, j.ColIDX, j.Qty, j.[RAW_JSON]
-  FROM OPENJSON(@json, '$.DataBlock1')
+  -- 사업단위별수불집계 응답 메인행은 DataBlock3 (Title류=DataBlock2, RowIDX/ColIDX/Qty=DataBlock4 커스텀 세부는 별도 — 여기선 메인행만 적재)
+  INSERT INTO DOI_VN_IF_BIZ_STOCK_SUM (SITE, SEL_CODE, LOAD_DTTM, REQUEST_ID, BizUnit, BizUnitName, AssetName, SMAssetGrpName, ItemClassLName, ItemClassMName, ItemClassSName, ItemName, ItemNo, Spec, UnitName, SMStatusName, ItemSeq, UnitSeq, PrevQty, InQty, OutQty, StockQty, RAW_JSON)
+  SELECT N'VN', @selCode, GETDATE(), @requestId, j.BizUnit, j.BizUnitName, j.AssetName, j.SMAssetGrpName, j.ItemClassLName, j.ItemClassMName, j.ItemClassSName, j.ItemName, j.ItemNo, j.Spec, j.UnitName, j.SMStatusName, j.ItemSeq, j.UnitSeq, j.PrevQty, j.InQty, j.OutQty, j.StockQty, j.[RAW_JSON]
+  FROM OPENJSON(@json, '$.DataBlock3')
   WITH (
-    Title NVARCHAR(100) '$."Title"',
-    TitleSeq INT '$."TitleSeq"',
-    Title2 NVARCHAR(100) '$."Title2"',
-    TitleSeq2 INT '$."TitleSeq2"',
     BizUnit INT '$."BizUnit"',
     BizUnitName NVARCHAR(100) '$."BizUnitName"',
     AssetName NVARCHAR(100) '$."AssetName"',
@@ -448,9 +446,6 @@ BEGIN
     InQty DECIMAL(19,5) '$."InQty"',
     OutQty DECIMAL(19,5) '$."OutQty"',
     StockQty DECIMAL(19,5) '$."StockQty"',
-    RowIDX INT '$."RowIDX"',
-    ColIDX INT '$."ColIDX"',
-    Qty DECIMAL(19,5) '$."Qty"',
     [RAW_JSON] NVARCHAR(MAX) '$' AS JSON
   ) j;
   SELECT @@ROWCOUNT AS loaded;

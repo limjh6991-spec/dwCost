@@ -15,7 +15,7 @@ const grid = {
     { fieldName: '조회순서', dataType: ValueType.NUMBER },
   ],
   columns: [
-    { name: '계정대분류코드', fieldName: '계정대분류코드', width: 200, header: { text: '계정대분류코드' }, styleName: 'tc' },
+    { name: '계정대분류코드', fieldName: '계정대분류코드', width: 200, header: { text: '계정대분류코드' }, styleName: 'tl' },
     { name: '계정항목', fieldName: '계정항목', width: 300, header: { text: '계정항목' }, styleName: 'tl' },
     { name: '조회순서', fieldName: '조회순서', width: 100, header: { text: '조회순서' }, styleName: 'tr', numberFormat: '#,##0' },
   ],
