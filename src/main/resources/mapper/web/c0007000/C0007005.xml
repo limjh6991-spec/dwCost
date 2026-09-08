@@ -793,11 +793,37 @@
 		SELECT s.BizUnitName AS 사업부문,
 			CASE WHEN LEN(s.PermitDate)=8 THEN STUFF(STUFF(s.PermitDate,5,0,'-'),8,0,'-') ELSE s.PermitDate END AS 수입통관일,
 			s.PermitNo AS 수입통관관리번호,
-			s.SMExpKindName AS 수출구분, s.CustName AS 거래처, s.CurrName AS 통화,
-			TRY_CONVERT(numeric(18,5), s.ExRate) AS 환율, s.UMPriceTermsName AS 가격조건
+			s.PermitRefNo AS 수입통관번호,
+			s.SMExpKindName AS 수출구분,
+			s.CustName AS 거래처,
+			s.CustNo AS 거래처번호,
+			s.DeptName AS 부서,
+			s.EmpName AS 담당자,
+			s.PermitTypeName AS 수출결재방법,
+			s.SMProgressTypeName AS 진행,
+			s.SMSalesProgTypeName AS 매출진행,
+			s.CurrName AS 통화,
+			TRY_CONVERT(numeric(18,5), s.ExRate) AS 환율,
+			s.UMPriceTermsName AS 가격조건,
+			s.ItemName AS 품명,
+			s.ItemNo AS 품번,
+			s.Spec AS 규격,
+			s.UnitName AS 단위,
+			TRY_CONVERT(numeric(18,5), s.Qty) AS 수량,
+			TRY_CONVERT(numeric(18,5), s.FOBPrice) AS 판매단가,
+			TRY_CONVERT(numeric(18,5), s.CurAmt) AS 금액,
+			TRY_CONVERT(numeric(18,5), s.FOBDomAmt) AS 원화판매단가,
+			TRY_CONVERT(numeric(18,5), s.DomAmt) AS 원화금액,
+			TRY_CONVERT(numeric(18,5), s.SalesAmt) AS 판매금액,
+			s.UMEtcOutkindName AS 기타출고구분,
+			s.InvoiceRefNo AS Invoice원천번호,
+			s.SourceNo AS 원천번호,
+			s.SourceRefNo AS 원천관리번호,
+			s.Remark AS 특이사항,
+			s.RemarkI AS 품목특이사항
 		FROM DOI_VN_IF_EXP_PERMIT s
 		WHERE s.SITE = N'VN'
-		ORDER BY s.PermitDate, s.PermitNo
+		ORDER BY s.PermitDate, s.PermitNo, s.ItemNo
 	</select>
 
 </mapper>
