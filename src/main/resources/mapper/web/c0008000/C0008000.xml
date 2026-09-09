@@ -1198,7 +1198,17 @@
     </select>
 
     <select id="C0008014_Sch1" resultType="CamelMap">
-        exec DOI_AnnualReportBySite @YYYY=#{yyyy}, @SITE=#{site};
+        <!-- [VN 260901] 경영 실행(연간 P&L): HQ는 기존 DOI_AnnualReportBySite,
+             VN은 _NEW 결산 산출물 기반 신규 VN_AnnualReportBySite 로 분기(그리드 별칭 동일 → 프론트 무수정).
+             HQ 프로시저는 SITE='HQ'/연도 하드코딩 + DOI_COST/DOI_STCO(VN stale) 사용이라 VN 부적합. -->
+        <choose>
+          <when test="site != null and site == 'VN'">
+            exec VN_AnnualReportBySite @YYYY=#{yyyy}, @SITE=#{site};
+          </when>
+          <otherwise>
+            exec DOI_AnnualReportBySite @YYYY=#{yyyy}, @SITE=#{site};
+          </otherwise>
+        </choose>
     </select>
 
     <select id="C0008003_Select" resultType="CamelMap">
