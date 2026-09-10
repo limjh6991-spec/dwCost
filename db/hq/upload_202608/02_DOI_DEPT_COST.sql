@@ -13,8 +13,8 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 BEGIN TRAN;
 
-DECLARE @before INT = (SELECT COUNT(*) FROM [DOI_DEPT_COST] WHERE [yyyymm]='202608');
-DELETE FROM [DOI_DEPT_COST] WHERE [yyyymm]='202608';
+DECLARE @before INT = (SELECT COUNT(*) FROM [DOI_DEPT_COST] WHERE [yyyymm]='202608' AND [site]='HQ' AND [sel_code]='ACTUAL');
+DELETE FROM [DOI_DEPT_COST] WHERE [yyyymm]='202608' AND [site]='HQ' AND [sel_code]='ACTUAL';
 
 INSERT INTO [DOI_DEPT_COST] ([yyyymm],[sel_code],[site],[코스트센터],[코스트센터분류],[코스트센터유형],[계정코드],[계정과목],[비용구분],[차변금액],[대변금액],[제외여부],[기타매출구분]) VALUES
   (N'202608',N'ACTUAL',N'HQ',N'제조공통',N'생산간접',N'수기입력',N'53001020',N'제)복리후생비-사내식대',N'제조',46153044,0,NULL,NULL),
@@ -678,7 +678,7 @@ INSERT INTO [DOI_DEPT_COST] ([yyyymm],[sel_code],[site],[코스트센터],[코�
 
 /* ---------- 검증 ---------- */
 DECLARE @ok BIT = 1, @msg NVARCHAR(2000) = N'';
-DECLARE @after INT = (SELECT COUNT(*) FROM [DOI_DEPT_COST] WHERE [yyyymm]='202608');
+DECLARE @after INT = (SELECT COUNT(*) FROM [DOI_DEPT_COST] WHERE [yyyymm]='202608' AND [site]='HQ' AND [sel_code]='ACTUAL');
 IF @after <> 652 BEGIN SET @ok=0; SET @msg=@msg+N'행수 652 기대, 실제 '+CAST(@after AS NVARCHAR(20))+N'; '; END
 IF ABS(ISNULL((SELECT SUM(차변금액) FROM DOI_DEPT_COST WHERE yyyymm='202608'),0) - 17625503863) > 1 BEGIN SET @ok=0; SET @msg=@msg+N'차변합계 불일치(기대 17625503863, 실제 '+CAST(ISNULL((SELECT SUM(차변금액) FROM DOI_DEPT_COST WHERE yyyymm='202608'),0) AS NVARCHAR(40))+N'); '; END
 IF ABS(ISNULL((SELECT SUM(대변금액) FROM DOI_DEPT_COST WHERE yyyymm='202608'),0) - 18809570913) > 1 BEGIN SET @ok=0; SET @msg=@msg+N'대변합계 불일치(기대 18809570913, 실제 '+CAST(ISNULL((SELECT SUM(대변금액) FROM DOI_DEPT_COST WHERE yyyymm='202608'),0) AS NVARCHAR(40))+N'); '; END

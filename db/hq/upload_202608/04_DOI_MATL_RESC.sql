@@ -13,8 +13,8 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 BEGIN TRAN;
 
-DECLARE @before INT = (SELECT COUNT(*) FROM [DOI_MATL_RESC] WHERE [YYYYMM]='202608');
-DELETE FROM [DOI_MATL_RESC] WHERE [YYYYMM]='202608';
+DECLARE @before INT = (SELECT COUNT(*) FROM [DOI_MATL_RESC] WHERE [YYYYMM]='202608' AND [SITE]='HQ' AND [SEL_CODE]='ACTUAL');
+DELETE FROM [DOI_MATL_RESC] WHERE [YYYYMM]='202608' AND [SITE]='HQ' AND [SEL_CODE]='ACTUAL';
 
 INSERT INTO [DOI_MATL_RESC] ([YYYYMM],[SEL_CODE],[SITE],[자산처리계정],[품목자산분류],[재고자산종류],[매출원가계정],[대분류],[중분류],[소분류],[품목기타분류],[품명],[품번],[규격],[단위],[기초수량],[기초금액],[입고수량],[입고금액],[출고수량],[출고금액],[재고수량],[결산후재고수량],[차이수량],[재고금액],[결산후재고금액],[차이금액],[최종결산월재고단가],[생산수량],[생산금액],[구매수량],[구매금액],[적송입고수량],[적송입고금액],[기타입고수량],[기타입고금액],[판매수량],[판매원가],[투입수량],[투입금액],[적송출고수량],[적송출고금액],[기타출고수량],[기타출고금액]) VALUES
   (N'202608',N'ACTUAL',N'HQ',N'원재료',N'원자재',N'원자재',N'상품매출원가',N'타부서 구매품',N'카세트',N'카세트 자재',NULL,N'VINA Q7 Plate',N'DWA0000300',N'SUS316L 498.1ⅹ212.43ⅹ2T, 가공',N'EA',2,69965,0,0,0,0,2,2,0,69965,69965,0,34982.5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
@@ -300,7 +300,7 @@ INSERT INTO [DOI_MATL_RESC] ([YYYYMM],[SEL_CODE],[SITE],[자산처리계정],[�
 
 /* ---------- 검증 ---------- */
 DECLARE @ok BIT = 1, @msg NVARCHAR(2000) = N'';
-DECLARE @after INT = (SELECT COUNT(*) FROM [DOI_MATL_RESC] WHERE [YYYYMM]='202608');
+DECLARE @after INT = (SELECT COUNT(*) FROM [DOI_MATL_RESC] WHERE [YYYYMM]='202608' AND [SITE]='HQ' AND [SEL_CODE]='ACTUAL');
 IF @after <> 278 BEGIN SET @ok=0; SET @msg=@msg+N'행수 278 기대, 실제 '+CAST(@after AS NVARCHAR(20))+N'; '; END
 IF ABS(ISNULL((SELECT SUM(기초금액) FROM DOI_MATL_RESC WHERE YYYYMM='202608'),0) - 2665212610) > 1 BEGIN SET @ok=0; SET @msg=@msg+N'기초금액 불일치(기대 2665212610, 실제 '+CAST(ISNULL((SELECT SUM(기초금액) FROM DOI_MATL_RESC WHERE YYYYMM='202608'),0) AS NVARCHAR(40))+N'); '; END
 IF ABS(ISNULL((SELECT SUM(입고금액) FROM DOI_MATL_RESC WHERE YYYYMM='202608'),0) - 6175298625) > 1 BEGIN SET @ok=0; SET @msg=@msg+N'입고금액 불일치(기대 6175298625, 실제 '+CAST(ISNULL((SELECT SUM(입고금액) FROM DOI_MATL_RESC WHERE YYYYMM='202608'),0) AS NVARCHAR(40))+N'); '; END

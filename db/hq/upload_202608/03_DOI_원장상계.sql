@@ -12,8 +12,8 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 BEGIN TRAN;
 
-DECLARE @before INT = (SELECT COUNT(*) FROM [DOI_원장상계] WHERE [yyyymm]='202608');
-DELETE FROM [DOI_원장상계] WHERE [yyyymm]='202608';
+DECLARE @before INT = (SELECT COUNT(*) FROM [DOI_원장상계] WHERE [yyyymm]='202608' AND [site]='HQ' AND [sel_code]='ACTUAL');
+DELETE FROM [DOI_원장상계] WHERE [yyyymm]='202608' AND [site]='HQ' AND [sel_code]='ACTUAL';
 
 INSERT INTO [DOI_원장상계] ([yyyymm],[site],[sel_code],[구분],[모델],[원장매칭],[소요량],[배율],[출하기여수량],[원장사용량],[원장단가],[매출상계]) VALUES
   (N'202608',N'HQ',N'ACTUAL',N'양산',N'7073P',N'DW00105000',0.125,8,253,31,NULL,1017175),
@@ -31,7 +31,7 @@ INSERT INTO [DOI_원장상계] ([yyyymm],[site],[sel_code],[구분],[모델],[�
 
 /* ---------- 검증 ---------- */
 DECLARE @ok BIT = 1, @msg NVARCHAR(2000) = N'';
-DECLARE @after INT = (SELECT COUNT(*) FROM [DOI_원장상계] WHERE [yyyymm]='202608');
+DECLARE @after INT = (SELECT COUNT(*) FROM [DOI_원장상계] WHERE [yyyymm]='202608' AND [site]='HQ' AND [sel_code]='ACTUAL');
 IF @after <> 12 BEGIN SET @ok=0; SET @msg=@msg+N'행수 12 기대, 실제 '+CAST(@after AS NVARCHAR(20))+N'; '; END
 IF ABS(ISNULL((SELECT SUM(매출상계) FROM DOI_원장상계 WHERE yyyymm='202608'),0) - 2250022200) > 0 BEGIN SET @ok=0; SET @msg=@msg+N'매출상계합계 불일치(기대 2250022200, 실제 '+CAST(ISNULL((SELECT SUM(매출상계) FROM DOI_원장상계 WHERE yyyymm='202608'),0) AS NVARCHAR(40))+N'); '; END
 IF ABS(ISNULL((SELECT SUM(출하기여수량) FROM DOI_원장상계 WHERE yyyymm='202608'),0) - 377973) > 0 BEGIN SET @ok=0; SET @msg=@msg+N'출하기여수량 불일치(기대 377973, 실제 '+CAST(ISNULL((SELECT SUM(출하기여수량) FROM DOI_원장상계 WHERE yyyymm='202608'),0) AS NVARCHAR(40))+N'); '; END

@@ -14,8 +14,8 @@ SET XACT_ABORT ON;
 BEGIN TRAN;
 
 DECLARE @base BIGINT = (SELECT ISNULL(MAX(SEQ_NO),0) FROM doi_sale_resc);
-DECLARE @before INT = (SELECT COUNT(*) FROM [doi_sale_resc] WHERE [YYYYMM]='202608');
-DELETE FROM [doi_sale_resc] WHERE [YYYYMM]='202608';
+DECLARE @before INT = (SELECT COUNT(*) FROM [doi_sale_resc] WHERE [YYYYMM]='202608' AND [SITE]='HQ' AND [SEL_CODE]='ACTUAL');
+DELETE FROM [doi_sale_resc] WHERE [YYYYMM]='202608' AND [SITE]='HQ' AND [SEL_CODE]='ACTUAL';
 
 INSERT INTO [doi_sale_resc] ([YYYYMM],[SEL_CODE],[SITE],[선택],[출고처리],[사업단위],[거래명세서번호],[거래명세서일],[Local구분],[출고구분],[부서],[담당자],[청구처],[거래처],[유통구조],[거래처번호],[중개인],[납품장소],[인도조건],[판매후보관],[위탁],[납품거래처],[납기일],[품명],[품번],[규격],[판매단위],[판매기준가],[수량],[부가세포함],[통화],[환율],[판매단가],[판매금액],[부가세액],[판매금액계],[원화판매금액],[원화부가세액],[원화판매금액계],[창고],[보관위치],[Lot_No],[세금계산서_진행상태],[배송상태],[품목특이사항],[매출시점],[진행조회],[원천조회],[원천관리번호],[원천번호],[PO_No],[반품],[매출수량],[매출금액계],[미매출금액],[세금계산서금액계],[계산서미발행액],[계산서미발행수량],[기타출고구분],[품목자산분류],[단가소급여부],[수량(단가소급)],[유상사급여부],[SEQ_NO]) VALUES
   (N'202608',N'ACTUAL',N'HQ',N'0',N'1',N'본사',N'202608060001',N'2026-08-06',N'내수',N'정상판매',N'공정 1그룹',N'조혜민',N'현대자동차 ( 주) 의왕연구소',N'현대자동차 ( 주) 의왕연구소',NULL,NULL,NULL,NULL,NULL,N'0',N'0',NULL,NULL,N'F010',N'F010D',N'400*70*0.15',N'Cell',0,15,N'0',N'KRW',1,223517,3352755,335275,3688030,3352755,335275,3688030,N'개발 창고',NULL,NULL,N'완료',N'작성',NULL,N'세금계산서매출',NULL,NULL,NULL,NULL,NULL,N'0',15,3688030,0,3688030,0,0,NULL,N'제품',N'0',0,N'0',@base+1),
@@ -82,7 +82,7 @@ INSERT INTO [doi_sale_resc] ([YYYYMM],[SEL_CODE],[SITE],[선택],[출고처리],
 
 /* ---------- 검증 ---------- */
 DECLARE @ok BIT = 1, @msg NVARCHAR(2000) = N'';
-DECLARE @after INT = (SELECT COUNT(*) FROM [doi_sale_resc] WHERE [YYYYMM]='202608');
+DECLARE @after INT = (SELECT COUNT(*) FROM [doi_sale_resc] WHERE [YYYYMM]='202608' AND [SITE]='HQ' AND [SEL_CODE]='ACTUAL');
 IF @after <> 61 BEGIN SET @ok=0; SET @msg=@msg+N'행수 61 기대, 실제 '+CAST(@after AS NVARCHAR(20))+N'; '; END
 IF ABS(ISNULL((SELECT SUM(수량) FROM doi_sale_resc WHERE YYYYMM='202608'),0) - 336756) > 0 BEGIN SET @ok=0; SET @msg=@msg+N'수량합계 불일치(기대 336756, 실제 '+CAST(ISNULL((SELECT SUM(수량) FROM doi_sale_resc WHERE YYYYMM='202608'),0) AS NVARCHAR(40))+N'); '; END
 IF ABS(ISNULL((SELECT SUM(원화판매금액) FROM doi_sale_resc WHERE YYYYMM='202608'),0) - 6736459541) > 1 BEGIN SET @ok=0; SET @msg=@msg+N'원화판매금액 불일치(기대 6736459541, 실제 '+CAST(ISNULL((SELECT SUM(원화판매금액) FROM doi_sale_resc WHERE YYYYMM='202608'),0) AS NVARCHAR(40))+N'); '; END

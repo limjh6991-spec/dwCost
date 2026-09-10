@@ -12,8 +12,8 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 BEGIN TRAN;
 
-DECLARE @before INT = (SELECT COUNT(*) FROM [DOI_BOM_MAST] WHERE [YYYYMM]='202608');
-DELETE FROM [DOI_BOM_MAST] WHERE [YYYYMM]='202608';
+DECLARE @before INT = (SELECT COUNT(*) FROM [DOI_BOM_MAST] WHERE [YYYYMM]='202608' AND [SITE]='HQ');
+DELETE FROM [DOI_BOM_MAST] WHERE [YYYYMM]='202608' AND [SITE]='HQ';
 
 INSERT INTO [DOI_BOM_MAST] ([YYYYMM],[SITE],[제품명],[제품번호],[품목자산분류],[품목대분류],[품목중분류],[품목소분류],[공정차수],[공정],[공정품명],[공정품번호],[자재명],[자재번호],[자재자산분류],[자재대분류],[자재중분류],[자재소분류],[투입단위],[소요량],[내부Loss율],[외부Loss율],[조립위치],[특이사항],[최초작성일],[최초작성자],[최종수정일],[최종수정자]) VALUES
   (N'202608',N'HQ',N'0080',N'0080D',N'제품',N'UTG',N'0080',N'0080D',N'00',N'적층',NULL,NULL,N'(T2X-1,50㎛)',N'RWDT2X50',N'원자재',N'원자재',N'국책과제',N'(T2X-1,50㎛)',N'EA',0.25,0,0,NULL,NULL,N'2025-01-31',N'이재현',N'2025-01-31',N'이재현'),
@@ -1263,7 +1263,7 @@ INSERT INTO [DOI_BOM_MAST] ([YYYYMM],[SITE],[제품명],[제품번호],[품목�
 
 /* ---------- 검증 ---------- */
 DECLARE @ok BIT = 1, @msg NVARCHAR(2000) = N'';
-DECLARE @after INT = (SELECT COUNT(*) FROM [DOI_BOM_MAST] WHERE [YYYYMM]='202608');
+DECLARE @after INT = (SELECT COUNT(*) FROM [DOI_BOM_MAST] WHERE [YYYYMM]='202608' AND [SITE]='HQ');
 IF @after <> 1232 BEGIN SET @ok=0; SET @msg=@msg+N'행수 1232 기대, 실제 '+CAST(@after AS NVARCHAR(20))+N'; '; END
 IF ABS(ISNULL((SELECT COUNT(*) FROM DOI_BOM_MAST WHERE YYYYMM='202608' AND 품목중분류=N'VINA CST'),0) - 40) > 0 BEGIN SET @ok=0; SET @msg=@msg+N'VINACST행수 불일치(기대 40, 실제 '+CAST(ISNULL((SELECT COUNT(*) FROM DOI_BOM_MAST WHERE YYYYMM='202608' AND 품목중분류=N'VINA CST'),0) AS NVARCHAR(40))+N'); '; END
 

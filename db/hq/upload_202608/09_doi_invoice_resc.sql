@@ -14,8 +14,8 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 BEGIN TRAN;
 
-DECLARE @before INT = (SELECT COUNT(*) FROM [doi_invoice_resc] WHERE [yyyymm]='202608');
-DELETE FROM [doi_invoice_resc] WHERE [yyyymm]='202608';
+DECLARE @before INT = (SELECT COUNT(*) FROM [doi_invoice_resc] WHERE [yyyymm]='202608' AND [site]='HQ' AND [sel_code]='ACTUAL');
+DELETE FROM [doi_invoice_resc] WHERE [yyyymm]='202608' AND [site]='HQ' AND [sel_code]='ACTUAL';
 
 INSERT INTO [doi_invoice_resc] ([yyyymm],[sel_code],[site],[선택],[출고처리],[사업단위],[Invoice_No],[Invoice관리번호],[Invoice_Date],[수출구분],[출고구분],[가격조건],[부서],[담당자],[Buyer],[Agent],[통화],[환율],[품명],[품번],[규격],[단위],[판매기준가],[판매단가],[수량],[판매금액],[원화판매금액],[창고],[납기일],[기타출고구분],[진행상태],[매출진행상태],[매출대상],[매출금액계],[미매출금액],[Remarks],[특이사항]) VALUES
   (N'202608',N'ACTUAL',N'HQ',0,1,N'본사',N'DWV-260820-001',N'202608200001',N'2026-08-20',N'일반수출',N'정상판매',N'FOB',N'영업그룹',N'한주환',N'도우VINA',NULL,N'KRW',1,N'VINA N_OPPO 단면바',N'VN034P3',NULL,N'EA',0,104558.64,360,37641112,37641112,N'카세트완제품창고',NULL,NULL,N'완료',N'완료',0,37641112,0,N'0',NULL),
@@ -28,7 +28,7 @@ INSERT INTO [doi_invoice_resc] ([yyyymm],[sel_code],[site],[선택],[출고처�
 
 /* ---------- 검증 ---------- */
 DECLARE @ok BIT = 1, @msg NVARCHAR(2000) = N'';
-DECLARE @after INT = (SELECT COUNT(*) FROM [doi_invoice_resc] WHERE [yyyymm]='202608');
+DECLARE @after INT = (SELECT COUNT(*) FROM [doi_invoice_resc] WHERE [yyyymm]='202608' AND [site]='HQ' AND [sel_code]='ACTUAL');
 IF @after <> 7 BEGIN SET @ok=0; SET @msg=@msg+N'행수 7 기대, 실제 '+CAST(@after AS NVARCHAR(20))+N'; '; END
 IF ABS(ISNULL((SELECT SUM(수량) FROM doi_invoice_resc WHERE yyyymm='202608'),0) - 14114) > 0 BEGIN SET @ok=0; SET @msg=@msg+N'수량합계 불일치(기대 14114, 실제 '+CAST(ISNULL((SELECT SUM(수량) FROM doi_invoice_resc WHERE yyyymm='202608'),0) AS NVARCHAR(40))+N'); '; END
 IF ABS(ISNULL((SELECT SUM(원화판매금액) FROM doi_invoice_resc WHERE yyyymm='202608'),0) - 1043787944) > 1 BEGIN SET @ok=0; SET @msg=@msg+N'원화판매금액 불일치(기대 1043787944, 실제 '+CAST(ISNULL((SELECT SUM(원화판매금액) FROM doi_invoice_resc WHERE yyyymm='202608'),0) AS NVARCHAR(40))+N'); '; END
