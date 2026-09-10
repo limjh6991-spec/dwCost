@@ -34,6 +34,7 @@ DOI_COST / doi_smce_cost)이 전부 0행이었다. 즉 무효화될 하위 데�
 | 07 | `07_DOI_STOCK.sql` | DOI_STOCK | 112 | breakdown 21컬럼 + 카세트 3행 + RMA_AMT |
 | 08 | `08_doi_sale_resc.sql` | doi_sale_resc | 61 | SEQ_NO는 실행 시점 MAX+1부터 자동 채번 |
 | 09 | `09_doi_invoice_resc.sql` | doi_invoice_resc | 7 | Invoice_No / Invoice관리번호 정정 |
+| 10 | `10_DOI_VNCST_RATE.sql` | DOI_VNCST_RATE | 3 | 카세트 제품별 2차 배부비율 |
 | 99 | `99_ROLLBACK_원상복구.sql` | (전체) | 2,305 | 실행 전 API 상태로 되돌림 |
 
 ## 주의사항
@@ -57,9 +58,14 @@ DOI_COST / doi_smce_cost)이 전부 0행이었다. 즉 무효화될 하위 데�
 
 ## 적재 후 남는 일
 
-- **카세트 배부율 미해결.** `DOI_CST_RATE` / `DOI_VNCST_RATE` 202608이 0행인데, `08월 카세트팀
-  원가 배부(260910).xlsx`의 「카세트팀 비용 배부기준」 시트는 **11월 월보 예시가 들어있는 정적
-  템플릿**(UTG 2,595,920 / VINA 640,800)이라 8월 실적시간을 뽑을 수 없다. 8월 실적시간 자료 필요.
+- **카세트 배부율 해결됨.** 「카세트팀 비용 배부기준」 시트의 "EX) 11월 월보 기준" 라벨은 오타이고
+  표의 숫자가 8월 실적시간이다(사용자 확인). 1차 `DOI_CST_RATE`(UTG 0.8020 / VINA_CST 0.1980)는
+  이미 적재되어 있고, 2차 `DOI_VNCST_RATE` 3행은 10번 스크립트로 적재한다.
+- **`DOI_PROD_SUBUL` 202608은 프로시저로 채울 수 없다.** `UP_DOI_PROD_SUBUL` 이 읽는 시노님
+  `dw_일별_공정별_생산집계_base` 가 **MES TEST DB**(`[MES].[도우제조MES시스템TEST]`)를 가리키고
+  데이터가 20260724 에서 끊겨 있으며, INSERT 원천 함수
+  `Get_모델별_생산일보_MONTH_WITH_MATERIAL_LOSS` 는 원가시스템 DB에 존재하지 않는다(MES DB 전용).
+  → 06번 엑셀 적재가 유일한 경로다(202607도 같은 방식으로 채웠다).
 - `DOI_DEPT` 적재 후 `DOI_DEPT_COST`와 코스트센터 대사 필요. 엑셀에 '시스템지원그룹20260531' 같은
   날짜접미사 코스트센터가 있어 매칭 실패 시 배부에서 빠진다(202601 동일 사례 있음).
 - `DOI_MODEL_MAST`, `DOI_ETC_INOUT` 202608도 아직 0행이다.
