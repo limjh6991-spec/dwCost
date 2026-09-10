@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    doi_acct 202608 — 유실된 4개 컬럼 복원  ★결산/리포트 전 필수
    DB : 도우제조원가시스템 (10.100.40.17,14233)
 
@@ -34,6 +34,11 @@
      202608 신규 417행(현금·외상매출금 등 재무상태표 계정)은 202607 에 대응이 없고
      이 컬럼들을 쓰지 않으므로 NULL 로 남긴다.
 
+   ※ 관리항목유형은 202608 신규 계정 19행이 이미 값을 갖고 있어 복원 후 228 (=209+19) 이 된다.
+
+   [적용 완료] 2026-09-11 실행. UPDATE 209행, 202607 대비 4개 컬럼 값 불일치 0건,
+              판관비 세부 라인 0 -> 28 복원 확인.
+
    실행: 검증 통과 시 자동 COMMIT, 실패 시 자동 ROLLBACK
    ============================================================ */
 SET NOCOUNT ON;
@@ -68,7 +73,7 @@ IF @n  <> 209 BEGIN SET @ok=0; SET @msg=@msg+N'UPDATE 209행 기대, 실제 '+CA
 IF @ds <> 200 BEGIN SET @ok=0; SET @msg=@msg+N'disp_seq 200 기대, 실제 '  +CAST(@ds AS NVARCHAR(10))+N'; '; END
 IF @cg <> 185 BEGIN SET @ok=0; SET @msg=@msg+N'원가구분 185 기대, 실제 '  +CAST(@cg AS NVARCHAR(10))+N'; '; END
 IF @to <> 179 BEGIN SET @ok=0; SET @msg=@msg+N'총원가_순서 179 기대, 실제 '+CAST(@to AS NVARCHAR(10))+N'; '; END
-IF @mg <> 209 BEGIN SET @ok=0; SET @msg=@msg+N'관리항목유형 209 기대, 실제 '+CAST(@mg AS NVARCHAR(10))+N'; '; END
+IF @mg <> 228 BEGIN SET @ok=0; SET @msg=@msg+N'관리항목유형 228 기대(복사 209 + 기존 19), 실제 '+CAST(@mg AS NVARCHAR(10))+N'; '; END
 IF @sg <> 28  BEGIN SET @ok=0; SET @msg=@msg+N'판관비 세부 28라인 기대, 실제 '+CAST(@sg AS NVARCHAR(10))+N'; '; END
 IF @tot<> 626 BEGIN SET @ok=0; SET @msg=@msg+N'행수 626 기대, 실제 '      +CAST(@tot AS NVARCHAR(10))+N'; '; END
 
