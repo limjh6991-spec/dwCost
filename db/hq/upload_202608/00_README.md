@@ -36,6 +36,9 @@ DOI_COST / doi_smce_cost)이 전부 0행이었다. 즉 무효화될 하위 데�
 | 09 | `09_doi_invoice_resc.sql` | doi_invoice_resc | 7 | Invoice_No / Invoice관리번호 정정 |
 | 10 | `10_DOI_VNCST_RATE.sql` | DOI_VNCST_RATE | 3 | 카세트 제품별 2차 배부비율 |
 | 11 | `11_MINIMAL_FIX.sql` | MATL_RESC·BOM_MAST | 278+34 | 재적재 없이 UPDATE/INSERT |
+| 12 | `12_FIX_카세트_MODEL.sql` | DOI_STOCK | 3 | 카세트 MODEL=품번 정정 (완료) |
+| 13 | `13_FIX_DOI_STOCK_breakdown.sql` | DOI_STOCK | 9 | 기타입고 8행 + OUT_ETC 1행 + RMA_AMT 8행 |
+| 14 | `14_DOI_ETC_INOUT.sql` | DOI_ETC_INOUT | 158 | 기타입출고 (리포트 전용) |
 | 99 | `99_ROLLBACK_원상복구.sql` | (전체) | 2,305 | 실행 전 API 상태로 되돌림 |
 
 `04b` / `05b` / `09b` 는 소비처 분석 중 만들어진 **좁은 수정 대안**이다. 04b·05b 의 내용은
