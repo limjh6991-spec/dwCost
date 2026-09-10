@@ -35,7 +35,13 @@ DOI_COST / doi_smce_cost)이 전부 0행이었다. 즉 무효화될 하위 데�
 | 08 | `08_doi_sale_resc.sql` | doi_sale_resc | 61 | SEQ_NO는 실행 시점 MAX+1부터 자동 채번 |
 | 09 | `09_doi_invoice_resc.sql` | doi_invoice_resc | 7 | Invoice_No / Invoice관리번호 정정 |
 | 10 | `10_DOI_VNCST_RATE.sql` | DOI_VNCST_RATE | 3 | 카세트 제품별 2차 배부비율 |
+| 11 | `11_MINIMAL_FIX.sql` | MATL_RESC·BOM_MAST | 278+34 | 재적재 없이 UPDATE/INSERT |
 | 99 | `99_ROLLBACK_원상복구.sql` | (전체) | 2,305 | 실행 전 API 상태로 되돌림 |
+
+`04b` / `05b` / `09b` 는 소비처 분석 중 만들어진 **좁은 수정 대안**이다. 04b·05b 의 내용은
+11번에 이미 반영돼 실행 완료 상태이고, 09b 는 결산에 영향 없는 화면 표시용 선택 항목이다.
+(`07b` 는 기존 107행 UPDATE 를 전제로 만들었는데 DOI_STOCK 202608 이 0행이 되어 더는
+맞지 않으므로 제거했다 — DOI_STOCK 은 07번 전체 적재를 쓴다.)
 
 ## 주의사항
 
