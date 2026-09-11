@@ -1,4 +1,4 @@
-﻿CREATE     procedure UP_DOI_MAT_AMT  --재료비집계
+CREATE     procedure UP_DOI_MAT_AMT  --재료비집계
 (
     @YYYYMM varchar(10),--집계 년/월 설정
     @SITE varchar(2),  --사업장코드 (본사 : HQ, 베트남 : VN)

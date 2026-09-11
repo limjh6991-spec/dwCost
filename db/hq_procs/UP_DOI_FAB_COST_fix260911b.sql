@@ -1,5 +1,3 @@
-﻿
-
 ALTER PROCEDURE UP_DOI_FAB_COST
 (
     @YYYYMM varchar(10),--집계 년/월 설정

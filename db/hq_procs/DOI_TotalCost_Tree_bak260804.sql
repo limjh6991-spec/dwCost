@@ -1,4 +1,4 @@
-﻿CREATE   PROCEDURE DOI_TotalCost_Tree
+CREATE   PROCEDURE DOI_TotalCost_Tree
 (
     @YYYYMM VARCHAR(6),
     @SITE   VARCHAR(4),

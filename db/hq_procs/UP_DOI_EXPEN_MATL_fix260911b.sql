@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE UP_DOI_EXPEN_MATL
+ALTER PROCEDURE UP_DOI_EXPEN_MATL
 (
     @YYYYMM varchar(10),--집계 년/월 설정
     @SITE varchar(5),  --사업장코드 (본사 : HQ, 베트남 : VN)
