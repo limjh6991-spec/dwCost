@@ -323,7 +323,8 @@
                 <if test="site != null and site != ''">
                     AND SITE = #{site}
                 </if>
-                and not (in_qty = 0 and out_qty = 0 and loss_qty = 0)
+                and not (in_qty = 0 and out_qty = 0 and loss_qty = 0 and ISNULL(배부금액,0) = 0)
+                and 도우모델 != N'VN034P'
                 group by 구분, 도우모델
                 UNION
                 SELECT 구분, model from doi_expen_matl
@@ -335,7 +336,8 @@
                 <if test="site != null and site != ''">
                     AND SITE = #{site}
                 </if>
-                and not (in_qty = 0 and out_qty = 0 and loss_qty = 0)
+                and not (in_qty = 0 and out_qty = 0 and loss_qty = 0 and ISNULL([in],0) = 0)
+                and model != N'VN034P'
                 group by 구분, model
                 UNION
                 SELECT 'Z' 구분, 구분 model FROM (
