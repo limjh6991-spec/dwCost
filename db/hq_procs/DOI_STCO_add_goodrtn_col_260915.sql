@@ -1,0 +1,9 @@
+-- [2026-09-15] DOI_STCO 양품(반품입고) 버킷 컬럼 추가 (표시전용)
+-- OUT_GOOD_RTN_QTY: DOI_STOCK.OUT_RETURN(출고반품=양품 반품입고) 수량
+-- OUT_GOOD_RTN_AMT: 표시 평가금액(당월출고단가 기준). 매출원가/OUT 총액에 미반영.
+IF COL_LENGTH('dbo.DOI_STCO','OUT_GOOD_RTN_QTY') IS NULL
+    ALTER TABLE dbo.DOI_STCO ADD OUT_GOOD_RTN_QTY int NULL;
+GO
+IF COL_LENGTH('dbo.DOI_STCO','OUT_GOOD_RTN_AMT') IS NULL
+    ALTER TABLE dbo.DOI_STCO ADD OUT_GOOD_RTN_AMT numeric(15,2) NULL;
+GO
