@@ -1,0 +1,817 @@
+/* ============================================================
+   UP_DOI_STOCK_COST fix260915l — 판매출고 수량 0 행의 반올림 차이를 양품 대신 타계정으로
+   기준: 운영 2026-09-15 15:02:34 (fix260915v3). 반영 후 대상 월 UP_DOI_STOCK_COST 단독 실행 → UP_DOI_SALE_COST.
+   ============================================================ */
+IF (SELECT CONVERT(varchar(19), modify_date, 120) FROM sys.procedures WHERE name = 'UP_DOI_STOCK_COST') <> '2026-09-15 15:02:34'
+BEGIN
+    RAISERROR(N'UP_DOI_STOCK_COST 가 기준 버전(2026-09-15 15:02:34)이 아닙니다. 운영 최신 정의로 다시 만드세요.', 16, 1);
+    SET NOEXEC ON;
+END
+GO
+-- [2026-09-15l] 판매출고 수량 0 인 행의 반올림 차이(기초+입고-기말-타계정 상세)를 양품(OUT_AMT) 대신 타계정으로.
+--   예: 8월 개발 8166 연구개발 4개, 항목별 반올림 합 -2원이 양품 금액에 남던 것.
+
+-- [2026-09-15 v3] RMA R/W: 재공 재투입=ERP 투입금액(총평균) 통일. 타계정출고=공정재투입 전액, 표시재분류 블록 비활성. 재공·제품 모두 8,146,083.
+-- [2026-09-15f] 양품 표시분해 구분 버그수정: (MODEL,구분) 조인. 개발/양산 합쳐진 모델(8166,818V 등)
+-- 에서 양산 매출문서 수량이 개발행에 들어가던 버그 수정. 표시전용(총액불변).
+-- 배포 후 UP_DOI_STOCK_COST 재실행만으로 반영(하위 SALE_COST/SCOF 재실행 불필요).
+-- [2026-09-15] UP_DOI_STOCK_COST 중복 RMA R/W 블록 제거(2회→1회). RMA 7073 매출원가 크레딧 -1,324,109 복원.
+-- [2026-09-15b] STOCK_COST 통합: (1)양산 반품크레딧 OUT_AMT 접기(타계정=0) + (2)RMA R/W 표시재분류.
+-- 현재 라이브(goodrtn+REWORK순증+블록C) 기반. UP_DOI_STOCK_COST_fix260915_rma_display.sql 대체.
+-- [2026-09-15] RMA R/W 매출원가 표시재분류 추가 (담당자 확정). 라이브(goodrtn+REWORK순증+블록C) 기반.
+-- [2026-09-15] 병합본: (A) REWORK 당월순증 매출원가 크레딧 [fix260914_rma] + (B) 양품(반품입고) 표시전용 [goodrtn]
+-- 현재 라이브 기반. 두 변경 위치 독립. 배포 전 DOI_STCO OUT_GOOD_RTN 컬럼 ADD 선행.
+-- ⚠ (A)는 매출원가 변동 → 배포 후 202608 하위(SALE_COST/SCOF) 재실행 필요. (B)는 표시전용.
+ALTER PROCEDURE UP_DOI_STOCK_COST
+(
+    @YYYYMM varchar(10),--집계 년/월 설정
+    @SITE varchar(2),  --사업장코드 (본사 : HQ, 베트남 : VN)
+    @SEL_CODE varchar(10),
+ 	@R_Message nvarchar(MAX) OUTPUT
+)
+AS
+BEGIN
+BEGIN TRY
+SET NOCOUNT ON;
+    SET LOCK_TIMEOUT 5000; -- 10초로 증가
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; -- 격리 수준 변경
+--    DECLARE  @R_Message  NVARCHAR(MAX)='';
+
+   DECLARE @CNT INT = 0,
+       @CHECK BIT = 0;
+   
+
+	IF EXISTS (
+	    SELECT 1
+	    FROM DOI_CLOSING_MONTH
+	    WHERE YYYYMM = @YYYYMM
+	      AND IS_CLOSED = 'Y'
+	)
+	BEGIN
+	    RAISERROR(N'마감된 결산월(%s)은 실행할 수 없습니다.', 16, 1, @YYYYMM);
+	    RETURN;
+	END      
+      
+	 SET  @R_Message =   char(10) + @R_Message + char(10) + '[START]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STCO) 테이블에 '
+			+ @YYYYMM + '월 '+ CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + '제품수불금액 집계를 시작합니다'; 
+   
+   --데이타 체크
+    IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID('DOI_COST') AND type in ('U')) -- 테이블 존재 여부 확인
+    BEGIN
+		SELECT @CNT = count(*)
+		FROM DOI_COST
+		      WHERE yyyymm	= @YYYYMM
+		        and site  	= @SITE
+   				and sel_code= @SEL_CODE;
+		IF @CNT = 0 BEGIN
+		SET  @R_Message =  @R_Message + char(10) + '[ERROR] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 가공비 배부(DOI_COST) 테이블에 '
+		+ @YYYYMM + '월 ' + CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+		SET @CHECK = 1;
+		END
+		ELSE
+		BEGIN
+		SET  @R_Message =  @R_Message + char(10) + '[CHECK]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 가공비 배부(DOI_COST) 테이블에 '
+		+ @YYYYMM + '월 ' + CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + ' 데이타가 '+CAST(@CNT AS VARCHAR)+'건 정상입니다'
+		END
+	END
+    ELSE
+    BEGIN
+        SET  @R_Message =  @R_Message + char(10) + '[ERROR] ' +  '가공비 배부(DOI_COST)테이블이 존재하지 않습니다.';
+        SET @CHECK = 1;
+    END
+
+    -- 1초 대기
+	-- WAITFOR DELAY '00:00:01';
+    
+	SELECT @CNT = count(*)
+	FROM DOI_STOCK_BOH
+	      WHERE yyyymm	 = @YYYYMM
+	        and site  	 = @SITE
+			and sel_code = @SEL_CODE;
+	IF @CNT = 0 BEGIN
+	SET  @R_Message =  @R_Message + char(10) + '[ERROR] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품BOH(DOI_STOCK_BOH) 테이블에 '
+	+@YYYYMM + '월 ' + CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+	SET @CHECK = 1;
+	END
+	ELSE
+	BEGIN
+	SET  @R_Message =  @R_Message + char(10) + '[CHECK]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품BOH(DOI_STOCK_BOH) 테이블에 '
+	+ @YYYYMM + '월 ' + CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + ' 데이타가 '+CAST(@CNT AS VARCHAR)+'건 정상입니다'
+	END
+
+	SELECT @CNT = count(*)
+	FROM DOI_STOCK
+	      WHERE yyyymm=@YYYYMM
+	        and site  =@SITE;
+	IF @CNT = 0 BEGIN
+	SET  @R_Message =  @R_Message + char(10) + '[ERROR] ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불(DOI_STOCK) 테이블에 '
+	+ @YYYYMM + '월 ' + CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + ' 데이타가 없습니다';
+	SET @CHECK = 1;
+	END
+	ELSE
+	BEGIN
+	SET  @R_Message =  @R_Message + char(10) + '[CHECK]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불(DOI_STOCK) 테이블에 '
+	+ @YYYYMM + '월 ' + CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + ' 데이타가 '+CAST(@CNT AS VARCHAR)+'건 정상입니다'
+	END
+	
+	IF @CHECK = 1 BEGIN
+	RETURN -1;
+	END
+
+	BEGIN TRANSACTION;
+	
+	DELETE FROM DOI_STCO 
+	WHERE YYYYMM	= @YYYYMM
+	  AND SITE		= @SITE
+	  AND SEL_CODE  = @SEL_CODE;	
+	SET  @R_Message =  @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STCO) 테이블에 '+@YYYYMM + '월 '
+	+ CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + '제품수불금액 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 삭제 했습니다';
+	
+	-- 202601은 수동 보정 완료된 doi_stco_202601 데이터를 그대로 사용
+--	IF @YYYYMM = '202601'
+--	BEGIN
+--	    INSERT INTO DOI_STCO
+--	    (
+--	        YYYYMM, SITE, SEL_CODE, 구분, MODEL, EXPEN_SEL, EXPEN_SEL명, ACCT_NAME,
+--	        BOH, [INPUT], [OUT], EOH, INETC, OUTETC,
+--	        BOH_AMT, IN_AMT, EOH_AMT, OUT_AMT, INETC_AMT, OUTETC_AMT,
+--	        RMAIN_QTY, RMAIN_AMT, AREAOUT_QTY, AREAOUT_AMT
+--	    )
+--	    SELECT
+--	        YYYYMM, SITE, SEL_CODE, 구분, MODEL, EXPEN_SEL, EXPEN_SEL명, ACCT_NAME,
+--	        BOH, [INPUT], [OUT], EOH, INETC, OUTETC,
+--	        BOH_AMT, IN_AMT, EOH_AMT, OUT_AMT, INETC_AMT, OUTETC_AMT,
+--	        RMAIN_QTY, RMAIN_AMT, AREAOUT_QTY, AREAOUT_AMT
+--	    FROM DOI_STCO_202601
+--	    WHERE YYYYMM   = @YYYYMM
+--	      AND SITE     = @SITE
+--	      AND SEL_CODE = @SEL_CODE;
+--	
+--	    SET @R_Message = @R_Message + CHAR(10)
+--	        + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + CHAR(9)
+--	        + '- 제품수불금액(DOI_STCO) 테이블에 ' + @YYYYMM + '월 '
+--	        + CASE WHEN @SITE = 'HQ' THEN '본사' ELSE 'VINA' END
+--	        + ' 수동집계 데이터(DOI_STCO_202601) '
+--	        + CAST(@@ROWCOUNT AS VARCHAR) + '건을 입력했습니다';
+--	
+--	    SET @R_Message = @R_Message + CHAR(10)
+--	        + '  [END]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + CHAR(9)
+--	        + '- 제품수불금액(DOI_STCO) 테이블에 ' + @YYYYMM + '월 '
+--	        + CASE WHEN @SITE = 'HQ' THEN '본사' ELSE 'VINA' END
+--	        + ' 수동집계 데이터 반영 완료했습니다';	      
+--	       
+--	    COMMIT TRANSACTION;
+--	    RETURN 0;
+--	END;
+
+-- expen_sel (원가항목) 기준으로 집계하도록 수정
+	;WITH MODEL_IN_AMT AS (
+	    SELECT 
+	        a.YYYYMM, 
+	        a.SITE, 
+	        a.MODEL, 
+	        a.구분, 
+	        a.EXPEN_SEL,
+	        a.EXPEN_SEL명,
+	        a.ACCT_NAME, 
+	        SUM(ISNULL(a.[OUT], 0)) AS IN_AMT
+	    FROM DOI_COST a 
+	    WHERE a.YYYYMM = @YYYYMM
+	      AND a.SITE = @SITE
+	      AND a.SEL_CODE = @SEL_CODE
+	      AND a.EXPEN_SEL <> 'NONE'
+	    GROUP BY 
+	        a.YYYYMM, a.SITE, a.MODEL, a.구분,
+	        a.EXPEN_SEL, a.EXPEN_SEL명, a.ACCT_NAME
+	),
+	MODEL_BOH_AMT AS (
+	 SELECT 
+        a.YYYYMM, 
+        a.SITE, 
+        a.MODEL, 
+        a.구분, 
+        a.EXPEN_SEL, 
+        a.EXPEN_SEL명,
+        a.ACCT_NAME,
+        SUM(ISNULL(a.BOH_AMT, 0)) AS BOH_AMT,
+        SUM(ISNULL(a.INETC_AMT, 0)) AS INETC_AMT,
+        SUM(ISNULL(a.OUTETC_AMT, 0)) AS OUTETC_AMT
+    FROM DOI_STOCK_BOH a 
+    WHERE a.YYYYMM = @YYYYMM
+      AND a.SITE = @SITE
+      AND a.SEL_CODE = @SEL_CODE
+    GROUP BY 
+        a.YYYYMM, a.SITE, a.MODEL, a.구분,
+        a.EXPEN_SEL, a.EXPEN_SEL명, a.ACCT_NAME
+	),
+	MODEL_STOCK AS (
+	    SELECT
+	        a.YYYYMM,
+	        a.SITE,
+	        @SEL_CODE AS SEL_CODE,
+	        CASE
+	            -- cassette products (numeric-ending code): map by 2nd-to-last char (e.g. VN034P1 -> 'P')
+	            WHEN RIGHT(a.MODEL_TYPE, 1) LIKE '[0-9]' THEN
+	                CASE
+	                    WHEN SUBSTRING(a.MODEL_TYPE, LEN(a.MODEL_TYPE) - 1, 1) = 'P' THEN N'양산'
+	                    WHEN SUBSTRING(a.MODEL_TYPE, LEN(a.MODEL_TYPE) - 1, 1) = 'R' THEN N'RMA'
+	                    ELSE N'개발'
+	                END
+	            WHEN RIGHT(a.MODEL_TYPE, 1) = 'P' THEN N'양산'
+	            WHEN RIGHT(a.MODEL_TYPE, 1) = 'R' THEN N'RMA'
+	            ELSE N'개발'
+	        END AS 구분,
+	        a.MODEL,
+	        SUM(ISNULL(a.BOH, 0)) AS BOH,
+	        SUM(ISNULL(a.INPUT_PROD, 0)) AS [INPUT],
+	        SUM(ISNULL(a.OUT_SHEET, 0) + ISNULL(a.OUT_INVOICE, 0)) AS [OUT],
+	        SUM(ISNULL(a.EOH, 0)) AS EOH,
+	        SUM(ISNULL(a.INPUT_ETC, 0)) AS INETC,
+	        SUM(ISNULL(a.OUT_ETC, 0)) AS OUTETC,
+--	        SUM(ISNULL(a.작업실적, 0)) AS 작업실적,
+	        SUM(ISNULL(a.기타입고, 0)) AS IN_OTHER_QTY,
+--	        SUM(ISNULL(a.재고실사입고조정, 0)) AS IN_INV_ADJ_QTY,
+	        SUM(ISNULL(a.RMA_반품입고, 0)) AS RMA_IN_QTY,
+	        SUM(ISNULL(a.RMA_반품출고, 0)) AS OUT_RMA_QTY,
+	        SUM(ISNULL(a.공정재투입, 0)) AS OUT_REWORK_QTY,
+	        SUM(ISNULL(a.연구개발, 0)) AS OUT_RND_QTY,
+	        SUM(ISNULL(a.기술평가, 0)) AS OUT_TECH_EVAL_QTY,
+	        SUM(ISNULL(a.출하검사, 0)) AS OUT_SHIP_INSP_QTY,
+	 SUM(ISNULL(a.폐기, 0)) AS OUT_DISPOSE_QTY,
+	        SUM(ISNULL(a.재고실사출고조정, 0)) AS OUT_INV_ADJ_QTY,
+	        SUM(ISNULL(a.기타, 0)) AS OUT_OTHER_QTY,
+	        SUM(ISNULL(a.OUT_RETURN, 0)) AS OUT_GOOD_RTN_QTY,   -- [2026-09-15] 양품 반품입고(표시전용)
+	        SUM(ISNULL(a.RMA_AMT, 0)) AS RMA_AMT          -- [2026-09-11] (B) RMA 반품 정확금액 원천
+	    FROM DOI_STOCK a
+	    WHERE a.YYYYMM = @YYYYMM
+	      AND a.SITE = @SITE
+	      AND a.SEL_CODE = @SEL_CODE
+	    GROUP BY 
+	        a.YYYYMM,
+	        a.SITE,
+	        a.MODEL,
+	        CASE
+	            -- cassette products (numeric-ending code): map by 2nd-to-last char (e.g. VN034P1 -> 'P')
+	            WHEN RIGHT(a.MODEL_TYPE, 1) LIKE '[0-9]' THEN
+	                CASE
+	                    WHEN SUBSTRING(a.MODEL_TYPE, LEN(a.MODEL_TYPE) - 1, 1) = 'P' THEN N'양산'
+	                    WHEN SUBSTRING(a.MODEL_TYPE, LEN(a.MODEL_TYPE) - 1, 1) = 'R' THEN N'RMA'
+	                    ELSE N'개발'
+	                END
+	            WHEN RIGHT(a.MODEL_TYPE, 1) = 'P' THEN N'양산'
+	            WHEN RIGHT(a.MODEL_TYPE, 1) = 'R' THEN N'RMA'
+	            ELSE N'개발'
+	        END
+	),
+	DIM_EXPEN AS (
+	    SELECT         
+	    	x.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY x.MODEL, x.구분
+            ORDER BY
+                CASE WHEN x.EXPEN_SEL = 'RMA1'
+                       AND x.ACCT_NAME = N'RMA1'
+                     THEN 0 ELSE 1 END,
+                x.EXPEN_SEL,
+                x.ACCT_NAME
+        ) AS RN_MODEL
+	    FROM (
+	        SELECT MODEL, 구분, EXPEN_SEL, EXPEN_SEL명, ACCT_NAME FROM MODEL_IN_AMT
+	        UNION
+	        SELECT MODEL, 구분, EXPEN_SEL, EXPEN_SEL명, ACCT_NAME FROM MODEL_BOH_AMT
+	    ) x
+	    WHERE ACCT_NAME IS NOT NULL
+	),
+	STUC_RMA_LATEST AS (
+	    SELECT *
+	    FROM (
+	        SELECT
+	            s.YYYYMM,
+	            s.SEL_CODE,
+	            s.SITE,
+	            s.구분,
+	            s.MODEL,
+	            s.EXPEN_SEL,
+	            s.ACCT_NAME,
+	            s.OUT_UNITCOST AS RMA_UNITCOST,
+	            ROW_NUMBER() OVER (
+	                PARTITION BY
+	                    s.SEL_CODE,
+	                    s.SITE,
+	                    s.구분,
+	                    s.MODEL,
+	                    s.EXPEN_SEL,
+	                    s.ACCT_NAME
+	                ORDER BY s.YYYYMM DESC
+	            ) AS RN
+	        FROM DOI_STUC s
+	        WHERE s.YYYYMM < @YYYYMM
+	          AND s.SITE = @SITE
+	          AND s.SEL_CODE = @SEL_CODE
+	          AND s.EXPEN_SEL = 'RMA1'
+	          AND s.ACCT_NAME = N'RMA1'
+	          AND COALESCE(s.OUT_UNITCOST, 0) <> 0
+	    ) x
+	    WHERE RN = 1
+	),
+	MODEL_EOH_AMT AS (
+	    SELECT 
+	        YYYYMM,
+	        SITE,
+	        SEL_CODE,
+	        구분,
+	        MODEL,
+	        expen_sel,
+	        expen_sel명,
+	        acct_name,
+	        BOH,
+	        [INPUT],
+	        [OUT],
+	        EOH,
+	        INETC,
+	        OUTETC,
+	        BOH_AMT,
+	        IN_AMT,
+	        Final_Eoh AS EOH_AMT,
+	        coalesce(INETC_AMT,0) INETC_AMT,
+	        --CASE WHEN OUTETC != 0 then BOH_AMT +  IN_AMT - Final_Eoh ELSE 0 END as OUTETC_AMT
+/*	        Final_OUTETC as OUTETC_AMT,*/
+	        IN_OTHER_QTY,
+			RMA_IN_QTY,
+			OUT_RMA_QTY,
+			OUT_REWORK_QTY,
+			OUT_RND_QTY,
+			OUT_TECH_EVAL_QTY,
+			OUT_SHIP_INSP_QTY,
+			OUT_DISPOSE_QTY,
+			OUT_INV_ADJ_QTY,
+			OUT_OTHER_QTY,
+			OUT_GOOD_RTN_QTY,
+	        0 AS IN_OTHER_AMT,
+            coalesce(OUT_RMA_AMT,0) + coalesce(OUT_DISPOSE_AMT,0) + coalesce(OUT_RND_AMT,0) + coalesce(OUT_OTHER_AMT,0) + coalesce(ROUND(OUT_REWORK_QTY * OUT_UNIT_AMT,0),0) AS OUTETC_AMT  /* [2026-09-15 v3] 공정재투입 전액을 타계정출고로(재공 재투입=ERP 투입금액 통일, 순증 크레딧 해제) */  /* [2026-09-14] RMA 재투입: 매출원가 크레딧=당월순증(REWORK-전월재고BOH). 전월재고는 재공 재투입(EXPEN_MATL) */,
+			RMA_IN_AMT,
+			OUT_RMA_AMT,
+			ROUND(OUT_REWORK_QTY * OUT_UNIT_AMT, 0) AS OUT_REWORK_AMT,
+			OUT_RND_AMT,
+			0 AS OUT_TECH_EVAL_AMT,
+			0 AS OUT_SHIP_INSP_AMT,
+			OUT_DISPOSE_AMT,
+			0 AS OUT_INV_ADJ_AMT,
+			OUT_OTHER_AMT,
+			ROUND(OUT_GOOD_RTN_QTY * OUT_UNIT_AMT, 0) AS OUT_GOOD_RTN_AMT   -- [2026-09-15] 양품반품 표시금액(총액 불영향)
+	    FROM (
+	        SELECT 
+	            t.*, 
+--	  Base_OUTETC_AMT + CASE WHEN rn_outetc = 1 THEN ROUND(Ori_OUTETC_total - Base_OUTETC_total, 0) ELSE 0 END AS Final_OUTETC,
+	            Base_EOH_AMT + CASE WHEN rn_eoh = 1 THEN ROUND(Ori_total - Base_total, 0) ELSE 0 END AS Final_Eoh
+	        FROM (
+	            SELECT 
+	                a.*,
+	                -- expen_sel 기준 파티셔닝 제거 (MODEL_STOCK에 expen_sel 정보 없음)
+/*	                ROW_NUMBER() OVER (PARTITION BY YYYYMM, SITE, SEL_CODE, 구분, MODEL, expen_sel ORDER BY Ori_OUTETC_amt DESC) AS RN_OUTETC,*/
+	                ROW_NUMBER() OVER (PARTITION BY YYYYMM, SITE, SEL_CODE, 구분, MODEL, expen_sel ORDER BY Ori_Eoh_amt DESC) AS RN_Eoh,
+/*	                SUM(Ori_OUTETC_amt) OVER (PARTITION BY YYYYMM, SITE, SEL_CODE, 구분, MODEL, expen_sel) AS Ori_OUTETC_total,
+	                SUM(Base_OUTETC_amt) OVER (PARTITION BY YYYYMM, SITE, SEL_CODE, 구분, MODEL, expen_sel) AS Base_OUTETC_total,*/
+	                SUM(Ori_Eoh_amt) OVER (PARTITION BY YYYYMM, SITE, SEL_CODE, 구분, MODEL, expen_sel) AS Ori_total,
+	                SUM(Base_EOH_amt) OVER (PARTITION BY YYYYMM, SITE, SEL_CODE, 구분, MODEL, expen_sel) AS Base_total
+	            FROM (
+	                SELECT
+	                    a.YYYYMM,
+	                    a.SITE,
+	                    a.SEL_CODE,
+	                    a.구분,
+	                    A.MODEL,
+	                    d.expen_sel,
+	                    d.expen_sel명,
+	                    d.acct_name,
+	                    A.BOH,
+						A.INPUT,
+	        A.OUT,
+	           		A.EOH,
+	                    A.INETC,
+	                    A.OUTETC,
+	                    A.IN_OTHER_QTY,
+						A.RMA_IN_QTY,
+						A.OUT_RMA_QTY,
+						A.OUT_REWORK_QTY,
+						A.OUT_RND_QTY,
+						A.OUT_TECH_EVAL_QTY,
+						A.OUT_SHIP_INSP_QTY,
+						A.OUT_DISPOSE_QTY,
+						A.OUT_INV_ADJ_QTY,
+						A.OUT_OTHER_QTY,
+						A.OUT_GOOD_RTN_QTY,
+	                    coalesce(B.BOH_AMT,0) as BOH_AMT,
+	                    B.INETC_AMT,
+            			COALESCE(a.RMA_AMT, 0) AS RMA_IN_AMT,
+						CASE
+						    WHEN d.RN_MODEL = 1
+						      OR d.RN_MODEL IS NULL
+						    THEN ROUND(a.OUT_RMA_QTY * COALESCE(ru.RMA_UNITCOST, 0), 0)
+						    ELSE 0
+						END AS OUT_RMA_AMT,
+						ROUND(a.OUT_DISPOSE_QTY * CASE WHEN COALESCE(A.BOH,0) + COALESCE(A.[INPUT],0) + COALESCE(A.INETC,0) = 0 THEN 0
+						            ELSE(COALESCE(B.BOH_AMT,0) + COALESCE(C.IN_AMT,0) + COALESCE(B.INETC_AMT,0) + COALESCE(A.RMA_AMT,0))
+						                / NULLIF(CONVERT(NUMERIC(17,6),COALESCE(A.BOH,0) + COALESCE(A.[INPUT],0) + COALESCE(A.INETC,0)),0)END,0) AS OUT_DISPOSE_AMT,
+						ROUND(a.OUT_RND_QTY * CASE WHEN COALESCE(A.BOH,0) + COALESCE(A.[INPUT],0) + COALESCE(A.INETC,0) = 0 THEN 0
+						            ELSE(COALESCE(B.BOH_AMT,0) + COALESCE(C.IN_AMT,0) + COALESCE(B.INETC_AMT,0) + COALESCE(A.RMA_AMT,0))
+						                / NULLIF(CONVERT(NUMERIC(17,6),COALESCE(A.BOH,0) + COALESCE(A.[INPUT],0) + COALESCE(A.INETC,0)),0)END,0) AS OUT_RND_AMT,
+						ROUND(a.OUT_OTHER_QTY * CASE WHEN COALESCE(A.BOH,0) + COALESCE(A.[INPUT],0) + COALESCE(A.INETC,0) = 0 THEN 0
+						            ELSE(COALESCE(B.BOH_AMT,0) + COALESCE(C.IN_AMT,0) + COALESCE(B.INETC_AMT,0) + COALESCE(A.RMA_AMT,0))
+						                / NULLIF(CONVERT(NUMERIC(17,6),COALESCE(A.BOH,0) + COALESCE(A.[INPUT],0) + COALESCE(A.INETC,0)),0)END,0) AS OUT_OTHER_AMT,
+	                    --B.OUTETC_AMT,
+/*
+	                    CASE WHEN COALESCE(a.BOH,0)+ COALESCE(a.[INPUT],0) = 0 THEN 0 -- 26.06.24 okw
+		                     WHEN COALESCE(a.BOH,0)+COALESCE(a.[INPUT],0) = OUTETC THEN  (COALESCE(b.boh_amt, 0) + COALESCE(c.IN_AMT, 0))
+	                    	 ELSE (COALESCE(b.boh_amt, 0) + COALESCE(c.IN_AMT, 0))/(COALESCE(A.boh, 0) + COALESCE(a.[INPUT], 0))*A.OUTETC END AS Ori_OUTETC_AMT,
+	                    CASE WHEN COALESCE(a.BOH,0)+ COALESCE(a.[INPUT],0) = 0 THEN 0 -- 26.06.24 okw
+		                     WHEN COALESCE(a.BOH,0)+COALESCE(a.[INPUT],0) = OUTETC THEN  (COALESCE(b.boh_amt, 0) + COALESCE(c.IN_AMT, 0))
+	                	 	 ELSE round( (COALESCE(b.boh_amt, 0) + COALESCE(c.IN_AMT, 0))/(COALESCE(A.boh, 0) + COALESCE(a.INPUT, 0))*A.OUTETC ,0) END AS Base_OUTETC_AMT,
+*/
+	                    COALESCE(c.IN_AMT, 0) AS IN_AMT,
+	                    CASE WHEN COALESCE(a.BOH,0)+COALESCE(a.[INPUT],0)+COALESCE(a.INETC,0) = EOH THEN  (COALESCE(b.boh_amt, 0) + COALESCE(c.IN_AMT, 0) + COALESCE(INETC_AMT, 0)+ COALESCE(a.RMA_AMT,0) )
+	                    	 ELSE (COALESCE(b.boh_amt*1.0, 0) + COALESCE(c.IN_AMT, 0) + COALESCE(INETC_AMT, 0)+ COALESCE(a.RMA_AMT,0))/(COALESCE(A.boh, 0) + COALESCE(a.INPUT, 0) + COALESCE(INETC, 0))*A.EOH END AS Ori_EOH_AMT,
+	                    CASE WHEN COALESCE(a.BOH,0)+COALESCE(INPUT,0)+COALESCE(a.INETC,0) = EOH THEN  (COALESCE(b.boh_amt, 0) + COALESCE(c.IN_AMT, 0) + COALESCE(INETC_AMT, 0)+ COALESCE(a.RMA_AMT,0))
+	                    	 ELSE round((COALESCE(b.boh_amt, 0) + COALESCE(c.IN_AMT, 0) + COALESCE(INETC_AMT, 0)+ COALESCE(a.RMA_AMT,0))/(COALESCE(A.boh, 0) + COALESCE(a.INPUT, 0) + COALESCE(INETC, 0))*A.EOH ,0) END AS Base_EOH_AMT,
+						CASE
+						    WHEN COALESCE(A.BOH,0) + COALESCE(A.[INPUT],0) + COALESCE(A.INETC,0) = 0 THEN 0
+						    ELSE
+						        (
+						            COALESCE(B.BOH_AMT,0)
+						          + COALESCE(C.IN_AMT,0)
+						          + COALESCE(B.INETC_AMT,0)
+						          + COALESCE(A.RMA_AMT,0)
+						        )
+						        / NULLIF(
+						            CONVERT(NUMERIC(17,6),
+						                COALESCE(A.BOH,0) + COALESCE(A.[INPUT],0) + COALESCE(A.INETC,0)
+						            ),
+						        0)
+						END AS OUT_UNIT_AMT
+						
+	                   /* CASE 
+	                        WHEN a.out + a.outetc = 0 AND a.eoh != 0 
+	                        THEN COALESCE(b.boh_amt, 0) + COALESCE(c.IN_AMT, 0) + COALESCE(b.INETC_AMT, 0)
+	   ELSE (COALESCE(b.boh_amt, 0) + COALESCE(c.IN_AMT, 0) + COALESCE(b.INETC_AMT, 0) - COALESCE(b.OUTETC_AMT, 0))
+	                             / NULLIF((a.eoh + a.out), 0) * a.eoh * 1.0
+	                    END AS Ori_EOH_AMT,
+	                    ROUND(CASE 
+	                        WHEN a.out + a.outetc = 0 AND a.eoh != 0 
+	                        THEN COALESCE(b.boh_amt, 0) + COALESCE(c.IN_AMT, 0) + COALESCE(b.INETC_AMT, 0)
+	                        ELSE (COALESCE(b.boh_amt, 0) + COALESCE(c.IN_AMT, 0) + COALESCE(b.INETC_AMT, 0) - COALESCE(b.OUTETC_AMT, 0))
+	                             / NULLIF((a.eoh + a.out), 0) * a.eoh
+	                    END, 0) AS Base_EOH_AMT*/
+					FROM MODEL_STOCK a
+					LEFT JOIN DIM_EXPEN d
+					    ON a.model = d.model AND a.구분 = d.구분
+					LEFT JOIN MODEL_BOH_AMT b
+					    ON a.yyyymm = b.yyyymm AND a.site = b.site
+					   AND a.model = b.model AND a.구분 = b.구분
+					   AND d.expen_sel = b.expen_sel AND d.acct_name = b.acct_name
+					LEFT JOIN MODEL_IN_AMT c
+					    ON a.yyyymm = c.yyyymm AND a.site = c.site
+					   AND a.model = c.model AND a.구분 = c.구분
+					   AND d.expen_sel = c.expen_sel AND d.acct_name = c.acct_name
+					LEFT JOIN STUC_RMA_LATEST ru
+					    ON ru.SITE = a.SITE
+					   AND ru.SEL_CODE = a.SEL_CODE
+					   AND ru.구분 = a.구분
+					   AND ru.MODEL = a.MODEL
+	                WHERE A.yyyymm = @YYYYMM
+	                  AND a.site = @SITE
+	            ) a
+	        ) t
+	    ) Final
+	)
+	INSERT INTO DOI_STCO (
+	    YYYYMM, SITE, SEL_CODE, 구분, MODEL, EXPEN_SEL, EXPEN_SEL명, ACCT_NAME,
+	    BOH, [INPUT], [OUT], EOH, INETC, OUTETC,
+	    BOH_AMT, IN_AMT, EOH_AMT, OUT_AMT, INETC_AMT, OUTETC_AMT,
+--	    WORK_QTY, WORK_AMT,
+	    IN_OTHER_QTY, IN_OTHER_AMT,
+--	    IN_INV_ADJ_QTY, IN_INV_ADJ_AMT,
+	    RMA_IN_QTY, RMA_IN_AMT,
+	    OUT_RMA_QTY, OUT_RMA_AMT,
+	    OUT_REWORK_QTY, OUT_REWORK_AMT,
+	    OUT_RND_QTY, OUT_RND_AMT,
+	    OUT_TECH_EVAL_QTY, OUT_TECH_EVAL_AMT,
+	    OUT_SHIP_INSP_QTY, OUT_SHIP_INSP_AMT,
+	    OUT_DISPOSE_QTY, OUT_DISPOSE_AMT,
+	 OUT_INV_ADJ_QTY, OUT_INV_ADJ_AMT,
+	    OUT_OTHER_QTY, OUT_OTHER_AMT,
+	    OUT_GOOD_RTN_QTY, OUT_GOOD_RTN_AMT
+	)
+	SELECT 
+	    YYYYMM,
+	    SITE,
+	    SEL_CODE,
+	    구분,
+	    MODEL,
+	    ISNULL(EXPEN_SEL, 'NONE') AS EXPEN_SEL,
+	    ISNULL(EXPEN_SEL명, N'생산수불없음') AS EXPEN_SEL명,
+	    ISNULL(ACCT_NAME, N'생산수불없음') AS ACCT_NAME,
+	    BOH,
+	    [INPUT],
+	    [OUT],
+	    EOH,
+	    INETC,
+	    OUTETC,
+	    BOH_AMT,
+	    IN_AMT,
+	    EOH_AMT,
+	    BOH_AMT + IN_AMT + (IN_OTHER_AMT + RMA_IN_AMT) - EOH_AMT - OUT_RMA_AMT - OUT_DISPOSE_AMT - OUT_RND_AMT - OUT_OTHER_AMT - OUT_REWORK_AMT - ISNULL(X.RESID,0) AS OUT_AMT,  -- [2026-09-15l] 판매출고 수량 0 행의 반올림 차이는 타계정으로(X.RESID)
+	    IN_OTHER_AMT + /*IN_INV_ADJ_AMT +*/ RMA_IN_AMT AS INETC_AMT,
+	    OUTETC_AMT + ISNULL(X.RESID,0) AS OUTETC_AMT,
+--	    WORK_QTY,
+--	    WORK_AMT,
+	    IN_OTHER_QTY,
+	    IN_OTHER_AMT,
+--	    IN_INV_ADJ_QTY,
+--	    IN_INV_ADJ_AMT,
+	    RMA_IN_QTY,
+	    RMA_IN_AMT,
+	    OUT_RMA_QTY,
+	    OUT_RMA_AMT + CASE WHEN T.K = 'RMA' THEN ISNULL(X.RESID,0) ELSE 0 END AS OUT_RMA_AMT,
+	    OUT_REWORK_QTY,
+	    OUT_REWORK_AMT + CASE WHEN T.K = 'REWORK' THEN ISNULL(X.RESID,0) ELSE 0 END AS OUT_REWORK_AMT,
+	    OUT_RND_QTY,
+	    OUT_RND_AMT + CASE WHEN T.K = 'RND' THEN ISNULL(X.RESID,0) ELSE 0 END AS OUT_RND_AMT,
+	    OUT_TECH_EVAL_QTY,
+	    OUT_TECH_EVAL_AMT + CASE WHEN T.K = 'TECH' THEN ISNULL(X.RESID,0) ELSE 0 END AS OUT_TECH_EVAL_AMT,
+	    OUT_SHIP_INSP_QTY,
+	    OUT_SHIP_INSP_AMT + CASE WHEN T.K = 'SHIP' THEN ISNULL(X.RESID,0) ELSE 0 END AS OUT_SHIP_INSP_AMT,
+	    OUT_DISPOSE_QTY,
+	    OUT_DISPOSE_AMT + CASE WHEN T.K = 'DISPOSE' THEN ISNULL(X.RESID,0) ELSE 0 END AS OUT_DISPOSE_AMT,
+	    OUT_INV_ADJ_QTY,
+	    OUT_INV_ADJ_AMT + CASE WHEN T.K = 'INVADJ' THEN ISNULL(X.RESID,0) ELSE 0 END AS OUT_INV_ADJ_AMT,
+	    OUT_OTHER_QTY,
+	    OUT_OTHER_AMT + CASE WHEN T.K = 'OTHER' THEN ISNULL(X.RESID,0) ELSE 0 END AS OUT_OTHER_AMT,
+	    OUT_GOOD_RTN_QTY,
+	    OUT_GOOD_RTN_AMT
+	FROM MODEL_EOH_AMT
+	-- [2026-09-15l] 판매출고 수량 0 인 행: 반올림 차이를 수량이 가장 큰 타계정 항목으로
+	--   (동률 순서: 연구개발>폐기>기타>공정재투입>RMA>기술평가>출하검사>재고실사). 판매출고가 있으면 기존대로 양품에 남김.
+	OUTER APPLY (
+	    SELECT TOP 1 v.K
+	    FROM (VALUES ('RND', ISNULL(OUT_RND_QTY,0), 1), ('DISPOSE', ISNULL(OUT_DISPOSE_QTY,0), 2), ('OTHER', ISNULL(OUT_OTHER_QTY,0), 3),
+	                 ('REWORK', ISNULL(OUT_REWORK_QTY,0), 4), ('RMA', ISNULL(OUT_RMA_QTY,0), 5), ('TECH', ISNULL(OUT_TECH_EVAL_QTY,0), 6),
+	                 ('SHIP', ISNULL(OUT_SHIP_INSP_QTY,0), 7), ('INVADJ', ISNULL(OUT_INV_ADJ_QTY,0), 8)) v(K, Q, O)
+	    WHERE v.Q <> 0
+	    ORDER BY ABS(v.Q) DESC, v.O
+	) T
+	CROSS APPLY (
+	    SELECT CASE WHEN ISNULL([OUT],0) = 0 AND T.K IS NOT NULL
+	                THEN BOH_AMT + IN_AMT + (IN_OTHER_AMT + RMA_IN_AMT) - EOH_AMT - OUT_RMA_AMT - OUT_DISPOSE_AMT - OUT_RND_AMT - OUT_OTHER_AMT - OUT_REWORK_AMT
+	                ELSE 0 END AS RESID
+	) X
+	ORDER BY 
+	    구분,
+	    MODEL,
+	    EXPEN_SEL,
+	  EXPEN_SEL명,
+	    ACCT_NAME;
+	
+	SET  @R_Message =  @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STCO) 테이블에 '+@YYYYMM + '월 '
+		+ CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + '재품수불금액 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
+	
+	--카세트 재료비 1
+	INSERT	INTO	DOI_STCO
+	(YYYYMM ,SITE ,SEL_CODE ,구분 ,MODEL ,expen_sel ,expen_sel명 ,acct_name, BOH ,[INPUT] , EOH , [OUT] ,BOH_AMT ,IN_AMT ,EOH_AMT ,OUT_AMT)
+	select YYYYMM ,SITE ,SEL_CODE ,CASE WHEN model like 'VINA%' THEN '카세트' else 구분 end as 구분,
+		MODEL ,expen_sel ,expen_sel명 ,acct_name,boh_qty ,in_qty ,eoh_qty ,out_qty ,boh ,[in] ,eoh ,[out]
+	from doi_cost a
+	WHERE 1 = 1 
+	 and YYYYMM   = @YYYYMM
+     and SITE 	  = @SITE
+    and SEL_CODE = @SEL_CODE
+     and model like 'VINA%'
+     and expen_sel명 not like '%재료비'
+     and ADJ_YN='Y'
+    UNION ALL --재료비부분
+	select YYYYMM ,SITE ,SEL_CODE ,CASE WHEN model like 'VINA%' THEN '카세트' else 구분 end as 구분,
+		MODEL ,expen_sel ,expen_sel명 ,acct_name,sum(boh_qty) ,sum(in_qty) ,sum(eoh_qty) ,sum(out_qty) ,sum(boh) ,sum([out]) ,sum(eoh) ,sum([out]) --select *
+	from doi_cost a
+	WHERE 1 = 1 
+	 and YYYYMM   = @YYYYMM
+     and SITE 	  = @SITE
+     and SEL_CODE = @SEL_CODE
+     and model like 'VINA%'
+     and expen_sel명 like '%재료비'
+     and ADJ_YN='Y'
+	GROUP by YYYYMM ,SITE ,SEL_CODE ,CASE WHEN model like 'VINA%' THEN '카세트' else 구분 end ,
+		MODEL ,expen_sel ,expen_sel명 ,acct_name ;
+	
+	SET  @R_Message =  @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STCO) 테이블에 '+@YYYYMM + '월 '
+		+ CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + '카셑트재료비 데이타 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 입력했습니다';
+
+	--EXTRA (수불은 없지만 재공 기초금액이 있는 모델) 처리 
+	INSERT INTO DOI_STCO 
+	(YYYYMM,SEL_CODE,SITE,구분,MODEL,EXPEN_SEL,expen_sel명,ACCT_NAME,BOH,[INPUT],[OUT],EOH,BOH_AMT,IN_AMT,EOH_AMT,OUT_AMT,OUTETC_AMT)
+	select
+		YYYYMM,
+		SEL_CODE,
+		SITE,
+		'개발' as 구분,
+		'EXTRA' AS MODEL,
+		'*' as EXPEN_SEL,
+		'*' as expen_sel명,
+		'*' as ACCT_NAME,
+		SUM(BOH_QTY) as BOH,
+		SUM(IN_QTY) as INPUT,
+		SUM(OUT_QTY) as OUT,
+		SUM(EOH_QTY) as EOH,
+		SUM(BOH) as BOH_AMT,
+		SUM(ADJ_BOH) as IN_AMT,
+		SUM(EOH) as EOH_AMT, 
+		SUM(ADJ_BOH) as OUT_AMT,
+		SUM(OUT_ETC) as OUTETC_AMT --select *
+	from
+		doi_cost
+	where
+		yyyymm = @YYYYMM
+		and sel_code = @SEL_CODE
+		and site = @SITE
+		and expen_sel = '*'
+		and @YYYYMM <> '202601'
+	group by 	YYYYMM,
+		SEL_CODE,
+		SITE;
+	
+	-- ##1 재공 전량LOSS --> STCO (기타매출)
+	INSERT INTO DOI_STCO 
+	(YYYYMM,SEL_CODE,SITE,구분,MODEL,EXPEN_SEL,expen_sel명,ACCT_NAME,BOH,[INPUT],[OUT],EOH,BOH_AMT,IN_AMT,EOH_AMT,OUT_AMT,OUTETC_AMT)
+	SELECT YYYYMM, SEL_CODE, SITE, 구분, MODEL, '*' EXPEN_SEL,  '*' expen_sel명, '기타출고' ACCT_NAME,
+	       0 BOH, 0 [INPUT], 0 [OUT], 0 EOH, 0 BOH_AMT, 
+	    SUM(LOSS) IN_AMT, 0 EOH_AMT, 0  OUT_AMT, SUM(LOSS) OUTETC_AMT
+	FROM
+	(
+	   SELECT 
+	   YYYYMM,SEL_CODE,SITE,구분,MODEL,EXPEN_SEL,expen_sel명,ACCT_NAME, LOSS
+	   FROM
+	   (
+	      select YYYYMM, SEL_CODE, SITE, 구분, MODEL, EXPEN_SEL, EXPEN_SEL명, ACCT_NAME,  
+	             SUM(LOSS) LOSS
+	      from doi_cost
+	      where yyyymm = @YYYYMM
+	      and sel_code = @SEL_CODE
+	      AND SITE = @SITE
+	      and  boh_qty + in_qty != 0
+	      --and out_qty + eoh_qty = 0
+	      and out = 0
+	      and eoh = 0
+	      GROUP BY YYYYMM, SEL_CODE, SITE, 구분, MODEL, EXPEN_SEL명, ACCT_NAME, EXPEN_SEL
+	      HAVING SUM(LOSS) != 0
+	   ) X
+	) Y
+	GROUP BY   YYYYMM, SEL_CODE, SITE, 구분,  MODEL; --,  EXPEN_SEL,  expen_sel명
+		/*INSERT INTO DOI_STCO  --차후 수정 필요 2026.04.05 KYH
+	(YYYYMM,SEL_CODE,SITE,구분,MODEL,EXPEN_SEL,expen_sel명,ACCT_NAME,BOH,[INPUT],[OUT],EOH,BOH_AMT,IN_AMT,EOH_AMT,OUT_AMT,OUTETC_AMT,COST_TYPE)
+	      select YYYYMM,SEL_CODE,SITE,구분,MODEL,EXPEN_SEL,expen_sel명,ACCT_NAME
+	      ,MAX(BOH_QTY) BOH_QTY,MAX(IN_QTY) IN_QTY,MAX(OUT_QTY) OUT_QTY,MAX(EOH_QTY) EOH_QTY,
+	      SUM(BOH) BOH_AMT,SUM([IN]) IN_AMT,SUM(EOH) EOH_AMT,SUM([LOSS]) OUT_AMT,SUM(OUT_ETC) OUTETC_AMT,'LOSS' COST_TYPE
+	      from doi_cost
+	      where yyyymm = :YYYYMM
+	      and sel_code = :SEL_CODE
+	      AND SITE = :SITE
+	      and  boh_qty + in_qty = loss_qty
+	      and loss != 0*/
+	
+	SET  @R_Message =  @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STCO) 테이블에 '+@YYYYMM + '월 '
+		+ CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + '수불은 없지만 재공 기초금액이 있는 모델 '+CAST(@@ROWCOUNT AS VARCHAR) +'건을 처리했습니다';
+	
+	 SET  @R_Message =  @R_Message + char(10) + '  [END]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+'- 제품수불금액(DOI_STCO) 테이블에 '+@YYYYMM + '월 '
+		+ CASE WHEN @SITE =@SITE THEN '본사' ELSE 'VINA' END + '재품수불금액 집계 완료했습니다';
+	
+	-- ======================================================================
+	-- [2026-09-11] (C) 양산 반품 크레딧 — 반품된 P모델 매출원가를 RMA금액만큼 차감 (202601 선례)
+	--   양산 OUTETC_AMT = DOI_STOCK.RMA_AMT (모델당 1행). SALE_COST L208(OUT_AMT - OUTETC_AMT + OUT_RMA_AMT)
+	--   로 매출원가에서 반품분이 (-)크레딧된다. OUT_RMA_AMT 는 0 유지(설정 시 +로 상쇄됨).
+	--   반품물량(금액)은 RMA창고(구분='RMA')로 이동 = A·B 에서 이미 재고 반영됨. 8136 R행 2개는 SUM dedup.
+	-- ======================================================================
+	;WITH rma_stock_sum AS (
+	    SELECT yyyymm, sel_code, site, model, SUM(ISNULL(rma_amt,0)) AS rma_amt
+	    FROM doi_stock
+	    WHERE yyyymm=@YYYYMM AND sel_code=@SEL_CODE AND site=@SITE AND model_type LIKE '%R'
+	    GROUP BY yyyymm, sel_code, site, model
+	    HAVING SUM(ISNULL(rma_amt,0)) <> 0
+	),
+	yang_rn AS (
+	    SELECT s.model, s.expen_sel, s.acct_name,
+	           ROW_NUMBER() OVER (PARTITION BY s.model ORDER BY s.expen_sel, s.acct_name) AS rn
+	    FROM DOI_STCO s
+	    WHERE s.yyyymm=@YYYYMM AND s.sel_code=@SEL_CODE AND s.site=@SITE AND s.구분=N'양산'
+	      AND EXISTS (SELECT 1 FROM rma_stock_sum r WHERE r.model=s.model)
+	)
+	UPDATE t
+	    SET OUT_AMT = ISNULL(t.OUT_AMT,0) - r.rma_amt, OUTETC_AMT = 0   -- [2026-09-15] 양산 반품크레딧을 총출고(OUT_AMT)로 접음: 타계정(OUTETC)=0(상세합일치), 양품(OUT-OUTETC) 마이너스 유지, SALE_COST 순액 불변
+	FROM DOI_STCO t
+	JOIN yang_rn y ON t.model=y.model AND t.expen_sel=y.expen_sel AND t.acct_name=y.acct_name AND y.rn=1
+	JOIN rma_stock_sum r ON t.yyyymm=r.yyyymm AND t.sel_code=r.sel_code AND t.site=r.site AND t.model=r.model
+	WHERE t.yyyymm=@YYYYMM AND t.sel_code=@SEL_CODE AND t.site=@SITE AND t.구분=N'양산';
+	
+	SET @R_Message = @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+	    + '- 제품수불금액(DOI_STCO) 양산 반품크레딧(OUT_AMT 접기,타계정=0) ' + CAST(@@ROWCOUNT AS VARCHAR) + '건을 반영했습니다';
+	-- ======================================================================
+	-- [2026-09-15] RMA R/W 재투입 매출원가(제품) 표시 재분류 (담당자 확정)
+	--   구분=RMA & 공정재투입(REWORK) 행: 공정재투입=OUTETC_AMT=전월재고BOH(6,821,974),
+	--   OUT_AMT=BOH-REWORK원가(-1,324,109) => 화면 양품=OUT-OUTETC=-8,146,083, 타계정=상세합=공정재투입.
+	--   (RHS=UPDATE전 값. SALE_COST=OUT-OUTETC+OUT_RMA=-8,146,083 전액 크레딧)
+	-- ======================================================================
+	/* [2026-09-15 v3] RMA R/W 표시재분류 비활성: 재공 재투입을 ERP 투입금액으로 통일해 공정재투입=원가 그대로 표시
+	UPDATE DOI_STCO SET
+	    OUT_AMT        = ISNULL(BOH_AMT,0) - ISNULL(OUT_REWORK_AMT,0),
+	    OUTETC_AMT     = ISNULL(BOH_AMT,0),
+	    OUT_REWORK_AMT = ISNULL(BOH_AMT,0)
+	WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND SEL_CODE = @SEL_CODE
+	  AND 구분 = N'RMA' AND ISNULL(OUT_REWORK_QTY,0) <> 0;
+
+	SET @R_Message = @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+	    + '- 제품수불금액(DOI_STCO) RMA R/W 표시재분류(공정재투입/OUTETC=BOH) ' + CAST(@@ROWCOUNT AS VARCHAR) + '건을 반영했습니다';
+	*/
+
+	-- ======================================================================
+	-- [2026-09-15f] 양품(출고)/양품(반품입고) 매출문서 기반 표시 분해 (구분 버그수정)
+	--   매출원가 총액(OUT_AMT)/EOH 불변. 표시컬럼만 채움. 블록C(양산 반품크레딧) 직후 실행.
+	--   ★수정: 개발·양산 품번이 같은 MODEL로 합쳐지는 경우(8166D+8166P->8166) 양산 수량이
+	--     개발행에 들어가던 버그 → doc_sales에 구분 파생 + (MODEL,구분) 조인으로 정확 배치.
+	--   양품출고수량 = 매출문서(DOI_SALE_RESC 국내 + DOI_INVOICE_RESC 수출) 수량>=0 합/(도우모델,구분).
+	--   양품반품수량 = 매출문서 수량<0 합(음수). 반품크레딧 = DOI_STOCK.RMA_AMT(블록C 동일 원천).
+	--   불변식: OUT_GOOD_AMT + OUT_GOOD_RTN_AMT = OUT_AMT (행/총계) => 매출원가 총액 보존.
+	-- ======================================================================
+	;WITH doc_sales AS (
+	    SELECT map.구분, map.MODEL,
+	           SUM(CASE WHEN s.수량 >= 0 THEN s.수량 ELSE 0 END) AS qout,
+	           SUM(CASE WHEN s.수량 <  0 THEN s.수량 ELSE 0 END) AS qrtn
+	    FROM (SELECT 품번, 수량 FROM DOI_SALE_RESC    WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE
+	          UNION ALL
+	          SELECT 품번, 수량 FROM DOI_INVOICE_RESC WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE) s
+	    JOIN (SELECT DISTINCT MODEL_TYPE, MODEL,
+                 CASE
+                     WHEN RIGHT(MODEL_TYPE, 1) LIKE '[0-9]' THEN
+                         CASE WHEN SUBSTRING(MODEL_TYPE, LEN(MODEL_TYPE) - 1, 1) = 'P' THEN N'양산'
+                              WHEN SUBSTRING(MODEL_TYPE, LEN(MODEL_TYPE) - 1, 1) = 'R' THEN N'RMA'
+                              ELSE N'개발' END
+                     WHEN RIGHT(MODEL_TYPE, 1) = 'P' THEN N'양산'
+                     WHEN RIGHT(MODEL_TYPE, 1) = 'R' THEN N'RMA'
+                     ELSE N'개발'
+                 END AS 구분
+	          FROM DOI_STOCK
+	          WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE) map ON map.MODEL_TYPE = s.품번
+	    GROUP BY map.구분, map.MODEL
+	)
+	-- LEFT JOIN: 모든 구분<>RMA 행 기본 OUT_GOOD_AMT=OUT_AMT(불변식 보장), 매출문서 있는 (MODEL,구분)만 수량 세팅.
+	UPDATE t SET
+	    OUT_GOOD_QTY     = ISNULL(d.qout, 0),
+	    OUT_GOOD_RTN_QTY = ISNULL(d.qrtn, 0),
+	    OUT_GOOD_AMT     = ISNULL(t.OUT_AMT, 0),
+	    OUT_GOOD_RTN_AMT = 0
+	FROM DOI_STCO t LEFT JOIN doc_sales d ON t.MODEL = d.MODEL AND t.구분 = d.구분
+	WHERE t.YYYYMM=@YYYYMM AND t.SITE=@SITE AND t.SEL_CODE=@SEL_CODE AND t.구분 <> N'RMA';
+
+	SET @R_Message = @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+	    + '- 제품수불금액(DOI_STCO) 양품(출고) 매출문서 기반 표시분해(구분별) ' + CAST(@@ROWCOUNT AS VARCHAR) + '건';
+
+	-- 반품크레딧: 모델별 RMA_AMT(블록C와 동일 원천/동일 rn=1 행)를 OUT_GOOD_RTN_AMT로 표시. OUT_AMT 불변.
+	;WITH rma_stock_sum AS (
+	    SELECT model, SUM(ISNULL(rma_amt,0)) AS rma_amt
+	    FROM doi_stock
+	    WHERE yyyymm=@YYYYMM AND sel_code=@SEL_CODE AND site=@SITE AND model_type LIKE '%R'
+	    GROUP BY model
+	    HAVING SUM(ISNULL(rma_amt,0)) <> 0
+	),
+	yang_rn AS (
+	    SELECT s.model, s.expen_sel, s.acct_name,
+	           ROW_NUMBER() OVER (PARTITION BY s.model ORDER BY s.expen_sel, s.acct_name) AS rn
+	    FROM DOI_STCO s
+	    WHERE s.yyyymm=@YYYYMM AND s.sel_code=@SEL_CODE AND s.site=@SITE AND s.구분=N'양산'
+	      AND EXISTS (SELECT 1 FROM rma_stock_sum r WHERE r.model = s.model)
+	)
+	UPDATE t
+	    SET OUT_GOOD_RTN_AMT = -r.rma_amt,
+	        OUT_GOOD_AMT     = ISNULL(t.OUT_AMT,0) + r.rma_amt
+	FROM DOI_STCO t
+	JOIN yang_rn y ON t.model=y.model AND t.expen_sel=y.expen_sel AND t.acct_name=y.acct_name AND y.rn=1
+	JOIN rma_stock_sum r ON t.model=r.model
+	WHERE t.yyyymm=@YYYYMM AND t.sel_code=@SEL_CODE AND t.site=@SITE AND t.구분=N'양산';
+
+	SET @R_Message = @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+	    + '- 제품수불금액(DOI_STCO) 양품(반품입고) 크레딧 표시 ' + CAST(@@ROWCOUNT AS VARCHAR) + '건(총액 불변)';
+
+
+
+
+
+	
+	 COMMIT TRANSACTION;
+	 
+	 END TRY   
+	  
+	BEGIN CATCH
+		SET  @R_Message =  @R_Message + char(10) + '[ERROR] '+  CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)+(SELECT ERROR_Message());-- AS ErrorR_Message;
+		ROLLBACK TRANSACTION;
+	--SELECT @R_Message as retMessage;
+	   END CATCH;
+	END;
+GO
+SET NOEXEC OFF;
+GO
