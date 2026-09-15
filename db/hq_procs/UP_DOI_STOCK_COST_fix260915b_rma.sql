@@ -1,3 +1,5 @@
+-- [2026-09-15b] STOCK_COST 통합: (1)양산 반품크레딧 OUT_AMT 접기(타계정=0) + (2)RMA R/W 표시재분류.
+-- 현재 라이브(goodrtn+REWORK순증+블록C) 기반. UP_DOI_STOCK_COST_fix260915_rma_display.sql 대체.
 -- [2026-09-15] RMA R/W 매출원가 표시재분류 추가 (담당자 확정). 라이브(goodrtn+REWORK순증+블록C) 기반.
 -- [2026-09-15] 병합본: (A) REWORK 당월순증 매출원가 크레딧 [fix260914_rma] + (B) 양품(반품입고) 표시전용 [goodrtn]
 -- 현재 라이브 기반. 두 변경 위치 독립. 배포 전 DOI_STCO OUT_GOOD_RTN 컬럼 ADD 선행.
@@ -668,14 +670,30 @@ SET NOCOUNT ON;
 	      AND EXISTS (SELECT 1 FROM rma_stock_sum r WHERE r.model=s.model)
 	)
 	UPDATE t
-	    SET OUTETC_AMT = r.rma_amt
+	    SET OUT_AMT = ISNULL(t.OUT_AMT,0) - r.rma_amt, OUTETC_AMT = 0   -- [2026-09-15] 양산 반품크레딧을 총출고(OUT_AMT)로 접음: 타계정(OUTETC)=0(상세합일치), 양품(OUT-OUTETC) 마이너스 유지, SALE_COST 순액 불변
 	FROM DOI_STCO t
 	JOIN yang_rn y ON t.model=y.model AND t.expen_sel=y.expen_sel AND t.acct_name=y.acct_name AND y.rn=1
 	JOIN rma_stock_sum r ON t.yyyymm=r.yyyymm AND t.sel_code=r.sel_code AND t.site=r.site AND t.model=r.model
 	WHERE t.yyyymm=@YYYYMM AND t.sel_code=@SEL_CODE AND t.site=@SITE AND t.구분=N'양산';
 	
 	SET @R_Message = @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
-	    + '- 제품수불금액(DOI_STCO) 양산 반품크레딧(OUTETC_AMT) ' + CAST(@@ROWCOUNT AS VARCHAR) + '건을 반영했습니다';
+	    + '- 제품수불금액(DOI_STCO) 양산 반품크레딧(OUT_AMT 접기,타계정=0) ' + CAST(@@ROWCOUNT AS VARCHAR) + '건을 반영했습니다';
+	-- ======================================================================
+	-- [2026-09-15] RMA R/W 재투입 매출원가(제품) 표시 재분류 (담당자 확정)
+	--   구분=RMA & 공정재투입(REWORK) 행: 공정재투입=OUTETC_AMT=전월재고BOH(6,821,974),
+	--   OUT_AMT=BOH-REWORK원가(-1,324,109) => 화면 양품=OUT-OUTETC=-8,146,083, 타계정=상세합=공정재투입.
+	--   (RHS=UPDATE전 값. SALE_COST=OUT-OUTETC+OUT_RMA=-8,146,083 전액 크레딧)
+	-- ======================================================================
+	UPDATE DOI_STCO SET
+	    OUT_AMT        = ISNULL(BOH_AMT,0) - ISNULL(OUT_REWORK_AMT,0),
+	    OUTETC_AMT     = ISNULL(BOH_AMT,0),
+	    OUT_REWORK_AMT = ISNULL(BOH_AMT,0)
+	WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND SEL_CODE = @SEL_CODE
+	  AND 구분 = N'RMA' AND ISNULL(OUT_REWORK_QTY,0) <> 0;
+
+	SET @R_Message = @R_Message + char(10) + ' [INFO]  ' + CONVERT(VARCHAR(19), GETDATE(), 120) + char(9)
+	    + '- 제품수불금액(DOI_STCO) RMA R/W 표시재분류(공정재투입/OUTETC=BOH) ' + CAST(@@ROWCOUNT AS VARCHAR) + '건을 반영했습니다';
+
 	-- ======================================================================
 	-- [2026-09-15] RMA R/W 재투입 매출원가(제품) 표시 재분류 (담당자 확정)
 	--   RMA창고 공정재투입(REWORK) 행을 다음처럼 표시:
