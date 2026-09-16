@@ -189,16 +189,12 @@ export default {
         const aModel = a.model || '';
         const bModel = b.model || '';
         
-        const aIsYangsan = aModel.startsWith('양산');
-        const bIsYangsan = bModel.startsWith('양산');
-        const aIsGaebel = aModel.startsWith('개발');
-        const bIsGaebel = bModel.startsWith('개발');
-        
-        if (aIsYangsan && !bIsYangsan) return -1;
-        if (!aIsYangsan && bIsYangsan) return 1;
-        if (aIsGaebel && !bIsGaebel) return -1;
-        if (!aIsGaebel && bIsGaebel) return 1;
-        
+        // [2026-09-16a] 양산 → 개발 → 카세트 순
+        const rank = (m) => (m.startsWith('양산') ? 0 : m.startsWith('개발') ? 1 : m.startsWith('카세트') ? 2 : 3);
+        const ra = rank(aModel);
+        const rb = rank(bModel);
+        if (ra !== rb) return ra - rb;
+
         return aModel.localeCompare(bModel);
       });
       
@@ -210,12 +206,14 @@ export default {
         { name: '판매관리비계획', fieldName: '판매관리비계획', width: 100, header: { text: '판매관리비 계획' }, styleName: 'tr', numberFormat: '#,##0' },
         { name: 'Z합계', fieldName: 'Z합계', width: 100, header: { text: '판매관리비 합계' }, styleName: 'tr', numberFormat: '#,##0' },
         { name: 'X합계', fieldName: 'X합계', width: 100, header: { text: '양산 합계' }, styleName: 'tr', numberFormat: '#,##0' },
-        { name: 'Y합계', fieldName: 'Y합계', width: 100, header: { text: '개발 합계' }, styleName: 'tr', numberFormat: '#,##0' }
+        { name: 'Y합계', fieldName: 'Y합계', width: 100, header: { text: '개발 합계' }, styleName: 'tr', numberFormat: '#,##0' },
+        { name: 'W합계', fieldName: 'W합계', width: 100, header: { text: '카세트 합계' }, styleName: 'tr', numberFormat: '#,##0' }
       ];
-      
-      // 양산/개발 분류
+
+      // 양산/개발/카세트 분류
       const yangSanModels = result1.filter(m => m.model.startsWith('양산'));
       const gaeBelModels = result1.filter(m => m.model.startsWith('개발'));
+      const cassetteModels = result1.filter(m => m.model.startsWith('카세트'));   // [2026-09-16a]
       
       // 동적 모델 필드 추가
       result1.forEach((item) => {
@@ -228,7 +226,7 @@ export default {
 
       // 동적 컬럼 추가
       result1.forEach((item) => {
-        const displayModel = item.model.replace(/^(양산|개발)/, '');
+        const displayModel = item.model.replace(/^(양산|개발|카세트)/, '');
         gridField1.columns.push({
           name: item.model,
           fieldName: item.model,
@@ -245,7 +243,7 @@ export default {
       this.gridDataProvider.setFields(gridField1.fields);
       
       // 모든 컬럼 = 고정 + 동적
-      const stripModelPrefix = (model) => model.replace(/^(양산|개발)/, '');
+      const stripModelPrefix = (model) => model.replace(/^(양산|개발|카세트)/, '');
       const allColumns = [
         ...fixedColumns,
         ...result1.map((item) => ({
@@ -269,6 +267,7 @@ export default {
         { column: 'Z합계', rowSpan: 2, header: { text: '판매관리비 합계' } },
         { column: 'X합계', rowSpan: 2, header: { text: '양산 합계' } },
         { column: 'Y합계', rowSpan: 2, header: { text: '개발 합계' } },
+        { column: 'W합계', rowSpan: 2, header: { text: '카세트 합계' } },
         {
           header: { text: '양산' },
           items: yangSanModels.map(m => ({
@@ -282,7 +281,17 @@ export default {
             column: m.model,
             header: { text: m.model.replace(/^개발/, '') }
           }))
-        }
+        },
+        // [2026-09-16a] 카세트 대분류: 모델이 없으면 그룹 자체를 만들지 않는다
+        ...(cassetteModels.length
+          ? [{
+              header: { text: '카세트' },
+              items: cassetteModels.map(m => ({
+                column: m.model,
+                header: { text: m.model.replace(/^카세트/, '') }
+              }))
+            }]
+          : [])
       ];
       
       this.gridView.setColumnLayout(layout);

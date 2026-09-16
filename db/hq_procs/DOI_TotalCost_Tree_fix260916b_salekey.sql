@@ -1,0 +1,1671 @@
+/* ============================================================
+   DOI_TotalCost_Tree fix260916b — 매출↔재고평가 매칭을 품명 → 품번 기준으로 (카세트 원가 집계)
+   근거: 「KR 로직 문의 (2).xlsx」 확인요청 6번 12행 + 담당자 지시(2026-09-16)
+         "매출과 재고평가 금액간 매칭을 재고평가의 모델과 매출의 품명으로 하고 있는데
+          매출의 품번으로 매칭으로 변경"
+   증상: 카세트 열에 매출액·영업이익만 있고 II.재료비 ~ VII.총원가가 전부 0.
+   원인: 매출 품명이 모델코드가 아니라 한글 품목명이라 재고평가 MODEL(VN034P1~P3)과 조인 실패.
+   방식: #SALEKEY 로 매출 품번 → 모델키를 만들고, 원가 쪽은 구분만 VN→카세트 로 맞춘다.
+         리포트 SELECT 전용, 재결산 불필요.
+   영향: 카세트 열 머리글이 품명(VINA N_OPPO …) → 품번(VN034P1~P3) 으로 바뀐다.
+         나머지 4개 장표와 표기가 통일된다. 총합계 매출원가·총원가가 카세트만큼 늘고 영업이익이 준다.
+   기준: db/hq_procs/DOI_TotalCost_Tree.sql (2026-09-16 운영 정의와 동일 확인)
+   검증(2026-09-16, 202608 HQ ACTUAL, 애드혹 읽기전용 실행):
+         열 65개 그대로, 카세트 열 머리글만 품명 → 품번(카세트VN034P1~P3).
+         공통 열 중 바뀐 셀 61개 가운데 총합계·카세트합계 외는 단 1건(rn=81 양산 한계이익률 52.74→52.33,
+         카세트 변동비가 양산에서 빠진 결과). 양산·개발 금액 변화 0건.
+              항목        카세트합계    총합계(전 → 후)
+           II. 재료비      24,927,177   664,822,981 → 689,750,158
+           III. 노무비     33,944,570 1,719,908,498 → 1,753,853,068
+           IV. 제조경비    20,147,259 1,360,759,075 → 1,380,906,334
+           V. 매출원가     79,019,006 3,964,743,275 → 4,043,762,281
+           VII. 총원가     79,019,006 5,227,705,707 → 5,306,724,713
+           VIII. 영업이익  60,479,293 1,063,106,162 →   984,087,156
+   ============================================================ */
+CREATE OR ALTER PROCEDURE DOI_TotalCost_Tree
+(
+    @YYYYMM VARCHAR(6),
+    @SITE   VARCHAR(4),
+    @SELCODE VARCHAR(6)
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRAN;
+
+        DECLARE @Columns         NVARCHAR(MAX) = N'';
+        DECLARE @ModelSelectCols NVARCHAR(MAX) = N'';
+        DECLARE @SumYangsan      NVARCHAR(MAX) = N'0';
+        DECLARE @SumDev          NVARCHAR(MAX) = N'0';
+        DECLARE @SumCassette     NVARCHAR(MAX) = N'0';
+       	DECLARE @SumPurchase     NVARCHAR(MAX) = N'0';
+        DECLARE @SumYangsan_Sale NVARCHAR(MAX)=N'0';
+        DECLARE @SumYangsan_Qty  NVARCHAR(MAX)=N'0';
+		DECLARE @SumDev_Sale     NVARCHAR(MAX)=N'0';
+		DECLARE @SumDev_Qty      NVARCHAR(MAX)=N'0';
+		DECLARE @SumCas_Sale     NVARCHAR(MAX)=N'0';
+		DECLARE @SumCas_Qty      NVARCHAR(MAX)=N'0';
+		DECLARE @SumPur_Sale     NVARCHAR(MAX)=N'0';
+		DECLARE @SumYangsan_ProdSale NVARCHAR(MAX)=N'0';  -- 제품매출(rn=2), 매출단가용
+		DECLARE @SumDev_ProdSale     NVARCHAR(MAX)=N'0';
+		DECLARE @SumCas_ProdSale     NVARCHAR(MAX)=N'0';
+		DECLARE @SumPur_ProdSale     NVARCHAR(MAX)=N'0';
+		DECLARE @SumPur_Qty      NVARCHAR(MAX)=N'0';
+        DECLARE @SumYangsan_Bep NVARCHAR(MAX)=N'0';
+		DECLARE @SumDev_Bep     NVARCHAR(MAX)=N'0';  --손익분기점 : Break-Even Point (BEP) Operating Profit
+		DECLARE @SumCas_Bep     NVARCHAR(MAX)=N'0';
+		DECLARE @SumPur_Bep     NVARCHAR(MAX)=N'0';
+        DECLARE @SumYangsan_Op NVARCHAR(MAX)=N'0';
+		DECLARE @SumDev_Op     NVARCHAR(MAX)=N'0';  -- 영업이익  : Operating Profit
+		DECLARE @SumCas_Op     NVARCHAR(MAX)=N'0';
+		DECLARE @SumPur_Op     NVARCHAR(MAX)=N'0';
+        DECLARE @SumYangsan_FiX  NVARCHAR(MAX)=N'0';
+		DECLARE @SumDev_Fix      NVARCHAR(MAX)=N'0';
+--		DECLARE @SumCas_Fix      NVARCHAR(MAX)=N'0';
+--		DECLARE @SumPur_Fix      NVARCHAR(MAX)=N'0';
+
+        DECLARE @SCOFTotal DECIMAL(18,2) = 0;
+        DECLARE @CostAdj DECIMAL(18,2) = 0;
+        DECLARE @LossAdj DECIMAL(18,2) = 0;
+        DECLARE @LossAdjYangsan DECIMAL(18,2) = 0;
+		DECLARE @LossAdjDev     DECIMAL(18,2) = 0;
+		DECLARE @LossAdjCassette DECIMAL(18,2) = 0;
+	
+		DECLARE @ACC_PREV_PRICE DECIMAL(18,2) = 0;   -- 이전가격 (기타매출/41004010/재경그룹)
+		DECLARE @ACC_IDLE_COMP  DECIMAL(18,2) = 0;   -- 비가동보상 (제품매출/41002010/재경그룹)
+		DECLARE @ACC_ADJ        DECIMAL(18,2) = 0;   -- 조정 (제품매출/41002020/영업그룹 제외)
+		DECLARE @ACC_TOTAL      DECIMAL(18,2) = 0;   -- 회계합계
+		DECLARE @SCOF_ACC       DECIMAL(18,2) = 0;   -- 회계-조정 유상사급 (DOI_원장상계 구분='회계')
+		DECLARE @ACC_SCRAP      DECIMAL(18,2) = 0;   -- 원부재료 재고폐기 (DOI_ETC_INOUT, 본사 전용)
+		-- 제품 폐기 (매출원가(제품) 출고상세-폐기, DOI_STCO.OUT_DISPOSE_AMT) : 구분별 합계 열용
+		DECLARE @DispAdj          DECIMAL(18,2) = 0;
+		DECLARE @DispAdjYangsan   DECIMAL(18,2) = 0;
+		DECLARE @DispAdjDev       DECIMAL(18,2) = 0;
+		DECLARE @DispAdjCassette  DECIMAL(18,2) = 0;
+
+        DECLARE @SQL             NVARCHAR(MAX);
+
+		/*==============================================================
+		  0-0) [2026-09-16b] 매출 ↔ 재고평가 매칭 키 (#SALEKEY)
+		    종전에는 재고평가의 MODEL 과 매출의 '품명' 을 맞췄다. 품명은 자유 텍스트라
+		    카세트처럼 품목명이 들어오면(VINA N_OPPO 하단틀) 매칭이 깨져 원가가 통째로 누락됐다.
+		    → 매출의 '품번' 기준으로 바꾼다. 품번은 대개 모델코드+구분접미(P/D/T)지만
+		      접미가 없는 품번도 있어(818VT, VN034P1~P3) 무조건 1자를 떼면 818VT 가 818V 에 붙는다.
+		    규칙 ① 품번이 재고평가 MODEL 에 있으면 품번        (818VT, VN034P1~P3)
+		         ② 접미 1자를 뗀 값이 MODEL 에 있으면 그 값     (8136P→8136 등 일반)
+		         ③ 둘 다 아니면 품명                            (상품 등 재고평가가 없는 건)
+		==============================================================*/
+		DROP TABLE IF EXISTS #STCO_MODEL;
+		SELECT DISTINCT MODEL
+		INTO #STCO_MODEL
+		FROM DOI_STCO WITH(NOLOCK)
+		WHERE YYYYMM = @YYYYMM AND SITE = @SITE AND SEL_CODE = @SELCODE;
+
+		DROP TABLE IF EXISTS #SALEKEY;
+		SELECT S.품번,
+		       CASE WHEN M1.MODEL IS NOT NULL THEN S.품번
+		            WHEN M2.MODEL IS NOT NULL THEN LEFT(S.품번, LEN(S.품번)-1)
+		            ELSE S.품명 END AS model
+		INTO #SALEKEY
+		FROM (
+			SELECT 품번, MAX(품명) AS 품명
+			FROM (
+				SELECT 품번, 품명 FROM DOI_SALE_RESC    WITH(NOLOCK) WHERE YYYYMM=@YYYYMM AND SITE=@SITE
+				UNION ALL
+				SELECT 품번, 품명 FROM DOI_INVOICE_RESC WITH(NOLOCK) WHERE YYYYMM=@YYYYMM AND SITE=@SITE
+			) A
+			WHERE NULLIF(LTRIM(RTRIM(품번)),'') IS NOT NULL
+			GROUP BY 품번
+		) S
+		LEFT JOIN #STCO_MODEL M1 ON M1.MODEL = S.품번
+		LEFT JOIN #STCO_MODEL M2 ON LEN(S.품번) > 1 AND M2.MODEL = LEFT(S.품번, LEN(S.품번)-1);
+
+        /*==============================================================
+          0) 매출 발생 모델만 추출 (SALES_BASE)
+        ==============================================================*/
+		;WITH MERCH_ITEM AS (
+		    -- 당월/사업장/SEL 기준 "상품" 품번 목록
+		    SELECT DISTINCT M.품번
+		    FROM DOI_MATL_RESC M WITH(NOLOCK)
+		    WHERE M.YYYYMM   = @YYYYMM
+		      AND M.SITE     = @SITE
+		      AND M.SEL_CODE = @SELCODE
+		      AND M.품목자산분류 = N'상품'
+		      AND M.품번 IS NOT NULL
+		),        
+       SALES_RAW AS (
+		    -- 국내매출
+		    SELECT
+		          A.SITE
+		        , CASE
+			        WHEN MI.품번 IS NOT NULL THEN N'구매'
+		            WHEN LEFT(A.품번, 2) = 'VN' THEN N'카세트'
+		            WHEN RIGHT(A.품번, 1) = 'P' THEN N'양산'
+		            ELSE N'개발'
+		          END AS 구분
+		        , A.품번
+		        , COALESCE(SK.model, A.품명) AS model   /* [2026-09-16b] 매칭키: 품명 → 품번 기준 */
+		        , N'국내' AS 매출구분
+		        , CASE WHEN MI.품번 IS NOT NULL THEN N'상품' ELSE N'제품' END AS 매출대분류
+		        , CAST(A.원화판매금액 AS DECIMAL(18,2)) AS amt
+		    FROM DOI_SALE_RESC A WITH(NOLOCK)
+		    LEFT JOIN MERCH_ITEM MI
+		      ON MI.품번 = A.품번
+		    LEFT JOIN #SALEKEY SK ON SK.품번 = A.품번   /* [2026-09-16b] 매칭키: 품명 → 품번 기준 */
+		    WHERE A.YYYYMM = @YYYYMM
+		      AND A.SITE   = @SITE
+		
+		    UNION ALL
+		    -- 해외매출
+		    SELECT
+		          B.SITE
+		        , CASE
+			        WHEN MI.품번 IS NOT NULL THEN N'구매'			        
+		            WHEN LEFT(B.품번, 2) = 'VN' THEN N'카세트'
+		            WHEN RIGHT(B.품번, 1) = 'P' THEN N'양산'
+		            ELSE N'개발'
+		          END AS 구분
+		        , B.품번
+		        , COALESCE(SK.model, B.품명) AS model   /* [2026-09-16b] 매칭키: 품명 → 품번 기준 */
+		        , N'해외' AS 매출구분
+		        , CASE WHEN MI.품번 IS NOT NULL THEN N'상품' ELSE N'제품' END AS 매출대분류
+		 , CAST(B.원화판매금액 AS DECIMAL(18,2)) AS amt
+		    FROM DOI_INVOICE_RESC B WITH(NOLOCK)
+		    LEFT JOIN MERCH_ITEM MI
+		      ON MI.품번 = B.품번
+		    LEFT JOIN #SALEKEY SK ON SK.품번 = B.품번   /* [2026-09-16b] 매칭키: 품명 → 품번 기준 */
+		    WHERE B.YYYYMM = @YYYYMM
+		      AND B.SITE   = @SITE
+		       
+		    /*UNION ALL  --2026.02.15 KYH 삭제
+		      
+            --기타매출
+			SELECT
+	          S.SITE
+	        , S.구분
+	        , NULL AS 품번
+	        , S.model
+	        , N'*'  AS 매출구분
+	        , N'기타' AS 매출대분류
+	        , CAST(ISNULL(/*S.out_amt*/0,0) AS DECIMAL(18,2)) AS amt
+	    FROM DOI_SLCO S WITH(NOLOCK)
+	    WHERE S.YYYYMM = @YYYYMM
+	      AND S.SITE   = @SITE
+	      AND S.SEL_CODE = @SELCODE
+	      AND S.expen_sel명 = N'기타매출'*/
+	  
+	     UNION ALL  
+		      
+   --기타매출
+			SELECT
+	          S.SITE
+	        , S.구분
+	        , NULL AS 품번
+	        , S.model
+	        , N'*'  AS 매출구분
+	        , N'기타' AS 매출대분류
+	        , CAST(ISNULL(/*S.out_amt*/0,0) AS DECIMAL(18,2)) AS amt
+	    FROM DOI_SLCO S WITH(NOLOCK)
+	    WHERE S.YYYYMM = @YYYYMM
+	      AND S.SITE   = @SITE
+	      AND S.SEL_CODE = @SELCODE
+	      AND S.MODEL = 'EXTRA' 
+			  
+        ),
+        SALES_BASE AS (
+		    SELECT
+		          구분
+		        , model
+		        , SUM(CASE WHEN 매출대분류 = N'제품' THEN amt ELSE 0 END) AS prod_sale_amt
+		        , SUM(CASE WHEN 매출대분류 = N'상품' THEN amt ELSE 0 END) AS merch_sale_amt
+		        , SUM(CASE WHEN 매출대분류 = N'기타' THEN amt ELSE 0 END) AS etc_sale_amt
+		        , SUM(amt) AS total_sale_amt
+		    FROM SALES_RAW
+		    GROUP BY 구분, model
+        )
+        SELECT *
+        INTO #SALES_BASE
+        FROM SALES_BASE;
+        --WHERE COALESCE(total_sale_amt,0) <> 0;
+
+        /*==============================================================
+          1) #MODEL : 모델 + 제품구조/카세트 포함
+        ==============================================================*/
+        ;WITH LOSS_MODEL AS (
+		    SELECT DISTINCT
+		          C.model
+		        , CASE WHEN LEFT(C.model,2) = N'VN' THEN N'카세트' ELSE C.구분 END AS 구분   /* [2026-09-16b] 원가 쪽 구분도 카세트로 */
+		    FROM DOI_COST C WITH(NOLOCK)
+		    WHERE C.YYYYMM   = @YYYYMM
+		      AND C.SITE     = @SITE
+		      AND C.SEL_CODE = @SELCODE
+		      AND COALESCE(C.LOSS, 0) <> 0
+		),
+		DISPOSE_MODEL AS (
+		    -- 제품 폐기만 발생한 모델도 열을 만든다 (매출·LOSS 가 없으면 위 소스에 안 잡힘).
+		    -- 폐기 행은 구분='RMA' 라서 같은 모델의 정상 구분으로 되돌린다.
+		    SELECT
+		          D.MODEL AS model
+		        , CASE WHEN LEFT(D.MODEL,2) = N'VN' THEN N'카세트'   /* [2026-09-16b] 원가 쪽 구분도 카세트로 */
+		               ELSE COALESCE(MAX(CASE WHEN D.구분 <> N'RMA' THEN D.구분 END), N'양산') END AS 구분
+		    FROM DOI_STCO D WITH(NOLOCK)
+		    WHERE D.YYYYMM   = @YYYYMM
+		      AND D.SITE     = @SITE
+		      AND D.SEL_CODE = @SELCODE
+		    GROUP BY D.MODEL
+		    HAVING SUM(COALESCE(D.OUT_DISPOSE_AMT,0)) <> 0
+		),
+		MODEL_BASE AS (
+		    SELECT
+		          S.model
+		        , S.구분
+		    FROM #SALES_BASE S
+
+		    UNION
+
+		    SELECT
+		          L.model
+		        , L.구분
+		    FROM LOSS_MODEL L
+
+		    UNION
+
+		    SELECT
+		          P.model
+		        , P.구분
+		    FROM DISPOSE_MODEL P
+
+		    UNION
+		
+		    SELECT
+		          CASE WHEN O.모델 = N'회계-조정' THEN O.모델 ELSE LEFT(O.모델, LEN(O.모델)-1) END
+		        , O.구분
+		    FROM DOI_원장상계 O
+			WHERE 1=1
+			  AND YYYYMM=@YYYYMM
+			  AND COALESCE(O.매출상계,0) <> 0
+			  AND O.구분 <> N'회계'   -- 회계-조정은 회계 컬럼에서 처리(모델컬럼 제외)
+		  	  AND NULLIF(모델,'') IS NOT NULL
+		)
+		SELECT
+		      CAST(model AS NVARCHAR(500)) AS model
+		    , CAST(구분 AS NVARCHAR(50)) AS 구분
+		    , CASE
+		          WHEN 구분 = N'구매' THEN N'상품'
+		          WHEN 구분 = N'카세트' THEN N'카세트'
+		          WHEN LEFT(model, 1) = 'I' THEN 'ITG'
+		          WHEN LEFT(model, 1) = 'H' THEN 'HTG'
+		          WHEN LEFT(model, 1) = 'C' THEN 'Coated'
+		          ELSE 'UTG'
+		      END AS 제품구조
+		    , CASE
+		          WHEN 구분 = N'카세트' THEN 1
+		          WHEN LEFT(model, 2) = 'VN' THEN 1
+		          ELSE 0
+		      END AS is_cassette
+			, CAST(
+			    (CASE
+			        WHEN 구분 = N'카세트' OR LEFT(model, 2) = N'VN' THEN N'카세트'
+			        WHEN 구분 = N'개발'   THEN N'개발'
+			        WHEN 구분 = N'구매'   THEN N'구매'
+			        ELSE N'양산'
+			     END) + CAST(model AS NVARCHAR(500))
+			  AS NVARCHAR(600)) AS pivot_key
+		    , CASE
+		          WHEN LEFT(model, 1) BETWEEN '0' AND '9' THEN 0
+		          ELSE 1
+		      END AS sort_numeric
+		    , CASE
+		          WHEN 구분 = N'카세트' OR LEFT(model, 2) = N'VN' THEN 3
+		          WHEN 구분 = N'양산' THEN 1
+		          WHEN 구분 = N'개발' THEN 2
+		          WHEN 구분 = N'구매' THEN 4
+		          ELSE 9
+		      END AS sort_group
+		    , CASE
+		          WHEN 구분 = N'구매' THEN 9
+		          WHEN 구분 = N'카세트' THEN 8
+		          WHEN LEFT(model, 1) = 'I' THEN 2
+		          WHEN LEFT(model, 1) = 'H' THEN 3
+		          WHEN LEFT(model, 1) = 'C' THEN 4
+		          ELSE 1
+		      END AS sort_structure
+		INTO #MODEL
+		FROM MODEL_BASE;
+       
+--     SELECT @SCOFTotal = CAST(COALESCE(SUM(FINAL_AMT),0) AS DECIMAL(18,2))
+--	   FROM DOI_SCOF WITH(NOLOCK)
+	  SELECT @SCOFTotal = CAST(COALESCE(SUM(매출상계),0) AS DECIMAL(18,2))
+	   FROM DOI_원장상계 WITH(NOLOCK)
+	   WHERE yyyymm  = @YYYYMM
+	    AND site   	 = @SITE
+        AND sel_code = @SELCODE
+
+	  SELECT @SCOF_ACC = CAST(COALESCE(SUM(매출상계),0) AS DECIMAL(18,2))
+	   FROM DOI_원장상계 WITH(NOLOCK)
+	   WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SELCODE AND 구분 = N'회계';
+
+        SELECT @CostAdj = COALESCE(ABS(SUM(ISNULL(대변금액,0))), 0)
+		FROM DOI_DEPT_COST WITH(NOLOCK)
+		WHERE YYYYMM   = @YYYYMM
+		  AND SITE     = @SITE
+		  AND SEL_CODE = @SELCODE
+		  AND 계정과목 = N'제품매출원가'
+		  AND 대변금액 <> 0;
+
+		-- 회계 항목: 코스트센터 + 계정코드 조건(AND). 매출계정이므로 순액 = 대변 - 차변
+		-- (대변 양수=양수, 차변 양수=음수). 코스트센터명은 월별 조직 스냅샷 접미(YYYYMMDD)를 허용하도록 LIKE 사용.
+		 SELECT
+      -- 이전가격: 41004010
+      @ACC_PREV_PRICE =
+          COALESCE(SUM(CASE WHEN 계정코드 = N'41004010'
+                            THEN ISNULL(대변금액,0) - ISNULL(차변금액,0)
+                            ELSE 0 END),0)
+
+      -- 비가동보상: 재경그룹 AND 41002010
+    , @ACC_IDLE_COMP =
+          COALESCE(SUM(CASE WHEN 계정코드 = N'41002010'
+                             AND 코스트센터 LIKE N'재경그룹%'
+                            THEN ISNULL(대변금액,0) - ISNULL(차변금액,0)
+                            ELSE 0 END),0)
+
+      -- 조정: 41002020 / 영업그룹 제외 / 재경그룹은 차변 무시(대변만) / 나머지는 대변-차변
+    , @ACC_ADJ = -@SCOF_ACC   /* 41002020 삭제 → 회계-조정 매출액 = 제품매출-유상사급 = -유상사급 2026-07-31 */
+		FROM DOI_DEPT_COST WITH(NOLOCK)
+		WHERE YYYYMM   = @YYYYMM
+		  AND SITE     = @SITE
+		  AND SEL_CODE = @SELCODE;
+
+		SET @ACC_TOTAL =
+		      @ACC_PREV_PRICE
+		    + @ACC_IDLE_COMP
+		    + @ACC_ADJ;
+
+		-- 원부재료 재고폐기: 기타입출고금액(통합)에서 '재고폐기' AND 품목자산분류<>'제품'.
+		-- 회계-기타 열의 (3)제품매출원가조정 위치에 표시하고 V.매출원가까지 올린다. 본사 전용(VN 미적용).
+		IF @SITE = 'HQ'
+		BEGIN
+			SELECT @ACC_SCRAP = CAST(COALESCE(SUM(금액),0) AS DECIMAL(18,2))
+			FROM DOI_ETC_INOUT WITH(NOLOCK)
+			WHERE yyyymm = @YYYYMM
+			  AND 기타입출고구분 = N'재고폐기'
+			  AND 품목자산분류 <> N'제품';
+		END
+		 
+		SELECT @LossAdj = COALESCE(SUM(COALESCE(LOSS,0)), 0)
+		FROM DOI_COST WITH(NOLOCK)
+		WHERE YYYYMM   = @YYYYMM
+		  AND SITE     = @SITE
+		  AND SEL_CODE = @SELCODE;
+		 
+		SELECT @LossAdjYangsan = COALESCE(SUM(COALESCE(LOSS,0)), 0)
+		FROM DOI_COST WITH(NOLOCK)
+		WHERE YYYYMM   = @YYYYMM
+		  AND SITE     = @SITE
+		  AND SEL_CODE = @SELCODE
+		  AND 구분      = N'양산'
+		  AND LEFT(model,2) <> N'VN';   -- 카세트 제외
+
+		SELECT @LossAdjCassette = COALESCE(SUM(COALESCE(LOSS,0)), 0)
+		FROM DOI_COST WITH(NOLOCK)
+		WHERE YYYYMM   = @YYYYMM
+		  AND SITE     = @SITE
+		  AND SEL_CODE = @SELCODE
+		  AND LEFT(model,2) = N'VN';
+		
+		SELECT @LossAdjDev = COALESCE(SUM(COALESCE(LOSS,0)), 0)
+		FROM DOI_COST WITH(NOLOCK)
+		WHERE YYYYMM   = @YYYYMM
+		  AND SITE     = @SITE
+		  AND SEL_CODE = @SELCODE
+		  AND 구분      = N'개발';
+
+		/* 제품 폐기(출고상세-폐기)를 구분별로 집계.
+		   DOI_STCO 의 폐기 행은 구분='RMA' 로 들어오므로, 모델 단위로 묶은 뒤
+		   같은 모델의 정상 구분(양산/개발/카세트)으로 되돌려 판정한다. */
+		DROP TABLE IF EXISTS #DISPOSE;
+		SELECT
+		    CASE WHEN LEFT(D.MODEL,2) = N'VN' THEN N'카세트'   /* [2026-09-16b] 원가 쪽 구분도 카세트로 */
+		         ELSE COALESCE(MAX(CASE WHEN D.구분 <> N'RMA' THEN D.구분 END), N'양산') END AS 구분,
+		    D.MODEL AS model,
+		    CAST(SUM(COALESCE(D.OUT_DISPOSE_AMT,0)) AS DECIMAL(18,2)) AS amt
+		INTO #DISPOSE
+		FROM DOI_STCO D WITH(NOLOCK)
+		WHERE D.YYYYMM = @YYYYMM AND D.SITE = @SITE AND D.SEL_CODE = @SELCODE
+		GROUP BY D.MODEL
+		HAVING SUM(COALESCE(D.OUT_DISPOSE_AMT,0)) <> 0;
+
+		SELECT @DispAdj = COALESCE(SUM(amt),0) FROM #DISPOSE;
+		SELECT @DispAdjYangsan  = COALESCE(SUM(amt),0) FROM #DISPOSE WHERE 구분 = N'양산'   AND LEFT(model,2) <> N'VN';
+		SELECT @DispAdjCassette = COALESCE(SUM(amt),0) FROM #DISPOSE WHERE LEFT(model,2) = N'VN';
+		SELECT @DispAdjDev      = COALESCE(SUM(amt),0) FROM #DISPOSE WHERE 구분 = N'개발';
+
+		/*==============================================================
+		  (추가) 1-1) 변동비/고정비 프로시저 결과 받아오기 (세로형)
+		==============================================================*/
+		IF OBJECT_ID('tempdb..#VAR') IS NOT NULL DROP TABLE #VAR;
+		IF OBJECT_ID('tempdb..#FIX') IS NOT NULL DROP TABLE #FIX;
+		
+		CREATE TABLE #VAR (
+		  rn   INT,
+		  gubun NVARCHAR(500) COLLATE DATABASE_DEFAULT,
+		  구분  NVARCHAR(20)  COLLATE DATABASE_DEFAULT,
+		  model NVARCHAR(500) COLLATE DATABASE_DEFAULT,
+		  amt  DECIMAL(18,2)
+		);
+		
+		CREATE TABLE #FIX (
+		  rn   INT,
+		  gubun NVARCHAR(500) COLLATE DATABASE_DEFAULT,
+		  구분  NVARCHAR(20)  COLLATE DATABASE_DEFAULT,
+		  model NVARCHAR(500) COLLATE DATABASE_DEFAULT,
+		  amt  DECIMAL(18,2)
+		);
+		
+		INSERT INTO #VAR (rn, gubun, 구분, model, amt)
+		EXEC DOI_변동비_ByModel @YYYYMM=@YYYYMM, @SITE=@SITE , @SELCODE = @SELCODE;
+		--EXEC DOI_VariableCostByModel @YYYYMM=@YYYYMM, @SITE=@SITE , @SELCODE = @SELCODE;
+		
+		INSERT INTO #FIX (rn, gubun, 구분, model, amt)
+		EXEC DOI_고정비_ByModel @YYYYMM=@YYYYMM, @SITE=@SITE, @SELCODE = @SELCODE; 
+		--EXEC DOI_FixedCostByModel @YYYYMM=@YYYYMM, @SITE=@SITE, @SELCODE = @SELCODE; 
+
+		/* [2026-09-16b] 변동비/고정비도 카세트 구분으로 맞춘다(모델키는 이미 VN034P*). */
+		UPDATE #VAR SET 구분 = N'카세트' WHERE LEFT(model,2) = N'VN';
+		UPDATE #FIX SET 구분 = N'카세트' WHERE LEFT(model,2) = N'VN';
+
+       SELECT @SumYangsan_FiX = CAST(COALESCE(SUM(AMT),0) AS DECIMAL(18,2)) 
+       FROM #FIX 
+       WHERE 구분=N'양산'
+
+       SELECT @SumDev_Fix = CAST(COALESCE(SUM(AMT),0) AS DECIMAL(18,2)) 
+       FROM #FIX 
+       WHERE 구분=N'개발'
+      
+        /*==============================================================
+          2) #RN
+        ==============================================================*/
+        SELECT *
+        INTO #RN
+        FROM (
+            -- I. 매출액
+            SELECT  N'10' tree_id,     1 AS rn,        N'  I. 매출액'        AS gubun UNION ALL
+            SELECT  N'10.01' tree_id,  2 AS rn,        N'    (1) 제품매출'    UNION ALL
+            SELECT  N'10.02' tree_id,  3 AS rn,        N'        수량'       UNION ALL
+ 			SELECT  N'10.03' tree_id,  4 AS rn,        N'      단가'       UNION ALL
+            SELECT  N'10.04' tree_id,  5 AS rn,        N'    (2) 유상사급'    UNION ALL
+            SELECT  N'10.05' tree_id,  6 AS rn,        N'    (3) 상품매출'    UNION ALL
+            SELECT  N'10.06' tree_id,  7 AS rn,        N'    (4) 기타매출'    UNION ALL
+
+            -- II. 재료비
+            SELECT  N'11' tree_id,     8 AS rn,        N'  II. 재료비'        UNION ALL
+            SELECT  N'11.01' tree_id,  9 AS rn,        N'    (1) 원장'    UNION ALL
+            SELECT  N'11.02' tree_id, 10 AS rn,        N'    (2) PF'          UNION ALL
+  SELECT  N'11.03' tree_id, 11 AS rn,        N'    (3) 약액'        UNION ALL
+            SELECT  N'11.04' tree_id, 12 AS rn,        N'    (4) 트레이'      UNION ALL
+            SELECT  N'11.05' tree_id, 13 AS rn,        N'    (5) 더미글라스'  UNION ALL
+            SELECT  N'11.06' tree_id, 14 AS rn,        N'    (6) 기타'        UNION ALL
+
+            -- III~IV
+            SELECT N'12' tree_id,     15 AS rn,        N'  III. 노무비'       UNION ALL            
+            SELECT N'12.01' tree_id,  16 AS rn,        N'    (1) 제)임원급여'     UNION ALL
+            SELECT N'12.02' tree_id,  17 AS rn,        N'    (2) 제)직원급여'     UNION ALL
+            SELECT N'12.03' tree_id,  18 AS rn,        N'    (3) 제)상여금'       UNION ALL
+            SELECT N'12.04' tree_id,  19 AS rn,        N'    (4) 제)제수당'       UNION ALL
+            SELECT N'12.05' tree_id,  20 AS rn,        N'    (5) 제)퇴직급여'     UNION ALL
+            SELECT N'12.06' tree_id,  21 AS rn,        N'    (6) 제)주식보상비용'   UNION ALL
+            SELECT N'13' tree_id,     22 AS rn,        N'  IV. 제조경비'     	 UNION ALL
+            SELECT N'13.01' tree_id,  23 AS rn,        N'    (1) 제)복리후생비'   UNION ALL
+	        SELECT N'13.02' tree_id,  24 AS rn,        N'    (2) 제)여비교통비'  UNION ALL
+            SELECT N'13.03' tree_id,  25 AS rn,        N'    (3) 제)통신비'    UNION ALL
+            SELECT N'13.04' tree_id,  26 AS rn,        N'    (4) 제)수도광열비'  UNION ALL
+            SELECT N'13.05' tree_id,  27 AS rn,        N'    (5) 제)전력비'     UNION ALL
+            SELECT N'13.06' tree_id,  28 AS rn,        N'    (6) 제)세금과공과'   UNION ALL
+            SELECT N'13.07' tree_id,  29 AS rn,        N'    (7) 제)감가상각비'   UNION ALL
+            SELECT N'13.08' tree_id,  30 AS rn,        N'    (8) 제)지급임차료'   UNION ALL
+            SELECT N'13.09' tree_id,  31 AS rn,        N'    (9) 제)수선비'     UNION ALL
+            SELECT N'13.10' tree_id,  32 AS rn,        N'    (10) 제)보험료'    UNION ALL
+            SELECT N'13.11' tree_id,  33 AS rn,        N'    (11) 제)차량유지비'  UNION ALL
+	        SELECT N'13.12' tree_id,  34 AS rn,        N'    (12) 제)운반비'    UNION ALL
+            SELECT N'13.13' tree_id,  35 AS rn,        N'    (13) 제)교육훈련비'  UNION ALL
+            SELECT N'13.14' tree_id,  36 AS rn,  N'    (14) 제)도서인쇄비'  UNION ALL
+            SELECT N'13.15' tree_id,  37 AS rn,        N'    (15) 제)소모품비'   UNION ALL
+            SELECT N'13.16' tree_id,  38 AS rn,        N'    (16) 제)지급수수료'  UNION ALL
+            SELECT N'13.17' tree_id,  39 AS rn,        N'    (17) 제)외주가공비'  UNION ALL
+            SELECT N'13.18' tree_id,  40 AS rn,        N'    (18) 제)사용권자산감가상각비' UNION ALL
+            SELECT N'13.19' tree_id,  41 AS rn,        N'    (19) 제)검사비' UNION ALL
+            SELECT N'13.20' tree_id,  42 AS rn,        N'    (20) 제)견본비' UNION ALL
+            SELECT N'13.21' tree_id,  43 AS rn,        N'    (21) 제)기타(RMA/생산X)' UNION ALL
+
+            SELECT N'14' tree_id,     44 AS rn,        N'  V. 매출원가' UNION ALL
+			SELECT N'14.01' AS tree_id, 45 AS rn, N'    (1) 제품매출원가' UNION ALL
+			SELECT N'14.02' AS tree_id, 46 AS rn, N'    (2) 상품매출원가' UNION ALL
+			SELECT N'14.03' AS tree_id, 47 AS rn, N'    (3) 제품매출원가조정' UNION ALL      
+
+            -- V~X
+--            SELECT N'15' tree_id, 45 AS rn,        N'  V. 재고조정'       UNION ALL
+--            SELECT N'15.01' tree_id, 46 AS rn,       N'    상품매출원가' UNION ALL  */          
+			SELECT N'16'    AS tree_id, 48 AS rn, N'  VI. 판관비' UNION ALL
+			SELECT tree_id, rn, gubun FROM (
+                SELECT N'16.' + RIGHT(N'0'+CAST(총원가_순서 AS varchar(2)),2) AS tree_id,
+                       48 + 총원가_순서 AS rn,
+                       N'    (' + CAST(총원가_순서 AS varchar(2)) + N') ' + 상위계정과목 AS gubun
+                FROM (SELECT DISTINCT 상위계정과목, 총원가_순서 FROM doi_acct WITH(NOLOCK)
+                      WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SELCODE
+                        AND 대분류=N'판매관리비' AND 총원가_순서 IS NOT NULL) s
+            ) sgna_tree /* [통일2026-08-18] 판관비 트리 하드코딩 28행 -> doi_acct 동적 */ UNION ALL
+            SELECT N'17' 	AS tree_id, 77 AS rn, N'  VII. 총원가'       UNION ALL
+            SELECT N'18' 	AS tree_id, 78 AS rn, N'  VIII. 영업이익'    UNION ALL
+            SELECT N'18.01' AS tree_id, 79 AS rn, N'    영업이익률'  UNION ALL
+            SELECT N'19' 	AS tree_id, 80 AS rn, N'  IX. 한계이익'   UNION ALL
+            SELECT N'19.01' AS tree_id, 81 AS rn, N'    한계이익률'    UNION ALL
+      SELECT N'20' 	AS tree_id, 82 AS rn, N'  X. 손익분기점'+ REPLICATE(NCHAR(0x3000), 5)
+        ) A;
+       
+        /*==============================================================
+          3) FACT (rn/gubun/model/amt)
+             - 매출: #SALES_BASE
+             - 재료비: doi_mat_cost
+             - 노무비/제조경비: doi_expen_matl
+             - V 재고조정: DOI_COST + DOI_STCO
+             - VI 판관비: DOI_SMCE_COST
+             - VII 총원가: 재고조정 + 판관비
+             - VIII 영업이익: 매출액 - 총원가 
+             - IX~X: 우선 NULL
+        ==============================================================*/
+        ;WITH MERCH_ITEM AS (
+      SELECT DISTINCT M.품번
+            FROM DOI_MATL_RESC M WITH(NOLOCK)
+            WHERE M.YYYYMM   = @YYYYMM
+              AND M.SITE     = @SITE
+              AND M.SEL_CODE = @SELCODE
+              AND M.품목자산분류 = N'상품'
+              AND M.품번 IS NOT NULL
+        ),
+		SCOF_BASE AS (
+		    /*SELECT
+		          5 AS rn
+		        , N'    (2) 유상사급' AS gubun
+		        , N'총합계' AS 구분
+		        , N'총합계' AS model
+		        , CAST(COALESCE(SUM(FINAL_AMT),0) AS DECIMAL(18,2)) AS amt
+		    FROM DOI_SCOF WITH(NOLOCK)
+		    WHERE yyyymm  = @YYYYMM
+		      AND site    = @SITE
+              AND sel_code= @SELCODE*/
+		
+		    -- 상품매출원가
+		    /*SELECT
+		          5 AS rn
+		        , N'    (2) 유상사급' AS gubun
+		        , M.구분
+		        , M.model
+		        , CAST(COALESCE(XX.scof_amt,0) AS DECIMAL(18,2)) AS amt
+		    FROM #MODEL M
+		    LEFT JOIN (     
+		    SELECT
+              구분
+            , 모델 AS model
+            , SUM(COALESCE(매출상계,0)) AS scof_amt
+        FROM DOI_원장상계
+        WHERE 1=1
+		  AND YYYYMM=@YYYYMM
+		  AND COALESCE(매출상계,0) <> 0
+		  --and NULLIF(모델,'') IS NOT NULL
+        GROUP BY 구분, 모델*/
+		SELECT
+		     5 AS rn
+		    , N'    (2) 유상사급' AS gubun
+            , 구분
+            , CASE WHEN 모델 = N'회계-조정' THEN 모델 ELSE LEFT(모델, LEN(모델)-1) END AS model
+            , SUM(COALESCE(매출상계,0)) AS amt
+        FROM DOI_원장상계
+        WHERE 1=1
+		  AND YYYYMM=@YYYYMM
+		  AND COALESCE(매출상계,0) <> 0
+		  GROUP BY 구분, CASE WHEN 모델 = N'회계-조정' THEN 모델 ELSE LEFT(모델, LEN(모델)-1) END
+--    ) XX
+--       ON XX.model = M.model
+--      AND XX.구분 = M.구분
+--		
+		),
+		SCOF_SUM AS (
+		    SELECT
+		          구분
+		  , model
+		        , SUM(amt) AS scof_amt
+		    FROM SCOF_BASE
+		    GROUP BY 구분, model
+		),	        
+       SALES_FACT AS (
+            SELECT 1 rn, N'  I. 매출액'     AS gubun, 
+            M.구분, M.model, 
+            COALESCE(S.total_sale_amt,0) - COALESCE(SC.scof_amt,0) AS amt 
+            FROM #MODEL M
+            LEFT JOIN #SALES_BASE S ON S.model = M.model AND S.구분 = M.구분
+            LEFT JOIN SCOF_SUM SC ON SC.model = M.model AND SC.구분 = M.구분
+            UNION ALL
+            SELECT 2 rn, N'    (1) 제품매출' AS gubun,
+            M.구분, M.model, 
+            S.prod_sale_amt AS amt 
+            FROM #MODEL M
+            LEFT JOIN #SALES_BASE S ON S.model = M.model AND S.구분 = M.구분           
+   			UNION ALL
+    		SELECT 6 rn, N'    (3) 상품매출'   AS gubun,
+    		M.구분, M.model, 
+    		S.merch_sale_amt  AS amt 
+            FROM #MODEL M
+            LEFT JOIN #SALES_BASE S ON S.model = M.model AND S.구분 = M.구분           
+           ),
+        QTY_BASE AS (
+		    SELECT
+		          CASE
+                      WHEN MI.품번 IS NOT NULL THEN N'구매'     
+		              WHEN LEFT(A.품번, 2) = 'VN' THEN N'카세트'
+		              WHEN RIGHT(A.품번, 1) = 'P' THEN N'양산'
+		              ELSE N'개발'
+		          END AS 구분
+		        , A.품명 AS model
+		        , SUM(A.수량) AS qty
+		    FROM (
+                SELECT YYYYMM, SITE, 품번, 품명, 수량 FROM DOI_SALE_RESC WHERE YYYYMM = @YYYYMM AND SITE = @SITE
+                UNION ALL
+                SELECT YYYYMM, SITE, 품번, 품명, 수량 FROM DOI_INVOICE_RESC WHERE YYYYMM = @YYYYMM AND SITE = @SITE
+		    ) A
+            LEFT JOIN MERCH_ITEM MI ON MI.품번 = A.품번
+            GROUP BY
+                CASE
+                    WHEN MI.품번 IS NOT NULL THEN N'구매'
+                    WHEN LEFT(A.품번, 2) = 'VN' THEN N'카세트'
+    WHEN RIGHT(A.품번, 1) = 'P' THEN N'양산'
+                    ELSE N'개발'
+                END,
+                A.품명
+		),
+		QTY_FACT AS (
+		    SELECT
+		          3 AS rn
+		        , N'        수량' AS gubun
+		        , 구분
+		        , model
+		        , CAST(qty AS DECIMAL(18,2)) AS amt
+		    FROM QTY_BASE
+		),
+		PRICE_BASE AS (
+		    SELECT
+		          CASE
+		              WHEN MI.품번 IS NOT NULL THEN N'구매'
+		              WHEN LEFT(A.품번, 2) = 'VN' THEN N'카세트'
+		              WHEN RIGHT(A.품번, 1) = 'P' THEN N'양산'
+		              ELSE N'개발'
+		          END AS 구분
+		        , A.품명 AS model
+		        , SUM(A.매출금액) AS sale_amt
+		        , SUM(A.수량)     AS qty
+		    FROM (
+		        SELECT 품번, 품명, 수량, 원화판매금액 AS 매출금액 FROM DOI_SALE_RESC WHERE YYYYMM = @YYYYMM AND SITE = @SITE
+		        UNION ALL
+		        SELECT 품번, 품명, 수량, 원화판매금액 AS 매출금액 FROM DOI_INVOICE_RESC WHERE YYYYMM = @YYYYMM AND SITE = @SITE
+		    ) A
+		    LEFT JOIN MERCH_ITEM MI ON MI.품번 = A.품번
+		    GROUP BY
+		        CASE
+		            WHEN MI.품번 IS NOT NULL THEN N'구매'
+		            WHEN LEFT(A.품번, 2) = 'VN' THEN N'카세트'
+		            WHEN RIGHT(A.품번, 1) = 'P' THEN N'양산'
+		            ELSE N'개발'
+		        END,
+		        A.품명
+		),
+		PRICE_FACT AS (
+		    SELECT
+		          4 AS rn
+		        , N'        단가' AS gubun
+		        , 구분
+		        , model
+		        , CAST(
+		              CASE WHEN qty = 0 THEN 0
+		                   ELSE sale_amt / qty
+		              END
+		          AS DECIMAL(18,2)) AS amt
+		    FROM PRICE_BASE
+		),			
+		ETC_SALE_BASE AS (
+			SELECT
+                   구분, 
+                   model,
+    SUM(out_amt) AS adj_amt
+            FROM doi_slco a WITH(NOLOCK)
+            WHERE yyyymm = @YYYYMM
+              AND site   = @SITE
+              AND sel_code = @SELCODE
+              and EXPEN_SEL명 = N'기타매출'
+            GROUP BY 구분, model
+		),		
+		MAT_BASE AS (
+            SELECT
+			CASE WHEN LEFT(S.model,2) = N'VN' THEN N'카세트' ELSE S.구분 END AS 구분   /* [2026-09-16b] 원가 쪽 구분도 카세트로 */
+                , S.model
+  				, S.acct_name
+                , (S.out_amt - S.outetc_amt) AS amt
+   		FROM doi_stco S WITH(NOLOCK)
+       WHERE S.yyyymm = @YYYYMM
+              AND S.site   = @SITE
+              AND S.sel_code = @SELCODE
+              and S.expen_sel IN('MDAX','MIAX')  --직접재료비, 간접재료비
+              and S.out_amt != 0
+        ),
+        MAT_AGG AS (
+            -- II.재료비 합계
+            SELECT 8 rn, N'  II. 재료비' gubun, 구분, model, SUM(amt) amt
+            FROM MAT_BASE
+            GROUP BY 구분, model
+
+            UNION ALL
+            -- (1)원장
+   			SELECT 9 rn, N'    (1) 원장', 구분, model, SUM(amt)
+            FROM MAT_BASE
+            WHERE acct_name = N'원장'
+            GROUP BY 구분, model
+
+            UNION ALL
+            -- (2)PF (필름)
+            SELECT 10 rn, N'    (2) PF', 구분, model, SUM(amt)
+            FROM MAT_BASE
+   			WHERE acct_name = N'PF'
+            GROUP BY 구분, model
+
+         	UNION ALL
+            -- (3)약액
+            SELECT 11 rn, N'    (3) 약액', 구분, model, SUM(amt)
+            FROM MAT_BASE
+            WHERE acct_name = N'약액'
+            GROUP BY 구분, model
+
+            UNION ALL
+            -- (4)트레이
+            SELECT 12 rn, N'    (4) 트레이', 구분, model, SUM(amt)
+            FROM MAT_BASE
+            WHERE acct_name = N'트레이'
+            GROUP BY 구분, model
+
+            UNION ALL
+            -- (5)더미글라스
+            SELECT 13 rn, N'    (5) 더미글라스', 구분, model, SUM(amt)
+            FROM MAT_BASE
+            WHERE acct_name = N'더미글라스'
+            GROUP BY 구분, model
+
+            UNION ALL
+            -- (6)기타
+  			SELECT 14 rn, N'    (6) 기타', 구분, model, SUM(amt)
+            FROM MAT_BASE
+       		WHERE acct_name = N'기타'
+            GROUP BY 구분, model
+          ),
+        LABOR_BASE AS (
+         SELECT 15+총원가_순서 rn, N'    ('+CAST(총원가_순서 as varchar(1))+') '+b.상위계정과목 as gubun, CASE WHEN LEFT(a.model,2) = N'VN' THEN N'카세트' ELSE a.구분 END AS 구분, a.model,   /* [2026-09-16b] 원가 쪽 구분도 카세트로 */
+                   SUM(a.out_amt-a.outetc_amt) AS amt
+            FROM doi_stco a WITH(NOLOCK)
+            inner join doi_acct b on(a.yyyymm=b.yyyymm and a.site=b.site and a.acct_name=b.acct_name )
+            WHERE a.yyyymm = @YYYYMM
+              AND a.site   = @SITE
+              AND a.sel_code = @SELCODE
+              AND b.상위계정과목 in ('제)임원급여','제)직원급여', '제)상여금', '제)제수당', '제)퇴직급여', '제)주식보상비용')
+            GROUP BY CASE WHEN LEFT(a.model,2) = N'VN' THEN N'카세트' ELSE a.구분 END, a.model ,b.상위계정과목,b.총원가_순서
+        ),  
+        LABOR_AGG AS (
+            SELECT 15 rn, N'  III. 노무비' gubun, 구분, model,
+                   SUM(amt) AS amt
+            FROM LABOR_BASE 
+            GROUP BY 구분, model
+        ),
+        EXP_BASE AS (
+	    SELECT
+	           22 + b.총원가_순서 AS rn,
+	           N'    (' + CAST(b.총원가_순서 AS varchar(2)) + ') ' + b.상위계정과목 AS gubun,
+	           CASE WHEN LEFT(a.model,2) = N'VN' THEN N'카세트' ELSE a.구분 END AS 구분,   /* [2026-09-16b] 원가 쪽 구분도 카세트로 */
+	           a.model,
+	           SUM(COALESCE(a.out_amt,0)) AS amt
+	    FROM doi_stco a WITH(NOLOCK)
+	    INNER JOIN doi_acct b
+	      ON a.yyyymm = b.yyyymm
+	     AND a.site = b.site
+	     AND a.sel_code = b.sel_code
+	     AND a.acct_name = b.acct_name
+	    WHERE a.yyyymm = @YYYYMM
+	      AND a.site = @SITE
+	      AND a.sel_code = @SELCODE
+	      AND b.상위계정과목 IN ('제)복리후생비','제)여비교통비','제)통신비','제)수도광열비','제)전력비','제)세금과공과','제)감가상각비','제)지급임차료','제)수선비','제)보험료','제)차량유지비','제)운반비','제)교육훈련비','제)도서인쇄비','제)소모품비','제)지급수수료','제)외주가공비','제)사용권자산감가상각비','제)검사비','제)견본비','제)기타(RMA/생산X)')
+	      AND a.expen_sel NOT IN ('MHRB','MDAX','MIAX')
+	      AND b.expen_sel NOT IN ('MHRB','MDAX','MIAX')
+	    GROUP BY CASE WHEN LEFT(a.model,2) = N'VN' THEN N'카세트' ELSE a.구분 END, a.model, b.상위계정과목, b.총원가_순서
+	
+	    UNION ALL
+	
+	    SELECT
+	           43 AS rn,
+	           N'    (21) 제)기타(RMA/생산X)' AS gubun,
+	           CASE WHEN LEFT(a.model,2) = N'VN' THEN N'카세트' ELSE a.구분 END AS 구분,   /* [2026-09-16b] 원가 쪽 구분도 카세트로 */
+	           a.model,
+	           SUM(COALESCE(a.outetc_amt,0) * -1) AS amt
+	    FROM doi_stco a WITH(NOLOCK)
+	    INNER JOIN doi_acct b
+	      ON a.yyyymm = b.yyyymm
+	     AND a.site = b.site
+	     AND a.sel_code = b.sel_code
+	     AND a.acct_name = b.acct_name
+	    WHERE a.yyyymm = @YYYYMM
+	      AND a.site = @SITE
+	      AND a.sel_code = @SELCODE
+	      AND COALESCE(a.outetc_amt,0) <> 0
+	      AND b.상위계정과목 IN ('제)복리후생비','제)여비교통비','제)통신비','제)수도광열비','제)전력비','제)세금과공과','제)감가상각비','제)지급임차료','제)수선비','제)보험료','제)차량유지비','제)운반비','제)교육훈련비','제)도서인쇄비','제)소모품비','제)지급수수료','제)외주가공비','제)사용권자산감가상각비','제)검사비','제)견본비','제)기타(RMA/생산X)')
+	      AND a.expen_sel NOT IN ('MHRB','MDAX','MIAX')
+	      AND b.expen_sel NOT IN ('MHRB','MDAX','MIAX')
+	    GROUP BY CASE WHEN LEFT(a.model,2) = N'VN' THEN N'카세트' ELSE a.구분 END, a.model
+      /*UNION ALL
+            SELECT 22 rn, N'  EXTRA' gubun, 구분, model, out_amt
+             FROM doi_slco a WITH(NOLOCK)
+            WHERE a.yyyymm = @YYYYMM
+              AND a.site   = @SITE
+              AND a.sel_code = @SELCODE
+              AND a.model = 'EXTRA'
+            UNION ALL
+            SELECT 22 rn, N'  기타출고' gubun, 구분, model, out_amt
+             FROM doi_stco a WITH(NOLOCK)
+            WHERE a.yyyymm = @YYYYMM
+              AND a.site   = @SITE
+              AND a.sel_code = @SELCODE
+              AND a.acct_name = '*'
+              AND a.out_amt != 0*/
+        ),
+  EXP_AGG AS (
+            SELECT 22 rn, N'  IV. 제조경비' gubun, 구분, model,
+                   SUM(amt) AS amt
+            FROM EXP_BASE 
+            GROUP BY 구분, model
+        ),
+
+        /* ====== 상품매출원가 ====== */
+        MERCH_COGS AS ( 
+    SELECT 99 rn, N'    상품매출원가' gubun, M.구분, M.model,
+                   CAST(COALESCE(SUM(R.출고금액),0) AS DECIMAL(18,2)) AS amt
+            FROM #MODEL M
+            LEFT JOIN DOI_MATL_RESC R WITH(NOLOCK)
+              ON R.YYYYMM = @YYYYMM
+             AND R.SITE   = @SITE
+             AND R.SEL_CODE = @SELCODE
+             AND R.품목자산분류 = N'상품'
+             AND R.품명 = M.model
+            WHERE M.구분 = N'구매'
+            GROUP BY M.구분, M.model
+        ),
+		LOSS_BY_MODEL AS (
+		    SELECT
+		          CASE WHEN LEFT(C.model,2) = N'VN' THEN N'카세트' ELSE C.구분 END AS 구분   /* [2026-09-16b] 원가 쪽 구분도 카세트로 */
+		        , C.model
+		        , CAST(SUM(COALESCE(C.LOSS,0)) AS DECIMAL(18,2)) AS loss_amt
+		    FROM DOI_COST C WITH(NOLOCK)
+		    WHERE C.YYYYMM   = @YYYYMM
+		      AND C.SITE     = @SITE
+		      AND C.SEL_CODE = @SELCODE
+		    GROUP BY CASE WHEN LEFT(C.model,2) = N'VN' THEN N'카세트' ELSE C.구분 END, C.model
+		    HAVING SUM(COALESCE(C.LOSS,0)) <> 0
+		),        
+		
+        TOTAL_MFG AS (
+            /*SELECT 43 rn, N'    당기총제조원가' gubun, M.구분, M.model,
+                   SUM(COALESCE(A.[in],0)) AS amt
+            FROM #MODEL M
+            LEFT JOIN DOI_COST A  
+            ON A.YYYYMM   = @YYYYMM
+            AND A.SITE     = @SITE
+            AND A.SEL_CODE = @SELCODE
+            AND A.model = M.model 
+            AND A.구분 = M.구분
+            GROUP BY M.구분, M.MODEL*/
+            -- V 매출원가 =  II.재료비 +  III.노무비 +  IV.제조경비
+			SELECT 44 rn, N'  V. 매출원가' gubun, M.구분, M.model,
+                   CAST(COALESCE(II.amt,0) + COALESCE(III.amt,0) + COALESCE(IV.amt,0) + COALESCE(XX.amt,0) + COALESCE(LB.loss_amt,0) AS DECIMAL(18,2)) AS amt
+            FROM #MODEL M
+   			LEFT JOIN #SALES_BASE SB ON SB.model = M.model AND SB.구분  = M.구분            
+            LEFT JOIN (SELECT 구분, model, SUM(amt) amt FROM MAT_BASE GROUP BY 구분, model) II ON II.model = M.model AND II.구분 = M.구분 
+            LEFT JOIN LABOR_AGG III ON III.model = M.model AND III.구분 = M.구분
+            LEFT JOIN EXP_AGG    IV ON IV.model = M.model AND IV.구분 = M.구분
+            LEFT JOIN MERCH_COGS XX ON XX.model = M.model AND XX.구분 = M.구분
+    		LEFT JOIN LOSS_BY_MODEL LB ON LB.model = M.model AND LB.구분 = M.구분            
+            ),
+         PROD_COGS AS (
+		    -- 제품매출원가 = 재료비 + 노무비 + 제조경비
+		    SELECT
+		          45 rn
+		        , N'    (1) 제품매출원가' gubun
+		        , M.구분
+		        , M.model
+		        , CAST(
+		              COALESCE(II.amt,0)
+		            + COALESCE(III.amt,0)
+		            + COALESCE(IV.amt,0)
+/*		            + COALESCE(EC.adj_amt,0)*/
+		       AS DECIMAL(18,2)) AS amt
+		    FROM #MODEL M
+		    LEFT JOIN #SALES_BASE SB
+            ON SB.model = M.model AND SB.구분  = M.구분    
+		    LEFT JOIN (SELECT 구분, model, SUM(amt) amt FROM MAT_BASE GROUP BY 구분, model) II
+		           ON II.model = M.model AND II.구분 = M.구분
+		    LEFT JOIN LABOR_AGG III
+		           ON III.model = M.model AND III.구분 = M.구분
+		    LEFT JOIN EXP_AGG IV
+		           ON IV.model = M.model AND IV.구분 = M.구분
+/*		    LEFT JOIN ETC_SALE_BASE EC
+		      ON EC.model = M.model AND EC.구분 = M.구분	*/	           
+		),
+		MERCH_COGS_FACT AS (
+		    -- 상품매출원가
+		    SELECT
+		          46 rn
+		        , N'    (2) 상품매출원가' gubun
+		        , M.구분
+		        , M.model
+		        , CAST(COALESCE(XX.amt,0) AS DECIMAL(18,2)) AS amt
+		    FROM #MODEL M
+		    LEFT JOIN MERCH_COGS XX
+		           ON XX.model = M.model AND XX.구분 = M.구분
+		),
+		LOSS_ADJ_BASE AS (
+		    SELECT
+		          47 AS rn
+		        , N'    (3) 제품매출원가조정' AS gubun
+		        , CASE WHEN LEFT(C.model,2) = N'VN' THEN N'카세트' ELSE C.구분 END AS 구분   /* [2026-09-16b] 원가 쪽 구분도 카세트로 */
+		        , C.model
+		        , CAST(SUM(COALESCE(C.LOSS,0)) AS DECIMAL(18,2)) AS amt
+		    FROM DOI_COST C
+		    WHERE C.YYYYMM   = @YYYYMM
+		      AND C.SITE     = @SITE
+		      AND C.SEL_CODE = @SELCODE
+		    GROUP BY CASE WHEN LEFT(C.model,2) = N'VN' THEN N'카세트' ELSE C.구분 END, C.model
+    		HAVING SUM(COALESCE(C.LOSS,0)) <> 0		    
+		),		
+		DISPOSE_ADJ_BASE AS (
+		    -- 제품 폐기를 모델별 (3)제품매출원가조정 에 반영
+		    SELECT
+		          47 AS rn
+		        , N'    (3) 제품매출원가조정' AS gubun
+		        , D.구분
+		        , D.model
+		        , D.amt
+		    FROM #DISPOSE D
+		),
+		PROD_COGS_ADJ AS (
+		    -- 제품매출원가조정: 총합계 전용이라 모델별 0
+		    SELECT
+		          47 AS rn
+		        , N'    (3) 제품매출원가조정' AS gubun
+		        , N'총합계' AS 구분
+		        , N'총합계' AS model
+	        	, CAST(@CostAdj + @LossAdj AS DECIMAL(18,2)) AS amt		    
+		),      
+--        ADJ_SALE AS (  --26-02-13 삭제
+--            SELECT 45 rn, N'    매출원가조정' gubun, M.구분, M.model,
+--                   COALESCE(E.amt,0) AS amt
+--            FROM #MODEL M
+--    LEFT JOIN ETC_SALE_BASE E ON E.model = M.model AND E.구분 = M.구분
+--        ),
+        
+        /* ====== V 재고조정 ======
+           재고조정 = (기초재공 - 기말재공) + (기초제품 - 기말제품)
+                   + (타계정입고(재공/제품) - 타계정출고(재공/제품))
+        */
+		COST_ADJ AS (  --26-02-13 삭제
+		    SELECT
+		          YYYYMM, SITE, 구분, MODEL
+		        , SUM(COALESCE(BOH+ADJ_BOH,0))       AS BOH
+		        , SUM(COALESCE(EOH,0))       AS EOH
+		        , SUM(COALESCE(RMAIN_AMT,0)) AS RMAIN_AMT	        
+		    FROM DOI_COST WITH(NOLOCK)
+		    WHERE YYYYMM  = @YYYYMM
+		      AND SITE    = @SITE
+              AND SEL_CODE= @SELCODE
+		    GROUP BY YYYYMM, SITE, 구분, MODEL
+		),			
+		STCO_ADJ AS ( 
+		    SELECT
+		        YYYYMM, SITE, 구분, MODEL
+		        , SUM(COALESCE(BOH_AMT,0))    AS BOH_AMT
+		        , SUM(COALESCE(EOH_AMT,0))    AS EOH_AMT
+		        , SUM(COALESCE(INETC_AMT,0))  AS INETC_AMT
+		        , SUM(COALESCE(OUTETC_AMT,0)) AS OUTETC_AMT
+		    FROM DOI_STCO WITH(NOLOCK)
+		    WHERE YYYYMM = @YYYYMM
+		      AND SITE   = @SITE
+		      AND SEL_CODE = @SELCODE
+		      AND ACCT_NAME != '기타출고'
+		    GROUP BY YYYYMM, SITE, 구분, MODEL
+		),
+--		INV_ADJ AS (
+--		    SELECT
+--		          46 rn
+--		        , N'  V. 재고조정' gubun
+--		        , M.구분
+--		        , M.model
+--		        , CAST(
+--		              (COALESCE(C.BOH,0) - COALESCE(C.EOH,0))
+--		            + (COALESCE(S.BOH_AMT,0) - COALESCE(S.EOH_AMT,0))
+--		            /*+ COALESCE(C.RMAIN_AMT,0)*/
+--		        + COALESCE(S.INETC_AMT,0)
+--		            - COALESCE(S.OUTETC_AMT,0)
+--		          AS DECIMAL(18,2)) AS amt
+--		    FROM #MODEL M
+--		    LEFT JOIN COST_ADJ C
+--		           ON C.YYYYMM = @YYYYMM
+--		          AND C.SITE   = @SITE
+--		          AND C.MODEL  = M.model
+--		          AND C.구분    = M.구분
+--		    LEFT JOIN STCO_ADJ S
+--		           ON S.YYYYMM = @YYYYMM
+--		          AND S.SITE   = @SITE
+--		       AND S.MODEL  = M.model
+--		          AND S.구분    = M.구분
+--		),
+    /* ====== VI 판관비 ====== */
+		SGA_BASE AS (
+			SELECT 48+m.총원가_순서 rn,
+			       N'    ('+CAST(m.총원가_순서 as varchar(2))+') '+m.상위계정과목 as gubun,
+		       CASE WHEN LEFT(a.model,2) = N'VN' THEN N'카세트' ELSE a.구분 END AS 구분,   /* [2026-09-16b] 원가 쪽 구분도 카세트로 */
+			       a.model,
+			       SUM(a.dist_amt) AS amt
+			FROM doi_smce_cost a WITH(NOLOCK)
+			CROSS APPLY (
+			    SELECT TOP 1 b.상위계정과목, b.총원가_순서
+			    FROM doi_acct b WITH(NOLOCK)
+			    WHERE b.yyyymm=a.yyyymm AND b.site=a.site AND b.sel_code=a.sel_code
+			      AND (b.acct_name = a.sub_name OR a.sub_name LIKE b.상위계정과목 + N'%')
+			    ORDER BY CASE WHEN b.acct_name = a.sub_name THEN 0 ELSE 1 END, LEN(b.상위계정과목) DESC
+			) m
+			WHERE a.yyyymm = @YYYYMM
+			  AND a.site   = @SITE
+			  AND a.sel_code = @SELCODE
+			  AND m.상위계정과목 LIKE N'판)%' AND m.총원가_순서 IS NOT NULL /* [통일2026-08-18] 28 IN-list 제거 */
+		GROUP BY CASE WHEN LEFT(a.model,2) = N'VN' THEN N'카세트' ELSE a.구분 END, a.model, m.상위계정과목, m.총원가_순서
+		),
+        SGA AS (
+      	SELECT
+                  48 rn
+                , N'  VI. 판관비' gubun
+                , CASE WHEN LEFT(X.MODEL,2) = N'VN' THEN N'카세트' ELSE X.구분 END 구분   /* [2026-09-16b] 원가 쪽 구분도 카세트로 */
+                , M.model
+                , CAST(COALESCE(SUM(X.dist_amt),0) AS DECIMAL(18,2)) AS amt
+            FROM #MODEL M
+            LEFT JOIN DOI_SMCE_COST X WITH(NOLOCK)
+            ON X.YYYYMM = @YYYYMM
+                  AND X.SITE   = @SITE
+                  AND X.SEL_CODE = @SELCODE
+                  AND X.MODEL  = M.model
+                  AND M.구분 = CASE WHEN LEFT(X.MODEL,2) = N'VN' THEN N'카세트' ELSE X.구분 END
+            GROUP BY CASE WHEN LEFT(X.MODEL,2) = N'VN' THEN N'카세트' ELSE X.구분 END, M.model
+        ),
+
+        TOTAL_COST AS (
+            -- VII 총원가 = 당기총제조원가 + 재고조정 + 판관비 + 매출원가조정
+			SELECT 77 rn, N'  VII. 총원가' gubun, M.구분, M.model,
+                   CAST(COALESCE(A.amt,0) /*+ COALESCE(V.amt,0)*/ + COALESCE(VI.amt,0) /*+ COALESCE(B.amt,0)*/ AS DECIMAL(18,2)) AS amt
+            FROM #MODEL M
+            LEFT JOIN TOTAL_MFG A ON A.model = M.model AND A.구분 = M.구분 
+            --LEFT JOIN INV_ADJ V ON V.model = M.model AND V.구분 = M.구분
+            LEFT JOIN SGA     VI ON VI.model = M.model AND VI.구분 = M.구분
+            --LEFT JOIN ETC_SALE_BASE B ON B.model  = M.model AND B.구분 = M.구분
+        ),
+        OP_PROFIT AS (
+            -- VIII 영업이익 = 매출액 - 총원가
+            SELECT 78 rn, N'  VIII. 영업이익' gubun, M.구분, M.model,
+                   CAST(COALESCE(SL.total_sale_amt,0) - COALESCE(TC.amt,0) AS DECIMAL(18,2)) AS amt
+            FROM #MODEL M
+            LEFT JOIN #SALES_BASE SL ON SL.model = M.model AND SL.구분 = M.구분
+            LEFT JOIN TOTAL_COST TC  ON TC.model = M.model AND TC.구분 = M.구분
+        ),
+        OP_MARGIN AS (
+            -- VIII 영업이익률 = 영업이익 / 매출액
+            SELECT 79 rn, N'    영업이익률' gubun, M.구분, M.model,
+                   CAST(
+                        CASE WHEN COALESCE(SL.total_sale_amt,0) = 0 THEN NULL
+                             ELSE (COALESCE(OP.amt,0) / SL.total_sale_amt) * 100
+                        END
+                   AS DECIMAL(18,2)) AS amt
+            FROM #MODEL M
+            LEFT JOIN #SALES_BASE SL ON SL.model = M.model AND SL.구분 = M.구분
+ 			LEFT JOIN OP_PROFIT OP   ON OP.model = M.model AND OP.구분 = M.구분
+        ),
+        /*==============================================================
+    (추가) IX~X 계산용: 변동비/고정비 (모델별)
+          - (총합계/양산/개발/카세트) 중에서 "현재 모델의 구분"만 매칭
+        ==============================================================*/
+        VAR_TOTAL AS (
+            SELECT
+ M.구분
+                , M.model
+                , CAST(COALESCE(SUM(V.amt),0) AS DECIMAL(18,2)) AS var_amt
+            FROM #MODEL M
+            LEFT JOIN #VAR V
+                   ON V.model = M.model
+                  AND V.구분 = M.구분
+                  --AND V.rn    = 1   -- ✅ 변동비 합계 rn
+            GROUP BY M.구분, M.model
+        ),
+        FIX_TOTAL AS (
+            SELECT
+                  M.구분
+                , M.model
+                , CAST(COALESCE(SUM(F.amt),0) AS DECIMAL(18,2)) AS fix_amt
+            FROM #MODEL M
+            LEFT JOIN #FIX F
+                   ON F.model = M.model
+       AND F.구분 = M.구분
+                  --AND F.rn    = 1 -- ✅ 고정비 합계 rn
+            GROUP BY M.구분, M.model
+        ),
+        CM_PROFIT AS (
+            -- IX. 한계이익 = 매출액 - 변동비
+            SELECT
+                  80 rn
+    , N'  IX. 한계이익' gubun
+                , M.구분
+                , M.model
+                , CAST(COALESCE(SL.total_sale_amt,0) - COALESCE(VT.var_amt,0) AS DECIMAL(18,2)) AS amt
+            FROM #MODEL M
+            LEFT JOIN #SALES_BASE SL ON SL.model = M.model AND SL.구분 = M.구분
+            LEFT JOIN VAR_TOTAL VT   ON VT.model = M.model AND VT.구분 = M.구분
+        ),
+        CM_MARGIN AS (
+            -- IX. 한계이익률(%) = 한계이익 / 매출액 * 100
+            SELECT
+                  81 rn
+            , N'    한계이익률' gubun
+                , M.구분
+                , M.model
+        , CAST(
+                      CASE WHEN COALESCE(SL.total_sale_amt,0) = 0 THEN NULL
+                           ELSE (COALESCE(CM.amt,0) / SL.total_sale_amt) * 100
+                      END
+                  AS DECIMAL(18,2)) AS amt
+      FROM #MODEL M
+            LEFT JOIN #SALES_BASE SL ON SL.model = M.model AND SL.구분 = M.구분
+            LEFT JOIN CM_PROFIT CM   ON CM.model = M.model AND CM.구분 = M.구분
+        ),
+        BEP AS (
+            -- X. 손익분기점(BEP 매출) = 고정비 / (한계이익/매출액)
+            SELECT
+  				82 rn
+            	, N'  X. 손익분기점' gubun 
+                , M.구분
+   , M.model
+          , CAST(
+                      CASE
+                        WHEN COALESCE(SL.total_sale_amt,0) = 0 THEN NULL
+             WHEN (COALESCE(CM.amt,0) / NULLIF(SL.total_sale_amt,0)) = 0 THEN NULL
+                        ELSE COALESCE(FT.fix_amt,0) / ((COALESCE(CM.amt,0) / SL.total_sale_amt))
+                      END  AS DECIMAL(18,2)) AS amt
+            FROM #MODEL M
+            LEFT JOIN #SALES_BASE SL ON SL.model = M.model AND SL.구분 = M.구분
+            LEFT JOIN CM_PROFIT CM   ON CM.model = M.model AND CM.구분 = M.구분
+            LEFT JOIN FIX_TOTAL FT   ON FT.model = M.model AND FT.구분 = M.구분
+        ),
+        FACT AS (
+            SELECT rn, gubun, 구분, model, amt FROM SALES_FACT
+    		UNION ALL SELECT rn, gubun, 구분, model, amt FROM QTY_FACT
+    		UNION ALL SELECT rn, gubun, 구분, model, amt FROM PRICE_FACT
+    		UNION ALL SELECT rn, gubun, 구분, model, amt FROM SCOF_BASE
+--    		UNION ALL SELECT rn, gubun, 구분, model, amt FROM ETC_SALE_BASE    		    		
+    		UNION ALL SELECT rn, gubun, 구분, model, amt FROM MAT_AGG
+            UNION ALL SELECT rn, gubun, 구분, model, amt FROM LABOR_AGG
+            UNION ALL SELECT rn, gubun, 구분, model, amt FROM LABOR_BASE  --26/02/13 KYH추가
+            UNION ALL SELECT rn, gubun, 구분, model, amt FROM EXP_AGG
+            UNION ALL SELECT rn, gubun, 구분, model, amt FROM EXP_BASE
+            UNION ALL SELECT rn, gubun, 구분, model, amt FROM TOTAL_MFG
+		    UNION ALL SELECT rn, gubun, 구분, model, amt FROM PROD_COGS
+		    UNION ALL SELECT rn, gubun, 구분, model, amt FROM MERCH_COGS_FACT
+		    UNION ALL SELECT rn, gubun, 구분, model, amt FROM LOSS_ADJ_BASE
+		    UNION ALL SELECT rn, gubun, 구분, model, amt FROM DISPOSE_ADJ_BASE
+		    UNION ALL SELECT rn, gubun, 구분, model, amt FROM PROD_COGS_ADJ
+--            UNION ALL SELECT rn, gubun, 구분, model, amt FROM ADJ_SALE
+--  UNION ALL SELECT rn, gubun, 구분, model, amt FROM INV_ADJ  --26/02/13 KYH삭제
+--            UNION ALL SELECT rn, gubun, 구분, model, amt FROM MERCH_COGS    --26/02/13 KYH삭제         
+  UNION ALL SELECT rn, gubun, 구분, model, amt FROM SGA        
+            UNION ALL SELECT rn, gubun, 구분, model, amt FROM SGA_BASE  --26/02/16 KYH추가
+            UNION ALL SELECT rn, gubun, 구분, model, amt FROM TOTAL_COST
+            UNION ALL SELECT rn, gubun, 구분, model, amt FROM OP_PROFIT
+            UNION ALL SELECT rn, gubun, 구분, model, amt FROM OP_MARGIN
+            UNION ALL SELECT rn, gubun, 구분, model, amt FROM CM_PROFIT
+        UNION ALL SELECT rn, gubun, 구분, model, amt FROM CM_MARGIN
+            UNION ALL SELECT rn, gubun, 구분, model, amt FROM BEP            
+        ),
+        BASE AS (
+        SELECT
+            	R.tree_id
+                , R.rn
+                , R.gubun
+                , M.구분
+                , M.model
+                , M.pivot_key
+                , COALESCE(F.amt, 0) AS amt
+            FROM #RN R
+            CROSS JOIN #MODEL M
+     LEFT JOIN FACT F
+                   ON F.rn    = R.rn
+                  AND F.gubun = R.gubun
+                  AND F.model = M.model
+                  AND F.구분 = M.구분
+    )
+        SELECT 구분, tree_id, rn, gubun, model, pivot_key, amt
+        INTO #BASE
+        FROM BASE;
+
+        /*==============================================================
+          4) 동적 PIVOT + 피벗 후 합계컬럼 생성
+             - 총합계 = 양산 + 개발 + 카세트 + 상품매출(NULL) + 기타매출(NULL)
+             - (표시는 상품/기타는 NULL, 계산에는 포함 안됨)
+        ==============================================================*/
+        ;WITH COLS AS (
+            SELECT 구분, model, pivot_key, sort_group, sort_structure, sort_numeric FROM #MODEL
+        )
+        SELECT
+              @Columns = STRING_AGG(QUOTENAME(pivot_key), N', ')
+           WITHIN GROUP (ORDER BY sort_group, sort_structure, sort_numeric, model)
+            , @ModelSelectCols = STRING_AGG(
+                    N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0) AS ' + QUOTENAME(pivot_key)
+                  , N', '
+        ) WITHIN GROUP (ORDER BY sort_group, sort_structure, sort_numeric, model)         
+        FROM COLS;
+
+        SELECT
+            @SumYangsan = COALESCE(
+                STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+                    WITHIN GROUP (ORDER BY sort_structure, model),
+           N'0'
+            )
+        FROM #MODEL M
+        WHERE M.구분 = N'양산'
+          AND is_cassette = 0;
+
+		SELECT @SumYangsan_Sale =
+		  COALESCE(STRING_AGG(N'COALESCE(Sales.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+		    WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+		FROM #MODEL
+		WHERE 구분=N'양산' AND is_cassette=0;
+		
+		SELECT @SumYangsan_Qty =
+		  COALESCE(STRING_AGG(N'COALESCE(Qty.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+		    WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+		FROM #MODEL
+		WHERE 구분=N'양산' AND is_cassette=0;
+                  
+        SELECT
+            @SumDev = COALESCE(
+          STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+        WITHIN GROUP (ORDER BY sort_structure, model),
+              N'0'
+            )
+        FROM #MODEL M
+        WHERE M.구분 = N'개발';
+
+       	SELECT @SumDev_Sale =
+		  COALESCE(STRING_AGG(N'COALESCE(Sales.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+		    WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+		FROM #MODEL
+		WHERE 구분=N'개발' AND is_cassette=0;
+		
+		SELECT @SumDev_Qty =
+		  COALESCE(STRING_AGG(N'COALESCE(Qty.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+		    WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+		FROM #MODEL
+		WHERE 구분=N'개발' AND is_cassette=0;
+       
+        SELECT
+            @SumCassette = COALESCE(
+                STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+                    WITHIN GROUP (ORDER BY sort_structure, model),
+   N'0'
+            )
+        FROM #MODEL M
+        WHERE M.구분 = N'카세트'
+           OR is_cassette = 1;
+
+        SELECT
+            @SumCas_Sale = COALESCE(
+                STRING_AGG(N'COALESCE(Sales.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+                    WITHIN GROUP (ORDER BY sort_structure, model),
+                N'0'
+            )
+        FROM #MODEL M
+        WHERE M.구분 = N'카세트'
+           OR is_cassette = 1;
+          
+        SELECT
+            @SumCas_Qty = COALESCE(
+                STRING_AGG(N'COALESCE(Qty.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+ WITHIN GROUP (ORDER BY sort_structure, model),
+              N'0'
+            )
+        FROM #MODEL M
+        WHERE M.구분 = N'카세트'
+           OR is_cassette = 1;             
+
+  SELECT @SumPurchase = COALESCE(
+STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+                WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+        FROM #MODEL M WHERE M.구분 = N'구매';
+
+        SELECT @SumPur_Sale = COALESCE(
+       STRING_AGG(N'COALESCE(Sales.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+                WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+        FROM #MODEL WHERE 구분 = N'구매';
+
+        SELECT @SumPur_Qty = COALESCE(
+            STRING_AGG(N'COALESCE(Qty.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+                WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+        FROM #MODEL WHERE 구분 = N'구매';  
+
+        -------------
+		-- 제품매출(rn=2) 합계 : 매출단가 = 제품매출/수량
+		SELECT @SumYangsan_ProdSale = COALESCE(STRING_AGG(N'COALESCE(ProdSale.' + QUOTENAME(pivot_key) + N',0)', N' + ') WITHIN GROUP (ORDER BY sort_structure, model), N'0') FROM #MODEL WHERE 구분=N'양산' AND is_cassette=0;
+		SELECT @SumDev_ProdSale = COALESCE(STRING_AGG(N'COALESCE(ProdSale.' + QUOTENAME(pivot_key) + N',0)', N' + ') WITHIN GROUP (ORDER BY sort_structure, model), N'0') FROM #MODEL WHERE 구분=N'개발' AND is_cassette=0;
+		SELECT @SumCas_ProdSale = COALESCE(STRING_AGG(N'COALESCE(ProdSale.' + QUOTENAME(pivot_key) + N',0)', N' + ') WITHIN GROUP (ORDER BY sort_structure, model), N'0') FROM #MODEL WHERE 구분=N'카세트' OR is_cassette=1;
+		SELECT @SumPur_ProdSale = COALESCE(STRING_AGG(N'COALESCE(ProdSale.' + QUOTENAME(pivot_key) + N',0)', N' + ') WITHIN GROUP (ORDER BY sort_structure, model), N'0') FROM #MODEL WHERE 구분=N'구매';
+		-------------
+		SELECT @SumYangsan_Bep =
+		  COALESCE(STRING_AGG(N'COALESCE(Bep.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+		    WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+		FROM #MODEL
+		WHERE 구분=N'양산' AND is_cassette=0;
+
+       	SELECT @SumDev_Bep =
+		  COALESCE(STRING_AGG(N'COALESCE(Bep.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+		    WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+		FROM #MODEL
+		WHERE 구분=N'개발' AND is_cassette=0;
+		
+       	SELECT
+            @SumCas_Bep = COALESCE(
+                STRING_AGG(N'COALESCE(Bep.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+                    WITHIN GROUP (ORDER BY sort_structure, model),
+              N'0'
+            )
+        FROM #MODEL M
+        WHERE M.구분 = N'카세트'
+           OR is_cassette = 1;             
+
+        SELECT @SumPur_Bep = COALESCE(
+            STRING_AGG(N'COALESCE(Bep.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+                WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+        FROM #MODEL M WHERE M.구분 = N'구매';   
+        ---------------
+		SELECT @SumYangsan_Op =
+		  COALESCE(STRING_AGG(N'COALESCE(Op.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+		    WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+		FROM #MODEL
+		WHERE 구분=N'양산' AND is_cassette=0;
+
+	SELECT @SumDev_Op =
+		  COALESCE(STRING_AGG(N'COALESCE(Op.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+		    WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+		FROM #MODEL
+		WHERE 구분=N'개발' AND is_cassette=0;
+		
+       	SELECT
+            @SumCas_Op = COALESCE(
+                STRING_AGG(N'COALESCE(Op.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+                    WITHIN GROUP (ORDER BY sort_structure, model),
+              N'0'
+            )
+  FROM #MODEL M
+        WHERE M.구분 = N'카세트'
+           OR is_cassette = 1;             
+
+        SELECT @SumPur_Op = COALESCE(
+            STRING_AGG(N'COALESCE(Op.' + QUOTENAME(pivot_key) + N',0)', N' + ')
+                WITHIN GROUP (ORDER BY sort_structure, model), N'0')
+        FROM #MODEL M WHERE M.구분 = N'구매';     
+          
+		SET @SQL = N'
+		;WITH P AS (
+		    SELECT tree_id, TRY_CONVERT(INT, rn) AS rn, gubun, ' + @Columns + N'
+		    FROM (
+		        SELECT tree_id, TRY_CONVERT(INT, rn) AS rn, gubun, pivot_key, amt
+		        FROM #BASE
+		    ) S
+		    PIVOT (SUM(amt) FOR pivot_key IN (' + @Columns + N')) PV
+		)
+		SELECT
+			Cur.tree_id
+      		, Cur.rn
+		    , Cur.gubun
+		
+		    -- ✅ 총합계: 유상사급/매출액만 특수 처리
+		    , CAST(
+					CASE
+					  WHEN Cur.rn = 5 THEN @SCOF
+					  WHEN Cur.rn = 4 THEN
+					      ((' + @SumYangsan_ProdSale + ')+(' + @SumDev_ProdSale + ')+(' + @SumCas_ProdSale + ')+(' + @SumPur_ProdSale + '))
+					      / NULLIF(((' + @SumYangsan_Qty + ')+(' + @SumDev_Qty + ')+(' + @SumCas_Qty + ')+(' + @SumPur_Qty + ')),0)
+            		  WHEN LTRIM(Cur.gubun) = N''영업이익률'' THEN
+						  ((' + @SumYangsan_Op + ')+(' + @SumDev_Op + ')+(' + @SumCas_Op + ')+(' + @SumPur_Op +'))
+					      /NULLIF(((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + ')),0)*100
+       			  WHEN LTRIM(Cur.gubun) = N''한계이익률'' THEN
+						  ('+@SumYangsan_FiX + ' + ' + @SumDev_Fix +')
+					      /NULLIF(((' + @SumYangsan_Bep + ')+(' + @SumDev_Bep + ')+(' + @SumCas_Bep + ')+(' + @SumPur_Bep +')),0)*100
+					       --/NULLIF(((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + ')),0)*100
+					WHEN Cur.rn = 1 THEN
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ') + @ACC_TOTAL ) /* [수정]2026-08-18 총합계매출액=양산+개발+카세트+구매+회계(@ACC_TOTAL): 구매누락·유상사급중복 제거 */
+
+					WHEN Cur.rn = 2 THEN
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ') + (@ACC_IDLE_COMP))   -- [규칙1] 제품매출(조정은 매출액으로 이동): 양산+개발+카세트+회계(비가동+조정)
+					WHEN Cur.rn = 3 THEN
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + '))   -- [수정]2026-08-18 수량 총합계 구매 포함
+
+					WHEN Cur.rn = 6 THEN (' + @SumPurchase + ')
+
+					WHEN Cur.rn = 7 THEN @ACC_PREV_PRICE   -- 기타매출 총합계: 이전가격만
+
+					WHEN Cur.rn = 44 THEN
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + ( @CostAdj /*+ @LossAdj*/ ) + @DispAdj
+					
+					WHEN Cur.rn = 47 THEN
+					    @CostAdj + @LossAdj + @DispAdj
+					
+					WHEN Cur.rn = 77 THEN
+					  ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ')) + ( @CostAdj ) + @DispAdj
+					
+					WHEN Cur.rn = 78 THEN
+					    /*(
+					      ((' + @SumYangsan_Sale + ')+(' + @SumDev_Sale + ')+(' + @SumCas_Sale + ')+(' + @SumPur_Sale + ') + @ACC_TOTAL)
+					      - @SCOF
+					    )
+					    -*/
+					    (
+					      ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + ') - @SCOF + (@ACC_TOTAL - @ACC_ADJ) )
+					     -- + ( @CostAdj )
+					    )
+					ELSE
+					    ((' + @SumYangsan + ')+(' + @SumDev + ')+(' + @SumCassette + ')+(' + @SumPurchase + '))
+					END		      
+					AS DECIMAL(18,2)) AS [총합계]
+		
+		    -- ✅ 양산/개발/카세트 합계: 유상사급은 0으로
+		    , CAST(
+				CASE
+				 -- WHEN Cur.rn = 5 and '+ @YYYYMM + '>= ''202604'' THEN @SCOF 
+				  WHEN Cur.rn = 4 THEN ((' + @SumYangsan_ProdSale + ') / NULLIF((' + @SumYangsan_Qty + '),0))
+           	  WHEN LTRIM(Cur.gubun) = N''영업이익률'' THEN
+						  ((' + @SumYangsan_Op  +'))
+					      /NULLIF(((' + @SumYangsan_Sale + ')),0)*100
+         		  WHEN LTRIM(Cur.gubun) = N''한계이익률'' THEN
+					  ('+@SumYangsan_FiX +')
+				      /NULLIF(((' + @SumYangsan_Bep +')),0)*100
+		      WHEN Cur.rn = 44 THEN
+		          ((' + @SumYangsan + ')) + @LossAdjYangsan + @DispAdjYangsan
+		
+		      WHEN Cur.rn = 47 THEN
+		          @LossAdjYangsan + @DispAdjYangsan
+		
+		      WHEN Cur.rn = 77 THEN
+		   ((' + @SumYangsan + ')) + @DispAdjYangsan
+		
+		      WHEN Cur.rn = 78 THEN
+		          /*((' + @SumYangsan_Sale + '))
+		          -*/
+		          ((' + @SumYangsan + '))
+
+				  ELSE (' + @SumYangsan + ')
+				END AS DECIMAL(18,2)) AS [양산합계]
+			, CAST(
+				CASE
+				  --WHEN Cur.rn = 5 THEN 0
+				  WHEN Cur.rn = 4 THEN ((' + @SumDev_ProdSale + ') / NULLIF((' + @SumDev_Qty + '),0))
+            	  WHEN LTRIM(Cur.gubun) = N''영업이익률'' THEN
+						  ((' + @SumDev_Op +'))
+					      /NULLIF(((' + @SumDev_Sale + ')),0)*100
+          		  WHEN LTRIM(Cur.gubun) = N''한계이익률'' THEN
+					  ('+ @SumDev_Fix +')
+				      /NULLIF(((' + @SumDev_Bep +')),0)*100
+
+			      WHEN Cur.rn = 44 THEN
+			          ((' + @SumDev + ')) + @LossAdjDev + @DispAdjDev
+			
+			      WHEN Cur.rn = 47 THEN
+			          @LossAdjDev + @DispAdjDev
+			
+			      WHEN Cur.rn = 77 THEN
+			          ((' + @SumDev + ')) + @DispAdjDev
+			
+			      WHEN Cur.rn = 78 THEN
+			          /*((' + @SumDev_Sale + '))
+			          -*/
+			          ((' + @SumDev + '))
+
+				  ELSE (' + @SumDev + ')
+				END AS DECIMAL(18,2)) AS [개발합계]
+			, CAST(	
+				CASE
+				  WHEN Cur.rn = 5 THEN 0
+				  WHEN Cur.rn = 4 THEN ((' + @SumCas_ProdSale + ') / NULLIF((' + @SumCas_Qty + '),0))
+				  WHEN Cur.rn = 44 THEN ((' + @SumCassette + ')) + @LossAdjCassette + @DispAdjCassette
+				  WHEN Cur.rn = 47 THEN @LossAdjCassette + @DispAdjCassette
+				  ELSE (' + @SumCassette + ')
+				END AS DECIMAL(18,2)) AS [카세트합계]
+
+            , CAST( 
+                CASE
+                  WHEN Cur.rn = 5 THEN 0
+                  WHEN Cur.rn = 4 THEN ((' + @SumPur_ProdSale + ') / NULLIF((' + @SumPur_Qty + '),0))
+                  ELSE (' + @SumPurchase + ')
+                END AS DECIMAL(18,2)) AS [구매합계]
+		
+		    -- 요청: 상품/기타매출은 NULL
+		    , CAST(NULL AS DECIMAL(18,2)) AS [상품매출]
+		    , CAST(
+			    CASE
+			        WHEN Cur.rn = 7 THEN @ACC_TOTAL
+			        ELSE NULL
+			    END
+			  AS DECIMAL(18,2)) AS [기타매출]
+
+			-- 회계
+			, CAST(
+			    CASE
+			        WHEN Cur.rn = 2 THEN (@ACC_IDLE_COMP)  -- 제품매출: 비가동보상 (조정은 매출액으로 이동)
+			        WHEN Cur.rn = 7 THEN @ACC_PREV_PRICE              -- 기타매출: 이전가격
+			        WHEN Cur.rn = 1 THEN @ACC_TOTAL
+			        -- 재고폐기는 매출원가 가산 → 총원가(77) 증가, 영업이익(78) 감소
+			        WHEN Cur.rn = 78 THEN @ACC_TOTAL - @ACC_SCRAP
+			        WHEN Cur.rn IN (44,47,77) THEN @ACC_SCRAP
+			        WHEN Cur.rn = 5 THEN @SCOF_ACC   -- 유상사급 란: 회계-조정 유상사급
+			        ELSE 0
+			    END
+			  AS DECIMAL(18,2)) AS [회계합계]
+			
+			-- 회계-제품-비가동보상 : 매출액(rn=1) 합계 + 제품매출 행(rn=2)
+			, CAST(
+			    CASE
+			        WHEN Cur.rn IN (1,2) THEN @ACC_IDLE_COMP
+			        ELSE 0
+			    END
+			  AS DECIMAL(18,2)) AS [회계_비가동보상]
+
+			-- 회계-제품-조정 : 매출액(rn=1) 합계 + 제품매출 행(rn=2)
+			, CAST(
+			    CASE
+			        WHEN Cur.rn = 1 THEN @ACC_ADJ   -- 매출액 = 제품매출 - 유상사급 (= -유상사급)
+			        WHEN Cur.rn = 5 THEN @SCOF_ACC   -- 유상사급 란
+			        ELSE 0
+			    END
+			  AS DECIMAL(18,2)) AS [회계_조정]
+
+			-- 회계-기타-이전가격 : 매출액(rn=1) 합계 + 기타매출 행(rn=7)
+			, CAST(
+			    CASE
+			        WHEN Cur.rn IN (1,7) THEN @ACC_PREV_PRICE
+			        -- 원부재료 재고폐기: (3)제품매출원가조정(47) 및 상위 V.매출원가(44)
+			        WHEN Cur.rn IN (44,47) THEN @ACC_SCRAP
+			        ELSE 0
+			    END
+			  AS DECIMAL(18,2)) AS [회계_이전가격]
+		    , ' + @ModelSelectCols + N'
+
+		FROM P Cur
+		LEFT JOIN P Sales ON Sales.rn = 1
+		LEFT JOIN P ProdSale ON ProdSale.rn = 2 
+		LEFT JOIN P Qty   ON Qty.rn = 3
+    	LEFT JOIN P Op    ON LTRIM(Op.gubun) = N''VIII. 영업이익''
+    	LEFT JOIN P Bep   ON LTRIM(Bep.gubun) LIKE N''X. 손익분기점%''
+		ORDER BY TRY_CONVERT(INT, Cur.rn);
+		';
+		
+--		SELECT @SQL;
+		EXEC sp_executesql @SQL, 
+		N'@SCOF DECIMAL(18,2), @CostAdj DECIMAL(18,2), @LossAdj DECIMAL(18,2), @LossAdjYangsan DECIMAL(18,2), @LossAdjDev DECIMAL(18,2), @LossAdjCassette DECIMAL(18,2) ,@ACC_TOTAL decimal(18,2), @ACC_PREV_PRICE decimal(18,2), @ACC_IDLE_COMP decimal(18,2), @ACC_ADJ decimal(18,2), @SCOF_ACC decimal(18,2), @ACC_SCRAP decimal(18,2), @DispAdj decimal(18,2), @DispAdjYangsan decimal(18,2), @DispAdjDev decimal(18,2), @DispAdjCassette decimal(18,2)',
+		@SCOF = @SCOFTotal,
+    	@CostAdj = @CostAdj,
+    	@LossAdj = @LossAdj,
+        @LossAdjYangsan = @LossAdjYangsan,
+   		@LossAdjDev     = @LossAdjDev,
+        @LossAdjCassette = @LossAdjCassette,
+		@ACC_TOTAL      = @ACC_TOTAL,
+		@ACC_PREV_PRICE = @ACC_PREV_PRICE,
+		@ACC_IDLE_COMP  = @ACC_IDLE_COMP,
+		@ACC_ADJ        = @ACC_ADJ,
+		@SCOF_ACC       = @SCOF_ACC,
+		@ACC_SCRAP      = @ACC_SCRAP,
+		@DispAdj        = @DispAdj,
+		@DispAdjYangsan = @DispAdjYangsan,
+		@DispAdjDev     = @DispAdjDev,
+		@DispAdjCassette= @DispAdjCassette;
+
+        DROP TABLE #BASE;
+        DROP TABLE #RN;
+        DROP TABLE #MODEL;
+    DROP TABLE #SALES_BASE;
+        DROP TABLE #VAR;
+        DROP TABLE #FIX;       
+
+        COMMIT TRAN;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRAN;
+        SELECT 
+         ERROR_NUMBER()  AS ErrorNumber,
+        ERROR_SEVERITY() AS ErrorSeverity,
+        ERROR_STATE()   AS ErrorState,
+        ERROR_LINE() AS ErrorLine,
+        ERROR_PROCEDURE() AS ErrorProcedure,
+        ERROR_MESSAGE() AS ErrorMessage;
+       
+    THROW;   
+    END CATCH
+END;
+
+
+
+
+
+

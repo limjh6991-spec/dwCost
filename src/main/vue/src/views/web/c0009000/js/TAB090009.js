@@ -24,6 +24,7 @@ const grid = {
     { fieldName: 'Z합계', dataType: ValueType.NUMBER },
     { fieldName: 'X합계', dataType: ValueType.NUMBER },
     { fieldName: 'Y합계', dataType: ValueType.NUMBER },
+    { fieldName: 'W합계', dataType: ValueType.NUMBER },   // [2026-09-16a] 카세트 합계
   ],
   columns: [
     { name: 'gubun', fieldName: 'gubun', width: '80', header: { text: '구분' }, autoFilter: true, styleName: 'tl' },
@@ -31,6 +32,7 @@ const grid = {
     { name: 'Z합계', fieldName: 'Z합계', width: '80', header: { text: '판매관리비 합계' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'X합계', fieldName: 'X합계', width: '80', header: { text: '양산 합계' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'Y합계', fieldName: 'Y합계', width: '80', header: { text: '개발 합계' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'W합계', fieldName: 'W합계', width: '80', header: { text: '카세트 합계' }, autoFilter: false, styleName: 'tr', numberFormat: '#,##0' },   // [2026-09-16a]
   ],
 };
 
