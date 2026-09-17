@@ -773,6 +773,31 @@
         </if>
     </select>
 
+    <select id="C0009015_Sch1" resultType="CamelMap">
+        SELECT 
+            YYYYMM,
+            재고자산구분,
+            구분,
+            품번,
+            재고수량,
+            취득원가,
+            판매단가_KRW,
+            판매단가_USD,
+            환율,NRV,차이,
+            비고
+        FROM DOI_재고평가금액
+        WHERE 1=1
+        <if test="yyyymm != null and yyyymm != ''">
+            AND YYYYMM = #{yyyymm}
+        </if>
+        <if test="site != null and site != ''">
+        and SITE = #{site}
+        </if>
+        <if test="selCode != null and selCode != ''">
+            and SEL_CODE = #{selCode}
+        </if>
+    </select>
+
     <!-- 제조경비 부서별 집계표(누적) - 컬럼 조회 -->
     <select id="C0009005_Tab090004_Cum_Col" resultType="CamelMap">
         SELECT TOP 500 dept_name
