@@ -189,10 +189,10 @@ export default {
             품번: `${group} 합계`,
             재고수량: 0,
             취득원가: 0,
-            판매단가_KRW: null,
-            판매단가_USD: null,
+            판매단가Krw: null,
+            판매단가Usd: null,
             환율: null,
-            NRV: 0,
+            nrv: 0,
             차이: 0,
             비고: '',
           });
@@ -201,7 +201,7 @@ export default {
         const summary = summaryMap.get(group);
         summary.재고수량 += this.getSafeNumber(row?.['재고수량']);
         summary.취득원가 += this.getSafeNumber(row?.['취득원가']);
-        summary.NRV += this.getSafeNumber(row?.['NRV']);
+        summary.nrv += this.getSafeNumber(row?.['nrv']);
         summary.차이 += this.getSafeNumber(row?.['차이']);
       }
 
