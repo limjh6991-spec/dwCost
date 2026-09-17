@@ -785,7 +785,7 @@
             판매단가_USD,
             환율,NRV,차이,
             비고
-        FROM DOI_재고평가금액
+        FROM DOI_재고자산평가
         WHERE 1=1
         <if test="yyyymm != null and yyyymm != ''">
             AND YYYYMM = #{yyyymm}
