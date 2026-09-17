@@ -145,9 +145,7 @@ export default {
       if (row == null || row < 0) return null;
 
       const gubun = String(grid.getValue(row, '구분') ?? '');
-      const assetType = String(grid.getValue(row, '재고자산구분') ?? '');
-      const itemCode = String(grid.getValue(row, '품번') ?? '');
-      const isSummaryRow = (gubun === '합계' || itemCode.includes('합계')) && ['재공품', '제품'].includes(assetType);
+      const isSummaryRow = gubun === '합계';
 
       if (isSummaryRow) {
         return { style: { background: '#e8f4f8', fontWeight: 'bold' } };
@@ -155,6 +153,14 @@ export default {
 
       return null;
     });
+
+    // 재공품/제품 합계 행: 재고자산구분~품번(3열) 가로 병합
+    const spanLayout = gv.layoutByColumn('재고자산구분');
+    if (spanLayout) {
+      spanLayout.spanCallback = (grid, layout, itemIndex) => {
+        return String(grid.getValue(itemIndex, '구분') ?? '') === '합계' ? 3 : 1;
+      };
+    }
   },
   beforeUnmount() {},
   methods: {    
@@ -184,9 +190,9 @@ export default {
         if (!summaryMap.has(group)) {
           summaryMap.set(group, {
             yyyymm: this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : '',
-            재고자산구분: group,
+            재고자산구분: `${group} 합계`,
             구분: '합계',
-            품번: `${group} 합계`,
+            품번: '',
             재고수량: 0,
             취득원가: 0,
             판매단가Krw: null,
