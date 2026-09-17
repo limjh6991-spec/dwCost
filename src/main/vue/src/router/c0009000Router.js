@@ -128,7 +128,17 @@ const c0009000Router = [
       sysResourceId: 'C0009014',
       requiresAuth: true,
     },
-  },  
+  },
+  {
+    path: '/c0009015',
+    name: '재고자산평가',
+    component: () => import('../views/web/c0009000/C0009015.vue'),
+    meta: {
+      upperSysResourceId: 'C0009000',
+      sysResourceId: 'C0009015',
+      requiresAuth: true,
+    },
+  },
 ];
 
 export default c0009000Router;
