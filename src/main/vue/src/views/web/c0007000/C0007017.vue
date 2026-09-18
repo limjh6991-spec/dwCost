@@ -23,8 +23,8 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
-          <!-- API 호출: 신규(2026-09-18). SUPERADMIN 전용 노출(canCallIfApi). ETC_INOUT_HQ → DOI_ETC_INOUT -->
-          <b-button v-if="canCallIfApi" class="second" @click="apiCallClick">API 호출</b-button>
+          <!-- API 호출: ETC_INOUT_HQ → DOI_ETC_INOUT. 화면 접근 권한 있는 모든 사용자 노출(2026-09-18 SUPERADMIN 제한 해제) -->
+          <b-button v-show="showIfApiButton" class="second" @click="apiCallClick">API 호출</b-button>
           <b-button v-show="!isClosedMonth" class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
         </div>
@@ -88,13 +88,6 @@ export default {
     },
     gridDataProvider() {
       return this.$refs.dataGrid?.getGridDataProvider();
-    },
-    // [API 호출] 버튼: 'SUPERADMIN' 로그인 계정 전용(요청 확정). showIfApiButton(믹스인)=site VN/HQ.
-    //   ★SUPERADMIN 은 역할(roleList)이 아니라 로그인 계정(USER_ID)임 → userInfo.userId 로 판별.
-    //    (roleList.includes('SUPERADMIN') 은 2026-08-28 커밋 9f9b149c 에서 '아무에게도 안보임'으로 제거된 오패턴)
-    canCallIfApi() {
-      const uid = (this.userAuthInfo?.userInfo?.userId || '').toUpperCase();
-      return uid === 'SUPERADMIN' && this.showIfApiButton;
     },
   },
   created() {

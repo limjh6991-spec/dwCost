@@ -25,10 +25,10 @@
         <div class="btn_wrap ms-auto">
           <!-- <b-button class="second" @click="uploadClick">업로드</b-button> -->
           <b-button v-show="showItemApiButton" class="second" @click="itemApiCallClick">API 호출</b-button>
-          <!-- HQ 면적기준(모델별 기본정보) MES API(신규 2026-09-18, PRODUCT_SPEC_HQ). SUPERADMIN 전용. VN은 위 ITEM 버튼 사용 -->
+          <!-- HQ 면적기준(모델별 기본정보) MES API(신규 2026-09-18, PRODUCT_SPEC_HQ). HQ 사업장 전원 노출. VN은 위 ITEM 버튼 사용 -->
           <b-button v-if="canAreaApi" class="second" @click="areaApiCallClick">API 호출</b-button>
-          <!-- 데이터 생성(GEN_DOI_MODEL_MAST)은 VN 미사용 → HQ 전용 노출. VN은 품목 API로 적재 -->
-          <b-button v-show="!isClosedMonth && siteMap[params.site] !== 'VN'" class="second" @click="genData">데이터 생성</b-button>
+          <!-- 데이터 생성(GEN_DOI_MODEL_MAST): 2026-09-18 우선 화면에서 숨김(면적기준 MES API로 대체). 필요시 v-if 복원 -->
+          <b-button v-if="false" v-show="!isClosedMonth && siteMap[params.site] !== 'VN'" class="second" @click="genData">데이터 생성</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
           <b-button v-show="!isClosedMonth" class="sub" @click="addBtnClick">추가</b-button>
           <b-button v-show="!isClosedMonth" @click="delBtnClick">삭제</b-button>
@@ -103,11 +103,12 @@ export default {
         return this.siteMap[this.params.site] === 'VN';
       } catch (e) { return false; }
     },
-    // HQ 면적기준(모델별 기본정보) API 버튼 — 'SUPERADMIN' 로그인 계정 전용(요청 확정). HQ(본사) 사업장만.
-    //   ★SUPERADMIN 은 역할이 아니라 로그인 계정(USER_ID) → userInfo.userId 로 판별(roleList 아님).
+    // HQ 면적기준(모델별 기본정보) API 버튼 — HQ(본사) 사업장 화면 접근 권한 있는 모든 사용자 노출
+    //   (2026-09-18 SUPERADMIN 제한 해제, VN 전용 showItemApiButton 과 대칭 = site 만 검사).
     canAreaApi() {
-      const uid = (this.userAuthInfo?.userInfo?.userId || '').toUpperCase();
-      return uid === 'SUPERADMIN' && this.siteMap[this.params.site] === 'HQ';
+      try {
+        return this.siteMap[this.params.site] === 'HQ';
+      } catch (e) { return false; }
     },
   },
   watch: {
@@ -186,7 +187,7 @@ export default {
         successLabel: '품목',
       });
     },
-    // [SUPERADMIN·HQ] 면적기준(모델별 기본정보) MES API 호출 → PRODUCT_SPEC_HQ.
+    // [HQ] 면적기준(모델별 기본정보) MES API 호출 → PRODUCT_SPEC_HQ.
     //   MES GET /api/mes/product-spec (models 미지정 = 전체) → DOI_HQ_IF_PRODUCT_SPEC 적재 후
     //   UP_HQ_IF_XFORM_PRODUCT_SPEC 자동 실행 → DOI_MODEL_MAST[HQ](X=장변, Y=단변, XY=면적) 반영.
     //   면적기준=마감무관 마스터(백엔드 skipClosingGuard) → 마감월이어도 호출 가능. yyyymm=면적 기준월(적재 대상).
