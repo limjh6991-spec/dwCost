@@ -77,10 +77,19 @@ public class IfProperties {
     }
 
     public static class Mes {
-        /** 예) http://172.16.23.30:8888 */
+        /** 예) http://172.16.23.30:8888 (VN 미라콤 MES) */
         private String baseUrl;
+        /** HQ(본사) MES base-url. 미설정 시 baseUrl 폴백. (HQ MES는 VN과 서버 상이 — 면적기준 http://10.100.40.18:9001) */
+        private String hqBaseUrl;
         public String getBaseUrl() { return baseUrl; }
         public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
+        public String getHqBaseUrl() { return hqBaseUrl; }
+        public void setHqBaseUrl(String hqBaseUrl) { this.hqBaseUrl = hqBaseUrl; }
+        /** site 별 MES base-url (HQ→hqBaseUrl, 없으면 baseUrl 폴백) */
+        public String baseUrlFor(String site) {
+            if ("HQ".equalsIgnoreCase(site) && hqBaseUrl != null && !hqBaseUrl.isBlank()) return hqBaseUrl;
+            return baseUrl;
+        }
     }
 
     public Erp getErp() { return erp; }

@@ -64,8 +64,9 @@ public class IfServiceImpl implements IfService {
         // ★마감월 가드: 마감된 (yyyymm, site)는 적재/변환이 운영테이블(doi_*)을 덮어써 결산 데이터를
         //   훼손할 수 있으므로 소스 호출 전에 차단. (결산 프로시저와 달리 적재 인터페이스엔 가드가 없었음)
         //   site = ep.site()(HQ/VN). yyyymm 없으면(마스터 등 예외) 검사 불가 → 통과.
+        //   ep.skipClosingGuard()=true(마감무관 마스터, 예: 면적기준 PRODUCT_SPEC_HQ)면 yyyymm이 실려도 우회.
         String ymNorm = (yyyymm == null) ? null : yyyymm.replace("-", "");
-        if (ymNorm != null && !ymNorm.isBlank() && closingSvc.isClosedMonth(ymNorm, ep.site())) {
+        if (!ep.skipClosingGuard() && ymNorm != null && !ymNorm.isBlank() && closingSvc.isClosedMonth(ymNorm, ep.site())) {
             throw new IfFetchException(
                     "마감된 월입니다 (" + ymNorm + " / " + ep.site() + ").", null);
         }
@@ -185,6 +186,7 @@ public class IfServiceImpl implements IfService {
 
         Map<String, Object> mesM = new LinkedHashMap<>();
         mesM.put("baseUrl", props.getMes().getBaseUrl());
+        mesM.put("hqBaseUrl", props.getMes().getHqBaseUrl());   // HQ MES(면적기준 등) — baseUrlFor(site) 라우팅
         m.put("mes", mesM);
 
         List<Map<String, Object>> eps = new ArrayList<>();
@@ -198,9 +200,10 @@ public class IfServiceImpl implements IfService {
         }
         m.put("endpoints", eps);
 
-        // 소스별 실호출 가능 여부 (MES=base-url만, ERP=cert까지)
+        // 소스별 실호출 가능 여부 (MES=base-url 또는 hq-base-url 중 하나라도, ERP=cert까지)
         Map<String, Object> ready = new LinkedHashMap<>();
-        ready.put("mes", props.getMes().getBaseUrl() != null && !props.getMes().getBaseUrl().isBlank());
+        String mesBase = props.getMes().getBaseUrl(), mesHq = props.getMes().getHqBaseUrl();
+        ready.put("mes", (mesBase != null && !mesBase.isBlank()) || (mesHq != null && !mesHq.isBlank()));
         ready.put("erp", props.isErpCertConfigured());
         m.put("ready", ready);
 

@@ -23,6 +23,8 @@
     <div class="grid_box search_onerow">
       <div class="left_box">
         <div class="btn_wrap ms-auto">
+          <!-- API 호출: 신규(2026-09-18). SUPERADMIN 전용 노출(canCallIfApi). ETC_INOUT_HQ → DOI_ETC_INOUT -->
+          <b-button v-if="canCallIfApi" class="second" @click="apiCallClick">API 호출</b-button>
           <b-button v-show="!isClosedMonth" class="second" @click="uploadClick">업로드</b-button>
           <b-button class="second" @click="excelBtnClick">엑셀</b-button>
         </div>
@@ -39,9 +41,11 @@
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
 import gridField from '@web/c0007000/js/C0007017.js';
+import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
 
 export default {
   name: 'DOI_C0007017',
+  mixins: [ifaceApiMixin],
   props: {},
   components: {},
   setup() {
@@ -57,6 +61,7 @@ export default {
         yyyymm: null,
         site: '본사',
       },
+      siteMap: { 본사: 'HQ', VINA: 'VN', HQ: 'HQ', VN: 'VN' },
       isClosedMonth: false,
     };
   },
@@ -83,6 +88,13 @@ export default {
     },
     gridDataProvider() {
       return this.$refs.dataGrid?.getGridDataProvider();
+    },
+    // [API 호출] 버튼: 'SUPERADMIN' 로그인 계정 전용(요청 확정). showIfApiButton(믹스인)=site VN/HQ.
+    //   ★SUPERADMIN 은 역할(roleList)이 아니라 로그인 계정(USER_ID)임 → userInfo.userId 로 판별.
+    //    (roleList.includes('SUPERADMIN') 은 2026-08-28 커밋 9f9b149c 에서 '아무에게도 안보임'으로 제거된 오패턴)
+    canCallIfApi() {
+      const uid = (this.userAuthInfo?.userInfo?.userId || '').toUpperCase();
+      return uid === 'SUPERADMIN' && this.showIfApiButton;
     },
   },
   created() {
@@ -128,6 +140,28 @@ export default {
         target: rows,
       });
       this.gridRows.splice(0, this.gridRows.length, ...rows);
+    },
+    // [SUPERADMIN·HQ] 기타입출고금액 API 호출 → ETC_INOUT_HQ → DOI_HQ_IF_ETC_INOUT 적재 후
+    //   UP_HQ_IF_XFORM_ETC_INOUT 자동 실행 → DOI_ETC_INOUT(본 화면 소비) 반영.
+    //   ERP DataBlock(정의서 기타입출고 JSON 샘플 전체): 누락 필드 있으면 동적쿼리가 전 행 필터→0건. 샘플대로 전량 전송.
+    //   (VN 형제 TAB070021 과 동일 params — site만 '본사'(HQ)라 ifaceKey('ETC_INOUT')='ETC_INOUT_HQ')
+    apiCallClick() {
+      if (!this.params.yyyymm) {
+        this.$toast && this.$toast('error', '년월 선택해주세요.');
+        return;
+      }
+      const yyyymm = this.params.yyyymm.replaceAll('-', '');
+      this.callIface({
+        key: this.ifaceKey('ETC_INOUT'), selCode: 'ACTUAL', yyyymm: yyyymm,
+        params: {
+          WorkingTag: '', IDX_NO: 0, Status: '0', DataSeq: 1, Selected: 1, TABLE_NAME: '', UserName: '',
+          SMCostMng: 5512001, CostMngAmdSeq: 0, RptUnit: 0, PlanYear: '', CostYMFr: yyyymm, CostYMTo: yyyymm,
+          PriceUnit: 0, ItemKind: '', ItemName: '', ItemNo: '', ItemSeq: 0, AssetSeq: 0, ItemClassKind: 0,
+          ItemClassSeq: 0, AssetGroupSeq: 0, LotNo: '', DeptSeq: 0, UMEtcOutKindSourceSeq: 0,
+          UMEtcOutKindDetailSeq: 0, InOutSeq: 0, AccUnit: 0, site: this.siteMap[this.params.site],
+        },
+        successLabel: '기타입출고금액', onSuccess: () => this.getDataList(),
+      });
     },
     searchClick() {
       if (!this.params.yyyymm) {

@@ -76,6 +76,7 @@ iface:
     user-seq: 3
   mes:
     base-url: http://172.16.23.30:8888
+    hq-base-url: ${IFACE_MES_HQ_BASE_URL:http://10.100.40.18:9001}   # HQ(본사) MES(미라콤) TEST(9001) — 면적기준(모델별기본정보). env로 override 가능
   connect-timeout-ms: 10000
   read-timeout-ms: 120000
 

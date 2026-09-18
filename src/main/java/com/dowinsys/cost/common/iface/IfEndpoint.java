@@ -7,6 +7,7 @@ package com.dowinsys.cost.common.iface;
 
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
 
@@ -45,7 +46,11 @@ public enum IfEndpoint {
     DEPT_HQ         (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.ESM.BSSDACCtr/Query",                                                "UP_HQ_IF_LOAD_DEPT",          false, "UP_HQ_IF_XFORM_DEPT"),                 // 부서코드(코스트센터)→doi_dept 업서트
     MATERIAL_HQ     (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Production.BSSPDROUItemProcMatList/Query",                           "UP_HQ_IF_LOAD_MATERIAL",      false, "UP_HQ_IF_XFORM_MATERIAL"),             // 자재코드(소요자재)→DOI_BOM_MAST[HQ]
     SALES_HQ        (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Sales.BSSSLInvoiceInfo/ItemQuery",                                   "UP_HQ_IF_LOAD_SALES",         true,  "UP_HQ_IF_XFORM_SALES"),                // 매출정보-거래명세서(국내)→DOI_SALE_RESC[HQ]
-    EXP_INVOICE_HQ  (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Sales.BSSSLInvoiceInfo/ExpInvoiceItemQuery",                         "UP_HQ_IF_LOAD_EXP_INVOICE",   true,  "UP_HQ_IF_XFORM_EXP_INVOICE");           // 매출정보-수출Invoice→DOI_INVOICE_RESC[HQ]
+    EXP_INVOICE_HQ  (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.Sales.BSSSLInvoiceInfo/ExpInvoiceItemQuery",                         "UP_HQ_IF_LOAD_EXP_INVOICE",   true,  "UP_HQ_IF_XFORM_EXP_INVOICE"),           // 매출정보-수출Invoice→DOI_INVOICE_RESC[HQ]
+
+    // ===== HQ(본사) 추가 2종 (2026-09-18) — 기타입출고금액(ERP)·면적기준(MES). 화면 API 버튼은 SUPERADMIN 전용 노출 =====
+    ETC_INOUT_HQ    (IfSource.ERP, "/Angkor.Ylw.Common.HttpExecute/RestOutsideService.svc/OpenApi/WBS.Ylw.ESM.BSSESMCEtcOutAmt/Query",                                          "UP_HQ_IF_LOAD_ETC_INOUT",     true,  "UP_HQ_IF_XFORM_ETC_INOUT"),            // 기타입출고금액조회(통합)→DOI_ETC_INOUT[HQ] (C0007017). VN ETC_INOUT 미러
+    PRODUCT_SPEC_HQ (IfSource.MES, "/api/mes/product-spec",                                                                                                                     "UP_HQ_IF_LOAD_PRODUCT_SPEC",  false, "UP_HQ_IF_XFORM_PRODUCT_SPEC");         // 면적기준(모델별 기본정보, MES GET ?models=)→DOI_MODEL_MAST[HQ] 면적(X/Y/XY). 마감무관(마스터)
 
     private final IfSource source;
     private final String path;
@@ -111,6 +116,8 @@ public enum IfEndpoint {
         ERP_SEQ.put(MATERIAL_HQ,     new int[]{501138,    500315,     1, 1, 1}); // 자재코드(소요자재)
         ERP_SEQ.put(SALES_HQ,        new int[]{501278,    501047,     3, 1, 1}); // 거래명세서(method3)
         ERP_SEQ.put(EXP_INVOICE_HQ,  new int[]{501229,    501032,     4, 1, 1}); // 수출Invoice(method4)
+        ERP_SEQ.put(ETC_INOUT_HQ,    new int[]{520148,    520234,     1, 1, 1}); // 기타입출고금액조회(통합) HQ (VN ETC_INOUT 520148/520234, lang=1). userSeq는 실호출 대사시 확정
+        // PRODUCT_SPEC_HQ 는 MES → ERP_SEQ 미등록(정상). hasErpSeq()=false, serviceSeq() 등 null.
     }
     public Integer serviceSeq()  { int[] s = ERP_SEQ.get(this); return s == null ? null : s[0]; }
     public Integer pgmSeq()      { int[] s = ERP_SEQ.get(this); return s == null ? null : s[1]; }
@@ -119,6 +126,23 @@ public enum IfEndpoint {
     public Integer languageSeq() { int[] s = ERP_SEQ.get(this); return s == null ? null : s[4]; }
 
     public boolean hasErpSeq()   { return ERP_SEQ.containsKey(this); }
+
+    // ================================================================
+    // 엔드포인트 특성 플래그 (생성자·기존 상수 무변경 — ERP_SEQ와 동일하게 별도 EnumMap 관리).
+    //   MES_QUERY          : MES 호출을 POST-body 대신 GET + query string(?k=v)으로 (예: 면적기준 ?models=).
+    //   SKIP_CLOSING_GUARD : 마감월 가드 우회 (마스터/마감무관 성격 — 면적기준정보는 월무관 마스터).
+    //   미등록 엔드포인트는 전부 false → 기존 25종 무영향.
+    // ================================================================
+    public enum Trait { MES_QUERY, SKIP_CLOSING_GUARD }
+
+    private static final Map<IfEndpoint, EnumSet<Trait>> FLAGS = new EnumMap<>(IfEndpoint.class);
+    static {
+        FLAGS.put(PRODUCT_SPEC_HQ, EnumSet.of(Trait.MES_QUERY, Trait.SKIP_CLOSING_GUARD));
+    }
+    /** MES GET+query string 호출 여부 (기본 false = 기존 POST body) */
+    public boolean mesQuery()         { EnumSet<Trait> f = FLAGS.get(this); return f != null && f.contains(Trait.MES_QUERY); }
+    /** 마감월 가드 우회 여부 (기본 false = 가드 적용) */
+    public boolean skipClosingGuard() { EnumSet<Trait> f = FLAGS.get(this); return f != null && f.contains(Trait.SKIP_CLOSING_GUARD); }
 
     /** 화면에서 넘어온 key(대소문자 무시)로 조회 */
     public static Optional<IfEndpoint> of(String key) {
