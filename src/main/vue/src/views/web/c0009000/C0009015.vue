@@ -200,6 +200,9 @@ export default {
             환율: null,
             nrv: 0,
             차이: 0,
+            충당금기설정액: 0,
+            조정금액: 0,
+            충담금잔액: 0,
             비고: '',
           });
         }
@@ -209,6 +212,9 @@ export default {
         summary.취득원가 += this.getSafeNumber(row?.['취득원가']);
         summary.nrv += this.getSafeNumber(row?.['nrv']);
         summary.차이 += this.getSafeNumber(row?.['차이']);
+        summary.충당금기설정액 += this.getSafeNumber(row?.['충당금기설정액']);
+        summary.조정금액 += this.getSafeNumber(row?.['조정금액']);
+        summary.충담금잔액 += this.getSafeNumber(row?.['충담금잔액']);
       }
 
       const summaryRows = targetGroups
