@@ -29,7 +29,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="prodSubGrid" :uid="'prodSubGrid'" :step="'1'" :rows="prodSubGridRows" style="height: 100%" />
+        <RealGrid ref="prodSubGrid" :key="siteMap[params.site]" :uid="'prodSubGrid'" :step="'1'" :rows="prodSubGridRows" style="height: 100%" />
       </div>
     </div>
   </div>
@@ -38,7 +38,8 @@
 <script>
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0009000/js/TAB090015.js';   // 월별집계(수량_VN)와 동일 테이블·포맷 (DOI_VN_PROD_RESC)
+import gridHQ from '@web/c0007000/js/C0007003.js';       // 본사(HQ) 생산수불 (DOI_PROD_SUBUL)
+import gridVN from '@web/c0009000/js/TAB090015.js';      // 비나(VN) 월별집계(수량) (DOI_VN_PROD_RESC)
 import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
 
 export default {
@@ -90,6 +91,7 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
+          this.initializeGrid();   // site 변경 시 그리드 정의 교체(:key 재마운트로 컬럼 전환)
           if (this.$refs.prodSubGrid != null) {
             this.searchClick();
           }
@@ -109,11 +111,12 @@ export default {
     },
   },
   created() {
+    // site 는 로그인 사업장(curProdCtg)로 고정 → 그리드 정의 선택 전에 먼저 세팅(HQ/VN 컬럼 분기)
+    this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     this.initializeGrid();
   },
   mounted() {
     this.params.yyyymm = this.srchInfo.yyyymm;
-    this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     this.$nextTick(async () => {
       await this.checkClosingMonth();
       this.searchClick();
@@ -122,7 +125,9 @@ export default {
   beforeUnmount() {},
   methods: {
     initializeGrid() {
-      this.prodSubGrid = _.cloneDeep(gridField);
+      // 본사=HQ 생산수불(C0007003.js/DOI_PROD_SUBUL), 비나=VN 월별집계(TAB090015.js/DOI_VN_PROD_RESC)
+      const isHQ = this.siteMap[this.params.site] === 'HQ';
+      this.prodSubGrid = _.cloneDeep(isHQ ? gridHQ : gridVN);
     },
     async checkClosingMonth() {
       const yyyymm = this.params.yyyymm
@@ -152,18 +157,30 @@ export default {
     },
     async getDataList() {
       if (this.gridView) this.gridView.commit();
-      // 월별집계(수량_VN) 화면과 동일 쿼리 — DOI_VN_PROD_RESC (C0009001_Tab090015)
       const yyyymm = this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : '';
-      const yyyy = yyyymm ? yyyymm.slice(0, 4) : '';
       const site = this.siteMap[this.params.site];
-      const resp = await this.$axios.api.search({
-        menuId: 'c0009000',
-        queryId: 'C0009001_Tab090015',
-        queryParams: { yyyy, yyyymm, site },
-        target: [],
-      });
-      const rows = Array.isArray(resp) ? resp : (resp && resp.data ? resp.data : []);
-      this.prodSubGridRows = rows;
+      if (site === 'HQ') {
+        // 본사: 생산수불 DOI_PROD_SUBUL (C0007003_Sch1)
+        const rows = [];
+        await this.$axios.api.search({
+          menuId: 'c0007003',
+          queryId: 'C0007003_Sch1',
+          queryParams: { yyyymm, site },
+          target: rows,
+        });
+        this.prodSubGridRows = rows;
+      } else {
+        // 비나: 월별집계(수량_VN) DOI_VN_PROD_RESC (C0009001_Tab090015)
+        const yyyy = yyyymm ? yyyymm.slice(0, 4) : '';
+        const resp = await this.$axios.api.search({
+          menuId: 'c0009000',
+          queryId: 'C0009001_Tab090015',
+          queryParams: { yyyy, yyyymm, site },
+          target: [],
+        });
+        const rows = Array.isArray(resp) ? resp : (resp && resp.data ? resp.data : []);
+        this.prodSubGridRows = rows;
+      }
     },
     // MES 생산수불(WIP_SUBUL) API 호출 → 적재 → 그리드 새로고침
     apiCallClick() {

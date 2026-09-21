@@ -32,7 +32,7 @@
         </div>
       </div>
       <div class="grid-border-none">
-        <RealGrid ref="dataGrid" :uid="'dataGrid'" :step="'1'" :rows="dataGridRows" style="height: 100%" :fixLayoutWidth="false" />
+        <RealGrid ref="dataGrid" :key="siteMap[params.site]" :uid="'dataGrid'" :step="'1'" :rows="dataGridRows" style="height: 100%" :fixLayoutWidth="false" />
       </div>
     </div>
     <UploadPopup ref="uploadPopup1" @closePopup="closePopup" />
@@ -43,7 +43,8 @@
 import { RowState } from 'realgrid';
 import { useUserAuthInfo } from '@store/auth/userAuthInfo';
 import { useC0001001 } from '@web/store/C0001001.js';
-import gridField from '@web/c0009000/js/C0009002_VN.js';   // 제품수불부(VN) 탭과 동일 그리드 (DOI_VN_STOCK_RESC / VN_StockLedger_Detail)
+import gridHQ from '@web/c0007000/js/C0007004.js';        // 본사(HQ) 제품정보 (C0007004_Sch1)
+import gridVN from '@web/c0009000/js/C0009002_VN.js';     // 비나(VN) 제품수불부 (DOI_VN_STOCK_RESC / VN_StockLedger_Detail)
 import ifaceApiMixin from '@/mixins/ifaceApiMixin.js';
 
 export default {
@@ -97,8 +98,9 @@ export default {
       handler(newVal) {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
+          this.initializeGrid();   // site 변경 시 그리드 정의 교체(:key 재마운트로 컬럼 전환)
           if (this.$refs.dataGrid != null) {
-            this.searchClick();
+            this.$nextTick(() => { this.applyColumnLayout(); this.searchClick(); });
           }
         }
       },
@@ -116,24 +118,30 @@ export default {
     },
   },
   created() {
+    // site 는 로그인 사업장(curProdCtg)로 고정 → 그리드 정의 선택 전에 먼저 세팅(HQ/VN 컬럼 분기)
+    this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     this.initializeGrid();
   },
   mounted() {
     this.params.yyyymm = this.srchInfo.yyyymm;
-    this.params.site = this.userAuthInfo.curProdCtg === 'VN' ? 'VINA' : '본사';
     this.$nextTick(async () => {
-      // 제품수불부(VN) 다단계 헤더: RealGrid 래퍼는 .layout만 자동적용 → columnLayout은 수동 적용(C0009002 동일)
-      const gv = this.gridView;
-      if (gv && this.dataGrid && this.dataGrid.columnLayout) {
-        gv.setColumnLayout(this.dataGrid.columnLayout);
-      }
+      this.applyColumnLayout();
       await this.checkClosingMonth();
       this.searchClick();
     });
   },
   methods: {
     initializeGrid() {
-      this.dataGrid = _.cloneDeep(gridField);
+      // 본사=HQ 제품정보(C0007004.js/C0007004_Sch1), 비나=VN 제품수불부(C0009002_VN.js/DOI_VN_STOCK_RESC)
+      const isHQ = this.siteMap[this.params.site] === 'HQ';
+      this.dataGrid = _.cloneDeep(isHQ ? gridHQ : gridVN);
+    },
+    applyColumnLayout() {
+      // 제품수불부(VN) 다단계 헤더: 래퍼는 .layout만 자동적용 → columnLayout 은 수동 적용(HQ 플랫그리드는 미해당)
+      const gv = this.gridView;
+      if (gv && this.dataGrid && this.dataGrid.columnLayout) {
+        gv.setColumnLayout(this.dataGrid.columnLayout);
+      }
     },
     async checkClosingMonth() {
       const yyyymm = this.params.yyyymm
@@ -166,19 +174,26 @@ export default {
 
       this.gridView.commit();
 
-      // 제품수불부(VN) 탭과 동일 쿼리 — DOI_VN_STOCK_RESC (C0009002_Detail → VN_StockLedger_Detail)
-      const params = {
-        yyyymm: this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : null,
-        site: this.siteMap[this.params.site],
-        selCode: 'ACTUAL',
-      };
+      const yyyymm = this.params.yyyymm ? this.params.yyyymm.replaceAll('-', '') : null;
+      const site = this.siteMap[this.params.site];
       const rows = [];
-      await this.$axios.api.search({
-        menuId: 'c0009000',
-        queryId: 'C0009002_Detail',
-        queryParams: params,
-        target: rows,
-      });
+      if (site === 'HQ') {
+        // 본사: 제품정보 (C0007004_Sch1)
+        await this.$axios.api.search({
+          menuId: 'c0007004',
+          queryId: 'C0007004_Sch1',
+          queryParams: { yyyymm, site },
+          target: rows,
+        });
+      } else {
+        // 비나: 제품수불부(VN) DOI_VN_STOCK_RESC (C0009002_Detail → VN_StockLedger_Detail)
+        await this.$axios.api.search({
+          menuId: 'c0009000',
+          queryId: 'C0009002_Detail',
+          queryParams: { yyyymm, site, selCode: 'ACTUAL' },
+          target: rows,
+        });
+      }
       this.dataGridRows = rows;
     },
     // MES 재고수불(FG_SUBUL) API 호출 → 적재 → 그리드 새로고침
@@ -363,7 +378,7 @@ export default {
       grid.exportGrid(options);
     },
     uploadClick() {
-      let excelGrid = _.cloneDeep(gridField);
+      let excelGrid = _.cloneDeep(this.dataGrid);
       excelGrid.options.display.fitStyle = 'none'; // 엑셀다운로드시 none 아니면 width 0이 됨.
       this.$refs.uploadPopup1.openDialog({
         dialogTitle: '업로드 팝업',
