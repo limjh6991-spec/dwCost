@@ -30,7 +30,7 @@ const grid = {
     { fieldName: '차이', dataType: ValueType.NUMBER },
     { fieldName: '충당금기설정액', dataType: ValueType.NUMBER },
     { fieldName: '조정금액', dataType: ValueType.NUMBER },
-    { fieldName: '충담금잔액', dataType: ValueType.NUMBER },
+    { fieldName: '충당금잔액', dataType: ValueType.NUMBER },
     { fieldName: '비고', dataType: ValueType.TEXT }
   ],
   columns: [
@@ -66,7 +66,7 @@ const grid = {
     { name: '차이', fieldName: '차이', width: '100', header: { text: '차이' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0'},
     { name: '충당금기설정액', fieldName: '충당금기설정액', width: '100', header: { text: '충당금 기설정액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0'},
     { name: '조정금액', fieldName: '조정금액', width: '100', header: { text: '조정금액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
-    { name: '충담금잔액', fieldName: '충담금잔액', width: '100', header: { text: '충담금 잔액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
+    { name: '충당금잔액', fieldName: '충당금잔액', width: '100', header: { text: '충당금 잔액' }, autoFilter: true, styleName: 'tr', numberFormat: '#,##0' },
     { name: '비고', fieldName: '비고', width: '100', header: { text: '비고' }, autoFilter: true, styleName: 'tc'   },
   ],
 };
