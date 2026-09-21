@@ -58,12 +58,20 @@ const grid = {
     { fieldName: 'etcInPrevDefAmt', dataType: ValueType.NUMBER },
     { fieldName: 'etcInCurDefQty', dataType: ValueType.NUMBER },
     { fieldName: 'etcInCurDefAmt', dataType: ValueType.NUMBER },
+    { fieldName: 'etcInSampleQty', dataType: ValueType.NUMBER },
+    { fieldName: 'etcInSampleAmt', dataType: ValueType.NUMBER },
+    { fieldName: 'etcInEtcQty', dataType: ValueType.NUMBER },
+    { fieldName: 'etcInEtcAmt', dataType: ValueType.NUMBER },
     { fieldName: 'outEtcQty', dataType: ValueType.NUMBER },
     { fieldName: 'outEtcAmt', dataType: ValueType.NUMBER },
     { fieldName: 'etcOutLotQty', dataType: ValueType.NUMBER },
     { fieldName: 'etcOutLotAmt', dataType: ValueType.NUMBER },
     { fieldName: 'etcOutScrapQty', dataType: ValueType.NUMBER },
     { fieldName: 'etcOutScrapAmt', dataType: ValueType.NUMBER },
+    { fieldName: 'etcOutSampleQty', dataType: ValueType.NUMBER },
+    { fieldName: 'etcOutSampleAmt', dataType: ValueType.NUMBER },
+    { fieldName: 'etcOutRndQty', dataType: ValueType.NUMBER },
+    { fieldName: 'etcOutRndAmt', dataType: ValueType.NUMBER },
     { fieldName: 'etcOutEtcQty', dataType: ValueType.NUMBER },
     { fieldName: 'etcOutEtcAmt', dataType: ValueType.NUMBER },
     { fieldName: '불량률', dataType: ValueType.NUMBER },
@@ -118,16 +126,20 @@ const grid = {
       items: [
         { name: 'grpRmaIn', header: { text: '타계정입고' }, groupShowMode: 'always',
           direction: 'horizontal', items: [{ column: 'rmaInQty' }, { column: 'rmaInAmt' }] },
-        { name: 'grpEtcInLot', header: { text: '기타입고(LOT변환)' }, groupShowMode: 'expand',
+        { name: 'grpEtcInLot', header: { text: 'CODE변경' }, groupShowMode: 'expand',
           direction: 'horizontal', items: [{ column: 'etcInLotQty' }, { column: 'etcInLotAmt' }] },
-        { name: 'grpEtcInDefRw', header: { text: '기타입고(불량 R/W)' }, groupShowMode: 'expand',
+        { name: 'grpEtcInDefRw', header: { text: '불량 R/W' }, groupShowMode: 'expand',
           direction: 'horizontal', items: [{ column: 'etcInDefRwQty' }, { column: 'etcInDefRwAmt' }] },
-        { name: 'grpEtcInRma', header: { text: '기타입고(RMA R/W)' }, groupShowMode: 'expand',
+        { name: 'grpEtcInRma', header: { text: '제품 R/W' }, groupShowMode: 'expand',
           direction: 'horizontal', items: [{ column: 'etcInRmaQty' }, { column: 'etcInRmaAmt' }] },
-        { name: 'grpEtcInPrevDef', header: { text: '기타입고(전월 불량)' }, groupShowMode: 'expand',
+        { name: 'grpEtcInPrevDef', header: { text: '전월 불량(불량품 판매)' }, groupShowMode: 'expand',
           direction: 'horizontal', items: [{ column: 'etcInPrevDefQty' }, { column: 'etcInPrevDefAmt' }] },
-        { name: 'grpEtcInCurDef', header: { text: '기타입고(당월 불량)' }, groupShowMode: 'expand',
+        { name: 'grpEtcInCurDef', header: { text: '당월 불량(불량품 판매)' }, groupShowMode: 'expand',
           direction: 'horizontal', items: [{ column: 'etcInCurDefQty' }, { column: 'etcInCurDefAmt' }] },
+        { name: 'grpEtcInSample', header: { text: '샘플' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'etcInSampleQty' }, { column: 'etcInSampleAmt' }] },
+        { name: 'grpEtcInEtc', header: { text: '기타' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'etcInEtcQty' }, { column: 'etcInEtcAmt' }] },
       ],
     },
     // 타계정출고 영역 — 헤더 [+]/[-] 클릭으로 확장/축소
@@ -140,12 +152,16 @@ const grid = {
       items: [
         { name: 'grpRmaOut', header: { text: '타계정출고' }, groupShowMode: 'always',
           direction: 'horizontal', items: [{ column: 'outEtcQty' }, { column: 'outEtcAmt' }] },
-        { name: 'grpEtcOutLot', header: { text: '기타출고(LOT변환)' }, groupShowMode: 'expand',
+        { name: 'grpEtcOutLot', header: { text: 'CODE변경' }, groupShowMode: 'expand',
           direction: 'horizontal', items: [{ column: 'etcOutLotQty' }, { column: 'etcOutLotAmt' }] },
-        // 기타출고(폐기) : 화면(헤더)만 선반영. 집계 로직·데이터는 추후 배선 예정.
-        { name: 'grpEtcOutScrap', header: { text: '기타출고(폐기)' }, groupShowMode: 'expand',
+        // 폐기 : 화면(헤더)만 선반영. 집계 로직·데이터는 추후 배선 예정.
+        { name: 'grpEtcOutScrap', header: { text: '폐기' }, groupShowMode: 'expand',
           direction: 'horizontal', items: [{ column: 'etcOutScrapQty' }, { column: 'etcOutScrapAmt' }] },
-        { name: 'grpEtcOutEtc', header: { text: '기타출고(기타)' }, groupShowMode: 'expand',
+        { name: 'grpEtcOutSample', header: { text: '샘플' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'etcOutSampleQty' }, { column: 'etcOutSampleAmt' }] },
+        { name: 'grpEtcOutRnd', header: { text: '연구개발' }, groupShowMode: 'expand',
+          direction: 'horizontal', items: [{ column: 'etcOutRndQty' }, { column: 'etcOutRndAmt' }] },
+        { name: 'grpEtcOutEtc', header: { text: '기타' }, groupShowMode: 'expand',
           direction: 'horizontal', items: [{ column: 'etcOutEtcQty' }, { column: 'etcOutEtcAmt' }] },
       ],
     },
@@ -192,28 +208,40 @@ const grid = {
     { name: 'rmaInAmt', fieldName: 'rmaInAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'etcInLotQty', fieldName: 'etcInLotQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'etcInLotAmt', fieldName: 'etcInLotAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
-    // 기타입고(불량 R/W)
+    // 불량 R/W
     { name: 'etcInDefRwQty', fieldName: 'etcInDefRwQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'etcInDefRwAmt', fieldName: 'etcInDefRwAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
-    // 기타입고(RMA R/W)
+    // 제품 R/W
     { name: 'etcInRmaQty', fieldName: 'etcInRmaQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'etcInRmaAmt', fieldName: 'etcInRmaAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
-    // 기타입고(전월 불량)
+    // 전월 불량(불량품 판매)
     { name: 'etcInPrevDefQty', fieldName: 'etcInPrevDefQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'etcInPrevDefAmt', fieldName: 'etcInPrevDefAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
-    // 기타입고(당월 불량)
+    // 당월 불량(불량품 판매)
     { name: 'etcInCurDefQty', fieldName: 'etcInCurDefQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'etcInCurDefAmt', fieldName: 'etcInCurDefAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+    // 기타입고(샘플) [stub]
+    { name: 'etcInSampleQty', fieldName: 'etcInSampleQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'etcInSampleAmt', fieldName: 'etcInSampleAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+    // 기타입고(기타) [stub]
+    { name: 'etcInEtcQty', fieldName: 'etcInEtcQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'etcInEtcAmt', fieldName: 'etcInEtcAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
     // 타계정출고
     { name: 'outEtcQty', fieldName: 'outEtcQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'outEtcAmt', fieldName: 'outEtcAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
-    // 기타출고(LOT변환)
+    // CODE변경
     { name: 'etcOutLotQty', fieldName: 'etcOutLotQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'etcOutLotAmt', fieldName: 'etcOutLotAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
-    // 기타출고(폐기)
+    // 폐기
     { name: 'etcOutScrapQty', fieldName: 'etcOutScrapQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'etcOutScrapAmt', fieldName: 'etcOutScrapAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
-    // 기타출고(기타)
+    // 기타출고(샘플) [stub]
+    { name: 'etcOutSampleQty', fieldName: 'etcOutSampleQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'etcOutSampleAmt', fieldName: 'etcOutSampleAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+    // 기타출고(연구개발) [stub]
+    { name: 'etcOutRndQty', fieldName: 'etcOutRndQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
+    { name: 'etcOutRndAmt', fieldName: 'etcOutRndAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
+    // 기타
     { name: 'etcOutEtcQty', fieldName: 'etcOutEtcQty', width: 60, header: { text: '수량' }, styleName: 'tr', numberFormat: '#,##0' },
     { name: 'etcOutEtcAmt', fieldName: 'etcOutEtcAmt', width: 85, header: { text: '금액' }, styleName: 'tr', numberFormat: '#,##0' },
     // 불량률, EOH
