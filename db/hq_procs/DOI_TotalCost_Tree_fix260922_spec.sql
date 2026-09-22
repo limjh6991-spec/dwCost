@@ -1,9 +1,9 @@
--- [2026-09-22] DOI_TotalCost_Tree — 총원가&손익 스펙정렬 + (3)폐기/실사조정 + (1)양품(출고) 산식정정
---  (1)제품매출원가 = 매출원가(제품) 화면 양품(출고)+양품(반품입고):
---    · 후처리월(현 STOCK_COST 결산, OUT_AMT에 타계정 제외) = SUM(OUT_AMT, 비LOSS)
---    · 그외월(1~7월, OUT_AMT에 타계정 포함) = SUM(OUT_AMT - OUTETC_AMT, 비LOSS)  ※@IsPostProc=OUT_GOOD 저장여부
---  (3)제품매출원가조정 = 전량LOSS+제품폐기+재공품폐기(모델) + 원부재료폐기+재고실사조정(회계). V=(1)+(2)+(3)+(4).
---  검증(202608 불변 3,826,588,877 / 202601 2,308,104,548 / 8개월 tie-out): 202608 (3)조정 110,090,849 · 매출원가 3,935,942,749 · 영업이익 1,019,922,365 — PL_ByModel과 tie-out.
+-- [2026-09-22] DOI_TotalCost_Tree — 스펙정렬 + (3)폐기/실사조정 + (1)양품(출고) 화면정합
+--  (1)제품매출원가 = 매출원가(제품) 화면 양품(출고)+양품(반품입고), 화면 OUT_GOOD 하이브리드와 동일:
+--    · 후처리월(OUT_GOOD 저장버킷 존재, @IsPostProc=1) = SUM(OUT_AMT, 비LOSS, ACCT_NAME<>'기타출고')
+--    · 그외월(1~7월) = SUM(OUT_AMT - OUTETC_AMT, 비LOSS, ACCT_NAME<>'기타출고')  ※'기타출고' 행 제외로 그외월 오차감 방지
+--  (3)조정 = 전량LOSS+제품폐기+재공품폐기(모델) + 원부재료폐기+실사조정(회계). V=(1)+(2)+(3)+(4).
+--  검증(202601~202608 8개월): (1) 화면 양품값과 전월 원단위 일치. 202608 (3)조정 110,090,849·매출원가 3,935,942,749·영업이익 1,019,922,365 — PL과 tie-out.
 
 ALTER PROCEDURE DOI_TotalCost_Tree
 (
@@ -937,8 +937,9 @@ BEGIN
             SELECT
                   CASE WHEN LEFT(S.MODEL,2) = N'VN' THEN N'카세트' ELSE S.구분 END AS 구분
                 , S.MODEL AS model
-                /* 양품(출고)+양품(반품입고) = 후처리월 OUT_AMT / 그외월 OUT_AMT-OUTETC(타계정 제외). 매출원가(제품) 화면 OUT_GOOD 하이브리드와 일치. */
-                , CAST(SUM(CASE WHEN ISNULL(S.COST_TYPE,'') <> 'LOSS'
+                /* 양품(출고)+양품(반품입고) = 매출원가(제품) 화면 OUT_GOOD 하이브리드와 동일:
+                   후처리월 OUT_AMT / 그외월 OUT_AMT-OUTETC. ★화면 STCO_AGG와 동일하게 ACCT_NAME='기타출고' 행 제외(그외월 기타출고 타계정 오차감 방지). */
+                , CAST(SUM(CASE WHEN ISNULL(S.COST_TYPE,'') <> 'LOSS' AND ISNULL(S.ACCT_NAME,N'') <> N'기타출고'
                               THEN ISNULL(S.OUT_AMT,0) - CASE WHEN @IsPostProc=1 THEN 0 ELSE ISNULL(S.OUTETC_AMT,0) END
                               ELSE 0 END) AS DECIMAL(18,2)) AS amt
             FROM DOI_STCO S WITH(NOLOCK)

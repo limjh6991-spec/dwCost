@@ -1,7 +1,7 @@
--- [2026-09-22] DOI_PL_ByModel — (1)양품(출고) 산식정정 + (3)폐기/실사조정 재정의
---  (1)제품매출원가 = 양품(출고)+양품(반품입고): 후처리월=SUM(out_amt,비LOSS) / 그외월=SUM(out_amt-OUTETC_AMT,비LOSS). @IsPostProc=OUT_GOOD 저장여부.
---  (3)제품매출원가조정 = 전량LOSS+제품폐기+재공품폐기(COGS_ADJ) + 원부재료폐기+실사조정(@CostAdj). 기타매출 배제.
---  검증(202608 불변 3,826,588,877 / 202601 2,308,104,548): (3)조정 110,090,849 · 매출원가 3,935,942,749 · 영업이익 383,990,006 — TotalCost_Tree와 tie-out.
+-- [2026-09-22] DOI_PL_ByModel — (1)양품(출고) 화면정합 + (3)폐기/실사조정 재정의
+--  (1)제품매출원가 = 매출원가(제품) 화면 양품: 후처리월=SUM(out_amt,비LOSS,ACCT_NAME<>'기타출고') / 그외월=SUM(out_amt-OUTETC_AMT,비LOSS,ACCT_NAME<>'기타출고').
+--  (3)조정 = 전량LOSS+제품폐기+재공품폐기(COGS_ADJ) + 원부재료폐기+실사조정(@CostAdj). 기타매출 배제.
+--  검증(202601~202608 8개월): (1) 화면 양품값과 전월 일치. 202608 (3)조정 110,090,849·매출원가 3,935,942,749·영업이익 383,990,006 — TotalCost_Tree와 tie-out.
 
 ALTER PROCEDURE DOI_PL_ByModel --운영
 (
@@ -359,7 +359,7 @@ BEGIN
 		        , SUM(ISNULL(S.IN_AMT, 0))  AS cur_mfg_cost_amt
 		        , CAST(NULL AS DECIMAL(18,2)) AS trans_out_amt
 		        , SUM(ISNULL(S.EOH_AMT, 0)) AS end_fg_amt
-		        , SUM(S.out_amt - CASE WHEN @IsPostProc=1 THEN 0 ELSE ISNULL(S.OUTETC_AMT,0) END) AS prod_cogs_amt  -- [양품산식] 그외월 타계정(OUTETC) 차감
+		        , SUM(CASE WHEN ISNULL(S.ACCT_NAME,N'') <> N'기타출고' THEN S.out_amt - CASE WHEN @IsPostProc=1 THEN 0 ELSE ISNULL(S.OUTETC_AMT,0) END ELSE 0 END) AS prod_cogs_amt  -- [양품산식] 그외월 타계정(OUTETC) 차감, 화면과 동일하게 '기타출고' 행 제외
 		    FROM DOI_STCO S
 		    WHERE S.YYYYMM   = @YYYYMM
 		      AND S.SITE     = @SITE
