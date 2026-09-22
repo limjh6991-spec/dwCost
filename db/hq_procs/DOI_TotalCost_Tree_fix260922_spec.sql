@@ -1,10 +1,11 @@
 -- [2026-09-22] DOI_TotalCost_Tree 총원가&손익 엑셀 스펙 정렬 (리포트 SELECT 전용 → ALTER만; 재결산·JAR 불필요)
---  (1)제품매출원가 = 매출원가(제품) 양품(출고)+양품(반품입고)  [DOI_STCO OUT_GOOD_AMT+OUT_GOOD_RTN_AMT]  ※기존 재료비+노무비+제조경비에서 변경
+--  (1)제품매출원가 = 매출원가(제품) 양품(출고)+양품(반품입고) = DOI_STCO out_amt(COST_TYPE<>'LOSS')  ※기존 재료비+노무비+제조경비에서 변경. PL_ByModel prod_cogs와 동일(당월 OUT_GOOD_AMT+OUT_GOOD_RTN_AMT와 일치, 과거월 버킷 미채움 대비 out_amt 사용)
 --  (3)제품매출원가조정 = 제조원가(재공) 전량 LOSS(모델별, 부호그대로) + 회계-조정(@CostAdj, 회계열)  ※제품폐기·원부재료폐기 제외
---  V.매출원가 = (1)+(2)+(3)+(4)  /  VII.총원가 = V.매출원가+VI.판관비  /  VIII.영업이익 = 매출액-총원가
+--  (4)재고금액평가손실 = DOI_재고자산평가.조정금액 (대분류 스칼라 @EvalLoss* 유지, 대분류합 일치)
+--  V.매출원가=(1)+(2)+(3)+(4) / VII.총원가=매출원가+판관비 / VIII.영업이익=매출액-총원가
+--  VI.판관비 하위(1~28) = 판매관리비 제품별 집계표 배부 그대로(PL_SGNA 동일 매핑). ※SGA_BASE를 트리 기준으로 정정→헤더=하위합('판)경상연구개발비-상각비' 1,331,779 누락 해소)
 --  총합계 = 대분류5(양산+개발+카세트+구매+회계) 합 = 모델합. 유상사급 모델별 차감으로 영업이익 총=대분류합 확보.
---  ※ (4)재고금액평가손실은 대분류 스칼라(@EvalLoss*) 유지(대분류 합계 일치), II/III/IV(재료비/노무비/제조경비)·판관비 현행 유지.
---  검증(202608 HQ): 매출원가 4,029,804,268 / 총원가 5,295,182,432 / 영업이익 926,060,846 (양산 -308,040,140·개발 678,127,428·카세트 37,791,316) — PL_ByModel과 tie-out.
+--  ※ II/III/IV(재료비/노무비/제조경비) 현행 유지. 검증(202601~202608 8개월 tie-out, 202608 PASS 95/0): 매출원가 4,029,804,268 / 총원가 5,295,182,432 / 영업이익 926,060,846 — PL_ByModel과 tie-out.
 
 ALTER PROCEDURE DOI_TotalCost_Tree
 (
@@ -918,7 +919,8 @@ BEGIN
             SELECT
                   CASE WHEN LEFT(S.MODEL,2) = N'VN' THEN N'카세트' ELSE S.구분 END AS 구분
                 , S.MODEL AS model
-                , CAST(SUM(ISNULL(S.OUT_GOOD_AMT,0) + ISNULL(S.OUT_GOOD_RTN_AMT,0)) AS DECIMAL(18,2)) AS amt
+                /* 양품(출고)+양품(반품입고) = out_amt(COST_TYPE<>'LOSS'). PL prod_cogs와 동일(당월 OUT_GOOD_AMT+OUT_GOOD_RTN_AMT와 일치, 과거월 버킷 미채움 대비). */
+                , CAST(SUM(CASE WHEN ISNULL(S.COST_TYPE,'') <> 'LOSS' THEN ISNULL(S.OUT_AMT,0) ELSE 0 END) AS DECIMAL(18,2)) AS amt
             FROM DOI_STCO S WITH(NOLOCK)
             WHERE S.YYYYMM = @YYYYMM AND S.SITE = @SITE AND S.SEL_CODE = @SELCODE
             GROUP BY CASE WHEN LEFT(S.MODEL,2) = N'VN' THEN N'카세트' ELSE S.구분 END, S.MODEL
@@ -1071,24 +1073,34 @@ BEGIN
 --		),
     /* ====== VI 판관비 ====== */
 		SGA_BASE AS (
-			SELECT 48+m.총원가_순서 rn,
-			       N'    ('+CAST(m.총원가_순서 as varchar(2))+') '+m.상위계정과목 as gubun,
-		       CASE WHEN LEFT(a.model,2) = N'VN' THEN N'카세트' ELSE a.구분 END AS 구분,   /* [2026-09-16b] 원가 쪽 구분도 카세트로 */
-			       a.model,
-			       SUM(a.dist_amt) AS amt
-			FROM doi_smce_cost a WITH(NOLOCK)
-			CROSS APPLY (
-			    SELECT TOP 1 b.상위계정과목, b.총원가_순서
-			    FROM doi_acct b WITH(NOLOCK)
-			    WHERE b.yyyymm=a.yyyymm AND b.site=a.site AND b.sel_code=a.sel_code
-			      AND (b.acct_name = a.sub_name OR a.sub_name LIKE b.상위계정과목 + N'%')
-			    ORDER BY CASE WHEN b.acct_name = a.sub_name THEN 0 ELSE 1 END, LEN(b.상위계정과목) DESC
-			) m
-			WHERE a.yyyymm = @YYYYMM
-			  AND a.site   = @SITE
-			  AND a.sel_code = @SELCODE
-			  AND m.상위계정과목 LIKE N'판)%' AND m.총원가_순서 IS NOT NULL /* [통일2026-08-18] 28 IN-list 제거 */
-		GROUP BY CASE WHEN LEFT(a.model,2) = N'VN' THEN N'카세트' ELSE a.구분 END, a.model, m.상위계정과목, m.총원가_순서
+			/* [2026-09-22] 판관 하위(1~28) = 판매관리비 제품별 집계표 배부 그대로. PL_SGNA와 동일 매핑:
+			   상위계정과목/총원가_순서는 판매관리비 트리(C)에서 확정하고, sub_name→상위계정과목만 CROSS APPLY로 매핑.
+			   (이전 SGA_BASE는 CROSS APPLY의 총원가_순서 IS NOT NULL을 요구해 '판)경상연구개발비-상각비' 등
+			    상위계정과목은 유효하나 매칭행의 총원가_순서가 NULL인 배부를 누락 → 헤더≠하위합 1,331,779) */
+			SELECT 48 + C.총원가_순서 AS rn,
+			       N'    (' + CAST(C.총원가_순서 AS varchar(2)) + N') ' + C.상위계정과목 AS gubun,
+			       M.구분,
+			       M.model,
+			       CAST(ISNULL(SUM(S.dist_amt),0) AS DECIMAL(18,2)) AS amt
+			FROM (SELECT DISTINCT 상위계정과목, 총원가_순서
+			      FROM doi_acct WITH(NOLOCK)
+			      WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SELCODE
+			        AND 대분류=N'판매관리비' AND 총원가_순서 IS NOT NULL) C
+			CROSS JOIN #MODEL M
+			LEFT JOIN (
+			    SELECT CASE WHEN LEFT(B.MODEL,2)=N'VN' THEN N'카세트' ELSE B.구분 END AS 구분,
+			           B.model, mp.상위계정과목, B.dist_amt
+			    FROM doi_smce_cost B WITH(NOLOCK)
+			    CROSS APPLY (
+			        SELECT TOP 1 b2.상위계정과목
+			        FROM doi_acct b2 WITH(NOLOCK)
+			        WHERE b2.yyyymm=B.yyyymm AND b2.site=B.site AND b2.sel_code=B.sel_code
+			          AND (b2.acct_name=B.sub_name OR B.sub_name LIKE b2.상위계정과목+N'%')
+			        ORDER BY CASE WHEN b2.acct_name=B.sub_name THEN 0 ELSE 1 END, LEN(b2.상위계정과목) DESC
+			    ) mp
+			    WHERE B.yyyymm=@YYYYMM AND B.site=@SITE AND B.sel_code=@SELCODE
+			) S ON S.상위계정과목=C.상위계정과목 AND S.구분=M.구분 AND S.model=M.model
+			GROUP BY M.구분, M.model, C.상위계정과목, C.총원가_순서
 		),
         SGA AS (
       	SELECT
