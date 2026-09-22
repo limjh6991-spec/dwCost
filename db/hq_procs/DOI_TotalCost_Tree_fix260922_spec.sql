@@ -3,9 +3,9 @@
 --  (3)제품매출원가조정 = 제조원가(재공) 전량 LOSS(모델별, 부호그대로) + 회계-조정(@CostAdj, 회계열)  ※제품폐기·원부재료폐기 제외
 --  (4)재고금액평가손실 = DOI_재고자산평가.조정금액 (대분류 스칼라 @EvalLoss* 유지, 대분류합 일치)
 --  V.매출원가=(1)+(2)+(3)+(4) / VII.총원가=매출원가+판관비 / VIII.영업이익=매출액-총원가
---  VI.판관비 하위(1~28) = 판매관리비 제품별 집계표 배부 그대로(PL_SGNA 동일 매핑). ※SGA_BASE를 트리 기준으로 정정→헤더=하위합('판)경상연구개발비-상각비' 1,331,779 누락 해소)
---  총합계 = 대분류5(양산+개발+카세트+구매+회계) 합 = 모델합. 유상사급 모델별 차감으로 영업이익 총=대분류합 확보.
---  ※ II/III/IV(재료비/노무비/제조경비) 현행 유지. 검증(202601~202608 8개월 tie-out, 202608 PASS 95/0): 매출원가 4,029,804,268 / 총원가 5,295,182,432 / 영업이익 926,060,846 — PL_ByModel과 tie-out.
+--  VI.판관비 하위(1~28) = 판매관리비 제품별 집계표 배부(PL_SGNA 동일 매핑). SGA_BASE 트리기준 정정→헤더=하위합('판)경상연구개발비-상각비' 1,331,779 흡수)
+--  총합계 = 대분류5(양산+개발+카세트+구매+회계) 합 = 모델합. 유상사급 모델별 차감으로 영업이익 총=대분류합. 카세트 rn77/78 재고평가 대칭 반영(양산/개발과 동일, 현재 휴면).
+--  ※ II/III/IV(재료비/노무비/제조경비) 현행 유지. 검증(202601~202608 tie-out, 202608 PASS 95/0): 매출원가 4,029,804,268 / 총원가 5,295,182,432 / 영업이익 926,060,846 — PL_ByModel과 tie-out.
 
 ALTER PROCEDURE DOI_TotalCost_Tree
 (
@@ -1566,6 +1566,8 @@ STRING_AGG(N'COALESCE(Cur.' + QUOTENAME(pivot_key) + N',0)', N' + ')
 				  WHEN Cur.rn = 44 THEN ((' + @SumCassette + ')) + @EvalLossCassette
 				  WHEN Cur.rn = 47 THEN ((' + @SumCassette + '))
 				  WHEN Cur.rn = 47.5 THEN @EvalLossCassette
+				  WHEN Cur.rn = 77 THEN ((' + @SumCassette + ')) + @EvalLossCassette   /* [2026-09-22] 양산/개발과 대칭: 총원가에 카세트 재고평가 반영(현재 VN 재고평가 0이라 휴면, 총=대분류합 무조건 보장) */
+				  WHEN Cur.rn = 78 THEN ((' + @SumCassette + ')) - @EvalLossCassette   /* [2026-09-22] 영업이익=매출액-총원가 대칭 */
 				  ELSE (' + @SumCassette + ')
 				END AS DECIMAL(18,2)) AS [카세트합계]
 
