@@ -1,12 +1,9 @@
--- [2026-09-22] DOI_TotalCost_Tree 총원가&손익 스펙 정렬 + (3)제품매출원가조정 폐기/실사조정 재정의(이미지 스펙)
---  (1)제품매출원가 = 매출원가(제품) 양품(출고)+양품(반품입고) = DOI_STCO out_amt(COST_TYPE<>'LOSS')
---  (3)제품매출원가조정:
---    · 모델부(각 모델 컬럼) = 전량LOSS(case1, DOI_COST 전량손실) + 제품폐기(case2③, DOI_STCO OUT_DISPOSE) + 재공품폐기(case2②, DOI_COST ETC_OUT_ETC_AMT)
---    · 회계부(회계합계 @CostAdj) = 원부재료폐기(case2①, DOI_ETC_INOUT '재고폐기'∧품목자산분류<>'제품') + 재고실사조정(case4, DOI_ETC_INOUT '실사재고조정')
---    ※구 @CostAdj(DOI_DEPT_COST 제품매출원가 대변)·유상사급 회계-조정은 폐기.
---  V.매출원가=(1)+(2)+(3)+(4) / VII.총원가=매출원가+판관 / VIII.영업이익=매출액-총원가. 총=대분류5합=모델합.
---  판관 하위=집계표(SGA_BASE 트리매핑), 카세트 rn77/78 재고평가 대칭. II/III/IV 현행유지.
---  검증(202608 PASS, 8개월 tie-out): (3)조정 110,090,849(개발 109,898,849·회계 192,000) / 매출원가 3,935,942,749 / 총원가 5,201,320,913 / 영업이익 1,019,922,365 — PL_ByModel과 tie-out.
+-- [2026-09-22] DOI_TotalCost_Tree — 총원가&손익 스펙정렬 + (3)폐기/실사조정 + (1)양품(출고) 산식정정
+--  (1)제품매출원가 = 매출원가(제품) 화면 양품(출고)+양품(반품입고):
+--    · 후처리월(현 STOCK_COST 결산, OUT_AMT에 타계정 제외) = SUM(OUT_AMT, 비LOSS)
+--    · 그외월(1~7월, OUT_AMT에 타계정 포함) = SUM(OUT_AMT - OUTETC_AMT, 비LOSS)  ※@IsPostProc=OUT_GOOD 저장여부
+--  (3)제품매출원가조정 = 전량LOSS+제품폐기+재공품폐기(모델) + 원부재료폐기+재고실사조정(회계). V=(1)+(2)+(3)+(4).
+--  검증(202608 불변 3,826,588,877 / 202601 2,308,104,548 / 8개월 tie-out): 202608 (3)조정 110,090,849 · 매출원가 3,935,942,749 · 영업이익 1,019,922,365 — PL_ByModel과 tie-out.
 
 ALTER PROCEDURE DOI_TotalCost_Tree
 (
@@ -395,6 +392,14 @@ BEGIN
 		-- [이미지스펙] (3)제품매출원가조정 회계열 = 원부재료폐기(case2①) + 재고실사조정(case4).
 		--   기존 @CostAdj(DOI_DEPT_COST 제품매출원가 대변)·유상사급 회계-조정은 폐기. 피벗의 @CostAdj 배선을 재사용.
 		SET @CostAdj = @ACC_SCRAP + @InvAdj;
+
+		-- [양품산식] (1)제품매출원가 = 매출원가(제품) 화면 양품(출고)+양품(반품입고).
+		--   후처리월(현 STOCK_COST 결산, OUT_AMT에 타계정 이미 제외)=OUT_AMT ; 그외월(1~7월, OUT_AMT에 타계정 포함)=OUT_AMT-OUTETC_AMT.
+		DECLARE @IsPostProc BIT = 0;
+		SELECT @IsPostProc = CASE WHEN EXISTS(SELECT 1 FROM DOI_STCO WITH(NOLOCK)
+		    WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SELCODE
+		      AND (ISNULL(OUT_GOOD_AMT,0)<>0 OR ISNULL(OUT_GOOD_QTY,0)<>0 OR ISNULL(OUT_GOOD_RTN_AMT,0)<>0 OR ISNULL(OUT_GOOD_RTN_QTY,0)<>0))
+		    THEN 1 ELSE 0 END;
 		 
 		SELECT @LossAdj = COALESCE(SUM(COALESCE(LOSS,0)), 0)
 		FROM DOI_COST WITH(NOLOCK)
@@ -932,8 +937,10 @@ BEGIN
             SELECT
                   CASE WHEN LEFT(S.MODEL,2) = N'VN' THEN N'카세트' ELSE S.구분 END AS 구분
                 , S.MODEL AS model
-                /* 양품(출고)+양품(반품입고) = out_amt(COST_TYPE<>'LOSS'). PL prod_cogs와 동일(당월 OUT_GOOD_AMT+OUT_GOOD_RTN_AMT와 일치, 과거월 버킷 미채움 대비). */
-                , CAST(SUM(CASE WHEN ISNULL(S.COST_TYPE,'') <> 'LOSS' THEN ISNULL(S.OUT_AMT,0) ELSE 0 END) AS DECIMAL(18,2)) AS amt
+                /* 양품(출고)+양품(반품입고) = 후처리월 OUT_AMT / 그외월 OUT_AMT-OUTETC(타계정 제외). 매출원가(제품) 화면 OUT_GOOD 하이브리드와 일치. */
+                , CAST(SUM(CASE WHEN ISNULL(S.COST_TYPE,'') <> 'LOSS'
+                              THEN ISNULL(S.OUT_AMT,0) - CASE WHEN @IsPostProc=1 THEN 0 ELSE ISNULL(S.OUTETC_AMT,0) END
+                              ELSE 0 END) AS DECIMAL(18,2)) AS amt
             FROM DOI_STCO S WITH(NOLOCK)
             WHERE S.YYYYMM = @YYYYMM AND S.SITE = @SITE AND S.SEL_CODE = @SELCODE
             GROUP BY CASE WHEN LEFT(S.MODEL,2) = N'VN' THEN N'카세트' ELSE S.구분 END, S.MODEL

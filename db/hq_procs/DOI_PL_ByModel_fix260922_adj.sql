@@ -1,10 +1,7 @@
--- [2026-09-22] DOI_PL_ByModel (3)제품매출원가조정 폐기/실사조정 재정의(이미지 스펙) + 기존 스펙정렬
---  (3)제품매출원가조정:
---    · 모델부 = 전량LOSS(case1) + 제품폐기(case2③ DOI_STCO OUT_DISPOSE) + 재공품폐기(case2② DOI_COST ETC_OUT_ETC_AMT) → COGS_ADJ.adj_amt
---    · 회계부(@CostAdj, 회계-조정 모델행) = 원부재료폐기(case2① @SCRAP_ADJ) + 재고실사조정(case4 @InvAdj)
---    ※구 @CostAdj(DOI_DEPT_COST 제품매출원가 대변)는 폐기.
---  (1)prod_cogs=양품(out_amt COST_TYPE<>'LOSS'), (4)#INVEVAL, 판관 PL_SGNA. 기타매출 배제.
---  검증(202608): (3)조정 110,090,849(개발 109,898,849·회계 192,000) / 매출원가 3,935,942,749 / 영업이익 383,990,006 — TotalCost_Tree와 tie-out.
+-- [2026-09-22] DOI_PL_ByModel — (1)양품(출고) 산식정정 + (3)폐기/실사조정 재정의
+--  (1)제품매출원가 = 양품(출고)+양품(반품입고): 후처리월=SUM(out_amt,비LOSS) / 그외월=SUM(out_amt-OUTETC_AMT,비LOSS). @IsPostProc=OUT_GOOD 저장여부.
+--  (3)제품매출원가조정 = 전량LOSS+제품폐기+재공품폐기(COGS_ADJ) + 원부재료폐기+실사조정(@CostAdj). 기타매출 배제.
+--  검증(202608 불변 3,826,588,877 / 202601 2,308,104,548): (3)조정 110,090,849 · 매출원가 3,935,942,749 · 영업이익 383,990,006 — TotalCost_Tree와 tie-out.
 
 ALTER PROCEDURE DOI_PL_ByModel --운영
 (
@@ -218,6 +215,12 @@ BEGIN
 		END
 		-- [이미지스펙] (3)제품매출원가조정 회계열 = 원부재료폐기(case2①) + 재고실사조정(case4). 회계-조정 모델행에 가산.
 		SET @CostAdj = @SCRAP_ADJ + @InvAdj;
+		-- [양품산식] (1)제품매출원가 = 매출원가(제품) 화면 양품(출고)+양품(반품입고). 후처리월=OUT_AMT / 그외월=OUT_AMT-OUTETC(타계정 제외).
+		DECLARE @IsPostProc BIT = 0;
+		SELECT @IsPostProc = CASE WHEN EXISTS(SELECT 1 FROM DOI_STCO WITH(NOLOCK)
+		    WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SEL_CODE
+		      AND (ISNULL(OUT_GOOD_AMT,0)<>0 OR ISNULL(OUT_GOOD_QTY,0)<>0 OR ISNULL(OUT_GOOD_RTN_AMT,0)<>0 OR ISNULL(OUT_GOOD_RTN_QTY,0)<>0))
+		    THEN 1 ELSE 0 END;
 		DROP TABLE IF EXISTS #sourceTable;
 		 ;WITH MERCH_ITEM AS (
 		    -- 당월/사업장/SEL 기준 "상품" 품번 목록
@@ -356,7 +359,7 @@ BEGIN
 		        , SUM(ISNULL(S.IN_AMT, 0))  AS cur_mfg_cost_amt
 		        , CAST(NULL AS DECIMAL(18,2)) AS trans_out_amt
 		        , SUM(ISNULL(S.EOH_AMT, 0)) AS end_fg_amt
-		        , SUM(S.out_amt) AS prod_cogs_amt --select *
+		        , SUM(S.out_amt - CASE WHEN @IsPostProc=1 THEN 0 ELSE ISNULL(S.OUTETC_AMT,0) END) AS prod_cogs_amt  -- [양품산식] 그외월 타계정(OUTETC) 차감
 		    FROM DOI_STCO S
 		    WHERE S.YYYYMM   = @YYYYMM
 		      AND S.SITE     = @SITE
