@@ -452,7 +452,20 @@ export default {
       if (!m) return null;
       const mm = Number(m[1]);
       return mm >= 1 && mm <= 12 ? mm : null;
-    },    
+    },
+    normalizeZeroStubFields(row = {}) {
+      return {
+        ...row,
+        etcInSampleQty: 0,
+        etcInSampleAmt: 0,
+        etcInEtcQty: 0,
+        etcInEtcAmt: 0,
+        etcOutSampleQty: 0,
+        etcOutSampleAmt: 0,
+        etcOutRndQty: 0,
+        etcOutRndAmt: 0,
+      };
+    },
     buildManuCostRows(rows) {
       if (!Array.isArray(rows) || rows.length === 0) return [];
 
@@ -514,7 +527,7 @@ export default {
       const mergeKeyGubun = mergeKey;
 
           result.push({
-            ...r,
+            ...this.normalizeZeroStubFields(r),
             // 기타출고(폐기) : 프로시저 미반환 → 공란 대신 0 표시
             etcOutScrapQty: Number(r.etcOutScrapQty) || 0,
             etcOutScrapAmt: Number(r.etcOutScrapAmt) || 0,
@@ -615,6 +628,10 @@ export default {
         inRmaQty: 0, inRmaAmt: 0,
         outGoodQty: 0, outGoodAmt: 0,
         outEtcQty: 0, outEtcAmt: 0,
+        etcInSampleQty: 0, etcInSampleAmt: 0,
+        etcInEtcQty: 0, etcInEtcAmt: 0,
+        etcOutSampleQty: 0, etcOutSampleAmt: 0,
+        etcOutRndQty: 0, etcOutRndAmt: 0,
         // 기타출고(폐기) : 집계 로직 미배선. 공란 대신 0 표시
         etcOutScrapQty: 0, etcOutScrapAmt: 0,
       };
@@ -649,7 +666,7 @@ export default {
 
       rows.forEach((r, idx) => {
         // camelCase 필드명 명시적 추가 (footer 계산용)
-        const dataRow = { ...r, 월: r['월'] ?? monthLabel, rowType: 'DATA', mergeKey: `MD|${idx}`, mergeKeyGubun: `MD|${idx}` };
+        const dataRow = { ...this.normalizeZeroStubFields(r), 월: r['월'] ?? monthLabel, rowType: 'DATA', mergeKey: `MD|${idx}`, mergeKeyGubun: `MD|${idx}` };
         numberColsCandidates.forEach(([k1, k2]) => {
           if (k1 in r) dataRow[k2] = Number(r[k1]) || 0;
           else if (k2 in r) dataRow[k2] = Number(r[k2]) || 0;
@@ -657,6 +674,15 @@ export default {
         // 기타출고(폐기) : 프로시저 미반환 → 공란 대신 0 표시
         if (dataRow.etcOutScrapQty == null) dataRow.etcOutScrapQty = 0;
         if (dataRow.etcOutScrapAmt == null) dataRow.etcOutScrapAmt = 0;
+        // 요청사항: 기타입고(샘플), 기타입고(기타), 기타출고(샘플), 기타출고(연구개발) 일괄 0 표시
+        dataRow.etcInSampleQty = 0;
+        dataRow.etcInSampleAmt = 0;
+        dataRow.etcInEtcQty = 0;
+        dataRow.etcInEtcAmt = 0;
+        dataRow.etcOutSampleQty = 0;
+        dataRow.etcOutSampleAmt = 0;
+        dataRow.etcOutRndQty = 0;
+        dataRow.etcOutRndAmt = 0;
         result.push(dataRow);
       });
 
