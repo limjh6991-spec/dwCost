@@ -1,11 +1,12 @@
--- [2026-09-22] DOI_TotalCost_Tree 총원가&손익 엑셀 스펙 정렬 (리포트 SELECT 전용 → ALTER만; 재결산·JAR 불필요)
---  (1)제품매출원가 = 매출원가(제품) 양품(출고)+양품(반품입고) = DOI_STCO out_amt(COST_TYPE<>'LOSS')  ※기존 재료비+노무비+제조경비에서 변경. PL_ByModel prod_cogs와 동일(당월 OUT_GOOD_AMT+OUT_GOOD_RTN_AMT와 일치, 과거월 버킷 미채움 대비 out_amt 사용)
---  (3)제품매출원가조정 = 제조원가(재공) 전량 LOSS(모델별, 부호그대로) + 회계-조정(@CostAdj, 회계열)  ※제품폐기·원부재료폐기 제외
---  (4)재고금액평가손실 = DOI_재고자산평가.조정금액 (대분류 스칼라 @EvalLoss* 유지, 대분류합 일치)
---  V.매출원가=(1)+(2)+(3)+(4) / VII.총원가=매출원가+판관비 / VIII.영업이익=매출액-총원가
---  VI.판관비 하위(1~28) = 판매관리비 제품별 집계표 배부(PL_SGNA 동일 매핑). SGA_BASE 트리기준 정정→헤더=하위합('판)경상연구개발비-상각비' 1,331,779 흡수)
---  총합계 = 대분류5(양산+개발+카세트+구매+회계) 합 = 모델합. 유상사급 모델별 차감으로 영업이익 총=대분류합. 카세트 rn77/78 재고평가 대칭 반영(양산/개발과 동일, 현재 휴면).
---  ※ II/III/IV(재료비/노무비/제조경비) 현행 유지. 검증(202601~202608 tie-out, 202608 PASS 95/0): 매출원가 4,029,804,268 / 총원가 5,295,182,432 / 영업이익 926,060,846 — PL_ByModel과 tie-out.
+-- [2026-09-22] DOI_TotalCost_Tree 총원가&손익 스펙 정렬 + (3)제품매출원가조정 폐기/실사조정 재정의(이미지 스펙)
+--  (1)제품매출원가 = 매출원가(제품) 양품(출고)+양품(반품입고) = DOI_STCO out_amt(COST_TYPE<>'LOSS')
+--  (3)제품매출원가조정:
+--    · 모델부(각 모델 컬럼) = 전량LOSS(case1, DOI_COST 전량손실) + 제품폐기(case2③, DOI_STCO OUT_DISPOSE) + 재공품폐기(case2②, DOI_COST ETC_OUT_ETC_AMT)
+--    · 회계부(회계합계 @CostAdj) = 원부재료폐기(case2①, DOI_ETC_INOUT '재고폐기'∧품목자산분류<>'제품') + 재고실사조정(case4, DOI_ETC_INOUT '실사재고조정')
+--    ※구 @CostAdj(DOI_DEPT_COST 제품매출원가 대변)·유상사급 회계-조정은 폐기.
+--  V.매출원가=(1)+(2)+(3)+(4) / VII.총원가=매출원가+판관 / VIII.영업이익=매출액-총원가. 총=대분류5합=모델합.
+--  판관 하위=집계표(SGA_BASE 트리매핑), 카세트 rn77/78 재고평가 대칭. II/III/IV 현행유지.
+--  검증(202608 PASS, 8개월 tie-out): (3)조정 110,090,849(개발 109,898,849·회계 192,000) / 매출원가 3,935,942,749 / 총원가 5,201,320,913 / 영업이익 1,019,922,365 — PL_ByModel과 tie-out.
 
 ALTER PROCEDURE DOI_TotalCost_Tree
 (
@@ -63,7 +64,8 @@ BEGIN
 		DECLARE @ACC_ADJ        DECIMAL(18,2) = 0;   -- 조정 (제품매출/41002020/영업그룹 제외)
 		DECLARE @ACC_TOTAL      DECIMAL(18,2) = 0;   -- 회계합계
 		DECLARE @SCOF_ACC       DECIMAL(18,2) = 0;   -- 회계-조정 유상사급 (DOI_원장상계 구분='회계')
-		DECLARE @ACC_SCRAP      DECIMAL(18,2) = 0;   -- 원부재료 재고폐기 (DOI_ETC_INOUT, 본사 전용)
+		DECLARE @ACC_SCRAP      DECIMAL(18,2) = 0;   -- 원부재료 재고폐기 (DOI_ETC_INOUT, 본사 전용) [case2①]
+		DECLARE @InvAdj         DECIMAL(18,2) = 0;   -- 재고실사조정 (DOI_ETC_INOUT '실사재고조정', 본사 전용) [case4]
 		-- 제품 폐기 (매출원가(제품) 출고상세-폐기, DOI_STCO.OUT_DISPOSE_AMT) : 구분별 합계 열용
 		DECLARE @DispAdj          DECIMAL(18,2) = 0;
 		DECLARE @DispAdjYangsan   DECIMAL(18,2) = 0;
@@ -336,13 +338,13 @@ BEGIN
 	   FROM DOI_원장상계 WITH(NOLOCK)
 	   WHERE yyyymm = @YYYYMM AND site = @SITE AND sel_code = @SELCODE AND 구분 = N'회계';
 
+        /* [이미지스펙으로 폐기] 구 @CostAdj = DOI_DEPT_COST 제품매출원가 대변(재경 회계조정+제품폐기+원부재료폐기 혼재).
+           (3)조정 회계는 원부재료폐기+재고실사조정으로 재정의 → 아래 SET @CostAdj = @ACC_SCRAP + @InvAdj 로 대체.
         SELECT @CostAdj = COALESCE(ABS(SUM(ISNULL(대변금액,0))), 0)
 		FROM DOI_DEPT_COST WITH(NOLOCK)
-		WHERE YYYYMM   = @YYYYMM
-		  AND SITE     = @SITE
-		  AND SEL_CODE = @SELCODE
-		  AND 계정과목 = N'제품매출원가'
-		  AND 대변금액 <> 0;
+		WHERE YYYYMM   = @YYYYMM AND SITE = @SITE AND SEL_CODE = @SELCODE
+		  AND 계정과목 = N'제품매출원가' AND 대변금액 <> 0;
+		*/
 
 		-- 회계 항목: 코스트센터 + 계정코드 조건(AND). 매출계정이므로 순액 = 대변 - 차변
 		-- (대변 양수=양수, 차변 양수=음수). 코스트센터명은 월별 조직 스냅샷 접미(YYYYMMDD)를 허용하도록 LIKE 사용.
@@ -376,12 +378,23 @@ BEGIN
 		-- 회계-기타 열의 (3)제품매출원가조정 위치에 표시하고 V.매출원가까지 올린다. 본사 전용(VN 미적용).
 		IF @SITE = 'HQ'
 		BEGIN
+			-- [case2①] 원부재료 폐기 = 기타입출고 '재고폐기' AND 품목자산분류<>'제품'
 			SELECT @ACC_SCRAP = CAST(COALESCE(SUM(금액),0) AS DECIMAL(18,2))
 			FROM DOI_ETC_INOUT WITH(NOLOCK)
 			WHERE yyyymm = @YYYYMM
 			  AND 기타입출고구분 = N'재고폐기'
 			  AND 품목자산분류 <> N'제품';
+
+			-- [case4] 재고실사조정 = 기타입출고 '실사재고조정'(수량/원가 구분없이 text 기준)
+			SELECT @InvAdj = CAST(COALESCE(SUM(금액),0) AS DECIMAL(18,2))
+			FROM DOI_ETC_INOUT WITH(NOLOCK)
+			WHERE yyyymm = @YYYYMM
+			  AND 기타입출고구분 LIKE N'실사재고조정%';
 		END
+
+		-- [이미지스펙] (3)제품매출원가조정 회계열 = 원부재료폐기(case2①) + 재고실사조정(case4).
+		--   기존 @CostAdj(DOI_DEPT_COST 제품매출원가 대변)·유상사급 회계-조정은 폐기. 피벗의 @CostAdj 배선을 재사용.
+		SET @CostAdj = @ACC_SCRAP + @InvAdj;
 		 
 		SELECT @LossAdj = COALESCE(SUM(COALESCE(LOSS,0)), 0)
 		FROM DOI_COST WITH(NOLOCK)
@@ -936,6 +949,24 @@ BEGIN
             GROUP BY CASE WHEN LEFT(C.model,2) = N'VN' THEN N'카세트' ELSE C.구분 END, C.model
             HAVING SUM(COALESCE(C.LOSS,0)) <> 0
         ),
+        /* [이미지스펙 case2②] 재공품 폐기 = 제조원가(재공) 타계정출고-폐기(DOI_COST ETC_OUT_ETC_AMT). 현재 미입력(0), 향후 생산실적 폐기컬럼 반영 */
+        WIP_DISPOSE AS (
+            SELECT
+                  CASE WHEN LEFT(model,2) = N'VN' THEN N'카세트' ELSE 구분 END AS 구분
+                , model
+                , CAST(SUM(ISNULL(ETC_OUT_ETC_AMT,0)) AS DECIMAL(18,2)) AS amt
+            FROM DOI_COST WITH(NOLOCK)
+            WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SELCODE AND ISNULL(ETC_OUT_ETC_AMT,0)<>0
+            GROUP BY CASE WHEN LEFT(model,2) = N'VN' THEN N'카세트' ELSE 구분 END, model
+        ),
+        /* [이미지스펙] (3)제품매출원가조정 모델부 = 전량LOSS(case1) + 제품폐기(case2③ #DISPOSE) + 재공품폐기(case2②) */
+        ADJ_MODEL AS (
+            SELECT 구분, model, CAST(SUM(amt) AS DECIMAL(18,2)) AS amt FROM (
+                SELECT 구분, model, amt FROM FULL_LOSS
+                UNION ALL SELECT 구분, model, amt FROM #DISPOSE
+                UNION ALL SELECT 구분, model, amt FROM WIP_DISPOSE
+            ) u GROUP BY 구분, model
+        ),
 
         TOTAL_MFG AS (
             /*SELECT 43 rn, N'    당기총제조원가' gubun, M.구분, M.model,
@@ -948,13 +979,13 @@ BEGIN
             AND A.model = M.model 
             AND A.구분 = M.구분
             GROUP BY M.구분, M.MODEL*/
-            -- [2026-09-22 스펙] V.매출원가 = (1)제품매출원가(양품) + (2)상품매출원가 + (3)제품매출원가조정(전량LOSS)  /* (4)재고평가는 합계열 스칼라 @EvalLoss */
+            -- [이미지스펙] V.매출원가 = (1)제품매출원가(양품) + (2)상품매출원가 + (3)제품매출원가조정(전량LOSS+제품폐기+재공품폐기)  /* (4)재고평가는 합계열 스칼라 @EvalLoss */
 			SELECT 44 rn, N'  V. 매출원가' gubun, M.구분, M.model,
                    CAST(COALESCE(PC.amt,0) + COALESCE(XX.amt,0) + COALESCE(FL.amt,0) AS DECIMAL(18,2)) AS amt
             FROM #MODEL M
             LEFT JOIN STCO_COGS  PC ON PC.model = M.model AND PC.구분 = M.구분
             LEFT JOIN MERCH_COGS XX ON XX.model = M.model AND XX.구분 = M.구분
-            LEFT JOIN FULL_LOSS  FL ON FL.model = M.model AND FL.구분 = M.구분
+            LEFT JOIN ADJ_MODEL  FL ON FL.model = M.model AND FL.구분 = M.구분
             ),
          PROD_COGS AS (
 		    -- [2026-09-22 스펙] (1) 제품매출원가 = 매출원가(제품) 양품(출고)+양품(반품입고)
@@ -981,14 +1012,14 @@ BEGIN
 		           ON XX.model = M.model AND XX.구분 = M.구분
 		),
 		LOSS_ADJ_BASE AS (
-		    -- [2026-09-22 스펙] (3) 제품매출원가조정 = 제조원가(재공) 전량 LOSS(모델별, 부호 그대로). 회계-조정(@CostAdj)은 합계열.
+		    -- [이미지스펙] (3) 제품매출원가조정 모델부 = 전량LOSS + 제품폐기 + 재공품폐기. 회계부(원부재료폐기+실사조정)는 합계열 @CostAdj.
 		    SELECT
 		          47 AS rn
 		        , N'    (3) 제품매출원가조정' AS gubun
 		        , FL.구분
 		        , FL.model
 		        , CAST(FL.amt AS DECIMAL(18,2)) AS amt
-		    FROM FULL_LOSS FL
+		    FROM ADJ_MODEL FL
 		),
 		DISPOSE_ADJ_BASE AS (
 		    -- 제품 폐기를 모델별 (3)제품매출원가조정 에 반영
