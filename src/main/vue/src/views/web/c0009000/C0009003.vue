@@ -150,18 +150,29 @@ export default {
       const isVN = this.userAuthInfo.curProdCtg === 'VN';
       this.salesDataGrid.columnLayout = isVN ? this.salesDataGrid.columnLayoutVN : this.salesDataGrid.columnLayoutHQ;
       this.salesDataGrid.options.fixed.colCount = isVN ? 8 : 6;
+      // 모델명·두께: VN만 표시, HQ 숨김. 레이아웃 제외만으로는 숨겨지지 않아 visible 명시(마운트 시 setColumns 반영)
+      this.salesDataGrid.columns.forEach((c) => {
+        if (c.name === '모델명' || c.name === '두께') c.visible = isVN;
+      });
       this.currencyFields = gridField.currencyFields || [];
     },
     applySiteLayout() {
-      // prodCtg 전환 시 생성된 그리드에 레이아웃/고정열을 동적 적용
+      // prodCtg 전환 시 생성된 그리드에 레이아웃/고정열/컬럼표시를 동적 적용
       const isVN = this.userAuthInfo.curProdCtg === 'VN';
       const layout = isVN ? this.salesDataGrid.columnLayoutVN : this.salesDataGrid.columnLayoutHQ;
       this.salesDataGrid.columnLayout = layout;
       this.salesDataGrid.options.fixed.colCount = isVN ? 8 : 6;
+      this.salesDataGrid.columns.forEach((c) => {
+        if (c.name === '모델명' || c.name === '두께') c.visible = isVN;
+      });
       const gv = this.gridView;
       if (gv) {
         gv.setColumnLayout(layout);
         gv.setFixedOptions({ colCount: isVN ? 8 : 6 });
+        ['모델명', '두께'].forEach((n) => {
+          const col = gv.columnByName(n);
+          if (col) col.visible = isVN;
+        });
       }
     },
     onDateChange() {
