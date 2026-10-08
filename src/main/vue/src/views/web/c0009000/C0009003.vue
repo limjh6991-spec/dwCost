@@ -108,6 +108,7 @@ export default {
         if (newVal) {
           this.params.site = newVal === 'VN' ? 'VINA' : '본사';
           if (this.$refs.salesDataGrid != null) {
+            this.applySiteLayout();
             this.initialize();
             this.searchClick();
           }
@@ -145,7 +146,23 @@ export default {
     },
     initializeGrid() {
       this.salesDataGrid = _.cloneDeep(gridField);
+      // site별 고정 레이아웃 분기: HQ=6컬럼(도우코드,구분,inch,SET업체,고객코드,제품구조), VN=8컬럼(기존)
+      const isVN = this.userAuthInfo.curProdCtg === 'VN';
+      this.salesDataGrid.columnLayout = isVN ? this.salesDataGrid.columnLayoutVN : this.salesDataGrid.columnLayoutHQ;
+      this.salesDataGrid.options.fixed.colCount = isVN ? 8 : 6;
       this.currencyFields = gridField.currencyFields || [];
+    },
+    applySiteLayout() {
+      // prodCtg 전환 시 생성된 그리드에 레이아웃/고정열을 동적 적용
+      const isVN = this.userAuthInfo.curProdCtg === 'VN';
+      const layout = isVN ? this.salesDataGrid.columnLayoutVN : this.salesDataGrid.columnLayoutHQ;
+      this.salesDataGrid.columnLayout = layout;
+      this.salesDataGrid.options.fixed.colCount = isVN ? 8 : 6;
+      const gv = this.gridView;
+      if (gv) {
+        gv.setColumnLayout(layout);
+        gv.setFixedOptions({ colCount: isVN ? 8 : 6 });
+      }
     },
     onDateChange() {
       this.srchInfo.setSearchInfo({ yyyymm: this.params.yyyymm });
