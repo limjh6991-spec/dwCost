@@ -279,6 +279,9 @@
 	<!-- ================================================================ -->
 
 	<!-- 도우모델별 뷰값 + 역산값 비교 -->
+	<!-- [2026-10-12] MES 도우모델 추출을 LEFT(LOT_NO/RUN_NO/RUN_ID,4) 고정4글자 →
+	     모델목록(V_DOI_PROD_SUBUL) 접두매칭으로 교정. 5글자 모델(H818V)이 H818로 잘려
+	     역산 조인이 깨지던 문제 해결. 드릴다운(selectDetailIN/OUT) 필터도 LIKE model+'%'로 교정. -->
 	<select id="selectSubulByModel" resultType="CamelMap">
 		WITH SUBUL AS (
 			SELECT 구분, 도우모델,
@@ -292,40 +295,49 @@
 			WHERE YYYYMM = #{yyyymm}
 			GROUP BY 구분, 도우모델
 		),
-		CALC_IN AS (
-			SELECT LEFT(LOT_NO, 4) AS 도우모델,
+		MODEL_LIST AS (
+				SELECT DISTINCT LTRIM(RTRIM(도우모델)) AS 도우모델
+				FROM V_DOI_PROD_SUBUL
+				WHERE YYYYMM = #{yyyymm} AND LEN(LTRIM(RTRIM(도우모델))) > 0
+			),
+			CALC_IN AS (
+			SELECT m.도우모델,
 				SUM(ISNULL(CELL수량, 0)) AS R_IN
-			FROM d21_제조지시VLR
+			FROM d21_제조지시VLR v
+				CROSS APPLY (SELECT TOP 1 z.도우모델 FROM MODEL_LIST z WHERE v.LOT_NO LIKE z.도우모델 + '%' ORDER BY LEN(z.도우모델) DESC) m
 			WHERE 공정코드 = '010'
 			  AND 작업시작 BETWEEN #{yyyymm} + '01'
 			  AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','')
-			GROUP BY LEFT(LOT_NO, 4)
+			GROUP BY m.도우모델
 		),
 		CALC_NG_FRONT AS (
-			SELECT LEFT(LOT_NO, 4) AS 도우모델,
+			SELECT m.도우모델,
 				SUM(ISNULL(불량수량, 0)) AS R_NG_FRONT
-			FROM d21_제조지시VLR
+			FROM d21_제조지시VLR v
+				CROSS APPLY (SELECT TOP 1 z.도우모델 FROM MODEL_LIST z WHERE v.LOT_NO LIKE z.도우모델 + '%' ORDER BY LEN(z.도우모델) DESC) m
 			WHERE 작업시작 BETWEEN #{yyyymm} + '01'
 			  AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','')
 			  AND ISNULL(불량수량, 0) > 0
-			GROUP BY LEFT(LOT_NO, 4)
+			GROUP BY m.도우모델
 		),
 		CALC_NG_BACK AS (
-			SELECT LEFT(RUN_NO, 4) AS 도우모델,
+			SELECT m.도우모델,
 				SUM(ISNULL(불량수량, 0)) AS R_NG_BACK
-			FROM d22_RUN제조VLR
+			FROM d22_RUN제조VLR v
+				CROSS APPLY (SELECT TOP 1 z.도우모델 FROM MODEL_LIST z WHERE v.RUN_NO LIKE z.도우모델 + '%' ORDER BY LEN(z.도우모델) DESC) m
 			WHERE 작업시작 BETWEEN #{yyyymm} + '01'
 			  AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','')
 			  AND ISNULL(불량수량, 0) > 0
-			GROUP BY LEFT(RUN_NO, 4)
+			GROUP BY m.도우모델
 		),
 		CALC_OUT AS (
-			SELECT LEFT(RUN_ID, 4) AS 도우모델,
+			SELECT m.도우모델,
 				SUM(ISNULL(Cell수량, 0)) AS R_OUT
-			FROM d27_내포장MST
+			FROM d27_내포장MST v
+				CROSS APPLY (SELECT TOP 1 z.도우모델 FROM MODEL_LIST z WHERE v.RUN_ID LIKE z.도우모델 + '%' ORDER BY LEN(z.도우모델) DESC) m
 			WHERE 대기작업시각 BETWEEN #{yyyymm} + '01 080000'
 			  AND FORMAT(DATEADD(MONTH, 1, DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)), 'yyyyMMdd') + ' 075959'
-			GROUP BY LEFT(RUN_ID, 4)
+			GROUP BY m.도우모델
 		)
 		SELECT
 			COALESCE(S.구분, '미분류') AS 구분,
@@ -375,7 +387,7 @@
 		WHERE 공정코드 = '010'
 		  AND 작업시작 BETWEEN #{yyyymm} + '01'
 		  AND REPLACE(EOMONTH(DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)),'-','')
-		  AND LEFT(LOT_NO, 4) = #{model}
+		  AND LOT_NO LIKE #{model} + '%'
 		ORDER BY 작업시작, LOT_NO
 	</select>
 
@@ -386,7 +398,7 @@
 		FROM d27_내포장MST
 		WHERE 대기작업시각 BETWEEN #{yyyymm} + '01 080000'
 		  AND FORMAT(DATEADD(MONTH, 1, DATEFROMPARTS(SUBSTRING(#{yyyymm},1,4), SUBSTRING(#{yyyymm},5,2), 1)), 'yyyyMMdd') + ' 075959'
-		  AND LEFT(RUN_ID, 4) = #{model}
+		  AND RUN_ID LIKE #{model} + '%'
 		ORDER BY 대기작업시각, PACK_QRNO
 	</select>
 
