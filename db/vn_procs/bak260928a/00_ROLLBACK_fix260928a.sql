@@ -1,0 +1,228 @@
+/* ============================================================
+   UP_VN_WIP_EVAL_NEW fix260928a/b 원복 — 2026-09-28 적용 직전 상태로 되돌린다. (DWCMSTEST)
+   ① 프로시저 정의 원복 (2026-08-31 13:58:43 판)
+   ② 202607 VN ACTUAL 재실행: UP_VN_WIP_EVAL_NEW → UP_VN_STOCK_COST_NEW 순서
+      (재공출고 금액이 제품 입고금액이므로 제품까지 다시 돌려야 한다)
+   ※ 데이터 스냅샷: doi_vn_cost_bak260928a(2,015행) / doi_vn_stco_bak260928a(1,370행)
+      프로시저 재실행 대신 스냅샷으로 되돌리려면 ③ 블록 사용.
+   ============================================================ */
+/* ============================================================
+   [VN 260801] 신규포맷 재공평가 → doi_vn_cost (doi_vn_prod_resc 미러: 포지션 QTY+AMT + expen_sel)
+   현업 로직: 재공단가=(BOH+IN+ETC-IN)금액 / [OUT + ETC-OUT(완전수량) + PL전×0.5 + PL후×0.9]수량 → 단가 정확.
+   금액 = 단가 × 포지션수량 × 평가비율: OUT×1.0, ETC-OUT 전×0.5/후×0.9, EOH(PL) 전×0.5/후×0.9. (미배분 잔차는 OUT수량>0→OUTPUT·=0→EOH 흡수). QTY는 물리수량 저장.
+   소스: doi_vn_prod_resc + DOI_COST_BOH(BOH) + doi_expn_matl(IN) + DOI_VN_RSRW(ETC-IN=R/S·R/W만)
+   BOH 포지션 배분: 환산량(전0.5/후0.9)=EOH와 동일 → 이월품 BOH포지션=EOH포지션.
+   잔차: BOH잔차는 값이 가장 큰 BOH포지션이, EOH/OUTPUT잔차는 OUT수량>0이면 OUTPUT_A가·=0이면 값이 가장 큰 EOH포지션이 흡수(음수 방지).
+   ============================================================ */
+ALTER PROCEDURE UP_VN_WIP_EVAL_NEW @YYYYMM varchar(6), @SITE varchar(4), @SEL_CODE varchar(10) AS
+BEGIN
+  SET NOCOUNT ON;
+  DECLARE @prev varchar(6) = FORMAT(DATEADD(MONTH,-1,CONVERT(date,@YYYYMM+'01')),'yyyyMM');  -- 전월(재공 BOH 전/후 직접 이월용)
+  DELETE FROM doi_vn_cost WHERE YYYYMM=@YYYYMM AND SITE=@SITE AND SEL_CODE=@SEL_CODE;
+  ;WITH
+  pe AS (
+    SELECT 구분, 도우코드, EXPEN_SEL,
+      ISNULL(EOH_LINE_WIP_전_AMT,0) pe_lwB, ISNULL(EOH_LINE_WIP_후_AMT,0) pe_lwA,
+      ISNULL(EOH_LINE_FGS_전_AMT,0) pe_lfB, ISNULL(EOH_LINE_FGS_후_AMT,0) pe_lfA,
+      ISNULL(EOH_B_WIP_전_AMT,0) pe_bwB, ISNULL(EOH_B_WIP_후_AMT,0) pe_bwA,
+      ISNULL(EOH_B_FGS_전_AMT,0) pe_bfB, ISNULL(EOH_B_FGS_후_AMT,0) pe_bfA
+    FROM doi_vn_cost WHERE YYYYMM=@prev AND SITE=@SITE AND SEL_CODE=@SEL_CODE),
+  q AS (
+    SELECT 도우코드, division, CASE WHEN division='MP' THEN N'양산' ELSE N'개발' END 구분,
+      SUM(ISNULL([BOH_LINE_WIP_전],0)) [BOH_LINE_WIP_전],
+      SUM(ISNULL([BOH_LINE_WIP_후],0)) [BOH_LINE_WIP_후],
+      SUM(ISNULL([BOH_LINE_FGS_전],0)) [BOH_LINE_FGS_전],
+      SUM(ISNULL([BOH_LINE_FGS_후],0)) [BOH_LINE_FGS_후],
+      SUM(ISNULL([BOH_B_WIP_전],0)) [BOH_B_WIP_전],
+      SUM(ISNULL([BOH_B_WIP_후],0)) [BOH_B_WIP_후],
+      SUM(ISNULL([BOH_B_FGS_전],0)) [BOH_B_FGS_전],
+      SUM(ISNULL([BOH_B_FGS_후],0)) [BOH_B_FGS_후],
+      SUM(ISNULL([USC_INPUT],0)) [USC_INPUT],
+      SUM(ISNULL([ETCIN_CODE],0)) [ETCIN_CODE],
+      SUM(ISNULL([ETCIN_RESORT],0)) [ETCIN_RESORT],
+      SUM(ISNULL([ETCIN_REWORK],0)) [ETCIN_REWORK],
+      SUM(ISNULL([ETCIN_SEMI],0)) [ETCIN_SEMI],
+      SUM(ISNULL([ETCIN_ETC],0)) [ETCIN_ETC],
+      SUM(ISNULL([OUTPUT_A],0)) [OUTPUT_A],
+      SUM(ISNULL([ETCOUT_CODE_전],0)) [ETCOUT_CODE_전],
+      SUM(ISNULL([ETCOUT_CODE_후],0)) [ETCOUT_CODE_후],
+      SUM(ISNULL([ETCOUT_SEMI_PAID_전],0)) [ETCOUT_SEMI_PAID_전],
+      SUM(ISNULL([ETCOUT_SEMI_PAID_후],0)) [ETCOUT_SEMI_PAID_후],
+      SUM(ISNULL([ETCOUT_SEMI_FREE_전],0)) [ETCOUT_SEMI_FREE_전],
+      SUM(ISNULL([ETCOUT_SEMI_FREE_후],0)) [ETCOUT_SEMI_FREE_후],
+      SUM(ISNULL([ETCOUT_ETC_전],0)) [ETCOUT_ETC_전],
+      SUM(ISNULL([ETCOUT_ETC_후],0)) [ETCOUT_ETC_후],
+      SUM(ISNULL([LOSS_전],0)) [LOSS_전],
+      SUM(ISNULL([LOSS_후],0)) [LOSS_후],
+      SUM(ISNULL([EOH_LINE_WIP_전],0)) [EOH_LINE_WIP_전],
+      SUM(ISNULL([EOH_LINE_WIP_후],0)) [EOH_LINE_WIP_후],
+      SUM(ISNULL([EOH_LINE_FGS_전],0)) [EOH_LINE_FGS_전],
+      SUM(ISNULL([EOH_LINE_FGS_후],0)) [EOH_LINE_FGS_후],
+      SUM(ISNULL([EOH_B_WIP_전],0)) [EOH_B_WIP_전],
+      SUM(ISNULL([EOH_B_WIP_후],0)) [EOH_B_WIP_후],
+      SUM(ISNULL([EOH_B_FGS_전],0)) [EOH_B_FGS_전],
+      SUM(ISNULL([EOH_B_FGS_후],0)) [EOH_B_FGS_후]
+    FROM doi_vn_prod_resc WHERE yyyymm=@YYYYMM AND sel_code=@SEL_CODE GROUP BY 도우코드, division),
+  bh AS (SELECT 구분,도우코드,EXPEN_SEL,MAX(MODEL) MODEL,MAX(expen_sel명) es명,MAX(ACCT_NAME) an,MAX(ITEM_NAME) it,SUM(CAST(BOH AS float)) boh
+         FROM DOI_COST_BOH WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE GROUP BY 구분,도우코드,EXPEN_SEL),
+  ip AS (SELECT 구분,도우코드,EXPEN_SEL,MAX(도우모델) MODEL,MAX(expen_sel명) es명,MAX(분류) an,MAX(항목) it,SUM(CAST(투입금액 AS float)) inn
+         FROM doi_expn_matl WHERE yyyymm=@YYYYMM AND site=@SITE AND sel_code=@SEL_CODE GROUP BY 구분,도우코드,EXPEN_SEL),
+  ei AS (SELECT CASE WHEN 구분='MP' THEN N'양산' ELSE N'개발' END 구분,도우코드,EXPEN_SEL,SUM(CAST(rs_amt AS float)) rs,SUM(CAST(rw_amt AS float)) rw
+         FROM DOI_VN_RSRW WHERE yyyymm=@YYYYMM AND sel_code=@SEL_CODE GROUP BY CASE WHEN 구분='MP' THEN N'양산' ELSE N'개발' END,도우코드,EXPEN_SEL),
+  keys AS (SELECT 구분,도우코드,EXPEN_SEL FROM bh UNION SELECT 구분,도우코드,EXPEN_SEL FROM ip UNION SELECT 구분,도우코드,EXPEN_SEL FROM ei),
+  it AS (
+    SELECT k.도우코드,
+       COALESCE(q.division, CASE WHEN k.구분=N'양산' THEN 'MP' ELSE 'R&D' END) division,
+       k.구분, COALESCE(b.MODEL,i.MODEL,'') MODEL, k.EXPEN_SEL,
+       COALESCE(b.es명,i.es명,'') expen_sel명,
+       COALESCE(b.an,i.an, CASE WHEN LEFT(k.EXPEN_SEL,1)='M' THEN N'재료비' ELSE N'가공비' END) ACCT_NAME,
+       COALESCE(b.it,i.it,'') ITEM_NAME,
+       ISNULL(b.boh,0) boh, ISNULL(i.inn,0) inn, ISNULL(e.rs,0) rs, ISNULL(e.rw,0) rw,
+       q.[BOH_LINE_WIP_전],q.[BOH_LINE_WIP_후],q.[BOH_LINE_FGS_전],q.[BOH_LINE_FGS_후],q.[BOH_B_WIP_전],q.[BOH_B_WIP_후],q.[BOH_B_FGS_전],q.[BOH_B_FGS_후],q.[USC_INPUT],q.[ETCIN_CODE],q.[ETCIN_RESORT],q.[ETCIN_REWORK],q.[ETCIN_SEMI],q.[ETCIN_ETC],q.[OUTPUT_A],q.[ETCOUT_CODE_전],q.[ETCOUT_CODE_후],q.[ETCOUT_SEMI_PAID_전],q.[ETCOUT_SEMI_PAID_후],q.[ETCOUT_SEMI_FREE_전],q.[ETCOUT_SEMI_FREE_후],q.[ETCOUT_ETC_전],q.[ETCOUT_ETC_후],q.[LOSS_전],q.[LOSS_후],q.[EOH_LINE_WIP_전],q.[EOH_LINE_WIP_후],q.[EOH_LINE_FGS_전],q.[EOH_LINE_FGS_후],q.[EOH_B_WIP_전],q.[EOH_B_WIP_후],q.[EOH_B_FGS_전],q.[EOH_B_FGS_후],
+       (q.[BOH_LINE_WIP_전]+q.[BOH_LINE_WIP_후]+q.[BOH_LINE_FGS_전]+q.[BOH_LINE_FGS_후]+q.[BOH_B_WIP_전]+q.[BOH_B_WIP_후]+q.[BOH_B_FGS_전]+q.[BOH_B_FGS_후]) tboh, (q.[BOH_LINE_WIP_전]*0.5+q.[BOH_LINE_WIP_후]*0.9+q.[BOH_LINE_FGS_전]*0.5+q.[BOH_LINE_FGS_후]*0.9+q.[BOH_B_WIP_전]*0.5+q.[BOH_B_WIP_후]*0.9+q.[BOH_B_FGS_전]*0.5+q.[BOH_B_FGS_후]*0.9) tboh_eq, q.[OUTPUT_A] out_qty, (q.[ETCOUT_CODE_전]+q.[ETCOUT_CODE_후]+q.[ETCOUT_SEMI_PAID_전]+q.[ETCOUT_SEMI_PAID_후]+q.[ETCOUT_SEMI_FREE_전]+q.[ETCOUT_SEMI_FREE_후]+q.[ETCOUT_ETC_전]+q.[ETCOUT_ETC_후]) etcout_qty, (q.[LOSS_전]+q.[LOSS_후]) loss_qty, (q.[EOH_LINE_WIP_전]*0.5+q.[EOH_LINE_WIP_후]*0.9+q.[EOH_LINE_FGS_전]*0.5+q.[EOH_LINE_FGS_후]*0.9+q.[EOH_B_WIP_전]*0.5+q.[EOH_B_WIP_후]*0.9+q.[EOH_B_FGS_전]*0.5+q.[EOH_B_FGS_후]*0.9) eoheq,
+       pe.pe_lwB, pe.pe_lwA, pe.pe_lfB, pe.pe_lfA, pe.pe_bwB, pe.pe_bwA, pe.pe_bfB, pe.pe_bfA   -- 전월 EOH 포지션(BOH 직접 이월)
+    FROM keys k
+      LEFT JOIN bh b ON b.구분=k.구분 AND b.도우코드=k.도우코드 AND b.EXPEN_SEL=k.EXPEN_SEL
+      LEFT JOIN ip i ON i.구분=k.구분 AND i.도우코드=k.도우코드 AND i.EXPEN_SEL=k.EXPEN_SEL
+      LEFT JOIN ei e ON e.구분=k.구분 AND e.도우코드=k.도우코드 AND e.EXPEN_SEL=k.EXPEN_SEL
+      LEFT JOIN q ON q.도우코드=k.도우코드 AND q.구분=k.구분
+      LEFT JOIN pe ON pe.구분=k.구분 AND pe.도우코드=k.도우코드 AND pe.EXPEN_SEL=k.EXPEN_SEL),
+  calc AS (SELECT *, (boh+inn+rs+rw) pool, (out_qty+etcout_qty+eoheq) denom,
+             CASE WHEN (out_qty+etcout_qty+eoheq)>0 THEN (boh+inn+rs+rw)/(out_qty+etcout_qty+eoheq) ELSE 0 END uc
+           FROM it),
+  r AS (SELECT *,
+      ISNULL(ROUND(boh*[BOH_LINE_WIP_전]*0.5/NULLIF(tboh_eq,0),2),0) AS a_BOH_LINE_WIP_전,
+      ISNULL(ROUND(boh*[BOH_LINE_WIP_후]*0.9/NULLIF(tboh_eq,0),2),0) AS a_BOH_LINE_WIP_후,
+      ISNULL(ROUND(boh*[BOH_LINE_FGS_전]*0.5/NULLIF(tboh_eq,0),2),0) AS a_BOH_LINE_FGS_전,
+      ISNULL(ROUND(boh*[BOH_LINE_FGS_후]*0.9/NULLIF(tboh_eq,0),2),0) AS a_BOH_LINE_FGS_후,
+      ISNULL(ROUND(boh*[BOH_B_WIP_전]*0.5/NULLIF(tboh_eq,0),2),0) AS a_BOH_B_WIP_전,
+      ISNULL(ROUND(boh*[BOH_B_WIP_후]*0.9/NULLIF(tboh_eq,0),2),0) AS a_BOH_B_WIP_후,
+      ISNULL(ROUND(boh*[BOH_B_FGS_전]*0.5/NULLIF(tboh_eq,0),2),0) AS a_BOH_B_FGS_전,
+      ISNULL(ROUND(boh*[BOH_B_FGS_후]*0.9/NULLIF(tboh_eq,0),2),0) AS a_BOH_B_FGS_후,
+      ISNULL(ROUND(pool*[EOH_LINE_WIP_전]*0.5/NULLIF(denom,0),2),0) AS a_EOH_LINE_WIP_전,
+      ISNULL(ROUND(pool*[EOH_LINE_WIP_후]*0.9/NULLIF(denom,0),2),0) AS a_EOH_LINE_WIP_후,
+      ISNULL(ROUND(pool*[EOH_LINE_FGS_전]*0.5/NULLIF(denom,0),2),0) AS a_EOH_LINE_FGS_전,
+      ISNULL(ROUND(pool*[EOH_LINE_FGS_후]*0.9/NULLIF(denom,0),2),0) AS a_EOH_LINE_FGS_후,
+      ISNULL(ROUND(pool*[EOH_B_WIP_전]*0.5/NULLIF(denom,0),2),0) AS a_EOH_B_WIP_전,
+      ISNULL(ROUND(pool*[EOH_B_WIP_후]*0.9/NULLIF(denom,0),2),0) AS a_EOH_B_WIP_후,
+      ISNULL(ROUND(pool*[EOH_B_FGS_전]*0.5/NULLIF(denom,0),2),0) AS a_EOH_B_FGS_전,
+      ISNULL(ROUND(pool*[EOH_B_FGS_후]*0.9/NULLIF(denom,0),2),0) AS a_EOH_B_FGS_후,
+      ISNULL(ROUND(uc*[ETCOUT_CODE_전]*0.5,2),0) AS a_ETCOUT_CODE_전,
+      ISNULL(ROUND(uc*[ETCOUT_CODE_후]*0.9,2),0) AS a_ETCOUT_CODE_후,
+      ISNULL(ROUND(uc*[ETCOUT_SEMI_PAID_전]*0.5,2),0) AS a_ETCOUT_SEMI_PAID_전,
+      ISNULL(ROUND(uc*[ETCOUT_SEMI_PAID_후]*0.9,2),0) AS a_ETCOUT_SEMI_PAID_후,
+      ISNULL(ROUND(uc*[ETCOUT_SEMI_FREE_전]*0.5,2),0) AS a_ETCOUT_SEMI_FREE_전,
+      ISNULL(ROUND(uc*[ETCOUT_SEMI_FREE_후]*0.9,2),0) AS a_ETCOUT_SEMI_FREE_후,
+      ISNULL(ROUND(uc*[ETCOUT_ETC_전]*0.5,2),0) AS a_ETCOUT_ETC_전,
+      ISNULL(ROUND(uc*[ETCOUT_ETC_후]*0.9,2),0) AS a_ETCOUT_ETC_후
+    FROM calc),
+  r2 AS (SELECT *,
+      CAST(boh AS numeric(18,2)) - (a_BOH_LINE_WIP_전+a_BOH_LINE_WIP_후+a_BOH_LINE_FGS_전+a_BOH_LINE_FGS_후+a_BOH_B_WIP_전+a_BOH_B_WIP_후+a_BOH_B_FGS_전+a_BOH_B_FGS_후) AS b_resid,
+      (SELECT MAX(v) FROM (VALUES (a_BOH_LINE_WIP_전),(a_BOH_LINE_WIP_후),(a_BOH_LINE_FGS_전),(a_BOH_LINE_FGS_후),(a_BOH_B_WIP_전),(a_BOH_B_WIP_후),(a_BOH_B_FGS_전),(a_BOH_B_FGS_후)) x(v)) AS bmax,
+      (CAST(pool AS numeric(18,2)) - (a_ETCOUT_CODE_전+a_ETCOUT_CODE_후+a_ETCOUT_SEMI_PAID_전+a_ETCOUT_SEMI_PAID_후+a_ETCOUT_SEMI_FREE_전+a_ETCOUT_SEMI_FREE_후+a_ETCOUT_ETC_전+a_ETCOUT_ETC_후) - (a_EOH_LINE_WIP_전+a_EOH_LINE_WIP_후+a_EOH_LINE_FGS_전+a_EOH_LINE_FGS_후+a_EOH_B_WIP_전+a_EOH_B_WIP_후+a_EOH_B_FGS_전+a_EOH_B_FGS_후) - (CASE WHEN denom=0 THEN CAST(pool AS numeric(18,2)) ELSE 0 END)) AS out_resid,
+      (SELECT MAX(v) FROM (VALUES (a_EOH_LINE_WIP_전),(a_EOH_LINE_WIP_후),(a_EOH_LINE_FGS_전),(a_EOH_LINE_FGS_후),(a_EOH_B_WIP_전),(a_EOH_B_WIP_후),(a_EOH_B_FGS_전),(a_EOH_B_FGS_후)) x(v)) AS emax,
+      (SELECT MAX(v) FROM (VALUES (a_ETCOUT_CODE_전),(a_ETCOUT_CODE_후),(a_ETCOUT_SEMI_PAID_전),(a_ETCOUT_SEMI_PAID_후),(a_ETCOUT_SEMI_FREE_전),(a_ETCOUT_SEMI_FREE_후),(a_ETCOUT_ETC_전),(a_ETCOUT_ETC_후)) x(v)) AS eomax
+    FROM r),
+  r3 AS (SELECT *, CASE WHEN a_BOH_LINE_WIP_전>=bmax THEN 1 WHEN a_BOH_LINE_WIP_후>=bmax THEN 2 WHEN a_BOH_LINE_FGS_전>=bmax THEN 3 WHEN a_BOH_LINE_FGS_후>=bmax THEN 4 WHEN a_BOH_B_WIP_전>=bmax THEN 5 WHEN a_BOH_B_WIP_후>=bmax THEN 6 WHEN a_BOH_B_FGS_전>=bmax THEN 7 WHEN a_BOH_B_FGS_후>=bmax THEN 8 ELSE 8 END bmaxpos, CASE WHEN a_EOH_LINE_WIP_전>=emax THEN 1 WHEN a_EOH_LINE_WIP_후>=emax THEN 2 WHEN a_EOH_LINE_FGS_전>=emax THEN 3 WHEN a_EOH_LINE_FGS_후>=emax THEN 4 WHEN a_EOH_B_WIP_전>=emax THEN 5 WHEN a_EOH_B_WIP_후>=emax THEN 6 WHEN a_EOH_B_FGS_전>=emax THEN 7 WHEN a_EOH_B_FGS_후>=emax THEN 8 ELSE 8 END emaxpos, CASE WHEN a_ETCOUT_CODE_전>=eomax THEN 1 WHEN a_ETCOUT_CODE_후>=eomax THEN 2 WHEN a_ETCOUT_SEMI_PAID_전>=eomax THEN 3 WHEN a_ETCOUT_SEMI_PAID_후>=eomax THEN 4 WHEN a_ETCOUT_SEMI_FREE_전>=eomax THEN 5 WHEN a_ETCOUT_SEMI_FREE_후>=eomax THEN 6 WHEN a_ETCOUT_ETC_전>=eomax THEN 7 WHEN a_ETCOUT_ETC_후>=eomax THEN 8 ELSE 8 END eomaxpos FROM r2)
+  INSERT INTO doi_vn_cost (YYYYMM, SEL_CODE, SITE, 도우코드, division, 구분, MODEL, EXPEN_SEL, expen_sel명, ACCT_NAME, ITEM_NAME, UNIT_COST, ADJ_YN, [BOH_LINE_WIP_전_QTY], [BOH_LINE_WIP_전_AMT], [BOH_LINE_WIP_후_QTY], [BOH_LINE_WIP_후_AMT], [BOH_LINE_FGS_전_QTY], [BOH_LINE_FGS_전_AMT], [BOH_LINE_FGS_후_QTY], [BOH_LINE_FGS_후_AMT], [BOH_B_WIP_전_QTY], [BOH_B_WIP_전_AMT], [BOH_B_WIP_후_QTY], [BOH_B_WIP_후_AMT], [BOH_B_FGS_전_QTY], [BOH_B_FGS_전_AMT], [BOH_B_FGS_후_QTY], [BOH_B_FGS_후_AMT], [USC_INPUT_QTY], [USC_INPUT_AMT], [ETCIN_CODE_QTY], [ETCIN_CODE_AMT], [ETCIN_RESORT_QTY], [ETCIN_RESORT_AMT], [ETCIN_REWORK_QTY], [ETCIN_REWORK_AMT], [ETCIN_SEMI_QTY], [ETCIN_SEMI_AMT], [ETCIN_ETC_QTY], [ETCIN_ETC_AMT], [OUTPUT_A_QTY], [OUTPUT_A_AMT], [ETCOUT_CODE_전_QTY], [ETCOUT_CODE_전_AMT], [ETCOUT_CODE_후_QTY], [ETCOUT_CODE_후_AMT], [ETCOUT_SEMI_PAID_전_QTY], [ETCOUT_SEMI_PAID_전_AMT], [ETCOUT_SEMI_PAID_후_QTY], [ETCOUT_SEMI_PAID_후_AMT], [ETCOUT_SEMI_FREE_전_QTY], [ETCOUT_SEMI_FREE_전_AMT], [ETCOUT_SEMI_FREE_후_QTY], [ETCOUT_SEMI_FREE_후_AMT], [ETCOUT_ETC_전_QTY], [ETCOUT_ETC_전_AMT], [ETCOUT_ETC_후_QTY], [ETCOUT_ETC_후_AMT], [LOSS_전_QTY], [LOSS_전_AMT], [LOSS_후_QTY], [LOSS_후_AMT], [EOH_LINE_WIP_전_QTY], [EOH_LINE_WIP_전_AMT], [EOH_LINE_WIP_후_QTY], [EOH_LINE_WIP_후_AMT], [EOH_LINE_FGS_전_QTY], [EOH_LINE_FGS_전_AMT], [EOH_LINE_FGS_후_QTY], [EOH_LINE_FGS_후_AMT], [EOH_B_WIP_전_QTY], [EOH_B_WIP_전_AMT], [EOH_B_WIP_후_QTY], [EOH_B_WIP_후_AMT], [EOH_B_FGS_전_QTY], [EOH_B_FGS_전_AMT], [EOH_B_FGS_후_QTY], [EOH_B_FGS_후_AMT])
+  SELECT @YYYYMM,
+     @SEL_CODE,
+     @SITE,
+     도우코드,
+     division,
+     구분,
+     MODEL,
+     EXPEN_SEL,
+     expen_sel명,
+     ACCT_NAME,
+     ITEM_NAME,
+     CAST(uc AS numeric(24,12)),
+     'N',
+     CAST([BOH_LINE_WIP_전] AS numeric(18,2)),
+     ISNULL(pe_lwB,0),   -- BOH 금액 = 전월 EOH 포지션 직접 이월(전/후 정합)
+     CAST([BOH_LINE_WIP_후] AS numeric(18,2)),
+     ISNULL(pe_lwA,0),
+     CAST([BOH_LINE_FGS_전] AS numeric(18,2)),
+     ISNULL(pe_lfB,0),
+     CAST([BOH_LINE_FGS_후] AS numeric(18,2)),
+     ISNULL(pe_lfA,0),
+     CAST([BOH_B_WIP_전] AS numeric(18,2)),
+     ISNULL(pe_bwB,0),
+     CAST([BOH_B_WIP_후] AS numeric(18,2)),
+     ISNULL(pe_bwA,0),
+     CAST([BOH_B_FGS_전] AS numeric(18,2)),
+     ISNULL(pe_bfB,0),
+     CAST([BOH_B_FGS_후] AS numeric(18,2)),
+     ISNULL(pe_bfA,0),
+     CAST([USC_INPUT] AS numeric(18,2)),
+     CAST(inn AS numeric(18,2)),
+     CAST([ETCIN_CODE] AS numeric(18,2)),
+     CAST(0 AS numeric(18,2)),
+     CAST([ETCIN_RESORT] AS numeric(18,2)),
+     CAST(rs AS numeric(18,2)),
+     CAST([ETCIN_REWORK] AS numeric(18,2)),
+     CAST(rw AS numeric(18,2)),
+     CAST([ETCIN_SEMI] AS numeric(18,2)),
+     CAST(0 AS numeric(18,2)),
+     CAST([ETCIN_ETC] AS numeric(18,2)),
+     CAST(0 AS numeric(18,2)),
+     CAST([OUTPUT_A] AS numeric(18,2)),
+     ISNULL(ROUND(uc*[OUTPUT_A],2),0) + CASE WHEN eoheq=0 AND out_qty>0 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([ETCOUT_CODE_전] AS numeric(18,2)),
+     a_ETCOUT_CODE_전 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=1 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([ETCOUT_CODE_후] AS numeric(18,2)),
+     a_ETCOUT_CODE_후 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=2 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([ETCOUT_SEMI_PAID_전] AS numeric(18,2)),
+     a_ETCOUT_SEMI_PAID_전 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=3 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([ETCOUT_SEMI_PAID_후] AS numeric(18,2)),
+     a_ETCOUT_SEMI_PAID_후 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=4 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([ETCOUT_SEMI_FREE_전] AS numeric(18,2)),
+     a_ETCOUT_SEMI_FREE_전 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=5 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([ETCOUT_SEMI_FREE_후] AS numeric(18,2)),
+     a_ETCOUT_SEMI_FREE_후 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=6 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([ETCOUT_ETC_전] AS numeric(18,2)),
+     a_ETCOUT_ETC_전 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=7 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([ETCOUT_ETC_후] AS numeric(18,2)),
+     a_ETCOUT_ETC_후 + CASE WHEN eoheq=0 AND out_qty=0 AND etcout_qty>0 AND eomaxpos=8 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([LOSS_전] AS numeric(18,2)),
+     CASE WHEN denom=0 THEN ISNULL(ROUND(pool*[LOSS_전]/NULLIF([LOSS_전]+[LOSS_후],0),2),0) ELSE 0 END,
+     CAST([LOSS_후] AS numeric(18,2)),
+     (CASE WHEN denom=0 THEN CAST(pool AS numeric(18,2)) ELSE 0 END) - (CASE WHEN denom=0 THEN ISNULL(ROUND(pool*[LOSS_전]/NULLIF([LOSS_전]+[LOSS_후],0),2),0) ELSE 0 END),
+     CAST([EOH_LINE_WIP_전] AS numeric(18,2)),
+     a_EOH_LINE_WIP_전 + CASE WHEN eoheq>0 AND emaxpos=1 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([EOH_LINE_WIP_후] AS numeric(18,2)),
+     a_EOH_LINE_WIP_후 + CASE WHEN eoheq>0 AND emaxpos=2 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([EOH_LINE_FGS_전] AS numeric(18,2)),
+     a_EOH_LINE_FGS_전 + CASE WHEN eoheq>0 AND emaxpos=3 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([EOH_LINE_FGS_후] AS numeric(18,2)),
+     a_EOH_LINE_FGS_후 + CASE WHEN eoheq>0 AND emaxpos=4 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([EOH_B_WIP_전] AS numeric(18,2)),
+     a_EOH_B_WIP_전 + CASE WHEN eoheq>0 AND emaxpos=5 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([EOH_B_WIP_후] AS numeric(18,2)),
+     a_EOH_B_WIP_후 + CASE WHEN eoheq>0 AND emaxpos=6 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([EOH_B_FGS_전] AS numeric(18,2)),
+     a_EOH_B_FGS_전 + CASE WHEN eoheq>0 AND emaxpos=7 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END,
+     CAST([EOH_B_FGS_후] AS numeric(18,2)),
+     a_EOH_B_FGS_후 + CASE WHEN eoheq>0 AND emaxpos=8 THEN (out_resid - ISNULL(ROUND(uc*[OUTPUT_A],2),0)) ELSE 0 END
+  FROM r3;
+END
+GO
+
+/* ② 재실행 */
+EXEC UP_VN_WIP_EVAL_NEW   @YYYYMM='202607', @SITE='VN', @SEL_CODE='ACTUAL';
+EXEC UP_VN_STOCK_COST_NEW @YYYYMM='202607', @SITE='VN', @SEL_CODE='ACTUAL';
+GO
+
+/* ③ (대안) 스냅샷 복원 — 재실행 대신 쓸 때만
+SET XACT_ABORT ON;
+BEGIN TRAN;
+DELETE FROM doi_vn_cost WHERE YYYYMM='202607' AND SITE='VN' AND SEL_CODE='ACTUAL';
+INSERT INTO doi_vn_cost SELECT * FROM doi_vn_cost_bak260928a;
+DELETE FROM doi_vn_stco WHERE yyyymm='202607' AND sel_code='ACTUAL';
+INSERT INTO doi_vn_stco SELECT * FROM doi_vn_stco_bak260928a;
+DECLARE @a INT=(SELECT COUNT(*) FROM doi_vn_cost WHERE YYYYMM='202607' AND SITE='VN' AND SEL_CODE='ACTUAL'),
+        @b INT=(SELECT COUNT(*) FROM doi_vn_stco WHERE yyyymm='202607' AND sel_code='ACTUAL');
+IF @a=2015 AND @b=1370 BEGIN COMMIT; SELECT N'복원 완료' 결과,@a,@b; END
+ELSE BEGIN ROLLBACK; SELECT N'행수 불일치 — 롤백' 결과,@a,@b; END
+GO
+*/
