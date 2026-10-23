@@ -370,7 +370,7 @@
         from in_cost ic
         left join (
             select MODEL as lk_model, case when count(distinct 도우코드)=1 then max(도우코드) else null end as lk_dwcode
-            from doi_cost where 도우코드 <> N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by MODEL
+            from doi_cost where 도우코드 != N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by MODEL
         ) dc on dc.lk_model = ic.model
         order by ic.model;
     </select>
@@ -410,7 +410,7 @@
         from doi_expen_matl a
         left join (
             select MODEL as lk_model, case when count(distinct 도우코드)=1 then max(도우코드) else null end as lk_dwcode
-            from doi_cost where 도우코드 <> N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by MODEL
+            from doi_cost where 도우코드 != N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by MODEL
         ) dc on dc.lk_model = a.MODEL
         where 1=1
         and sel_code='ACTUAL'
@@ -435,7 +435,7 @@
         from doi_mat_cost a
         left join (
             select MODEL as lk_model, case when count(distinct 도우코드)=1 then max(도우코드) else null end as lk_dwcode
-            from doi_cost where 도우코드 <> N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by MODEL
+            from doi_cost where 도우코드 != N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by MODEL
         ) dc on dc.lk_model = a.도우모델
         where 1=1
         and sel_code='ACTUAL'
@@ -633,7 +633,7 @@
 		doi_mat_cost a	left join bom b on (a.자재번호 = b.자재번호)
 		left join (
 			select 구분 as lk_gubun, MODEL as lk_model, case when count(distinct 도우코드)=1 then max(도우코드) else null end as lk_dwcode
-			from doi_cost where 도우코드 <> N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by 구분, MODEL
+			from doi_cost where 도우코드 != N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by 구분, MODEL
 		) dc on dc.lk_gubun = a.구분 and dc.lk_model = a.도우모델	
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
@@ -719,7 +719,7 @@
         from doi_mat_cost a
         left join (
             select 구분 as lk_gubun, MODEL as lk_model, case when count(distinct 도우코드)=1 then max(도우코드) else null end as lk_dwcode
-            from doi_cost where 도우코드 <> N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by 구분, MODEL
+            from doi_cost where 도우코드 != N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by 구분, MODEL
         ) dc on dc.lk_gubun = a.구분 and dc.lk_model = a.도우모델
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
@@ -787,7 +787,7 @@
 			doi_mat_cost a
 		left join (
 			select 구분 as lk_gubun, MODEL as lk_model, case when count(distinct 도우코드)=1 then max(도우코드) else null end as lk_dwcode
-			from doi_cost where 도우코드 <> N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by 구분, MODEL
+			from doi_cost where 도우코드 != N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by 구분, MODEL
 		) dc on dc.lk_gubun = a.구분 and dc.lk_model = a.도우모델
         where 1=1
         <if test="yyyymm != null and yyyymm != ''">
@@ -1145,7 +1145,7 @@
 		doi_expen_matl a
 	left join (
 		select 구분 as lk_gubun, MODEL as lk_model, case when count(distinct 도우코드)=1 then max(도우코드) else null end as lk_dwcode
-		from doi_cost where 도우코드 <> N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by 구분, MODEL
+		from doi_cost where 도우코드 != N'' and YYYYMM = #{yyyymm} and SITE = #{site} group by 구분, MODEL
 	) dc on dc.lk_gubun = a.구분 and dc.lk_model = a.model        where 1=1
         and   sel_code='ACTUAL'
         and   expen_sel != 'NONE'
