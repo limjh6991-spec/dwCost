@@ -7,7 +7,7 @@ PL(손익)·COGS(매출원가)·총원가·매출실적·수불월보·**제조�
 
 ## B. 배포 대기 (jar + proc **동시** 필요)
 
-### B-1. 신규 jar: `target/dwisCOST-prod-261023-0608.jar`
+### B-1. 신규 jar: `target/dwisCOST-prod-261023-0617.jar`
 포함(매퍼 2파일 C0009000.xml·C0008000.xml):
 - **PL 손익화면 매출수량** 매퍼 fix(품명→품번) — 현재 운영 0으로 뜨는 행 복구
 - **제조경비·원부자재배부표·판관비** 집계표 `_Col` 헤더(도우코드)
@@ -33,7 +33,7 @@ DOI_ManufacturingExpenseByModel · DOI_DsitributeMatCostByModel · DOI_SalesAdmi
 2. 피벗 proc ALTER: `06_deploy_pivot_procs.py --apply`
 3. 즉시 jar 배포 + 재기동:
    - 표준: 운영 빌드서버 `deploy/deploy-prod.bat` (git reset→mvn→jar복사)
-   - 또는 로컬 jar 직접: `cp target/dwisCOST-prod-261023-0608.jar "C:/DCIS/webapp/api_prod/dwisCOST-prod.jar"` 후 재기동
+   - 또는 로컬 jar 직접: `cp target/dwisCOST-prod-261023-0617.jar "C:/DCIS/webapp/api_prod/dwisCOST-prod.jar"` 후 재기동
    ```bash
    cd C:/DCIS/webapp/api_prod && java -Xms1g -Xmx1g -jar dwisCOST-prod.jar --spring.profiles.active=prod2
    ```

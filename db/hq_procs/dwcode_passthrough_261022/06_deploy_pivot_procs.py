@@ -39,7 +39,7 @@ def inv(cols,rows):
 c=conn().cursor()
 os.makedirs(BAK,exist_ok=True)
 print(f"=== 동적피벗 3종 proc {'운영 ALTER' if APPLY else 'DRY-RUN'} ===")
-print("⚠️ 신규 jar(dwisCOST-prod-261023-0608.jar 이후)와 동시 배포 필수\n")
+print("⚠️ 신규 jar(dwisCOST-prod-261023-0617.jar 이후)와 동시 배포 필수\n")
 for proc, edits in EDITS.items():
     base=c.execute(f"SELECT OBJECT_DEFINITION(OBJECT_ID('{proc}'))").fetchone()[0]
     if not base: print(f"[{proc}] ★없음"); continue
