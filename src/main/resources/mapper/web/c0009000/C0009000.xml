@@ -106,7 +106,7 @@
         ELSE
         BEGIN
             SELECT 
-                MODEL AS model,
+                COALESCE(NULLIF(도우코드, N''), MODEL) AS model,
                 'USC' AS process,
                 ISNULL(BOH_QTY, 0) AS boh,
                 ISNULL(IN_QTY, 0) AS inQty,
@@ -317,7 +317,7 @@
               <otherwise>
                 <!-- [2026-09-16a] 카세트 대분류 신설: VN* 모델의 구분을 N'카세트' 로 재분류.
                      프로시저 DOI_ManufacturingExpenseByModel fix260916a 의 PIVOT 키와 같은 규칙이어야 열이 매칭된다. -->
-                SELECT DISTINCT CASE WHEN LEFT(REPLACE(model,' ',''),2) = N'VN' THEN N'카세트' ELSE 구분 END AS 구분, model
+                SELECT DISTINCT CASE WHEN LEFT(REPLACE(HQ_MODEL.model,' ',''),2) = N'VN' THEN N'카세트' ELSE HQ_MODEL.구분 END AS 구분, COALESCE(NULLIF(LK.도우코드, N''), HQ_MODEL.model) AS model   /* [2026-10-23] 표시 라벨만 도우코드(proc col_label과 동일식). 재분류·조인키는 도우모델 유지 */
                 FROM (
                     SELECT DISTINCT 구분, 도우모델 as model FROM doi_mat_cost
                     where 1=1
@@ -344,6 +344,14 @@
                     and model != N'VN034P'
                     group by 구분, model
                 ) HQ_MODEL
+                LEFT JOIN (
+                    SELECT 구분, MODEL, MAX(도우코드) AS 도우코드 FROM doi_cost
+                    where 1=1
+                    <if test="yyyymm != null and yyyymm != ''">AND YYYYMM = #{yyyymm}</if>
+                    <if test="site != null and site != ''">AND SITE = #{site}</if>
+                    AND 도우코드 != N''
+                    GROUP BY 구분, MODEL HAVING COUNT(DISTINCT 도우코드) = 1
+                ) LK ON LK.구분 = HQ_MODEL.구분 AND LK.MODEL = HQ_MODEL.model
                 UNION
                 SELECT 'Z' 구분, 구분 model FROM (
                     SELECT DISTINCT CASE WHEN LEFT(REPLACE(model,' ',''),2) = N'VN' THEN N'카세트' ELSE 구분 END AS 구분
@@ -404,11 +412,23 @@
                 ORDER BY 1
             </when>
             <otherwise>
-                SELECT DISTINCT TOP 500 도우모델 as  model from DOI_MAT_COST
+                <!-- [HQ 도우코드 전환] 도우모델→완전 도우코드. DOI_MAT_COST엔 도우코드 없음 → DOI_COST(MODEL그레인) 유일성가드 룩업.
+                     COALESCE(NULLIF(도우코드,N''),도우모델): 유일코드면 relabel, 모호/부재면 도우모델 폴백(무손실·열매칭보존).
+                     프로시저 DOI_DsitributeMatCostByModel PIVOT 출력 별칭과 동일 식이어야 열이 매칭된다(JAR 재빌드). -->
+                SELECT DISTINCT TOP 500 COALESCE(NULLIF(lk.도우코드, N''), m.도우모델) as model
+                from DOI_MAT_COST m
+                LEFT JOIN (
+                    SELECT MODEL, MAX(도우코드) as 도우코드
+                    FROM DOI_COST
+                    WHERE 도우코드 != N''
+                    <if test="yyyymm != null and yyyymm != ''">AND YYYYMM = #{yyyymm}</if>
+                    <if test="site != null and site != ''">AND SITE = #{site}</if>
+                    GROUP BY MODEL HAVING COUNT(DISTINCT 도우코드) = 1
+                ) lk ON lk.MODEL = m.도우모델
                 where 1=1
-                <if test="yyyymm != null and yyyymm != ''">AND YYYYMM = #{yyyymm}</if>
-                <if test="site != null and site != ''">AND SITE = #{site}</if>
-                <if test="selcode != null and selcode != ''">AND SEL_CODE = #{selcode}</if>
+                <if test="yyyymm != null and yyyymm != ''">AND m.YYYYMM = #{yyyymm}</if>
+                <if test="site != null and site != ''">AND m.SITE = #{site}</if>
+                <if test="selcode != null and selcode != ''">AND m.SEL_CODE = #{selcode}</if>
                 ORDER BY 1
             </otherwise>
         </choose>
@@ -497,9 +517,11 @@
             <if test="site != null and site != ''">AND b.SITE = #{site}</if>
           </when>
           <otherwise>
-            <!-- [2026-09-16a] 카세트 대분류 신설: VN* 모델의 구분을 N'카세트' 로 재분류.
-                 프로시저 DOI_SalesAdminByModel 의 PIVOT 키와 같은 규칙이어야 열이 매칭된다. -->
-            SELECT DISTINCT CASE WHEN LEFT(model,2) = N'VN' THEN N'카세트' ELSE 구분 END + model as model from doi_smce_cost
+            <!-- [2026-10-23 도우코드 표기] 표시 라벨만 도우코드로. 그룹키=(구분,도우모델) 유지(총액·행수 불변),
+                 라벨 = 구분 + COALESCE(유일성가드 도우코드, 도우모델). 프로시저 DOI_SalesAdminByModel 의 출력 별칭(col_label)과 동일 규칙이어야 열이 매칭된다. -->
+            SELECT CASE WHEN LEFT(model,2) = N'VN' THEN N'카세트' ELSE 구분 END
+                     + COALESCE(CASE WHEN COUNT(DISTINCT NULLIF(LTRIM(RTRIM(도우코드)),N''))=1 THEN MAX(NULLIF(LTRIM(RTRIM(도우코드)),N'')) END, model) as model
+            from doi_smce_cost
             where 1=1
             <if test="yyyymm != null and yyyymm != ''">
                 AND YYYYMM = #{yyyymm}
@@ -507,6 +529,7 @@
             <if test="site != null and site != ''">
                 AND SITE = #{site}
             </if>
+            group by CASE WHEN LEFT(model,2) = N'VN' THEN N'카세트' ELSE 구분 END, model
           </otherwise>
           </choose>
         )A
@@ -599,7 +622,7 @@
               WHEN RIGHT(LTRIM(RTRIM(A.품번)),1)='P' THEN N'양산'
               ELSE N'개발'
             END AS 구분,
-            LTRIM(RTRIM(A.품명)) AS model,
+            LTRIM(RTRIM(A.품번)) AS model,
             ISNULL(A.수량,0) AS qty
         FROM doi_sale_resc A
         LEFT JOIN MERCH_ITEM MI ON MI.품번 = A.품번
@@ -621,7 +644,7 @@
               WHEN RIGHT(LTRIM(RTRIM(B.품번)),1)='P' THEN N'양산'
               ELSE N'개발'
             END AS 구분,
-            LTRIM(RTRIM(B.품명)) AS model,
+            LTRIM(RTRIM(B.품번)) AS model,
             ISNULL(B.수량,0) AS qty
         FROM doi_invoice_resc B
         LEFT JOIN MERCH_ITEM MI ON MI.품번 = B.품번

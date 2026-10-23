@@ -1,0 +1,20 @@
+{
+ "DOI_ManufacturingExpenseByModel": [
+  {
+   "old": "\t\tSELECT @Null_Columns = COALESCE(@Null_Columns, '') + MODEL +'],0) as ['+MODEL+'],coalesce([' \n\t\tFROM (SELECT TOP 500 CONCAT(구분, model) model \n\t\t\t\tFROM (\n\t\t\t\t\tSELECT DISTINCT CASE WHEN LEFT(model,2) = N'VN' THEN N'카세트' ELSE 구분 END AS 구분, model   /* [2026-09-16a] 카세트 대분류 */",
+   "new": "\t\tSELECT @Null_Columns = COALESCE(@Null_Columns, '') + pivot_key +'],0) as ['+col_label+'],coalesce([' \n\t\tFROM (SELECT TOP 500 CONCAT(구분, model) pivot_key, CONCAT(구분, COALESCE(NULLIF((SELECT MAX(C.도우코드) FROM doi_cost C WHERE C.yyyymm=@YYYYMM AND C.site=@SITE AND C.구분=A.구분_orig AND C.MODEL=A.model AND C.도우코드<>N'' GROUP BY C.구분,C.MODEL HAVING COUNT(DISTINCT C.도우코드)=1), N''), model)) col_label   /* [2026-10-23] 표시 라벨만 도우코드: PIVOT 키=구분+도우모델 불변(@Columns), 출력 별칭만 구분+도우코드(모호/부재시 도우모델 폴백) */\n\t\t\t\tFROM (\n\t\t\t\t\tSELECT DISTINCT CASE WHEN LEFT(model,2) = N'VN' THEN N'카세트' ELSE 구분 END AS 구분, 구분 AS 구분_orig, model   /* [2026-09-16a] 카세트 대분류 */"
+  }
+ ],
+ "DOI_DsitributeMatCostByModel": [
+  {
+   "old": "\t\tSELECT @Null_Columns = COALESCE(@Null_Columns, '') + 도우모델 +'],0) as ['+도우모델+'],coalesce([' \n\t\tFROM (SELECT DISTINCT TOP 500 도우모델 from (\n\t\t\t\tSELECT 도우모델 from DOI_MAT_COST where yyyymm=@YYYYMM and site=@SITE and sel_code = @SEL_CODE\n\t\t\t\tunion all \n\t\t\t\tselect 'Z합계' 도우모델 \n\t\t\t  ) A\n\t\t\t  ORDER BY 1 )AS models ;",
+   "new": "\t\tSELECT @Null_Columns = COALESCE(@Null_Columns, '') + m.도우모델 +'],0) as ['+ COALESCE(NULLIF(lk.도우코드, N''), m.도우모델) +'],coalesce([' \n\t\tFROM (SELECT DISTINCT TOP 500 도우모델 from (\n\t\t\t\tSELECT 도우모델 from DOI_MAT_COST where yyyymm=@YYYYMM and site=@SITE and sel_code = @SEL_CODE\n\t\t\t\tunion all \n\t\t\t\tselect 'Z합계' 도우모델 \n\t\t\t  ) A\n\t\t\t  ORDER BY 1 ) AS m\n\t\tLEFT JOIN (\n\t\t\t\tSELECT MODEL, MAX(도우코드) as 도우코드\n\t\t\t\tFROM DOI_COST\n\t\t\t\tWHERE YYYYMM=@YYYYMM AND SITE=@SITE AND 도우코드 <> N''\n\t\t\t\tGROUP BY MODEL HAVING COUNT(DISTINCT 도우코드) = 1\n\t\t\t  ) AS lk ON lk.MODEL = m.도우모델 ;"
+  }
+ ],
+ "DOI_SalesAdminByModel": [
+  {
+   "old": "        SELECT @Null_Columns = COALESCE(@Null_Columns, '') + MODEL +'],0) as ['+MODEL+'],coalesce([' \n        FROM (SELECT DISTINCT TOP 500 model \n                FROM (\n                SELECT DISTINCT CASE WHEN LEFT(model,2) = N'VN' THEN N'카세트' ELSE 구분 END+model as model from doi_smce_cost where yyyymm=@YYYYMM and site=@SITE and sel_code=@SEL_CODE\n                union all SELECT 'X합계' model union all SELECT 'Y합계' model union all SELECT 'W합계' model union all SELECT 'Z합계' mode\n                  )A\n                ORDER BY 1 )AS 도우모델 ;",
+   "new": "        SELECT @Null_Columns = COALESCE(@Null_Columns, '') + col_name +'],0) as ['+col_label+'],coalesce([' \n        FROM (SELECT DISTINCT TOP 500 col_name, col_label \n                FROM (\n                SELECT CASE WHEN LEFT(model,2) = N'VN' THEN N'카세트' ELSE 구분 END+model as col_name,\n                       CASE WHEN LEFT(model,2) = N'VN' THEN N'카세트' ELSE 구분 END+COALESCE(CASE WHEN COUNT(DISTINCT NULLIF(LTRIM(RTRIM(도우코드)),N''))=1 THEN MAX(NULLIF(LTRIM(RTRIM(도우코드)),N'')) END, model) as col_label\n                from doi_smce_cost where yyyymm=@YYYYMM and site=@SITE and sel_code=@SEL_CODE\n                group by CASE WHEN LEFT(model,2) = N'VN' THEN N'카세트' ELSE 구분 END, model\n                union all SELECT 'X합계','X합계' union all SELECT 'Y합계','Y합계' union all SELECT 'W합계','W합계' union all SELECT 'Z합계','Z합계'\n                  )A\n                ORDER BY 1 )AS 도우모델 ;"
+  }
+ ]
+}
