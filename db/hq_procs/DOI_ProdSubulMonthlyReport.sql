@@ -1,3 +1,14 @@
+/* ============================================================
+   DOI_ProdSubulMonthlyReport fix261027a — 카세트 재공품 실적 중복 제거
+   요청: 10월 CMS 결산 문의 1번 ([원가 레포트]-[생산실적]-[월별 집계(수량)])
+   대상 DB: 도우제조원가시스템 (HQ 운영)
+
+   증상: 카세트(VN034P1~P3)가 '양산'(생산수불 실적)과 '카세트'(doi_sale 판매수량) 두 줄로 나옴.
+         202608 기준 IN·OUT 이 판매수량 1,062 만큼 이중 집계.
+   수정: ① doi_sale 카세트 UNION 제거 (생산실적은 생산수불에 이미 있음)
+         ② 생산수불의 카세트 행 구분을 '카세트'로 표시 (LEFT(도우모델,2)='VN')
+   기준: 운영 정의 2026-10-23 13:46:24 / 원복 bak261027a/00_ROLLBACK_fix261027a.sql
+   ============================================================ */
 CREATE OR ALTER PROCEDURE DOI_ProdSubulMonthlyReport
 (
     @YYYY VARCHAR(4),
@@ -51,56 +62,14 @@ BEGIN
         )
         SELECT *
         INTO #BASE
-        FROM BASE
-        UNION ALL
-		select
-			YYYYMM,
-			'ACTUAL' SEL_CODE,
-			SITE,
-			구분,
-			1 구분_ORD,
-			품명 도우코드,
-			품번 도우모델,
-			'-' 작업구분,
-			'-' org작업구분,
-			'-' model,
-			'-' inch,
-			'VINA' DW_Site,
-			0 BOH_MONTH,
-			수량 IN_MONTH,
-			수량 OUT_MONTH,
-			0 LOSS_MONTH,
-			0 공정발생불량,
-			0 불량판매,
-			0 타계정입고,
-			0 기타입고_LOT변환,
-			0 기타입고_RMA_RW,
-			0 기타입고_전월불량,
-			0 기타입고_당월불량,
-			0 타계정출고,
-			0 기타출고_LOT변환,
-			0 기타출고_기타,
-			0 EOH_MONTH,
-			0 BOH_ADJ,
-			0 OUT_ADJ,
-			0 EOH_ADJ,
-			'Y' ADJ_YN,
-			0 NG_MONTH,
-			0 수율제외_MONTH,
-			0 REWORK진행_MONTH,
-			0 recall_loss,
-			0 OUTETC_MONTH,
-			0 기타입고_불량_RW,
-			0 BONUS_MONTH,
-			0 SHIPPING_PLAN_MONTH,
-			0 SHIPPING_ACTUAL_MONTH,
-			0 material_loss,
-			1 rn
-		from
-			doi_sale
-		WHERE
-			SUBSTRING(YYYYMM, 1, 4) = @YYYY
-			and 구분 = '카세트';
+        FROM BASE;
+
+        /* [2026-10-27a] 카세트 중복 제거 (10월 CMS 결산 문의 1번)
+           - 카세트(VN034P*)는 생산수불(V_DOI_PROD_SUBUL)에 생산실적으로 이미 들어오므로
+             doi_sale 판매수량을 실적으로 덧붙이던 UNION 을 제거한다.
+           - 생산수불의 카세트 행은 구분을 '양산' → '카세트'로 표시 (리포트 공통 규칙: LEFT(도우모델,2)='VN'). */
+        ALTER TABLE #BASE ALTER COLUMN 구분 NVARCHAR(20);   -- 뷰의 구분은 varchar(4)라 '카세트'가 잘림
+        UPDATE #BASE SET 구분 = N'카세트' WHERE LEFT(도우모델, 2) = N'VN';
 
 
         ------------------------------------------------------------
@@ -112,6 +81,8 @@ BEGIN
                 , CASE WHEN LEFT(도우모델,2)=N'VN' THEN 도우코드 ELSE 도우모델 END AS 모델
                 , MAX(Inch) AS Inch
                 , MAX(DW_Site) AS DW_Site
+
+                , CASE WHEN COUNT(DISTINCT 도우코드)=1 THEN MAX(도우코드) ELSE NULL END AS 도우코드
             FROM #BASE
             GROUP BY  구분,CASE WHEN LEFT(도우모델,2)=N'VN' THEN 도우코드 ELSE 도우모델 END
         )
@@ -181,7 +152,7 @@ BEGIN
 		;WITH DETAIL AS (
 		    SELECT
 		          cb.구분
-		        , cb.모델
+		        , COALESCE(NULLIF(cb.도우코드, N''), cb.모델) AS 모델
 		        , cb.Inch
 		        , cb.DW_Site
 		        , g.월번호
@@ -323,3 +294,4 @@ BEGIN
         SELECT ERROR_MESSAGE() AS ErrorMessage;
     END CATCH
 END;
+
