@@ -420,7 +420,11 @@ def load_cst_rate():
 def replace_bom():
     """DOI_BOM_MAST ← 제품별공정별소요자재조회 Sheet1 R3~. 엑셀 col1~26 → DB 1:1(col27 무시).
        ⚠️ API 적재분은 (1) 소요량 정밀도 오류(0.1667 ↔ 원본 0.1666) (2) 신규모델 BOM 누락
-          → 반드시 엑셀 전체 교체. 소요량/Loss율=numeric, 최초작성일/최종수정일=date."""
+          → 반드시 엑셀 전체 교체. 소요량/Loss율=numeric, 최초작성일/최종수정일=date.
+       ★ HTG(H접두) 제품명 'H' 누락 교정: H818VT·H8075T 등은 제품명이 'H'를 뺀 값('818V'/'8075')으로 와서,
+         배부 조인(UP_DOI_MAT_COST: BOM.제품명=생산 도우모델)이 H818VT→도우모델 '818V' 개발(=818VD)로
+         오조인된다(H818V 누락). 제품번호가 'H'로 시작하고 제품명≠품목중분류(정확한 도우모델)면 제품명=품목중분류로 교정.
+         (818VT 등 비H 특수모델은 미접촉 — 품목중분류가 도우모델이 아님)."""
     NUMCOL = {18, 19, 20}; DATECOL = {23, 25}
     def conv(cell, col):
         if cell is None: return None
@@ -431,11 +435,17 @@ def replace_bom():
         s = str(cell).strip(); return s if s != '' else None
     f = find_file('bom'); wb = openpyxl.load_workbook(f, read_only=True, data_only=True)
     ws = wb['Sheet1']
-    rows = []
+    rows = []; htg_fix = 0
     for r in ws.iter_rows(min_row=3, values_only=True):
         if r[1] in (None, '') or not str(r[1]).strip(): continue
-        rows.append(tuple([YYYYMM, SITE] + [conv(r[c-1], c) for c in range(1, 27)]))
+        vals = [YYYYMM, SITE] + [conv(r[c-1], c) for c in range(1, 27)]
+        # vals: [2]제품명(col1) [3]제품번호(col2) [6]품목중분류(col5)
+        pno = vals[3] or ''
+        if pno.startswith('H') and vals[6] and vals[2] != vals[6]:
+            vals[2] = vals[6]; htg_fix += 1          # HTG 제품명 'H' 누락 교정 → 품목중분류(정확한 도우모델)
+        rows.append(tuple(vals))
     wb.close()
+    if htg_fix: print(f"  · HTG 제품명 교정 {htg_fix}행 (H접두 제품명→품목중분류)")
     cols = ("[YYYYMM],[SITE],[제품명],[제품번호],[품목자산분류],[품목대분류],[품목중분류],[품목소분류],[공정차수],[공정],"
             "[공정품명],[공정품번호],[자재명],[자재번호],[자재자산분류],[자재대분류],[자재중분류],[자재소분류],[투입단위],"
             "[소요량],[내부Loss율],[외부Loss율],[조립위치],[특이사항],[최초작성일],[최초작성자],[최종수정일],[최종수정자]")
