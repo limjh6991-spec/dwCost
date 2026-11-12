@@ -243,6 +243,11 @@ def load_stock():
         pname = str(r[C['PNAME']-1]).strip() if r[C['PNAME']-1] else ''
         stock = str(r[C['STOCK']-1]).strip() if r[C['STOCK']-1] else ''
         model = pno if cls == '카세트제품' else pname
+        # ★ HTG(H접두) 교정: 제품 품명이 'H'를 뺀 값으로 와서(예: 품번 H818VT → 품명 '818V') 재공(DOI_COST,'H818V')과
+        #   MODEL 불일치 → 도우코드 병합·재공원가 고아·(도우코드 그레인 시) DOI_STCO PK중복 유발.
+        #   품번이 'H'로 시작하고 품명이 'H'로 시작하지 않으면 'H' 복원(H8133T 등 이미 올바른 건 불변).
+        if cls == '제품' and pno.startswith('H') and not model.startswith('H'):
+            model = 'H' + model
         boh, inp, out, eoh = g(r, C['BOH']), g(r, C['IN']), g(r, C['OUT']), g(r, C['EOH'])
         bd = {k: g(r, c) for k, c in MAP.items()}
         tb += boh; ti += inp; to += out; te += eoh
